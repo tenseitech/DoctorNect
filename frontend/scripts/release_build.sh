@@ -19,11 +19,14 @@ DRY_RUN=0
 SKIP_INCREMENT=0
 ALLOW_STAGING=0
 
+EXTRA_DEFINES=()
+
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
     --skip-increment) SKIP_INCREMENT=1 ;;
     --allow-staging) ALLOW_STAGING=1 ;;
+    --dart-define=*) EXTRA_DEFINES+=("$arg") ;;
     *)
       echo "Unknown argument: $arg" >&2
       echo "Usage: $0 [--dry-run] [--skip-increment] [--allow-staging]" >&2
@@ -136,6 +139,42 @@ EOF
     DART_DEFINES+=(--dart-define=SUPABASE_URL="$SUPABASE_URL")
     DART_DEFINES+=(--dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY")
   fi
+
+  local all_defines=("${DART_DEFINES[@]}" "${EXTRA_DEFINES[@]}")
+
+  # Guard: APP_CHECK_DEBUG_TOKEN or any *DEBUG_TOKEN* must NEVER be passed as a --dart-define in release builds
+  for define in "${all_defines[@]}"; do
+    if [[ "$define" =~ [Dd][Ee][Bb][Uu][Gg]_[Tt][Oo][Kk][Ee][Nn] ]]; then
+      echo "SECURITY ERROR: Debug token would be passed as a --dart-define in release build ($define). Debug tokens must NEVER be passed to release builds." >&2
+      exit 1
+    fi
+  done
+
+  # Strict allowlist: confirm only intended keys reach dart-defines
+  local allowed_keys=("FIREBASE_API_KEY_ANDROID" "GOOGLE_MAPS_API_KEY" "RECAPTCHA_SITE_KEY" "SUPABASE_URL" "SUPABASE_ANON_KEY")
+  for define in "${all_defines[@]}"; do
+    local key="${define#--dart-define=}"
+    key="${key%%=*}"
+    local found=0
+    for allowed in "${allowed_keys[@]}"; do
+      if [[ "$key" == "$allowed" ]]; then
+        found=1
+        break
+      fi
+    done
+    if [[ $found -eq 0 ]]; then
+      echo "SECURITY ERROR: Unintended dart-define key '$key' detected. Only allowlisted keys (${allowed_keys[*]}) may reach release builds." >&2
+      exit 1
+    fi
+  done
+
+  local intended_keys=()
+  for define in "${DART_DEFINES[@]}"; do
+    local key="${define#--dart-define=}"
+    key="${key%%=*}"
+    intended_keys+=("$key")
+  done
+  echo "Configured Dart define keys: ${intended_keys[*]}"
 }
 
 validate_production_build_config() {
@@ -191,8 +230,16 @@ else
   echo "Updated pubspec.yaml -> version: ${VERSION_NAME}+${TARGET_VERSION_CODE}"
 fi
 
-BUILD_CMD=(flutter build appbundle --release "${DART_DEFINES[@]}")
-printf 'Build command: %q ' "${BUILD_CMD[@]}"
+BUILD_CMD=(flutter build appbundle --release "${DART_DEFINES[@]}" "${EXTRA_DEFINES[@]}")
+MASKED_CMD=()
+for item in "${BUILD_CMD[@]}"; do
+  if [[ "$item" =~ ^--dart-define=([^=]+)=.*$ ]]; then
+    MASKED_CMD+=("--dart-define=${BASH_REMATCH[1]}=***")
+  else
+    MASKED_CMD+=("$item")
+  fi
+done
+printf 'Build command: %q ' "${MASKED_CMD[@]}"
 echo
 
 if [[ "$DRY_RUN" -eq 1 ]]; then

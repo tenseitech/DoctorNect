@@ -16,7 +16,9 @@
 param(
     [switch]$DryRun,
     [switch]$SkipIncrement,
-    [switch]$AllowStaging
+    [switch]$AllowStaging,
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$ExtraArgs
 )
 
 Set-StrictMode -Version Latest
@@ -52,6 +54,10 @@ function Import-DotEnv {
 }
 
 function Get-FlutterDartDefines {
+    param(
+        [string[]]$ExtraArgs = @()
+    )
+
     $defines = [System.Collections.Generic.List[string]]::new()
 
     $androidKey = $env:FIREBASE_API_KEY_ANDROID
@@ -114,6 +120,26 @@ Set FIREBASE_API_KEY_ANDROID in project root .env (not functions/.env), or expor
         $defines.Add("--dart-define=SUPABASE_URL=$($env:SUPABASE_URL)")
         $defines.Add("--dart-define=SUPABASE_ANON_KEY=$($env:SUPABASE_ANON_KEY)")
     }
+
+    # Guard: APP_CHECK_DEBUG_TOKEN or any *DEBUG_TOKEN* must NEVER be passed as a --dart-define in release builds
+    $extraDefines = @($ExtraArgs | Where-Object { $_ -like '--dart-define*' })
+    $allDefines = @($defines) + $extraDefines
+    $debugDefines = $allDefines | Where-Object { $_ -match '(?i)DEBUG_TOKEN' }
+    if ($debugDefines) {
+        throw "SECURITY ERROR: Debug token would be passed as a --dart-define in release build ($debugDefines). Debug tokens must NEVER be passed to release builds."
+    }
+
+    # Strict allowlist: confirm only intended keys reach dart-defines
+    $allowedDefineKeys = @('FIREBASE_API_KEY_ANDROID', 'GOOGLE_MAPS_API_KEY', 'RECAPTCHA_SITE_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY')
+    foreach ($def in $allDefines) {
+        $key = (($def -replace '^--dart-define=', '') -split '=')[0]
+        if ($allowedDefineKeys -notcontains $key) {
+            throw "SECURITY ERROR: Unintended dart-define key '$key' detected. Only allowlisted keys ($($allowedDefineKeys -join ', ')) may reach release builds."
+        }
+    }
+
+    $intendedNames = $defines | ForEach-Object { (($_ -replace '^--dart-define=', '') -split '=')[0] }
+    Write-Host "Configured Dart define keys: $($intendedNames -join ', ')" -ForegroundColor Cyan
 
     return ,$defines.ToArray()
 }
@@ -198,7 +224,7 @@ try {
         Import-DotEnv -Path (Join-Path $projectRoot '..\.env')
     }
     Test-ProductionBuildConfig -AllowStaging:$AllowStaging
-    $dartDefines = Get-FlutterDartDefines
+    $dartDefines = Get-FlutterDartDefines -ExtraArgs $ExtraArgs
     $pubspecPath = Join-Path $projectRoot 'pubspec.yaml'
 
     Write-Host '==========================================' -ForegroundColor Cyan
@@ -226,8 +252,15 @@ try {
         Write-Host "Using existing version: $($current.VersionName)+$targetVersionCode" -ForegroundColor Yellow
     }
 
-    $buildArgs = @('build', 'appbundle', '--release') + $dartDefines
-    $buildCommand = 'flutter ' + ($buildArgs -join ' ')
+    $buildArgs = @('build', 'appbundle', '--release') + $dartDefines + $ExtraArgs
+    $maskedArgs = $buildArgs | ForEach-Object {
+        if ($_ -match '^--dart-define=(?<k>[^=]+)=.*$') {
+            "--dart-define=$($Matches['k'])=***"
+        } else {
+            $_
+        }
+    }
+    $buildCommand = 'flutter ' + ($maskedArgs -join ' ')
     Write-Host "Build command: $buildCommand" -ForegroundColor DarkGray
 
     if ($DryRun) {

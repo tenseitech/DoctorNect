@@ -60,6 +60,29 @@ void main() {
         reason: 'release_build.sh must abort if SUPABASE_SERVICE_ROLE_KEY is present',
       );
     });
+
+    test('(d) DEBUG_TOKEN leakage guard aborts release build with security error', () {
+      expect(
+        ps1.contains('DEBUG_TOKEN') && ps1.contains('SECURITY ERROR'),
+        isTrue,
+        reason: 'release_build.ps1 must abort if any DEBUG_TOKEN is present',
+      );
+      expect(
+        sh.contains('DEBUG_TOKEN') && sh.contains('SECURITY ERROR'),
+        isTrue,
+        reason: 'release_build.sh must abort if any DEBUG_TOKEN is present',
+      );
+      expect(
+        ps1.contains('Configured Dart define keys:'),
+        isTrue,
+        reason: 'release_build.ps1 must print configured dart-define key names',
+      );
+      expect(
+        sh.contains('Configured Dart define keys:'),
+        isTrue,
+        reason: 'release_build.sh must print configured dart-define key names',
+      );
+    });
   });
 
   group('Behavioral Release Build Process Execution Tests (--dry-run)', () {
@@ -129,6 +152,20 @@ void main() {
         },
       );
       expect(resC.exitCode, isNot(0), reason: 'SUPABASE_SERVICE_ROLE_KEY leakage must fail with non-zero exit');
+
+      // (d) APP_CHECK_DEBUG_TOKEN passed as dart-define -> non-zero exit
+      final resD = await Process.run(
+        pwshCmd,
+        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/release_build.ps1', '-DryRun', '--dart-define=APP_CHECK_DEBUG_TOKEN=leak_debug_token_value_abc'],
+        environment: baseEnv,
+      );
+      expect(resD.exitCode, isNot(0), reason: 'APP_CHECK_DEBUG_TOKEN leakage must fail with non-zero exit');
+      expect(
+        resD.stderr.toString().contains('SECURITY ERROR: Debug token') ||
+            resD.stdout.toString().contains('SECURITY ERROR: Debug token'),
+        isTrue,
+        reason: 'Error message must explicitly mention debug token security error',
+      );
     });
 
     test('Bash release_build.sh behavioral test', () async {
@@ -177,6 +214,20 @@ void main() {
         },
       );
       expect(resC.exitCode, isNot(0), reason: 'SUPABASE_SERVICE_ROLE_KEY leakage must fail with non-zero exit');
+
+      // (d) APP_CHECK_DEBUG_TOKEN passed as dart-define -> non-zero exit
+      final resD = await Process.run(
+        'bash',
+        ['scripts/release_build.sh', '--dry-run', '--dart-define=APP_CHECK_DEBUG_TOKEN=leak_debug_token_value_abc'],
+        environment: baseEnv,
+      );
+      expect(resD.exitCode, isNot(0), reason: 'APP_CHECK_DEBUG_TOKEN leakage must fail with non-zero exit');
+      expect(
+        resD.stderr.toString().contains('SECURITY ERROR: Debug token') ||
+            resD.stdout.toString().contains('SECURITY ERROR: Debug token'),
+        isTrue,
+        reason: 'Error message must explicitly mention debug token security error',
+      );
     });
   });
 }
