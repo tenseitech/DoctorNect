@@ -19,7 +19,8 @@ test('S3 Supabase-mode integration test on local Docker Postgres', async (t) => 
     await pgClient.connect();
   } catch (err) {
     if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-      t.skip('Local Docker Postgres not running on 127.0.0.1:54322');
+      console.log('Skipping [S3 Supabase-mode integration test on local Docker Postgres]: Local Docker Postgres unreachable on ' + DOCKER_PG_URL);
+      t.skip('Local Docker Postgres unreachable on 127.0.0.1:54322');
       return;
     }
     throw err;

@@ -18,7 +18,15 @@ class UserRepository {
 
   static final UserRepository instance = UserRepository._();
 
-  FirebaseFirestore get _db => FirebaseFirestore.instance;
+  @visibleForTesting
+  static FirebaseFirestore? debugFirestore;
+
+  @visibleForTesting
+  static SupabaseUserRepository? debugSupabaseUserRepository;
+
+  FirebaseFirestore get _db => debugFirestore ?? FirebaseFirestore.instance;
+  SupabaseUserRepository get _supabaseRepo =>
+      debugSupabaseUserRepository ?? SupabaseUserRepository.instance;
 
   Future<DoctorNectUserProfile?> fetchProfile(
     String uid, {
@@ -75,7 +83,7 @@ class UserRepository {
   }) async {
     if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
       try {
-        await SupabaseUserRepository.instance.createProfile(
+        await _supabaseRepo.createProfile(
           user: user,
           role: role,
           profileId: profileId,
@@ -680,7 +688,7 @@ class UserRepository {
   Future<void> _deleteAuthUserQuietly(User user) async {
     if (kDebugMode) {
       debugPrint(
-        '[UserRepository] Pending auth user deletion skipped for ' + user.uid,
+        '[UserRepository] Pending auth user deletion skipped for ${user.uid}',
       );
     }
   }

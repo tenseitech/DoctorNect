@@ -1,4 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:medibond/core/firebase/repositories/user_repository.dart';
+import 'package:medibond/core/supabase/repositories/supabase_user_repository.dart';
+import 'package:medibond/core/supabase/supabase_bootstrap.dart';
+import 'package:medibond/core/config/doctor_patient_cutover_flag.dart';
+
 import 'package:medibond/core/auth/last_login_store.dart';
 import 'package:medibond/core/auth/registration_otp_service.dart';
 import 'package:medibond/core/enums/user_type.dart';
@@ -9,7 +17,17 @@ import 'package:medibond/core/validators/form_validators.dart';
 
 import 'helpers/auth_validation_rules_fixture.dart';
 
+class MockUser extends Mock implements User {}
+class MockFirebaseAuth extends Mock implements FirebaseAuth {}
+class MockSupabaseUserRepository extends Mock implements SupabaseUserRepository {}
+class FakeUser extends Fake implements User {}
+
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(FakeUser());
+    registerFallbackValue(UserType.patient);
+  });
   const validMobile = '9876543210';
   const validEmail = 'patient@example.com';
 
@@ -251,32 +269,130 @@ void main() {
       expect(networkErrorResult.message, isNot(contains('delete')));
     });
 
-    test('profile null with 3 retries exhausts cleanly without user deletion', () {
-      int attempts = 0;
-      for (var attempt = 1; attempt <= 3; attempt++) {
-        attempts++;
-      }
-      expect(attempts, 3);
-      final timeoutResult = AuthSignInResult.fail(
-        'Account created, but profile verification timed out. Please sign in to continue.',
-      );
-      expect(timeoutResult.success, isFalse);
-      expect(timeoutResult.message, contains('profile verification timed out'));
-      expect(timeoutResult.message, isNot(contains('delete')));
+
+  });
+
+  group('Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks)', () {
+    late FakeFirebaseFirestore fakeDb;
+    late MockUser mockUser;
+    late MockFirebaseAuth mockAuth;
+    late MockSupabaseUserRepository mockSupabaseRepo;
+
+    setUp(() {
+      fakeDb = FakeFirebaseFirestore();
+      UserRepository.debugFirestore = fakeDb;
+
+      mockUser = MockUser();
+      mockAuth = MockFirebaseAuth();
+      mockSupabaseRepo = MockSupabaseUserRepository();
+
+      FirebaseAuthService.debugAuth = mockAuth;
+      UserRepository.debugSupabaseUserRepository = mockSupabaseRepo;
     });
 
-    test('dual-write error handling is non-fatal when Supabase fails', () {
-      bool errorHandled = false;
-      try {
-        try {
-          throw Exception('Supabase connection refused');
-        } catch (e) {
-          errorHandled = true;
-        }
-      } catch (e) {
-        fail('Dual-write error should not propagate to caller');
-      }
-      expect(errorHandled, isTrue);
+    tearDown(() {
+      UserRepository.debugFirestore = null;
+      UserRepository.debugSupabaseUserRepository = null;
+      FirebaseAuthService.debugAuth = null;
+      DoctorPatientCutoverFlag.debugOverride = null;
+      SupabaseBootstrap.isReady = false;
+    });
+
+    test('(a) profile null after 3 attempts triggers signOut and does NOT call user.delete()', () async {
+      when(() => mockUser.uid).thenReturn('orphan_user_123');
+      when(() => mockAuth.signOut()).thenAnswer((_) async {});
+
+      final profile = await FirebaseAuthService.instance.verifyProfileWithRetry(
+        user: mockUser,
+        maxAttempts: 3,
+        delayFn: (_) => Duration.zero,
+      );
+
+      expect(profile, isNull);
+      verify(() => mockAuth.signOut()).called(1);
+      verifyNever(() => mockUser.delete());
+    });
+
+    test('(b) SupabaseUserRepository.createProfile exception is non-fatal and Firestore write succeeds', () async {
+      when(() => mockUser.uid).thenReturn('dual_write_uid_456');
+      when(() => mockUser.email).thenReturn('patient@test.com');
+
+      when(() => mockSupabaseRepo.createProfile(
+        user: any(named: 'user'),
+        role: any(named: 'role'),
+        profileId: any(named: 'profileId'),
+        displayName: any(named: 'displayName'),
+        mobile: any(named: 'mobile'),
+        mobileVerified: any(named: 'mobileVerified'),
+        roleData: any(named: 'roleData'),
+      )).thenThrow(Exception('Supabase network error: 503 Service Unavailable'));
+
+      SupabaseBootstrap.isReady = true;
+      DoctorPatientCutoverFlag.debugOverride = true;
+
+      await UserRepository.instance.createProfile(
+        user: mockUser,
+        role: UserType.patient,
+        profileId: 'patient_profile_789',
+        displayName: 'Test Patient',
+        mobile: '9876543210',
+        mobileVerified: true,
+      );
+
+      final userDoc = await fakeDb.collection('users').doc('dual_write_uid_456').get();
+      expect(userDoc.exists, isTrue);
+      expect(userDoc.data()?['role'], 'patient');
+      expect(userDoc.data()?['profileId'], 'patient_profile_789');
+      expect(userDoc.data()?['displayName'], 'Test Patient');
+      expect(userDoc.data()?['email'], 'patient@test.com');
+      expect(userDoc.data()?['mobile'], '9876543210');
+
+      final claimDoc = await fakeDb.collection('profile_claims').doc('patient_profile_789').get();
+      expect(claimDoc.exists, isTrue);
+      expect(claimDoc.data()?['uid'], 'dual_write_uid_456');
+    });
+
+    test('(c) orphan Firebase Auth user with role doc repairs users/{uid} and completes login', () async {
+      when(() => mockUser.uid).thenReturn('orphan_repaired_uid');
+      when(() => mockUser.email).thenReturn('orphan@example.com');
+
+      await fakeDb.collection('patients').doc('patient_rep_001').set({
+        'patientId': 'patient_rep_001',
+        'ownerUid': 'orphan_repaired_uid',
+        'name': 'Repaired Patient',
+        'email': 'orphan@example.com',
+        'mobile': '9876543210',
+        'profileCompleted': true,
+      });
+
+      final initialUserDoc = await fakeDb.collection('users').doc('orphan_repaired_uid').get();
+      expect(initialUserDoc.exists, isFalse);
+
+      final repaired = await UserRepository.instance.repairMissingProfile(
+        user: mockUser,
+        expectedRole: UserType.patient,
+      );
+
+      expect(repaired, isNotNull);
+      expect(repaired!.role, UserType.patient);
+      expect(repaired.displayName, 'Repaired Patient');
+
+      final repairedUserDoc = await fakeDb.collection('users').doc('orphan_repaired_uid').get();
+      expect(repairedUserDoc.exists, isTrue);
+      expect(repairedUserDoc.data()?['profileId'], 'patient_rep_001');
+      expect(repairedUserDoc.data()?['role'], 'patient');
+    });
+
+    test('(d) orphan Firebase Auth user with NO role doc returns null cleanly without hanging', () async {
+      when(() => mockUser.uid).thenReturn('unrepairable_orphan_uid');
+      when(() => mockUser.email).thenReturn('unrepairable@example.com');
+
+      final repaired = await UserRepository.instance.repairMissingProfile(
+        user: mockUser,
+        expectedRole: UserType.patient,
+      );
+
+      expect(repaired, isNull);
     });
   });
 }

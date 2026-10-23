@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'firestore_service.dart';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 
 import 'package:cloud_functions/cloud_functions.dart';
 
@@ -133,7 +132,38 @@ class FirebaseAuthService {
 
   static final FirebaseAuthService instance = FirebaseAuthService._();
 
-  FirebaseAuth get _auth => FirebaseAuth.instance;
+  @visibleForTesting
+  static FirebaseAuth? debugAuth;
+
+  FirebaseAuth get _auth => debugAuth ?? FirebaseAuth.instance;
+  @visibleForTesting
+  Future<DoctorNectUserProfile?> verifyProfileWithRetry({
+    required User user,
+    int maxAttempts = 3,
+    Duration Function(int attempt)? delayFn,
+  }) async {
+    DoctorNectUserProfile? saved;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      saved = await FirestoreService.instance.user.fetchProfile(
+        user.uid,
+        preferCache: false,
+      );
+      if (saved != null) break;
+      if (attempt < maxAttempts) {
+        final delay = delayFn != null
+            ? delayFn(attempt)
+            : Duration(milliseconds: 300 * attempt);
+        if (delay > Duration.zero) {
+          await Future.delayed(delay);
+        }
+      }
+    }
+    if (saved == null) {
+      await _auth.signOut();
+    }
+    return saved;
+  }
+
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
@@ -332,6 +362,10 @@ class FirebaseAuthService {
           await Future.delayed(Duration(milliseconds: 300 * attempt));
         }
       }
+      profile ??= await FirestoreService.instance.user.repairMissingProfile(
+        user: user,
+        expectedRole: expectedRole,
+      );
       if (profile == null) {
         await _auth.signOut();
         return AuthSignInResult.fail(
@@ -476,23 +510,11 @@ class FirebaseAuthService {
           }
         }
 
-        // Retry profile fetch with backoff (up to 3 attempts) to allow database commit & replication
-        DoctorNectUserProfile? saved;
-        for (var attempt = 1; attempt <= 3; attempt++) {
-          saved = await FirestoreService.instance.user.fetchProfile(
-            user.uid,
-            preferCache: false,
-          );
-          if (saved != null) break;
-          if (attempt < 3) {
-            await Future.delayed(Duration(milliseconds: 300 * attempt));
-          }
-        }
+        final saved = await verifyProfileWithRetry(user: user);
 
         if (saved == null) {
           // Do NOT delete the user account on read verification timeout.
           // Sign out cleanly so the user can re-authenticate or retry.
-          await _auth.signOut();
           return AuthSignInResult.fail(
             'Account created, but profile verification timed out. Please sign in to continue.',
           );
