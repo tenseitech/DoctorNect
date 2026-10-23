@@ -7,7 +7,9 @@
  * Firebase Secret Manager bindings have been removed to resolve overlap crashes.
  */
 
-// No more defineSecret
+const { defineSecret } = require('firebase-functions/params');
+
+const msg91AuthKey = defineSecret('MSG91_AUTH_KEY');
 
 function readSecret(name, { required = false } = {}) {
   const value = String(process.env[name] || '').trim();
@@ -21,14 +23,23 @@ function readSecret(name, { required = false } = {}) {
 
 /** Resolves MSG91 auth key from Secret Manager binding or local env aliases. */
 function readMsg91AuthKey({ required = true } = {}) {
-  const value = String(
-    process.env.MSG91_AUTHKEY ||
-      process.env.MSG91_AUTH_KEY ||
+  let value = String(
+    process.env.MSG91_AUTH_KEY ||
+      process.env.MSG91_AUTHKEY ||
       process.env.AUTH_KEY ||
       '',
   ).trim();
+  if (!value) {
+    try {
+      if (typeof msg91AuthKey.value === 'function') {
+        value = String(msg91AuthKey.value() || '').trim();
+      }
+    } catch (_) {
+      // Not running inside a Cloud Function with bound Secret Manager secret
+    }
+  }
   if (required && !value) {
-    const err = new Error('Missing required secret: MSG91_AUTHKEY');
+    const err = new Error('Missing required secret: MSG91_AUTH_KEY');
     err.code = 'failed-precondition';
     throw err;
   }
@@ -78,6 +89,7 @@ function assertProductionSecrets() {
 }
 
 module.exports = {
+  msg91AuthKey,
   readSecret,
   readMsg91AuthKey,
   readSupabaseServiceRoleKey,

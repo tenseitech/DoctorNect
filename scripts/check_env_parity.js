@@ -50,13 +50,14 @@ const TEST_ONLY_VARS = new Set([
 
 // Documented legacy aliases that fallback to primary canonical environment variables
 const LEGACY_ALIASES = {
-  MSG91_AUTH_KEY: 'MSG91_AUTHKEY',
-  AUTH_KEY: 'MSG91_AUTHKEY',
+  MSG91_AUTHKEY: 'MSG91_AUTH_KEY',
+  AUTH_KEY: 'MSG91_AUTH_KEY',
   SUPABASE_SECRET_KEY: 'SUPABASE_SERVICE_ROLE_KEY',
   SUPABASE_SERVICE_KEY: 'SUPABASE_SERVICE_ROLE_KEY',
   CUTOVER_DOCTOR_PATIENT: 'USE_SUPABASE_DB_DOCTOR_PATIENT',
   GOOGLE_PLAY_REVIEW_PHONE: 'DEMO_PHONE_PATIENT',
   MSG91_SENDER: 'MSG91_SENDER_ID',
+  REDIS_URL: 'REDIS_HOST',
 };
 
 // Ad-hoc script variables used exclusively in developer CLI maintenance tools
