@@ -106,8 +106,7 @@ const {
   logUnusualTraffic,
   withSecurityLogging,
 } = require('./security_logger');
-const { assertProductionSecrets, msg91AuthKey } = require('./secure_config');
-const { REDIS_SECRETS } = require('./redis');
+const { assertProductionSecrets } = require('./secure_config');
 const { assertProductionOtpSafety } = require('./production_otp_guard');
 const {
   enforceAbuseLimit,
@@ -148,10 +147,9 @@ const OTP_REDIS_SECRET_OPTIONS = OTP_REDIS_MIRROR_ON
   ? { secrets: require('./redis').REDIS_SECRETS }
   : {};
 
-/** MSG91 callable options (asia-south1) — region, Secret Manager bindings + optional VPC connector for static IP egress. */
+/** MSG91 callable options (asia-south1) — region + optional VPC connector for static IP egress. */
 const MSG91_VPC_OPTIONS = {
   region: 'asia-south1',
-  secrets: [msg91AuthKey, ...REDIS_SECRETS],
   ...(process.env.VPC_CONNECTOR ? {
     vpcConnector: process.env.VPC_CONNECTOR,
     vpcConnectorEgressSettings: 'ALL_TRAFFIC',
@@ -1922,7 +1920,6 @@ exports.processMailQueueMsg91 = onDocumentCreated(
   {
     document: 'mail/{mailId}',
     region: FIRESTORE_TRIGGER_REGION,
-    secrets: [msg91AuthKey],
   },
   async (event) => {
     const snap = event.data;

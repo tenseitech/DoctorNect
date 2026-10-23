@@ -46,8 +46,6 @@ function isSuperAdmin(auth, userDoc) {
 }
 
 const razorpayWebhookSecret = defineSecret('RAZORPAY_WEBHOOK_SECRET');
-const razorpayKeyId = defineSecret('RAZORPAY_KEY_ID');
-const razorpayKeySecret = defineSecret('RAZORPAY_KEY_SECRET');
 const {
   requireDocId,
   requireIntInSet,
@@ -67,22 +65,8 @@ const AD_PRICING_TABLE = {
 };
 
 function getRazorpayCredentials() {
-  let keyId = String(process.env.RAZORPAY_KEY_ID || '').trim();
-  let keySecret = String(process.env.RAZORPAY_KEY_SECRET || '').trim();
-  if (!keyId) {
-    try {
-      if (typeof razorpayKeyId.value === 'function') {
-        keyId = String(razorpayKeyId.value() || '').trim();
-      }
-    } catch (_) {}
-  }
-  if (!keySecret) {
-    try {
-      if (typeof razorpayKeySecret.value === 'function') {
-        keySecret = String(razorpayKeySecret.value() || '').trim();
-      }
-    } catch (_) {}
-  }
+  const keyId = (process.env.RAZORPAY_KEY_ID || '').trim();
+  const keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
   if (!keyId || !keySecret) {
     throw new HttpsError('failed-precondition', 'Razorpay credentials not configured');
   }
@@ -170,11 +154,7 @@ function makeRazorpayRequest(path, method = 'GET', payload = null, keyId, keySec
  * Input: { adId: string, durationHours: number }
  */
 const createRazorpayOrder = onCall(
-  {
-    region: 'asia-south1',
-    secrets: [razorpayKeyId, razorpayKeySecret],
-    enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
-  },
+  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
   async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required to create payment order.');
@@ -602,11 +582,7 @@ function toIsoDateString(val) {
  * Input: { adId: string, orderId: string, paymentId: string, signature: string }
  */
 const verifyRazorpayPayment = onCall(
-  {
-    region: 'asia-south1',
-    secrets: [razorpayKeyId, razorpayKeySecret],
-    enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
-  },
+  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
   async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required to verify payment.');
@@ -1346,7 +1322,5 @@ module.exports = {
   setSupabaseClientForTesting,
   getSupabaseAdmin,
   razorpayWebhookSecret,
-  razorpayKeyId,
-  razorpayKeySecret,
   recordWebhookRejection,
 };

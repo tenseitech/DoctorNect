@@ -10,6 +10,13 @@ Inspection of `baseline_functions.json` (56 total functions deployed in producti
 - **1 Function:** Next.js Hosting SSR container (`ssrmedibond45fad`, no Supabase integration).
 - **Resolution of 44 vs 50 Discrepancy:** The earlier figure of 44 was an undercount from preliminary regex filters that missed 6 multi-line configuration blocks. The exact, verified count of functions requiring redeployment is **50**.
 
+### Secret Management Architecture: DEFERRED TO NEXT RELEASE
+> [!WARNING]
+> **Secret Manager Migration is DEFERRED to next release:**
+> Attempting to bind secrets via `defineSecret()` while the same keys exist in `backend/functions/.env` causes Firebase CLI deployment to abort with a fatal namespace collision:
+> `Error: A secret cannot have the same name as an environment variable: <KEY_NAME>`.
+> In this release, Cloud Functions continue to load secrets from `backend/functions/.env` as verified in baseline production. Full migration to Google Secret Manager must be performed as a dedicated DevOps operation (populating Secret Manager versions, removing overlapping keys from `.env`, and switching local emulators to `.secret.local`).
+
 ---
 
 ## Pre-Deployment Verification Checklist
@@ -24,10 +31,19 @@ Inspection of `baseline_functions.json` (56 total functions deployed in producti
    ```bash
    cd backend/functions && npm test
    ```
-5. [ ] Verify Google Play reviewer account configuration and active expiry window:
-   ```bash
-   node scripts/check_reviewer_config.js
-   ```
+5. [ ] **Verify Reviewer Account Configuration in Deploy `.env` and Live Environment:**
+   Reviewer accounts (`9999900001`–`9999900005`, OTP `000000`) are required for Google Play app review. Server bypass relies **100% on environment variables** (no code defaults, no Firestore fallback).
+   - Check deploy `.env`:
+     ```bash
+     node scripts/check_reviewer_config.js
+     ```
+     *Must pass:* `REVIEW_ACCESS_UNTIL` (valid future date), `REVIEW_TEST_NUMBERS` (5 comma-separated numbers), and `REVIEW_FIXED_OTP` configured.
+   - Confirm live function environment before deploy:
+     ```bash
+     gcloud functions describe completeMobileOtpLogin --gen2 --region asia-south1 --project medibond-45fad --format="value(serviceConfig.environmentVariables.REVIEW_ACCESS_UNTIL)"
+     ```
+     *If missing:* Ensure `backend/functions/.env` includes `REVIEW_ACCESS_UNTIL`, `REVIEW_TEST_NUMBERS`, and `REVIEW_FIXED_OTP` so the deploy transmits them to Cloud Run. A deploy without these variables will lock Google Play reviewers out and cause app rejection.
+6. [ ] Confirm no secret name collisions exist between `.env` and any `defineSecret()` bindings.
 
 ---
 
