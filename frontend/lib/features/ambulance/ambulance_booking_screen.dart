@@ -44,6 +44,22 @@ class AmbulanceBookingScreen extends StatefulWidget {
   final String? initialContactPhone;
   final bool embeddedInShell;
 
+  @visibleForTesting
+  static Stream<List<Map<String, dynamic>>> watchRejectedRequestsStream(String broadcastId) {
+    return SupabaseBootstrap.isProduction
+        ? streamTable(
+            table: 'ambulance_requests',
+            primaryKey: ['request_id'],
+            filterColumn: 'broadcast_id',
+            filterValue: broadcastId,
+            isHighFrequency: true,
+          )
+        : SupabaseBootstrap.client
+            .from('ambulance_requests')
+            .stream(primaryKey: ['request_id'])
+            .eq('broadcast_id', broadcastId);
+  }
+
   @override
   State<AmbulanceBookingScreen> createState() => _AmbulanceBookingScreenState();
 }
@@ -2023,18 +2039,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
     if (broadcastId.isEmpty) return;
     _rejectedSub?.cancel();
     if (SupabaseBootstrap.isReady) {
-      final stream = SupabaseBootstrap.isProduction
-          ? streamTable(
-              table: 'ambulance_requests',
-              primaryKey: ['request_id'],
-              filterColumn: 'broadcast_id',
-              filterValue: broadcastId,
-              isHighFrequency: true,
-            )
-          : SupabaseBootstrap.client
-              .from('ambulance_requests')
-              .stream(primaryKey: ['request_id'])
-              .eq('broadcast_id', broadcastId);
+      final stream = AmbulanceBookingScreen.watchRejectedRequestsStream(broadcastId);
 
       _rejectedSub = stream.listen((rows) {
         if (!mounted) return;

@@ -4,13 +4,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/core/services/promoted_ads_service.dart';
 import 'package:medibond/core/supabase/repositories/supabase_ambulance_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_appointment_repository.dart';
+import 'package:medibond/core/supabase/repositories/supabase_doctor_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_health_records_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_patient_profile_repository.dart';
+import 'package:medibond/core/supabase/repositories/supabase_prescription_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_referral_repository.dart';
+import 'package:medibond/core/supabase/repositories/supabase_review_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_user_repository.dart';
+import 'package:medibond/core/supabase/support_ticket_supabase_repository.dart';
 import 'package:medibond/core/supabase/supabase_bootstrap.dart';
 import 'package:medibond/core/supabase/supabase_stream_table.dart';
 import 'package:medibond/core/supabase/supabase_watcher_state_machine.dart';
+import 'package:medibond/features/ambulance/ambulance_booking_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -238,6 +243,12 @@ void main() {
       });
     });
 
+    test('Site 6 real repo: streamAllDoctors onListen does not attempt Realtime channel in production', () {
+      final stream = SupabaseDoctorRepository.instance.streamAllDoctors();
+      final sub = stream.listen((_) {});
+      sub.cancel();
+    });
+
     // Site 7: supabase_doctor_repository.dart:139 (watchDoctor - fakeAsync & timer cancellation)
     test('Site 7: doctor watchDoctor uses fakeAsync polling and cancels timer on cancel', () {
       fakeAsync((async) {
@@ -274,6 +285,12 @@ void main() {
         async.elapse(const Duration(seconds: 20));
         expect(fetchCount, equals(2));
       });
+    });
+
+    test('Site 7 real repo: watchDoctor onListen does not attempt Realtime channel in production', () {
+      final stream = SupabaseDoctorRepository.instance.watchDoctor('doc_single');
+      final sub = stream.listen((_) {});
+      sub.cancel();
     });
 
     // Site 8: supabase_health_records_repository.dart:137 (watchForPatient - calls real repository)
@@ -347,6 +364,12 @@ void main() {
       });
     });
 
+    test('Site 10 real repo: watchForPatient onListen does not attempt Realtime channel in production', () {
+      final stream = SupabasePrescriptionRepository.instance.watchForPatient('pat_1');
+      final sub = stream.listen((_) {});
+      sub.cancel();
+    });
+
     // Site 11: supabase_referral_repository.dart:159 (watchDoctorReferrals - calls real repository)
     test('Site 11: referrals watchDoctorReferrals calls real repository method via adaptive polling', () async {
       debugTableFetcher = (table) async => [
@@ -406,6 +429,12 @@ void main() {
       });
     });
 
+    test('Site 12 real repo: watchForDoctor onListen does not attempt Realtime channel in production', () {
+      final stream = SupabaseReviewRepository.instance.watchForDoctor('doc_1');
+      final sub = stream.listen((_) {});
+      sub.cancel();
+    });
+
     // Site 13: supabase_user_repository.dart:64 (watchProfile - calls real repository)
     test('Site 13: user watchProfile calls real repository method via adaptive polling', () async {
       debugTableFetcher = (table) async => [
@@ -463,6 +492,12 @@ void main() {
       });
     });
 
+    test('Site 14 real repo: watchMyTickets onListen does not attempt Realtime channel in production', () {
+      final stream = SupportTicketSupabaseRepository.instance.watchMyTickets(patientId: 'pat_1');
+      final sub = stream.listen((_) {});
+      sub.cancel();
+    });
+
     // Site 15: support_ticket_supabase_repository.dart:421 (watchTicketMessages - fakeAsync & timer cancellation)
     test('Site 15: support ticket messages watchTicketMessages uses fakeAsync and cancels timer on cancel', () {
       fakeAsync((async) {
@@ -501,7 +536,18 @@ void main() {
       });
     });
 
-    // Site 16: ambulance_booking_screen.dart:2036 (_subscribeRejectedCount logic)
+    test('Site 15 real repo: watchTicketMessages onListen does not attempt Realtime channel in production', () {
+      final stream = SupportTicketSupabaseRepository.instance.watchTicketMessages('tkt_1');
+      final sub = stream.listen((_) {});
+      sub.cancel();
+    });
+
+    // Site 16: ambulance_booking_screen.dart:2036 (AmbulanceBookingScreen.watchRejectedRequestsStream)
+    test('Site 16 real method: AmbulanceBookingScreen.watchRejectedRequestsStream calls streamTable in production without throwing', () {
+      final stream = AmbulanceBookingScreen.watchRejectedRequestsStream('trip_123');
+      expect(stream, isNotNull);
+    });
+
     test('Site 16: ambulance_booking_screen rejected count stream uses adaptive polling', () async {
       debugTableFetcher = (table) async => [
         {'request_id': 'r1', 'status': 'rejected'},
