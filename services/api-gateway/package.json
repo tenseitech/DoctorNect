@@ -1,0 +1,16 @@
+{
+  "name": "doctornect-auth-gateway",
+  "version": "1.0.0",
+  "description": "DoctorNect AWS Auth Gateway for PostgREST & Firebase Authentication",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/**/*.test.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "author": "DoctorNect Engineering",
+  "license": "UNLICENSED",
+  "private": true
+}
