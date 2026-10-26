@@ -8,6 +8,7 @@ import '../../enums/user_type.dart';
 import '../../firebase/models/medibond_user_profile.dart';
 import '../../validators/form_validators.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_stream_table.dart';
 
 /// Supabase Repository for User Profile Management.
 /// Replaces Firestore `users/{uid}` operations while preserving the interface.
@@ -44,6 +45,18 @@ class SupabaseUserRepository {
   Stream<DoctorNectUserProfile?> watchProfile(String uid) {
     if (!SupabaseBootstrap.isReady || uid.isEmpty) {
       return const Stream.empty();
+    }
+
+    if (SupabaseBootstrap.isProduction) {
+      return streamTable(
+        table: 'users',
+        primaryKey: ['id'],
+        filterColumn: 'id',
+        filterValue: uid,
+      ).map((rows) {
+        if (rows.isEmpty) return null;
+        return _fromRow(uid, rows.first);
+      });
     }
 
     return _client

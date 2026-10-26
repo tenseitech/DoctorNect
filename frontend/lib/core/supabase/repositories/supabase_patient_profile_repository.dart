@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../features/patient/records/models/health_record_models.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_stream_table.dart';
 
 /// Supabase Repository for Patient Profile and Clinical Care Links.
 /// Replaces Firestore `patients/{patientId}` and `patient_doctor_links`.
@@ -93,6 +94,18 @@ class SupabasePatientProfileRepository {
   Stream<Map<String, dynamic>?> watchPatientDocument(String patientId) {
     if (!SupabaseBootstrap.isReady || patientId.isEmpty) {
       return const Stream.empty();
+    }
+
+    if (SupabaseBootstrap.isProduction) {
+      return streamTable(
+        table: 'patients',
+        primaryKey: ['patient_id'],
+        filterColumn: 'patient_id',
+        filterValue: patientId,
+      ).map((rows) {
+        if (rows.isEmpty) return null;
+        return rows.first;
+      });
     }
 
     return _client

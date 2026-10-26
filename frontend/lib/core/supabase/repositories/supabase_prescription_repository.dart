@@ -299,6 +299,7 @@ class SupabasePrescriptionRepository {
 
     late final StreamController<List<PrescriptionDraft>> controller;
     RealtimeChannel? channel;
+    Timer? pollTimer;
 
     controller = StreamController<List<PrescriptionDraft>>.broadcast(
       onListen: () async {
@@ -307,26 +308,39 @@ class SupabasePrescriptionRepository {
           controller.add(initial.items);
         }
 
-        channel = _client.channel('public:prescriptions:patient:$patientId')
-          ..onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'prescriptions',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'patient_id',
-              value: patientId,
-            ),
-            callback: (payload) async {
+        if (SupabaseBootstrap.isProduction) {
+          // In production: do not open Realtime channel; use periodic polling
+          pollTimer = Timer.periodic(const Duration(seconds: 8), (_) async {
+            if (!controller.isClosed) {
               final updated = await fetchForPatient(patientId);
               if (!controller.isClosed) {
                 controller.add(updated.items);
               }
-            },
-          )
-          ..subscribe();
+            }
+          });
+        } else {
+          channel = _client.channel('public:prescriptions:patient:$patientId')
+            ..onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'prescriptions',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'patient_id',
+                value: patientId,
+              ),
+              callback: (payload) async {
+                final updated = await fetchForPatient(patientId);
+                if (!controller.isClosed) {
+                  controller.add(updated.items);
+                }
+              },
+            )
+            ..subscribe();
+        }
       },
       onCancel: () async {
+        pollTimer?.cancel();
         if (channel != null) {
           await _client.removeChannel(channel!);
         }

@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/shared_appointments_store.dart';
 import '../mappers/appointment_supabase_mapper.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_stream_table.dart';
 
 /// Supabase Repository for Appointments.
 /// Replaces Firestore `appointments/{appointmentId}` queries and streams.
@@ -91,6 +92,22 @@ class SupabaseAppointmentRepository {
       return const Stream.empty();
     }
 
+    if (SupabaseBootstrap.isProduction) {
+      return streamTable(
+        table: 'appointments',
+        primaryKey: ['appointment_id'],
+        filterColumn: 'patient_id',
+        filterValue: patientId,
+      ).map((rows) {
+        final records = rows
+            .map(AppointmentSupabaseMapper.fromRow)
+            .whereType<DoctorNectAppointmentRecord>()
+            .toList();
+        records.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+        return records;
+      });
+    }
+
     return _client
         .from('appointments')
         .stream(primaryKey: ['appointment_id'])
@@ -140,6 +157,7 @@ class SupabaseAppointmentRepository {
       }
     }
 
+    Timer? pollTimer;
     controller = StreamController<List<DoctorNectAppointmentRecord>>.broadcast(
       onListen: () async {
         // 0. Emit latest cached appointments immediately to new listeners
@@ -149,45 +167,55 @@ class SupabaseAppointmentRepository {
           controller.add(cached);
         }
 
-        // 1. Subscribe FIRST to the channel
-        channel = _client.channel('public:appointments:doctor:$doctorId')
-          ..onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'appointments',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'doctor_id',
-              value: doctorId,
-            ),
-            callback: (payload) {
-              final eventType = payload.eventType;
-              if (eventType == PostgresChangeEvent.delete) {
-                final oldId = payload.oldRecord['appointment_id'] as String?;
-                if (oldId != null) {
-                  recordsMap.remove(oldId);
+        if (SupabaseBootstrap.isProduction) {
+          // In production: do NOT open a Realtime WebSocket channel. Use adaptive polling.
+          pollTimer = Timer.periodic(const Duration(seconds: 8), (_) async {
+            if (!controller.isClosed) {
+              await syncFromDatabase();
+            }
+          });
+          await syncFromDatabase();
+        } else {
+          // 1. Subscribe FIRST to the channel in staging
+          channel = _client.channel('public:appointments:doctor:$doctorId')
+            ..onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'appointments',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'doctor_id',
+                value: doctorId,
+              ),
+              callback: (payload) {
+                final eventType = payload.eventType;
+                if (eventType == PostgresChangeEvent.delete) {
+                  final oldId = payload.oldRecord['appointment_id'] as String?;
+                  if (oldId != null) {
+                    recordsMap.remove(oldId);
+                  }
+                } else {
+                  final record =
+                      AppointmentSupabaseMapper.fromRow(payload.newRecord);
+                  if (record != null) {
+                    recordsMap[record.id] = record;
+                  }
                 }
-              } else {
-                final record =
-                    AppointmentSupabaseMapper.fromRow(payload.newRecord);
-                if (record != null) {
-                  recordsMap[record.id] = record;
+                if (!controller.isClosed) {
+                  final sorted = recordsMap.values.toList()
+                    ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+                  controller.add(sorted);
                 }
-              }
-              if (!controller.isClosed) {
-                final sorted = recordsMap.values.toList()
-                  ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
-                controller.add(sorted);
-              }
-            },
-          );
+              },
+            );
 
-        // 2. On subscription established or reconnected, sync from DB
-        channel!.subscribe((status, error) async {
-          if (status == RealtimeSubscribeStatus.subscribed) {
-            await syncFromDatabase();
-          }
-        });
+          // 2. On subscription established or reconnected, sync from DB
+          channel!.subscribe((status, error) async {
+            if (status == RealtimeSubscribeStatus.subscribed) {
+              await syncFromDatabase();
+            }
+          });
+        }
 
         // 3. Listen to token refresh / re-auth to resync
         if (Firebase.apps.isNotEmpty) {
@@ -199,6 +227,7 @@ class SupabaseAppointmentRepository {
         }
       },
       onCancel: () async {
+        pollTimer?.cancel();
         await authSub?.cancel();
         if (channel != null) {
           await _client.removeChannel(channel!);

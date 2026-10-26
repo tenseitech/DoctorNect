@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../features/patient/records/models/health_record_models.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_stream_table.dart';
 import 'supabase_patient_profile_repository.dart';
 
 /// Supabase Repository for Patient Health Records (Clinical Vault).
@@ -116,6 +117,19 @@ class SupabaseHealthRecordsRepository {
   Stream<List<HealthRecord>> watchForPatient(String patientId) {
     if (!SupabaseBootstrap.isReady || patientId.isEmpty) {
       return const Stream.empty();
+    }
+
+    if (SupabaseBootstrap.isProduction) {
+      return streamTable(
+        table: 'health_records',
+        primaryKey: ['record_id'],
+        filterColumn: 'patient_id',
+        filterValue: patientId,
+      ).map((rows) {
+        final records = rows.map(_fromRow).whereType<HealthRecord>().toList();
+        records.sort((a, b) => b.date.compareTo(a.date));
+        return records;
+      });
     }
 
     return _client

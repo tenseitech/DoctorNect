@@ -11,13 +11,14 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
-import '../../core/constants/ambulance_icons.dart';
 import '../../core/supabase/supabase_bootstrap.dart';
+import '../../core/supabase/supabase_stream_table.dart';
 import '../../core/layout/responsive_layout.dart';
 import '../../core/notifications/ambulance_notification_emitter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/external_launcher.dart';
 import '../../core/constants/country_phone_codes.dart';
+import '../../core/constants/ambulance_icons.dart';
 import '../../core/validators/form_validators.dart';
 import '../../widgets/phone_number_field.dart';
 import '../../core/auth/patient_details_guard.dart';
@@ -2022,11 +2023,20 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
     if (broadcastId.isEmpty) return;
     _rejectedSub?.cancel();
     if (SupabaseBootstrap.isReady) {
-      _rejectedSub = SupabaseBootstrap.client
-          .from('ambulance_requests')
-          .stream(primaryKey: ['request_id'])
-          .eq('broadcast_id', broadcastId)
-          .listen((rows) {
+      final stream = SupabaseBootstrap.isProduction
+          ? streamTable(
+              table: 'ambulance_requests',
+              primaryKey: ['request_id'],
+              filterColumn: 'broadcast_id',
+              filterValue: broadcastId,
+              isHighFrequency: true,
+            )
+          : SupabaseBootstrap.client
+              .from('ambulance_requests')
+              .stream(primaryKey: ['request_id'])
+              .eq('broadcast_id', broadcastId);
+
+      _rejectedSub = stream.listen((rows) {
         if (!mounted) return;
         final total = rows.length;
         final rejected = rows.where((r) => r['status'] == 'rejected').length;

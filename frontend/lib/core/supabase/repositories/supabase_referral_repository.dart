@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../firebase/firestore_query_limits.dart';
 import '../../firebase/models/doctor_referral.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_stream_table.dart';
 import 'supabase_patient_profile_repository.dart';
 
 /// Supabase Repository for Doctor Referrals.
@@ -138,6 +139,19 @@ class SupabaseReferralRepository {
   Stream<List<DoctorReferral>> watchReceivedForDoctor(String doctorId) {
     if (!SupabaseBootstrap.isReady || doctorId.isEmpty) {
       return const Stream.empty();
+    }
+
+    if (SupabaseBootstrap.isProduction) {
+      return streamTable(
+        table: 'referrals',
+        primaryKey: ['referral_id'],
+        filterColumn: 'to_doctor_id',
+        filterValue: doctorId,
+      ).map((rows) {
+        final records = rows.map(_fromRow).whereType<DoctorReferral>().toList();
+        records.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return records;
+      });
     }
 
     return _client

@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../features/ambulance/models/ambulance_models.dart';
 import '../mappers/ambulance_supabase_mapper.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_stream_table.dart';
 import '../supabase_watcher_state_machine.dart';
 
 /// Supabase repository for Emergency Ambulance Dispatch & Live Tracking.
@@ -315,6 +316,15 @@ class SupabaseAmbulanceRepository {
   Stream<List<Map<String, dynamic>>> watchLocationSignals(String broadcastId) {
     if (!SupabaseBootstrap.isReady || broadcastId.isEmpty) {
       return const Stream.empty();
+    }
+    if (SupabaseBootstrap.isProduction) {
+      return streamTable(
+        table: 'ambulance_location_updates',
+        primaryKey: ['broadcast_id'],
+        filterColumn: 'broadcast_id',
+        filterValue: broadcastId,
+        isHighFrequency: true,
+      );
     }
     return _client
         .from('ambulance_location_updates')

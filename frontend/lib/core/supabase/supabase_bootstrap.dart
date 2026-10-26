@@ -14,6 +14,15 @@ abstract final class SupabaseBootstrap {
   // Compile-time environment variables injected via --dart-define
   static const String _envUrl = String.fromEnvironment('SUPABASE_URL');
   static const String _envAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const String appEnv =
+      String.fromEnvironment('APP_ENV', defaultValue: 'staging');
+
+  @visibleForTesting
+  static String? debugAppEnvOverride;
+
+  static bool get isProduction =>
+      (debugAppEnvOverride ?? appEnv).toLowerCase() == 'production';
+
   static const bool useSupabaseAuth =
       bool.fromEnvironment('USE_SUPABASE_AUTH', defaultValue: false);
 
@@ -170,6 +179,7 @@ abstract final class SupabaseBootstrap {
     debugHasActiveSessionOverride = null;
     debugUseSupabaseAuthOverride = null;
     debugAccessTokenOverride = null;
+    debugAppEnvOverride = null;
   }
 
   /// Initializes Supabase client with local persistence and auto refresh.
@@ -210,32 +220,35 @@ abstract final class SupabaseBootstrap {
 
       isReady = true;
 
-      // Ensure Realtime WebSocket connection is authenticated with initial token
-      final initialToken = await currentFirebaseAccessToken();
-      if (initialToken != null && initialToken.isNotEmpty) {
-        try {
-          client.realtime.setAuth(initialToken);
-        } catch (_) {}
-      }
+      // In production, Realtime WebSocket is disabled; queries use adaptive polling via streamTable.
+      // In staging, ensure Realtime WebSocket connection is authenticated with initial token.
+      if (!isProduction) {
+        final initialToken = await currentFirebaseAccessToken();
+        if (initialToken != null && initialToken.isNotEmpty) {
+          try {
+            client.realtime.setAuth(initialToken);
+          } catch (_) {}
+        }
 
-      // Automatically sync Realtime auth state on re-login or ID token refresh
-      if (Firebase.apps.isNotEmpty) {
-        FirebaseAuth.instance.idTokenChanges().listen((user) async {
-          if (user != null && isReady) {
-            try {
-              final token = await user.getIdToken();
-              if (token != null && token.isNotEmpty) {
-                client.realtime.setAuth(token);
-              }
-            } catch (e) {
-              if (kDebugMode) {
-                debugPrint(
-                  '[SupabaseBootstrap] Failed to set realtime auth on token change: $e',
-                );
+        // Automatically sync Realtime auth state on re-login or ID token refresh
+        if (Firebase.apps.isNotEmpty) {
+          FirebaseAuth.instance.idTokenChanges().listen((user) async {
+            if (user != null && isReady) {
+              try {
+                final token = await user.getIdToken();
+                if (token != null && token.isNotEmpty) {
+                  client.realtime.setAuth(token);
+                }
+              } catch (e) {
+                if (kDebugMode) {
+                  debugPrint(
+                    '[SupabaseBootstrap] Failed to set realtime auth on token change: $e',
+                  );
+                }
               }
             }
-          }
-        });
+          });
+        }
       }
 
       if (kDebugMode) {

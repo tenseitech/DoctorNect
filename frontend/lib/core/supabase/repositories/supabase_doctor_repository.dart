@@ -58,24 +58,35 @@ class SupabaseDoctorRepository {
       }
     }
 
+    Timer? pollTimer;
     controller = StreamController<List<DoctorListing>>.broadcast(
       onListen: () async {
         // Initial fetch from safe doctor_directory view
         await refetch();
 
-        // Listen for change signal on doctor_directory_updates
-        channel = _client.channel('public:doctor_directory_updates')
-          ..onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'doctor_directory_updates',
-            callback: (_) async {
+        if (SupabaseBootstrap.isProduction) {
+          // In production: do not open Realtime channel; use periodic polling
+          pollTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+            if (!controller.isClosed) {
               await refetch();
-            },
-          )
-          ..subscribe();
+            }
+          });
+        } else {
+          // Listen for change signal on doctor_directory_updates in staging
+          channel = _client.channel('public:doctor_directory_updates')
+            ..onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'doctor_directory_updates',
+              callback: (_) async {
+                await refetch();
+              },
+            )
+            ..subscribe();
+        }
       },
       onCancel: () async {
+        pollTimer?.cancel();
         if (channel != null) {
           await _client.removeChannel(channel!);
         }
@@ -94,6 +105,7 @@ class SupabaseDoctorRepository {
 
     late final StreamController<Map<String, dynamic>?> controller;
     RealtimeChannel? channel;
+    Timer? pollTimer;
 
     Future<void> refetch() async {
       try {
@@ -116,18 +128,28 @@ class SupabaseDoctorRepository {
       onListen: () async {
         await refetch();
 
-        channel = _client.channel('public:doctor_directory_updates:$doctorId')
-          ..onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'doctor_directory_updates',
-            callback: (_) async {
+        if (SupabaseBootstrap.isProduction) {
+          // In production: do not open Realtime channel; use periodic polling
+          pollTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+            if (!controller.isClosed) {
               await refetch();
-            },
-          )
-          ..subscribe();
+            }
+          });
+        } else {
+          channel = _client.channel('public:doctor_directory_updates:$doctorId')
+            ..onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'doctor_directory_updates',
+              callback: (_) async {
+                await refetch();
+              },
+            )
+            ..subscribe();
+        }
       },
       onCancel: () async {
+        pollTimer?.cancel();
         if (channel != null) {
           await _client.removeChannel(channel!);
         }

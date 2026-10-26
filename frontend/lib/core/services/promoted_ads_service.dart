@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 
 import '../firebase/firebase_bootstrap.dart';
 import '../supabase/supabase_bootstrap.dart';
+import '../supabase/supabase_stream_table.dart';
 import '../models/promoted_ad_model.dart';
 import '../security/input_sanitize.dart';
 import '../models/banner_config_model.dart';
@@ -411,6 +412,23 @@ abstract final class PromotedAdsService {
   /// Stream of active ads for real-time patient carousel updates (respects Super Admin config.enabled)
   static Stream<List<PromotedAdModel>> streamActiveAds() {
     if (SupabaseBootstrap.isReady && firestoreOverride == null) {
+      if (SupabaseBootstrap.isProduction) {
+        return streamTable(
+          table: 'promoted_ads',
+          primaryKey: ['ad_id'],
+          filterColumn: 'status',
+          filterValue: 'active',
+        ).map((rows) {
+          final now = DateTime.now();
+          final active = rows
+              .map((r) => PromotedAdModel.fromRow(r))
+              .where((ad) => ad.endTime == null || ad.endTime!.isAfter(now))
+              .toList();
+          active.shuffle();
+          return active;
+        });
+      }
+
       return SupabaseBootstrap.client
           .from('promoted_ads')
           .stream(primaryKey: ['ad_id'])
@@ -475,6 +493,23 @@ abstract final class PromotedAdsService {
   static Stream<List<PromotedAdModel>> streamProviderAds(String providerId) {
     if (providerId.isEmpty) return Stream.value([]);
     if (SupabaseBootstrap.isReady && firestoreOverride == null) {
+      if (SupabaseBootstrap.isProduction) {
+        return streamTable(
+          table: 'promoted_ads',
+          primaryKey: ['ad_id'],
+          filterColumn: 'provider_id',
+          filterValue: providerId,
+        ).map((rows) {
+          final list = rows.map((r) => PromotedAdModel.fromRow(r)).toList();
+          list.sort(
+            (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+              a.createdAt ?? DateTime.now(),
+            ),
+          );
+          return list;
+        });
+      }
+
       return SupabaseBootstrap.client
           .from('promoted_ads')
           .stream(primaryKey: ['ad_id'])

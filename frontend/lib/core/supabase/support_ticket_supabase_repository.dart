@@ -306,76 +306,76 @@ class SupportTicketSupabaseRepository {
     late final StreamController<List<SupportTicketModel>> controller;
     RealtimeChannel? channel;
 
+    Timer? pollTimer;
     controller = StreamController<List<SupportTicketModel>>.broadcast(
       onListen: () async {
-        try {
-          final initial = await fetchMyTickets(
-            patientId: patientId,
-            doctorId: doctorId,
-            storeId: storeId,
-            labId: labId,
-            ambulanceId: ambulanceId,
-          );
-          if (!controller.isClosed) {
-            controller.add(initial);
-          }
-        } catch (e, st) {
-          if (!controller.isClosed) {
-            controller.addError(e, st);
+        Future<void> syncTickets() async {
+          try {
+            final updated = await fetchMyTickets(
+              patientId: patientId,
+              doctorId: doctorId,
+              storeId: storeId,
+              labId: labId,
+              ambulanceId: ambulanceId,
+            );
+            if (!controller.isClosed) {
+              controller.add(updated);
+            }
+          } catch (e, st) {
+            if (!controller.isClosed) {
+              controller.addError(e, st);
+            }
           }
         }
 
-        try {
-          final filterCol = patientId != null
-              ? 'patient_id'
-              : (doctorId != null
-                  ? 'doctor_id'
-                  : (storeId != null
-                      ? 'store_id'
-                      : (labId != null ? 'lab_id' : 'ambulance_id')));
-          final filterVal = patientId ??
-              doctorId ??
-              storeId ??
-              labId ??
-              ambulanceId ??
-              '';
+        await syncTickets();
 
-          channel = _client.channel('public:support_tickets:$filterCol:$filterVal')
-            ..onPostgresChanges(
-              event: PostgresChangeEvent.all,
-              schema: 'public',
-              table: 'support_tickets',
-              filter: PostgresChangeFilter(
-                type: PostgresChangeFilterType.eq,
-                column: filterCol,
-                value: filterVal,
-              ),
-              callback: (payload) async {
-                try {
-                  final updated = await fetchMyTickets(
-                    patientId: patientId,
-                    doctorId: doctorId,
-                    storeId: storeId,
-                    labId: labId,
-                    ambulanceId: ambulanceId,
-                  );
-                  if (!controller.isClosed) {
-                    controller.add(updated);
-                  }
-                } catch (e, st) {
-                  if (!controller.isClosed) {
-                    controller.addError(e, st);
-                  }
-                }
-              },
-            )
-            ..subscribe();
-        } catch (e) {
-          debugPrint(
-              '[SupportTicketSupabaseRepository] Realtime subscription warning: $e');
+        if (SupabaseBootstrap.isProduction) {
+          // In production: do not open Realtime channel; use periodic polling
+          pollTimer = Timer.periodic(const Duration(seconds: 8), (_) async {
+            if (!controller.isClosed) {
+              await syncTickets();
+            }
+          });
+        } else {
+          try {
+            final filterCol = patientId != null
+                ? 'patient_id'
+                : (doctorId != null
+                    ? 'doctor_id'
+                    : (storeId != null
+                        ? 'store_id'
+                        : (labId != null ? 'lab_id' : 'ambulance_id')));
+            final filterVal = patientId ??
+                doctorId ??
+                storeId ??
+                labId ??
+                ambulanceId ??
+                '';
+
+            channel = _client.channel('public:support_tickets:$filterCol:$filterVal')
+              ..onPostgresChanges(
+                event: PostgresChangeEvent.all,
+                schema: 'public',
+                table: 'support_tickets',
+                filter: PostgresChangeFilter(
+                  type: PostgresChangeFilterType.eq,
+                  column: filterCol,
+                  value: filterVal,
+                ),
+                callback: (payload) async {
+                  await syncTickets();
+                },
+              )
+              ..subscribe();
+          } catch (e) {
+            debugPrint(
+                '[SupportTicketSupabaseRepository] Realtime subscription warning: $e');
+          }
         }
       },
       onCancel: () async {
+        pollTimer?.cancel();
         if (channel != null) {
           try {
             await _client.removeChannel(channel!);
@@ -390,51 +390,57 @@ class SupportTicketSupabaseRepository {
   Stream<List<TicketMessageModel>> watchTicketMessages(String ticketId) {
     late final StreamController<List<TicketMessageModel>> controller;
     RealtimeChannel? channel;
+    Timer? pollTimer;
 
     controller = StreamController<List<TicketMessageModel>>.broadcast(
       onListen: () async {
-        try {
-          final initial = await fetchTicketMessages(ticketId);
-          if (!controller.isClosed) {
-            controller.add(initial);
-          }
-        } catch (e, st) {
-          if (!controller.isClosed) {
-            controller.addError(e, st);
+        Future<void> syncMessages() async {
+          try {
+            final updated = await fetchTicketMessages(ticketId);
+            if (!controller.isClosed) {
+              controller.add(updated);
+            }
+          } catch (e, st) {
+            if (!controller.isClosed) {
+              controller.addError(e, st);
+            }
           }
         }
 
-        try {
-          channel = _client.channel('public:support_ticket_messages:$ticketId')
-            ..onPostgresChanges(
-              event: PostgresChangeEvent.all,
-              schema: 'public',
-              table: 'support_ticket_messages',
-              filter: PostgresChangeFilter(
-                type: PostgresChangeFilterType.eq,
-                column: 'ticket_id',
-                value: ticketId,
-              ),
-              callback: (payload) async {
-                try {
-                  final updated = await fetchTicketMessages(ticketId);
-                  if (!controller.isClosed) {
-                    controller.add(updated);
-                  }
-                } catch (e, st) {
-                  if (!controller.isClosed) {
-                    controller.addError(e, st);
-                  }
-                }
-              },
-            )
-            ..subscribe();
-        } catch (e) {
-          debugPrint(
-              '[SupportTicketSupabaseRepository] Realtime subscription warning: $e');
+        await syncMessages();
+
+        if (SupabaseBootstrap.isProduction) {
+          // In production: do not open Realtime channel; use periodic polling
+          pollTimer = Timer.periodic(const Duration(seconds: 8), (_) async {
+            if (!controller.isClosed) {
+              await syncMessages();
+            }
+          });
+        } else {
+          try {
+            channel = _client.channel('public:support_ticket_messages:$ticketId')
+              ..onPostgresChanges(
+                event: PostgresChangeEvent.all,
+                schema: 'public',
+                table: 'support_ticket_messages',
+                filter: PostgresChangeFilter(
+                  type: PostgresChangeFilterType.eq,
+                  column: 'ticket_id',
+                  value: ticketId,
+                ),
+                callback: (payload) async {
+                  await syncMessages();
+                },
+              )
+              ..subscribe();
+          } catch (e) {
+            debugPrint(
+                '[SupportTicketSupabaseRepository] Realtime subscription warning: $e');
+          }
         }
       },
       onCancel: () async {
+        pollTimer?.cancel();
         if (channel != null) {
           try {
             await _client.removeChannel(channel!);

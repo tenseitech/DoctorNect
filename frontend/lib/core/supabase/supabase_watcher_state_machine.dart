@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'supabase_bootstrap.dart';
 
 /// Event type for incremental PostgreSQL Realtime mutations.
 enum WatcherEventType {
@@ -35,6 +36,8 @@ class WatcherEvent<T> {
 /// 4. Delete removes row: incremental deletes strip the entry and emit the revised list.
 /// 5. Reconnect: handles reconnect / auth-refresh signals by triggering a fresh resync.
 /// 6. Late listeners: new subscribers immediately receive the currently cached list.
+/// 7. Production Polling: In production mode, automatically disables Realtime WebSocket
+///    and polls via [fetcher] at [pollingInterval].
 class SupabaseWatcherStateMachine<T> {
   SupabaseWatcherStateMachine({
     required this.fetcher,
@@ -42,6 +45,7 @@ class SupabaseWatcherStateMachine<T> {
     this.sort,
     this.eventStream,
     this.onSubscribe,
+    this.pollingInterval = const Duration(seconds: 8),
   });
 
   final Future<List<T>> Function() fetcher;
@@ -49,10 +53,12 @@ class SupabaseWatcherStateMachine<T> {
   final void Function(List<T> items)? sort;
   final Stream<WatcherEvent<T>>? eventStream;
   final void Function()? onSubscribe;
+  final Duration pollingInterval;
 
   final Map<String, T> _cache = {};
   StreamController<List<T>>? _controller;
   StreamSubscription<WatcherEvent<T>>? _eventSub;
+  Timer? _pollingTimer;
   bool _isDisposed = false;
 
   /// Returns a defensive copy of the current cached items.
@@ -119,21 +125,29 @@ class SupabaseWatcherStateMachine<T> {
         if (_cache.isNotEmpty && !_controller!.isClosed) {
           _controller!.add(cachedList);
         }
-        _eventSub ??= eventStream?.listen(
-          handleEvent,
-          onError: (e, st) {
-            if (_controller != null && !_controller!.isClosed) {
-              _controller!.addError(e, st);
-            }
-          },
-        );
-        onSubscribe?.call();
+        if (!SupabaseBootstrap.isProduction) {
+          _eventSub ??= eventStream?.listen(
+            handleEvent,
+            onError: (e, st) {
+              if (_controller != null && !_controller!.isClosed) {
+                _controller!.addError(e, st);
+              }
+            },
+          );
+          onSubscribe?.call();
+        } else {
+          // In production: do NOT listen to Realtime WebSocket.
+          // Start periodic adaptive polling timer.
+          _pollingTimer ??= Timer.periodic(pollingInterval, (_) => resync());
+        }
         resync();
       },
       onCancel: () {
         if (_controller != null && !_controller!.hasListener) {
           _eventSub?.cancel();
           _eventSub = null;
+          _pollingTimer?.cancel();
+          _pollingTimer = null;
         }
       },
     );
@@ -146,6 +160,8 @@ class SupabaseWatcherStateMachine<T> {
     _isDisposed = true;
     _eventSub?.cancel();
     _eventSub = null;
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
     _controller?.close();
   }
 }
