@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-10-26T08:31:55.857Z",
+  "baselineCountTotal": 68,
+  "countComparisons": [],
+  "residueFound": false,
+  "residueRows": [],
+  "sequences": [
+    {
+      "sequence": "doctor_blocked_dates_id_seq",
+      "last_value": null
+    },
+    {
+      "sequence": "doctor_education_id_seq",
+      "last_value": null
+    },
+    {
+      "sequence": "pharmacy_delivery_medicines_id_seq",
+      "last_value": null
+    },
+    {
+      "sequence": "prescription_investigations_id_seq",
+      "last_value": null
+    },
+    {
+      "sequence": "prescription_medicines_id_seq",
+      "last_value": "2"
+    },
+    {
+      "sequence": "prescription_referrals_id_seq",
+      "last_value": null
+    }
+  ]
+}

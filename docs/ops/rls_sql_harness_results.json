@@ -1,0 +1,175 @@
+{
+  "target": "staging",
+  "results": [
+    {
+      "name": "Positive Control: Patient A read own profile",
+      "table": "patients",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Positive Control: Doctor A read own profile",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Positive Control: Patient A read own health record",
+      "table": "health_records",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Cross-Tenant: Patient B read Patient A profile",
+      "table": "patients",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Cross-Tenant: Patient B update Patient A health record",
+      "table": "health_records",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Cross-Tenant: Patient B delete Patient A health record",
+      "table": "health_records",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Cross-Tenant INSERT: Patient B inserts record with Patient A owner id",
+      "table": "health_records",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "new row violates row-level security policy for table \"health_records\""
+    },
+    {
+      "name": "Role Escalation: Patient A inserts into doctors table",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "23502",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "FAIL",
+      "error": "null value in column \"email\" of relation \"doctors\" violates not-null constraint"
+    },
+    {
+      "name": "Role Escalation: Patient A inserts into medical_stores table",
+      "table": "medical_stores",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42703",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "FAIL",
+      "error": "column \"name\" of relation \"medical_stores\" does not exist"
+    },
+    {
+      "name": "Role Escalation: Patient A elevates role in public.users",
+      "table": "users",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying user role is not permitted (Current: patient, Requested: super_admin)"
+    },
+    {
+      "name": "Anon Access: Read table users",
+      "table": "users",
+      "role": "anon",
+      "expectedSqlState": "42501",
+      "actualSqlState": "00000",
+      "actualRows": 0,
+      "verdict": "FAIL"
+    },
+    {
+      "name": "Anon Access: Read table patients",
+      "table": "patients",
+      "role": "anon",
+      "expectedSqlState": "42501",
+      "actualSqlState": "00000",
+      "actualRows": 0,
+      "verdict": "FAIL"
+    },
+    {
+      "name": "Anon Access: Read table appointments",
+      "table": "appointments",
+      "role": "anon",
+      "expectedSqlState": "42501",
+      "actualSqlState": "00000",
+      "actualRows": 0,
+      "verdict": "FAIL"
+    },
+    {
+      "name": "Anon Access: Read table health_records",
+      "table": "health_records",
+      "role": "anon",
+      "expectedSqlState": "42501",
+      "actualSqlState": "00000",
+      "actualRows": 0,
+      "verdict": "FAIL"
+    },
+    {
+      "name": "Anon Access: Read table prescriptions",
+      "table": "prescriptions",
+      "role": "anon",
+      "expectedSqlState": "42501",
+      "actualSqlState": "00000",
+      "actualRows": 0,
+      "verdict": "FAIL"
+    },
+    {
+      "name": "Relationship: Linked Doctor A reads Patient A health record",
+      "table": "health_records",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 0,
+      "verdict": "FAIL"
+    },
+    {
+      "name": "Relationship: Unlinked Doctor B denied Patient A health record",
+      "table": "health_records",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS"
+    }
+  ],
+  "zeroResidue": true
+}

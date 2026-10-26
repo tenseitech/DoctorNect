@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-10-26T07:45:00Z",
+  "gitCommit": "73860fc",
+  "gitTag": "pre-restructure-2026-10-26T07-44-20Z",
+  "gitBranch": "chore/restructure-cleanup",
+  "baselines": {
+    "flutter_analyze": {
+      "issues": 0,
+      "verdict": "PASS"
+    },
+    "flutter_test": {
+      "passed": 520,
+      "failed": 0,
+      "verdict": "PASS"
+    },
+    "backend_npm_test": {
+      "total": 490,
+      "passed": 467,
+      "failed": 0,
+      "skipped": 23,
+      "suites": 16,
+      "verdict": "PASS"
+    },
+    "cloud_functions_exports": {
+      "total": 86,
+      "file": "docs/ops/baseline_cloud_functions.json"
+    },
+    "env_parity": {
+      "undocumentedCoreVariables": 0,
+      "verdict": "PASS"
+    },
+    "debug_build": {
+      "status": "PASS",
+      "artifact": "frontend/build/app/outputs/flutter-apk/app-debug.apk",
+      "command": "flutter build apk --debug",
+      "verdict": "PASS"
+    }
+  }
+}
