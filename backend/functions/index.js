@@ -125,7 +125,7 @@ const {
   GENERIC_AMBULANCE_LOGIN_FAILED,
   clientFacingHttpsMessage,
 } = require('./public_error_messages');
-const { deleteMyAccountHandler, supabaseUrl, supabaseServiceRoleKey } = require('./delete_my_account');
+const { deleteMyAccountHandler, supabaseServiceRoleKey } = require('./delete_my_account');
 const {
   awsAccessKeyId,
   awsSecretAccessKey,
@@ -376,7 +376,7 @@ function broadcastAlreadyRated(broadcast) {
  * created per online driver. Send a high-priority FCM push to that driver.
  */
 exports.notifyAmbulanceDriverOnNewRequest = onDocumentCreated(
-  { document: 'ambulance_requests/{requestId}', region: FIRESTORE_TRIGGER_REGION },
+  { document: 'ambulance_requests/{requestId}', region: FIRESTORE_TRIGGER_REGION, secrets: [supabaseServiceRoleKey] },
   async (event) => {
     const data = event.data?.data();
     if (!data) return;
@@ -670,7 +670,7 @@ exports.notifyPatientOnAppointmentStatusChanged = onDocumentUpdated(
  * Notify patient when a lab accepts or declines their booking request.
  */
 exports.notifyPatientOnLabBookingUpdate = onDocumentUpdated(
-  { document: 'lab_bookings/{bookingId}', region: FIRESTORE_TRIGGER_REGION },
+  { document: 'lab_bookings/{bookingId}', region: FIRESTORE_TRIGGER_REGION, secrets: [supabaseServiceRoleKey] },
   async (event) => {
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
@@ -728,7 +728,7 @@ exports.notifyPatientOnLabBookingUpdate = onDocumentUpdated(
  * Notify patient when a lab uploads and submits a report.
  */
 exports.notifyPatientOnLabReportReady = onDocumentUpdated(
-  { document: 'lab_bookings/{bookingId}', region: FIRESTORE_TRIGGER_REGION },
+  { document: 'lab_bookings/{bookingId}', region: FIRESTORE_TRIGGER_REGION, secrets: [supabaseServiceRoleKey] },
   async (event) => {
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
@@ -906,7 +906,7 @@ exports.notifyDoctorOnPharmacyDeliveryUpdated = onDocumentUpdated(
  * Notify patient when medicines are dispensed or partially dispensed.
  */
 exports.notifyPatientOnPharmacyDeliveryUpdated = onDocumentUpdated(
-  { document: 'pharmacy_deliveries/{deliveryId}', region: FIRESTORE_TRIGGER_REGION },
+  { document: 'pharmacy_deliveries/{deliveryId}', region: FIRESTORE_TRIGGER_REGION, secrets: [supabaseServiceRoleKey] },
   async (event) => {
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
@@ -1041,7 +1041,12 @@ async function enforceSendUserRegistrationOtpRateLimit(firestore, request) {
 
 /** Sends registration OTP (server-side storage; SMS optional). */
 exports.sendUserRegistrationOtp = onCall(
-  { ...MSG91_VPC_OPTIONS, ...OTP_REDIS_SECRET_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
+  {
+    ...MSG91_VPC_OPTIONS,
+    ...OTP_REDIS_SECRET_OPTIONS,
+    enforceAppCheck: ENFORCE_OTP_APP_CHECK,
+    secrets: [...(OTP_REDIS_SECRET_OPTIONS.secrets || []), supabaseServiceRoleKey],
+  },
   withSecurityLogging('sendUserRegistrationOtp', async (request) => {
   try {
     console.info('[sendUserRegistrationOtp] request', {
@@ -1070,7 +1075,7 @@ exports.enforceSendUserRegistrationOtpRateLimit = enforceSendUserRegistrationOtp
 
 /** Returns whether a mobile number conflicts with login/registration intent (no role disclosure). */
 exports.lookupMobileRegistration = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('lookupMobileRegistration', async (request) => {
     try {
       assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
@@ -1089,7 +1094,12 @@ exports.lookupMobileRegistration = onCall(
 
 /** Verifies registration OTP. */
 exports.verifyUserRegistrationOtp = onCall(
-  { ...MSG91_VPC_OPTIONS, ...OTP_REDIS_SECRET_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
+  {
+    ...MSG91_VPC_OPTIONS,
+    ...OTP_REDIS_SECRET_OPTIONS,
+    enforceAppCheck: ENFORCE_OTP_APP_CHECK,
+    secrets: [...(OTP_REDIS_SECRET_OPTIONS.secrets || []), supabaseServiceRoleKey],
+  },
   withSecurityLogging('verifyUserRegistrationOtp', async (request) => {
     const mobileLast4 = String(request.data?.mobile || request.data?.identifier || '')
       .replace(/\D/g, '')
@@ -1165,7 +1175,7 @@ exports.resetAmbulanceDriverPin = onCall(
 
 /** Resets user password after OTP verification using Admin SDK. */
 exports.resetUserPasswordWithOtp = onCall(
-  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
+  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('resetUserPasswordWithOtp', async (request) => {
     try {
       const firestore = getFirestore();
@@ -1198,7 +1208,7 @@ exports.resetUserPasswordWithOtp = onCall(
 
 /** Exchanges a verified mobile OTP session for a Firebase custom auth token. */
 exports.completeMobileOtpLogin = onCall(
-  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
+  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('completeMobileOtpLogin', async (request) => {
     try {
       const firestore = getFirestore();
@@ -1231,7 +1241,7 @@ exports.completeMobileOtpLogin = onCall(
 
 /** Pre-login rate-limit gate for email/password and admin sign-in. */
 exports.assertLoginAllowed = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('assertLoginAllowed', async (request) => {
   const firestore = getFirestore();
   await enforceAbuseLimit(firestore, request, 'login', {
@@ -1258,7 +1268,7 @@ exports.assertLoginAllowed = onCall(
 
 /** Records a failed email/password login for rate limiting. */
 exports.recordFailedLogin = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   protectCallable('recordFailedLogin', { category: 'api' }, async (request) => {
   const firestore = getFirestore();
   logAuthAttempt(request, {
@@ -1292,7 +1302,7 @@ exports.clearFailedLogins = onCall(
  * Replaces anonymous Firestore get-by-id (IDOR on timestamp invite IDs).
  */
 exports.getAmbulanceInvite = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('getAmbulanceInvite', async (request) => {
   assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
   await enforceAbuseLimit(getFirestore(), request, 'api');
@@ -1361,7 +1371,7 @@ exports.getAmbulanceInvite = onCall(
 
 /** Developer/admin approval: sets role profile verified = true for any account role. */
 exports.approveUserAccount = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   protectCallable('approveUserAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
     const firestore = getFirestore();
@@ -1371,7 +1381,7 @@ exports.approveUserAccount = onCall(
 
 /** Backward-compatible alias for patient approval. */
 exports.approvePatientAccount = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   protectCallable('approvePatientAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
     const firestore = getFirestore();
@@ -1524,7 +1534,7 @@ async function runVerifyAmbulanceDriverLogin(firestore, payload, { clientIp, req
  * client links an anonymous Firebase session after success for Firestore access.
  */
 exports.verifyAmbulanceDriverLogin = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public' },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public', secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('verifyAmbulanceDriverLogin', async (request) => {
   try {
   const firestore = getFirestore();
@@ -1552,7 +1562,7 @@ exports.verifyAmbulanceDriverLogin = onCall(
  * PIN check still runs in that default path.
  */
 exports.verifyAmbulanceDriverLoginHttp = onRequest(
-  { region: CALLABLE_REGION, cors: false, invoker: 'public' },
+  { region: CALLABLE_REGION, cors: false, invoker: 'public', secrets: [supabaseServiceRoleKey] },
   async (req, res) => {
     const allowedOrigins = AMBULANCE_HTTP_ALLOWED_ORIGINS;
     if (handleAmbulanceHttpPreflight(req, res, allowedOrigins)) return;
@@ -1633,7 +1643,7 @@ exports.completeAmbulanceMobileOtpLogin = onCall(
  * duplicate ratings, and atomically updates ambulance rating aggregates.
  */
 exports.submitAmbulanceRating = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   protectCallable('submitAmbulanceRating', { category: 'api' }, async (request) => {
   requireAuth(request);
 
@@ -1731,7 +1741,7 @@ exports.submitAmbulanceRating = onCall(
  * verification so stale authUid values can be reclaimed without opening hijack.
  */
 exports.resyncAmbulanceAuthUid = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public' },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public', secrets: [supabaseServiceRoleKey] },
   protectCallable('resyncAmbulanceAuthUid', {
     category: 'login',
     identifierFromRequest: (request) =>
@@ -1976,7 +1986,7 @@ exports.deleteMyAccount = onCall(
   {
     region: CALLABLE_REGION,
     enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
-    secrets: [awsAccessKeyId, awsSecretAccessKey, supabaseUrl, supabaseServiceRoleKey],
+    secrets: [awsAccessKeyId, awsSecretAccessKey, supabaseServiceRoleKey],
   },
   protectCallable('deleteMyAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
@@ -2059,7 +2069,7 @@ const {
   syncFirestoreAmbulanceInviteToSupabase,
 } = require('./cross_role_sync');
 
-const SYNC_SECRETS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+const SYNC_SECRETS = ['SUPABASE_SERVICE_ROLE_KEY'];
 
 const { getAuth } = require('firebase-admin/auth');
 
@@ -2503,7 +2513,7 @@ async function supabaseDatabaseWebhookHandler(req, res, options = {}) {
 exports.supabaseDatabaseWebhook = onRequest(
   {
     region: FIRESTORE_TRIGGER_REGION,
-    secrets: ['SUPABASE_WEBHOOK_SECRET'],
+    secrets: ['SUPABASE_WEBHOOK_SECRET', supabaseServiceRoleKey],
   },
   supabaseDatabaseWebhookHandler,
 );

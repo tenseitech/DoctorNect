@@ -46,6 +46,7 @@ function isSuperAdmin(auth, userDoc) {
 }
 
 const razorpayWebhookSecret = defineSecret('RAZORPAY_WEBHOOK_SECRET');
+const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');
 const {
   requireDocId,
   requireIntInSet,
@@ -154,7 +155,7 @@ function makeRazorpayRequest(path, method = 'GET', payload = null, keyId, keySec
  * Input: { adId: string, durationHours: number }
  */
 const createRazorpayOrder = onCall(
-  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required to create payment order.');
@@ -582,7 +583,7 @@ function toIsoDateString(val) {
  * Input: { adId: string, orderId: string, paymentId: string, signature: string }
  */
 const verifyRazorpayPayment = onCall(
-  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required to verify payment.');
@@ -1089,7 +1090,7 @@ async function recordWebhookRejection(firestore, {
 const razorpayWebhook = onRequest(
   {
     region: 'asia-south1',
-    secrets: [razorpayWebhookSecret],
+    secrets: [razorpayWebhookSecret, supabaseServiceRoleKey],
     invoker: 'public',
   },
   async (req, res) => {
@@ -1233,7 +1234,7 @@ async function reviewPromotedAdHandler(db, data, auth) {
 }
 
 const reviewPromotedAd = onCall(
-  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Authentication required.');

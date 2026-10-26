@@ -11,6 +11,7 @@ import 'package:medibond/core/supabase/repositories/supabase_prescription_reposi
 import 'package:medibond/core/supabase/repositories/supabase_referral_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_review_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_user_repository.dart';
+import 'package:medibond/core/firebase/firebase_error_messages.dart';
 import 'package:medibond/core/supabase/supabase_bootstrap.dart';
 
 void main() {
@@ -19,9 +20,9 @@ void main() {
       DoctorPatientCutoverFlag.debugOverride = null;
     });
 
-    test('defaults to false when uninitialized and no override', () {
+    test('defaults to true when uninitialized and no override', () {
       DoctorPatientCutoverFlag.debugOverride = null;
-      expect(DoctorPatientCutoverFlag.isEnabled, isFalse);
+      expect(DoctorPatientCutoverFlag.isEnabled, isTrue);
     });
 
     test('respects debugOverride true/false', () {
@@ -34,11 +35,15 @@ void main() {
   });
 
   group('SupabaseBootstrap Claim Verification', () {
-    test('MissingSupabaseClaimException format string', () {
+    test('MissingSupabaseClaimException format string and friendly error mapping', () {
       const ex = MissingSupabaseClaimException('Missing role=authenticated');
       expect(
         ex.toString(),
         'MissingSupabaseClaimException: Missing role=authenticated',
+      );
+      expect(
+        describeUserFacingError(ex),
+        contains('Your account session is initializing security claims'),
       );
     });
   });

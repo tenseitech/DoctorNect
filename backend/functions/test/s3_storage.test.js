@@ -16,6 +16,30 @@ const {
   extractExtension,
 } = _test;
 
+const { _resetRemoteConfigCache } = require('../sync_flags');
+
+let origEnvCutover;
+let origServiceKey;
+test.beforeEach(() => {
+  origEnvCutover = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+  origServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'dummy-service-role-key-for-test';
+  }
+  _resetRemoteConfigCache();
+});
+
+test.afterEach(() => {
+  if (origEnvCutover === undefined) delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+  else process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origEnvCutover;
+
+  if (origServiceKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  else process.env.SUPABASE_SERVICE_ROLE_KEY = origServiceKey;
+
+  _resetRemoteConfigCache();
+});
+
 /**
  * In-memory Mock Firestore for unit testing authorization matrix.
  */

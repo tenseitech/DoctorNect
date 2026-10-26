@@ -58,7 +58,7 @@ abstract final class DoctorPatientCutoverFlag {
         ),
       );
       await remoteConfig.setDefaults({
-        flagKey: false,
+        flagKey: true,
       });
 
       // Best-effort fetch & activate in background
@@ -85,7 +85,7 @@ abstract final class DoctorPatientCutoverFlag {
       _initialized = true;
     } catch (e) {
       _triggerFallbackAlert(
-        'Remote Config initialization failed ($e); falling back to compile-time or default (false)',
+        'Remote Config initialization failed ($e); falling back to compile-time or default (true)',
       );
       if (kDebugMode) {
         debugPrint('[DoctorPatientCutoverFlag] Remote config init warning: $e');
@@ -101,7 +101,7 @@ abstract final class DoctorPatientCutoverFlag {
   }
 
   /// Whether Supabase repositories should be used for Doctor & Patient data.
-  /// Defaults strictly to `false` until cutover is validated.
+  /// Defaults to `true` (target Supabase architecture).
   static bool get isEnabled {
     if (debugOverride != null) return debugOverride!;
 
@@ -110,14 +110,14 @@ abstract final class DoctorPatientCutoverFlag {
     }
 
     if (!FirebaseBootstrap.isReady || !_initialized) {
-      return false;
+      return true;
     }
 
     try {
       return FirebaseRemoteConfig.instance.getBool(flagKey);
     } catch (e) {
       _triggerFallbackAlert('Failed reading Remote Config key "$flagKey": $e');
-      return false;
+      return true;
     }
   }
 

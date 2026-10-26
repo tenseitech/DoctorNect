@@ -1,0 +1,1802 @@
+[
+  {
+    "schemaname": "public",
+    "tablename": "admin_audit_logs",
+    "policyname": "admin_audit_logs_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "private.is_super_admin()"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "admin_audit_logs",
+    "policyname": "admin_audit_logs_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "private.is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "admin_audit_logs",
+    "policyname": "audit_logs_deny_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "cmd": "DELETE",
+    "qual": "false",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "admin_audit_logs",
+    "policyname": "audit_logs_deny_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "cmd": "UPDATE",
+    "qual": "false",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "admin_audit_logs",
+    "policyname": "audit_logs_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "is_super_admin()"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "admin_audit_logs",
+    "policyname": "audit_logs_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulance_broadcasts",
+    "policyname": "amb_broadcasts_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(((patient_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulance_broadcasts",
+    "policyname": "amb_broadcasts_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR ((accepted_driver_id)::text = private.current_profile_id()) OR ((private.current_user_role() = 'ambulance'::text) AND ((status)::text = 'pending'::text)) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulance_broadcasts",
+    "policyname": "amb_broadcasts_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR ((accepted_driver_id)::text = private.current_profile_id()) OR ((private.current_user_role() = 'ambulance'::text) AND ((status)::text = 'pending'::text)) OR private.is_super_admin())",
+    "with_check": "(((accepted_driver_id)::text = private.current_profile_id()) OR (((patient_id)::text = private.current_profile_id()) AND ((status)::text = 'cancelled'::text)) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulance_invites",
+    "policyname": "amb_invites_policy",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "((is_verified_doctor() AND ((doctor_id)::text = current_profile_id())) OR is_super_admin())",
+    "with_check": "((is_verified_doctor() AND ((doctor_id)::text = current_profile_id())) OR is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulance_invites",
+    "policyname": "amb_invites_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulance_invites",
+    "policyname": "amb_invites_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulance_location_updates",
+    "policyname": "ambulance_location_updates_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(EXISTS ( SELECT 1\n   FROM ambulance_broadcasts b\n  WHERE (((b.broadcast_id)::text = (ambulance_location_updates.broadcast_id)::text) AND (((b.patient_id)::text = private.current_profile_id()) OR ((b.accepted_driver_id)::text = private.current_profile_id()) OR private.is_super_admin()))))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulance_private_settings",
+    "policyname": "ambulance_private_settings_access",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(EXISTS ( SELECT 1\n   FROM ambulances a\n  WHERE (((a.ambulance_id)::text = (ambulance_private_settings.ambulance_id)::text) AND ((a.auth_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin()))))",
+    "with_check": "(EXISTS ( SELECT 1\n   FROM ambulances a\n  WHERE (((a.ambulance_id)::text = (ambulance_private_settings.ambulance_id)::text) AND ((a.auth_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin()))))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulance_private_settings",
+    "policyname": "ambulance_private_settings_policy",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((ambulance_id)::text = current_profile_id()) OR is_super_admin())",
+    "with_check": "(((ambulance_id)::text = current_profile_id()) OR is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulance_requests",
+    "policyname": "amb_requests_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(((patient_id)::text = current_profile_id()) AND ((status)::text = 'pending'::text))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulance_requests",
+    "policyname": "amb_requests_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((driver_id)::text = private.current_profile_id()) OR ((patient_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulance_requests",
+    "policyname": "amb_requests_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(((driver_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((driver_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulances",
+    "policyname": "ambulances_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulances",
+    "policyname": "ambulances_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "((verified = true) OR (auth_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "ambulances",
+    "policyname": "ambulances_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "((auth_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())",
+    "with_check": "(private.is_super_admin() OR ((auth_uid = (auth.jwt() ->> 'sub'::text)) AND (verified = ( SELECT ambulances_1.verified\n   FROM ambulances ambulances_1\n  WHERE ((ambulances_1.ambulance_id)::text = private.current_profile_id())))))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "appointments",
+    "policyname": "appointments_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "false",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "appointments",
+    "policyname": "appointments_delete_admin",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "private.is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "appointments",
+    "policyname": "appointments_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(((patient_id)::text = private.current_profile_id()) OR (((doctor_id)::text = private.current_profile_id()) AND ((source)::text = 'walkin'::text)) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "appointments",
+    "policyname": "appointments_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "appointments",
+    "policyname": "appointments_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((doctor_id)::text = private.current_profile_id()) OR (((patient_id)::text = private.current_profile_id()) AND ((patient_status)::text = 'cancelled'::text)) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_body_parts",
+    "policyname": "comm_body_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(private.is_verified_doctor() OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_body_parts",
+    "policyname": "comm_body_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_diagnoses",
+    "policyname": "comm_diag_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(private.is_verified_doctor() OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_diagnoses",
+    "policyname": "comm_diag_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_lab_tests",
+    "policyname": "comm_lab_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(is_verified_doctor() AND ((added_by_doctor_id)::text = current_profile_id()))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_lab_tests",
+    "policyname": "comm_lab_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_lab_tests",
+    "policyname": "comm_tests_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(private.is_verified_doctor() OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_lab_tests",
+    "policyname": "comm_tests_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_medicines",
+    "policyname": "comm_med_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(is_verified_doctor() AND ((added_by_doctor_id)::text = current_profile_id()))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_medicines",
+    "policyname": "comm_med_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_medicines",
+    "policyname": "comm_meds_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(private.is_verified_doctor() OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_medicines",
+    "policyname": "comm_meds_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_radiology",
+    "policyname": "comm_rad_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(private.is_verified_doctor() OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "community_radiology",
+    "policyname": "comm_rad_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_availability",
+    "policyname": "doc_avail_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_availability",
+    "policyname": "doc_avail_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_blocked_dates",
+    "policyname": "doc_blocked_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_blocked_dates",
+    "policyname": "doc_blocked_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_directory_updates",
+    "policyname": "doctor_directory_updates_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_education",
+    "policyname": "doc_education_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_education",
+    "policyname": "doc_education_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_education",
+    "policyname": "doctor_edu_modify",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((doctor_id)::text = current_profile_id()) OR is_super_admin())",
+    "with_check": "(((doctor_id)::text = current_profile_id()) OR is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_education",
+    "policyname": "doctor_edu_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_facilities",
+    "policyname": "doc_facilities_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_facilities",
+    "policyname": "doc_facilities_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_facilities",
+    "policyname": "doctor_fac_modify",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((doctor_id)::text = current_profile_id()) OR is_super_admin())",
+    "with_check": "(((doctor_id)::text = current_profile_id()) OR is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_facilities",
+    "policyname": "doctor_fac_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_invites",
+    "policyname": "doctor_invites_doctor_read",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(EXISTS ( SELECT 1\n   FROM doctors d\n  WHERE (((d.doctor_id)::text = (doctor_invites.doctor_id)::text) AND (d.owner_uid = (auth.jwt() ->> 'sub'::text)))))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_private",
+    "policyname": "doctor_private_owner_read",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR (EXISTS ( SELECT 1\n   FROM doctors d\n  WHERE (((d.doctor_id)::text = (doctor_private.doctor_id)::text) AND (d.owner_uid = (auth.jwt() ->> 'sub'::text))))) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctor_private",
+    "policyname": "doctor_private_owner_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR (EXISTS ( SELECT 1\n   FROM doctors d\n  WHERE (((d.doctor_id)::text = (doctor_private.doctor_id)::text) AND (d.owner_uid = (auth.jwt() ->> 'sub'::text))))) OR private.is_super_admin())",
+    "with_check": "(((doctor_id)::text = private.current_profile_id()) OR (EXISTS ( SELECT 1\n   FROM doctors d\n  WHERE (((d.doctor_id)::text = (doctor_private.doctor_id)::text) AND (d.owner_uid = (auth.jwt() ->> 'sub'::text))))) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctors",
+    "policyname": "doctors_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctors",
+    "policyname": "doctors_delete_admin",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "private.is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctors",
+    "policyname": "doctors_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(((owner_uid = (auth.jwt() ->> 'sub'::text)) AND (verified = false)) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctors",
+    "policyname": "doctors_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "((owner_uid = (auth.jwt() ->> 'sub'::text)) OR ((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin() OR ((EXISTS ( SELECT 1\n   FROM users u\n  WHERE ((u.id = (auth.jwt() ->> 'sub'::text)) AND ((u.role)::text = ANY ((ARRAY['doctor'::character varying, 'superAdmin'::character varying, 'super_admin'::character varying, 'admin'::character varying])::text[]))))) AND ((EXISTS ( SELECT 1\n   FROM patient_doctor_links pdl\n  WHERE (((pdl.doctor_id)::text = (doctors.doctor_id)::text) AND ((pdl.patient_id)::text = private.current_profile_id())))) OR (EXISTS ( SELECT 1\n   FROM referrals dr\n  WHERE ((((dr.from_doctor_id)::text = private.current_profile_id()) AND ((dr.to_doctor_id)::text = (doctors.doctor_id)::text)) OR (((dr.to_doctor_id)::text = private.current_profile_id()) AND ((dr.from_doctor_id)::text = (doctors.doctor_id)::text))))))))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "doctors",
+    "policyname": "doctors_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "((owner_uid = (auth.jwt() ->> 'sub'::text)) OR ((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "((owner_uid = (auth.jwt() ->> 'sub'::text)) OR ((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "facilities",
+    "policyname": "facilities_select_auth",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "facilities",
+    "policyname": "facilities_write_admin",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "private.is_super_admin()",
+    "with_check": "private.is_super_admin()"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "family_members",
+    "policyname": "family_members_owner",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(EXISTS ( SELECT 1\n   FROM patients p\n  WHERE (((p.patient_id)::text = (family_members.patient_id)::text) AND ((p.owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin()))))",
+    "with_check": "(EXISTS ( SELECT 1\n   FROM patients p\n  WHERE (((p.patient_id)::text = (family_members.patient_id)::text) AND ((p.owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin()))))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "health_records",
+    "policyname": "health_records_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "health_records",
+    "policyname": "health_records_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "((((patient_id)::text = private.current_profile_id()) AND ((source)::text = 'selfUploaded'::text)) OR (private.doctor_can_access_patient((patient_id)::text) AND ((source)::text = 'doctorPrescribed'::text)) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "health_records",
+    "policyname": "health_records_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR (private.doctor_can_access_patient((patient_id)::text) AND ((shared_with_doctors = true) OR ((source)::text = 'doctorPrescribed'::text))) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "health_records",
+    "policyname": "health_records_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((patient_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "health_records",
+    "policyname": "health_records_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "((patient_id)::text = current_profile_id())",
+    "with_check": "((patient_id)::text = current_profile_id())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "in_app_notifications",
+    "policyname": "notifications_deny_client_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "false",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "in_app_notifications",
+    "policyname": "notifications_deny_client_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "false"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "in_app_notifications",
+    "policyname": "notifications_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "((recipient_uid = (auth.jwt() ->> 'sub'::text)) OR (recipient_uid = ( SELECT u.id\n   FROM users u\n  WHERE (u.firebase_uid = (auth.jwt() ->> 'sub'::text)))) OR is_super_admin((auth.jwt() ->> 'sub'::text)))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "in_app_notifications",
+    "policyname": "notifications_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "((recipient_uid = (auth.jwt() ->> 'sub'::text)) OR (recipient_uid = ( SELECT u.id\n   FROM users u\n  WHERE (u.firebase_uid = (auth.jwt() ->> 'sub'::text)))) OR is_super_admin((auth.jwt() ->> 'sub'::text)))",
+    "with_check": "((recipient_uid = (auth.jwt() ->> 'sub'::text)) OR (recipient_uid = ( SELECT u.id\n   FROM users u\n  WHERE (u.firebase_uid = (auth.jwt() ->> 'sub'::text)))) OR is_super_admin((auth.jwt() ->> 'sub'::text)))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_bookings",
+    "policyname": "lab_bookings_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "false",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_bookings",
+    "policyname": "lab_bookings_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(((patient_id)::text = private.current_profile_id()) OR (((lab_id)::text = private.current_profile_id()) AND ((source)::text = 'walkin'::text)) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_bookings",
+    "policyname": "lab_bookings_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR ((lab_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_bookings",
+    "policyname": "lab_bookings_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(((lab_id)::text = private.current_profile_id()) OR ((patient_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((lab_id)::text = private.current_profile_id()) OR (((patient_id)::text = private.current_profile_id()) AND ((status)::text = 'cancelled'::text)) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_catalog_tests",
+    "policyname": "lab_catalog_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_catalog_tests",
+    "policyname": "lab_catalog_tests_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_catalog_tests",
+    "policyname": "lab_catalog_tests_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "private.is_super_admin()",
+    "with_check": "private.is_super_admin()"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_catalog_tests",
+    "policyname": "lab_catalog_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "is_super_admin()",
+    "with_check": "is_super_admin()"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_connections",
+    "policyname": "lab_conn_policy",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "((is_verified_doctor() AND ((doctor_id)::text = current_profile_id())) OR ((lab_id)::text = current_profile_id()))",
+    "with_check": "((is_verified_doctor() AND ((doctor_id)::text = current_profile_id())) OR ((lab_id)::text = current_profile_id()))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_connections",
+    "policyname": "lab_connections_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR ((lab_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_connections",
+    "policyname": "lab_connections_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR ((lab_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((doctor_id)::text = private.current_profile_id()) OR ((lab_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_orders",
+    "policyname": "lab_orders_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "false",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_orders",
+    "policyname": "lab_orders_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_orders",
+    "policyname": "lab_orders_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR ((patient_id)::text = private.current_profile_id()) OR ((lab_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "lab_orders",
+    "policyname": "lab_orders_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(((lab_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((lab_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "labs",
+    "policyname": "labs_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "labs",
+    "policyname": "labs_delete_admin",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "private.is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "labs",
+    "policyname": "labs_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(((owner_uid = (auth.jwt() ->> 'sub'::text)) AND (verified = false)) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "labs",
+    "policyname": "labs_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "((verified = true) OR (owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "labs",
+    "policyname": "labs_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "((owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())",
+    "with_check": "(private.is_super_admin() OR ((owner_uid = (auth.jwt() ->> 'sub'::text)) AND (verified = ( SELECT labs_1.verified\n   FROM labs labs_1\n  WHERE ((labs_1.lab_id)::text = private.current_profile_id())))))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "mail_queue",
+    "policyname": "mail_queue_deny_client_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "cmd": "DELETE",
+    "qual": "false",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "mail_queue",
+    "policyname": "mail_queue_deny_client_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "cmd": "UPDATE",
+    "qual": "false",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "mail_queue",
+    "policyname": "mail_queue_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "is_super_admin((auth.jwt() ->> 'sub'::text))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "mail_queue",
+    "policyname": "mail_queue_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "is_super_admin((auth.jwt() ->> 'sub'::text))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "medical_directory",
+    "policyname": "med_directory_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "medical_directory",
+    "policyname": "med_directory_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "medical_directory",
+    "policyname": "medical_directory_policy",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((doctor_id)::text = current_profile_id()) AND is_verified_doctor())",
+    "with_check": "(((doctor_id)::text = current_profile_id()) AND is_verified_doctor())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "medical_stores",
+    "policyname": "medical_stores_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "medical_stores",
+    "policyname": "medical_stores_delete_admin",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "private.is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "medical_stores",
+    "policyname": "medical_stores_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(((owner_uid = (auth.jwt() ->> 'sub'::text)) AND (verified = false)) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "medical_stores",
+    "policyname": "medical_stores_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "((verified = true) OR (owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "medical_stores",
+    "policyname": "medical_stores_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "((owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())",
+    "with_check": "(private.is_super_admin() OR ((owner_uid = (auth.jwt() ->> 'sub'::text)) AND (verified = ( SELECT medical_stores_1.verified\n   FROM medical_stores medical_stores_1\n  WHERE ((medical_stores_1.store_id)::text = private.current_profile_id())))))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "otp_verification_sessions",
+    "policyname": "otp_sessions_deny_all",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "cmd": "ALL",
+    "qual": "false",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "patient_care_team",
+    "policyname": "care_team_modify",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "((patient_id)::text = current_profile_id())",
+    "with_check": "((patient_id)::text = current_profile_id())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "patient_care_team",
+    "policyname": "care_team_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((patient_id)::text = current_profile_id()) OR ((doctor_id)::text = current_profile_id()))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "patient_care_team",
+    "policyname": "patient_care_team_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR (EXISTS ( SELECT 1\n   FROM patients p\n  WHERE (((p.patient_id)::text = (patient_care_team.patient_id)::text) AND (p.owner_uid = (auth.jwt() ->> 'sub'::text))))) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "patient_care_team",
+    "policyname": "patient_care_team_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(EXISTS ( SELECT 1\n   FROM patients p\n  WHERE (((p.patient_id)::text = (patient_care_team.patient_id)::text) AND ((p.owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin()))))",
+    "with_check": "(EXISTS ( SELECT 1\n   FROM patients p\n  WHERE (((p.patient_id)::text = (patient_care_team.patient_id)::text) AND ((p.owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin()))))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "patient_doctor_links",
+    "policyname": "doc_links_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((patient_id)::text = current_profile_id()) OR ((doctor_id)::text = current_profile_id()))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "patient_doctor_links",
+    "policyname": "doc_links_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "false",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "patient_doctor_links",
+    "policyname": "pdl_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR (EXISTS ( SELECT 1\n   FROM patients p\n  WHERE (((p.patient_id)::text = (patient_doctor_links.patient_id)::text) AND (p.owner_uid = (auth.jwt() ->> 'sub'::text))))) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "patients",
+    "policyname": "patients_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "false",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "patients",
+    "policyname": "patients_delete_admin",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "private.is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "patients",
+    "policyname": "patients_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "((owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "patients",
+    "policyname": "patients_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "((owner_uid = (auth.jwt() ->> 'sub'::text)) OR ((patient_id)::text = private.current_profile_id()) OR private.is_super_admin() OR private.doctor_can_access_patient((patient_id)::text))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "patients",
+    "policyname": "patients_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "((owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())",
+    "with_check": "((owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "pharmacy_connections",
+    "policyname": "pharmacy_conn_policy",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "((is_verified_doctor() AND ((doctor_id)::text = current_profile_id())) OR ((medical_store_id)::text = current_profile_id()))",
+    "with_check": "((is_verified_doctor() AND ((doctor_id)::text = current_profile_id())) OR ((medical_store_id)::text = current_profile_id()))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "pharmacy_connections",
+    "policyname": "pharmacy_connections_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR ((medical_store_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "pharmacy_connections",
+    "policyname": "pharmacy_connections_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((doctor_id)::text = private.current_profile_id()) OR ((medical_store_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((doctor_id)::text = private.current_profile_id()) OR ((medical_store_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "pharmacy_deliveries",
+    "policyname": "pharmacy_deliveries_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "pharmacy_deliveries",
+    "policyname": "pharmacy_deliveries_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((store_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR ((patient_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "pharmacy_deliveries",
+    "policyname": "pharmacy_deliveries_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(((store_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((store_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "pharmacy_delivery_medicines",
+    "policyname": "pharmacy_deliv_meds_policy",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(EXISTS ( SELECT 1\n   FROM pharmacy_deliveries pd\n  WHERE (((pd.delivery_id)::text = (pharmacy_delivery_medicines.delivery_id)::text) AND (((pd.doctor_id)::text = current_profile_id()) OR ((pd.store_id)::text = current_profile_id()) OR ((pd.patient_id)::text = current_profile_id())))))",
+    "with_check": "(EXISTS ( SELECT 1\n   FROM pharmacy_deliveries pd\n  WHERE (((pd.delivery_id)::text = (pharmacy_delivery_medicines.delivery_id)::text) AND (((pd.doctor_id)::text = current_profile_id()) OR ((pd.store_id)::text = current_profile_id())))))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "pharmacy_delivery_medicines",
+    "policyname": "pharmacy_delivery_meds_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(EXISTS ( SELECT 1\n   FROM pharmacy_deliveries pd\n  WHERE (((pd.delivery_id)::text = (pharmacy_delivery_medicines.delivery_id)::text) AND (((pd.store_id)::text = private.current_profile_id()) OR ((pd.doctor_id)::text = private.current_profile_id()) OR ((pd.patient_id)::text = private.current_profile_id()) OR private.is_super_admin()))))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "pharmacy_delivery_medicines",
+    "policyname": "pharmacy_delivery_meds_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(EXISTS ( SELECT 1\n   FROM pharmacy_deliveries pd\n  WHERE (((pd.delivery_id)::text = (pharmacy_delivery_medicines.delivery_id)::text) AND (((pd.store_id)::text = private.current_profile_id()) OR private.is_super_admin()))))",
+    "with_check": "(EXISTS ( SELECT 1\n   FROM pharmacy_deliveries pd\n  WHERE (((pd.delivery_id)::text = (pharmacy_delivery_medicines.delivery_id)::text) AND (((pd.store_id)::text = private.current_profile_id()) OR private.is_super_admin()))))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "pharmacy_doctor_invites",
+    "policyname": "pharmacy_invites_store_read",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(EXISTS ( SELECT 1\n   FROM medical_stores s\n  WHERE (((s.store_id)::text = (pharmacy_doctor_invites.store_id)::text) AND (s.owner_uid = (auth.jwt() ->> 'sub'::text)))))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "prescription_investigations",
+    "policyname": "presc_inv_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(EXISTS ( SELECT 1\n   FROM prescriptions p\n  WHERE (((p.prescription_id)::text = (prescription_investigations.prescription_id)::text) AND (((p.patient_id)::text = private.current_profile_id()) OR ((p.doctor_id)::text = private.current_profile_id()) OR private.is_super_admin()))))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "prescription_investigations",
+    "policyname": "presc_inv_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(EXISTS ( SELECT 1\n   FROM prescriptions p\n  WHERE (((p.prescription_id)::text = (prescription_investigations.prescription_id)::text) AND (((p.doctor_id)::text = private.current_profile_id()) OR private.is_super_admin()))))",
+    "with_check": "(EXISTS ( SELECT 1\n   FROM prescriptions p\n  WHERE (((p.prescription_id)::text = (prescription_investigations.prescription_id)::text) AND (((p.doctor_id)::text = private.current_profile_id()) OR private.is_super_admin()))))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "prescription_investigations",
+    "policyname": "presc_investigations_policy",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(EXISTS ( SELECT 1\n   FROM prescriptions p\n  WHERE (((p.prescription_id)::text = (prescription_investigations.prescription_id)::text) AND (((p.doctor_id)::text = current_profile_id()) OR ((p.patient_id)::text = current_profile_id())))))",
+    "with_check": "(EXISTS ( SELECT 1\n   FROM prescriptions p\n  WHERE (((p.prescription_id)::text = (prescription_investigations.prescription_id)::text) AND ((p.doctor_id)::text = current_profile_id()) AND is_verified_doctor())))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "prescription_medicines",
+    "policyname": "presc_meds_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(EXISTS ( SELECT 1\n   FROM prescriptions p\n  WHERE (((p.prescription_id)::text = (prescription_medicines.prescription_id)::text) AND (((p.patient_id)::text = private.current_profile_id()) OR ((p.doctor_id)::text = private.current_profile_id()) OR (EXISTS ( SELECT 1\n           FROM pharmacy_deliveries pd\n          WHERE (((pd.prescription_id)::text = (p.prescription_id)::text) AND (((pd.store_id)::text = private.current_profile_id()) OR (EXISTS ( SELECT 1\n                   FROM medical_stores ms\n                  WHERE (((ms.store_id)::text = (pd.store_id)::text) AND (ms.owner_uid = (auth.jwt() ->> 'sub'::text))))))))) OR private.is_super_admin()))))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "prescription_medicines",
+    "policyname": "presc_meds_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(EXISTS ( SELECT 1\n   FROM prescriptions p\n  WHERE (((p.prescription_id)::text = (prescription_medicines.prescription_id)::text) AND (((p.doctor_id)::text = private.current_profile_id()) OR private.is_super_admin()))))",
+    "with_check": "(EXISTS ( SELECT 1\n   FROM prescriptions p\n  WHERE (((p.prescription_id)::text = (prescription_medicines.prescription_id)::text) AND (((p.doctor_id)::text = private.current_profile_id()) OR private.is_super_admin()))))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "prescription_referrals",
+    "policyname": "presc_ref_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((to_doctor_id)::text = private.current_profile_id()) OR (EXISTS ( SELECT 1\n   FROM prescriptions p\n  WHERE (((p.prescription_id)::text = (prescription_referrals.prescription_id)::text) AND (((p.patient_id)::text = private.current_profile_id()) OR ((p.doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())))))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "prescription_referrals",
+    "policyname": "presc_ref_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(EXISTS ( SELECT 1\n   FROM prescriptions p\n  WHERE (((p.prescription_id)::text = (prescription_referrals.prescription_id)::text) AND (((p.doctor_id)::text = private.current_profile_id()) OR private.is_super_admin()))))",
+    "with_check": "(EXISTS ( SELECT 1\n   FROM prescriptions p\n  WHERE (((p.prescription_id)::text = (prescription_referrals.prescription_id)::text) AND (((p.doctor_id)::text = private.current_profile_id()) OR private.is_super_admin()))))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "prescription_referrals",
+    "policyname": "presc_referrals_policy",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(EXISTS ( SELECT 1\n   FROM prescriptions p\n  WHERE (((p.prescription_id)::text = (prescription_referrals.prescription_id)::text) AND (((p.doctor_id)::text = current_profile_id()) OR ((p.patient_id)::text = current_profile_id())))))",
+    "with_check": "(EXISTS ( SELECT 1\n   FROM prescriptions p\n  WHERE (((p.prescription_id)::text = (prescription_referrals.prescription_id)::text) AND ((p.doctor_id)::text = current_profile_id()) AND is_verified_doctor())))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "prescriptions",
+    "policyname": "prescriptions_delete_admin",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "private.is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "prescriptions",
+    "policyname": "prescriptions_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "((((doctor_id)::text = private.current_profile_id()) AND private.is_verified_doctor()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "prescriptions",
+    "policyname": "prescriptions_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR (EXISTS ( SELECT 1\n   FROM pharmacy_deliveries pd\n  WHERE (((pd.prescription_id)::text = (prescriptions.prescription_id)::text) AND (((pd.store_id)::text = private.current_profile_id()) OR (EXISTS ( SELECT 1\n           FROM medical_stores ms\n          WHERE (((ms.store_id)::text = (pd.store_id)::text) AND (ms.owner_uid = (auth.jwt() ->> 'sub'::text))))))))) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "prescriptions",
+    "policyname": "prescriptions_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "((((doctor_id)::text = private.current_profile_id()) AND private.is_verified_doctor()) OR private.is_super_admin())",
+    "with_check": "((((doctor_id)::text = private.current_profile_id()) AND private.is_verified_doctor()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "promoted_ads",
+    "policyname": "promoted_ads_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((status)::text = 'active'::text) OR ((provider_id)::text = (auth.jwt() ->> 'sub'::text)) OR ((provider_id)::text = private.current_profile_id()) OR is_super_admin((auth.jwt() ->> 'sub'::text)))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "promoted_ads",
+    "policyname": "promoted_ads_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((provider_id)::text = (auth.jwt() ->> 'sub'::text)) OR ((provider_id)::text = private.current_profile_id()) OR is_super_admin((auth.jwt() ->> 'sub'::text)))",
+    "with_check": "(((provider_id)::text = (auth.jwt() ->> 'sub'::text)) OR ((provider_id)::text = private.current_profile_id()) OR is_super_admin((auth.jwt() ->> 'sub'::text)))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "razorpay_orders",
+    "policyname": "razorpay_orders_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "((user_uid = (auth.jwt() ->> 'sub'::text)) OR is_super_admin((auth.jwt() ->> 'sub'::text)))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "razorpay_orders",
+    "policyname": "razorpay_orders_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "((user_uid = (auth.jwt() ->> 'sub'::text)) OR is_super_admin((auth.jwt() ->> 'sub'::text)))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "razorpay_orders",
+    "policyname": "razorpay_orders_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "is_super_admin((auth.jwt() ->> 'sub'::text))",
+    "with_check": "is_super_admin((auth.jwt() ->> 'sub'::text))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "razorpay_payments",
+    "policyname": "razorpay_payments_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(EXISTS ( SELECT 1\n   FROM razorpay_orders o\n  WHERE (((o.order_id)::text = (razorpay_payments.order_id)::text) AND ((o.user_uid = (auth.jwt() ->> 'sub'::text)) OR is_super_admin((auth.jwt() ->> 'sub'::text))))))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "razorpay_webhook_events",
+    "policyname": "razorpay_webhook_events_admin_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "is_super_admin((auth.jwt() ->> 'sub'::text))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "referrals",
+    "policyname": "referrals_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(is_verified_doctor() AND ((from_doctor_id)::text = current_profile_id()))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "referrals",
+    "policyname": "referrals_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((from_doctor_id)::text = private.current_profile_id()) OR ((to_doctor_id)::text = private.current_profile_id()) OR ((patient_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "referrals",
+    "policyname": "referrals_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((from_doctor_id)::text = private.current_profile_id()) OR ((to_doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((from_doctor_id)::text = private.current_profile_id()) OR ((to_doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "review_public",
+    "policyname": "review_public_deny_client_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "false",
+    "with_check": "false"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "review_public",
+    "policyname": "review_public_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "review_votes",
+    "policyname": "review_votes_modify",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "((patient_id)::text = current_profile_id())",
+    "with_check": "((patient_id)::text = current_profile_id())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "review_votes",
+    "policyname": "review_votes_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "review_votes",
+    "policyname": "review_votes_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((patient_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "reviews",
+    "policyname": "reviews_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(((patient_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "reviews",
+    "policyname": "reviews_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "reviews",
+    "policyname": "reviews_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())",
+    "with_check": "(((patient_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "security_events",
+    "policyname": "security_events_admin",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "is_super_admin((auth.jwt() ->> 'sub'::text))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "security_events",
+    "policyname": "security_events_deny_all",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "cmd": "ALL",
+    "qual": "false",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "storage_audit_logs",
+    "policyname": "storage_audit_logs_admin_read",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "private.is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "super_admins",
+    "policyname": "super_admins_modify",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "is_super_admin((auth.jwt() ->> 'sub'::text))",
+    "with_check": "is_super_admin((auth.jwt() ->> 'sub'::text))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "super_admins",
+    "policyname": "super_admins_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "is_super_admin((auth.jwt() ->> 'sub'::text))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "support_ticket_messages",
+    "policyname": "support_messages_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(((sender_id)::text = (auth.jwt() ->> 'sub'::text)) OR ((sender_id)::text = private.current_profile_id()) OR is_super_admin((auth.jwt() ->> 'sub'::text)))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "support_ticket_messages",
+    "policyname": "support_messages_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(EXISTS ( SELECT 1\n   FROM support_tickets st\n  WHERE (((st.ticket_id)::text = (support_ticket_messages.ticket_id)::text) AND (((st.patient_id)::text = private.current_profile_id()) OR ((st.doctor_id)::text = private.current_profile_id()) OR ((st.store_id)::text = private.current_profile_id()) OR ((st.lab_id)::text = private.current_profile_id()) OR ((st.ambulance_id)::text = private.current_profile_id()) OR (st.user_id = (auth.jwt() ->> 'sub'::text)) OR (st.firebase_uid = (auth.jwt() ->> 'sub'::text)) OR is_super_admin((auth.jwt() ->> 'sub'::text))))))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "support_tickets",
+    "policyname": "support_tickets_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(((patient_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR ((store_id)::text = private.current_profile_id()) OR ((lab_id)::text = private.current_profile_id()) OR ((ambulance_id)::text = private.current_profile_id()) OR (user_id = (auth.jwt() ->> 'sub'::text)) OR (firebase_uid = (auth.jwt() ->> 'sub'::text)) OR is_super_admin((auth.jwt() ->> 'sub'::text)))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "support_tickets",
+    "policyname": "support_tickets_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR ((store_id)::text = private.current_profile_id()) OR ((lab_id)::text = private.current_profile_id()) OR ((ambulance_id)::text = private.current_profile_id()) OR (user_id = (auth.jwt() ->> 'sub'::text)) OR (firebase_uid = (auth.jwt() ->> 'sub'::text)) OR is_super_admin((auth.jwt() ->> 'sub'::text)))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "support_tickets",
+    "policyname": "support_tickets_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(((patient_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR ((store_id)::text = private.current_profile_id()) OR ((lab_id)::text = private.current_profile_id()) OR ((ambulance_id)::text = private.current_profile_id()) OR (user_id = (auth.jwt() ->> 'sub'::text)) OR (firebase_uid = (auth.jwt() ->> 'sub'::text)) OR is_super_admin((auth.jwt() ->> 'sub'::text)))",
+    "with_check": "(((patient_id)::text = private.current_profile_id()) OR ((doctor_id)::text = private.current_profile_id()) OR ((store_id)::text = private.current_profile_id()) OR ((lab_id)::text = private.current_profile_id()) OR ((ambulance_id)::text = private.current_profile_id()) OR (user_id = (auth.jwt() ->> 'sub'::text)) OR (firebase_uid = (auth.jwt() ->> 'sub'::text)) OR is_super_admin((auth.jwt() ->> 'sub'::text)))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "sync_dead_letter_queue",
+    "policyname": "sync_dead_letter_queue_deny_all",
+    "permissive": "PERMISSIVE",
+    "roles": "{anon,authenticated}",
+    "cmd": "ALL",
+    "qual": "false",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "system_config",
+    "policyname": "system_config_public_read",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "system_config",
+    "policyname": "system_config_select",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "system_config",
+    "policyname": "system_config_write",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "ALL",
+    "qual": "private.is_super_admin()",
+    "with_check": "private.is_super_admin()"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_devices",
+    "policyname": "user_devices_owner_delete",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "(user_id = (auth.jwt() ->> 'sub'::text))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_devices",
+    "policyname": "user_devices_owner_insert",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(user_id = (auth.jwt() ->> 'sub'::text))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_devices",
+    "policyname": "user_devices_owner_read",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "(user_id = (auth.jwt() ->> 'sub'::text))",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_devices",
+    "policyname": "user_devices_owner_update",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "(user_id = (auth.jwt() ->> 'sub'::text))",
+    "with_check": "(user_id = (auth.jwt() ->> 'sub'::text))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "users",
+    "policyname": "users_delete_admin",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "DELETE",
+    "qual": "private.is_super_admin()",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "users",
+    "policyname": "users_insert_self_or_admin",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "((id = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "users",
+    "policyname": "users_select_owner_or_admin",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "SELECT",
+    "qual": "((id = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())",
+    "with_check": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "users",
+    "policyname": "users_update_owner_or_admin",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "cmd": "UPDATE",
+    "qual": "((id = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())",
+    "with_check": "(private.is_super_admin() OR ((id = (auth.jwt() ->> 'sub'::text)) AND ((role)::text = (( SELECT users_1.role\n   FROM users users_1\n  WHERE (users_1.id = (auth.jwt() ->> 'sub'::text))))::text) AND (verified = ( SELECT users_1.verified\n   FROM users users_1\n  WHERE (users_1.id = (auth.jwt() ->> 'sub'::text))))))"
+  }
+]

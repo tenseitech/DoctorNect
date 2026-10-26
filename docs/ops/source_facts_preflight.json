@@ -1,0 +1,711 @@
+{
+  "version": "PostgreSQL 17.11 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit",
+  "dbSize": "16 MB",
+  "schemas": [
+    "auth",
+    "cron",
+    "extensions",
+    "graphql",
+    "graphql_public",
+    "pg_temp_1",
+    "pg_temp_10",
+    "pg_temp_12",
+    "pg_temp_13",
+    "pg_temp_15",
+    "pg_temp_16",
+    "pg_temp_17",
+    "pg_temp_19",
+    "pg_temp_21",
+    "pg_temp_23",
+    "pg_temp_26",
+    "pg_temp_28",
+    "pg_temp_29",
+    "pg_temp_3",
+    "pg_temp_30",
+    "pg_temp_33",
+    "pg_temp_34",
+    "pg_temp_35",
+    "pg_temp_38",
+    "pg_temp_39",
+    "pg_temp_4",
+    "pg_temp_41",
+    "pg_temp_42",
+    "pg_temp_43",
+    "pg_temp_45",
+    "pg_temp_47",
+    "pg_temp_49",
+    "pg_temp_5",
+    "pg_temp_51",
+    "pg_temp_52",
+    "pg_temp_53",
+    "pg_temp_55",
+    "pg_temp_59",
+    "pg_temp_6",
+    "pg_temp_8",
+    "pg_temp_9",
+    "pg_toast_temp_1",
+    "pg_toast_temp_10",
+    "pg_toast_temp_12",
+    "pg_toast_temp_13",
+    "pg_toast_temp_15",
+    "pg_toast_temp_16",
+    "pg_toast_temp_17",
+    "pg_toast_temp_19",
+    "pg_toast_temp_21",
+    "pg_toast_temp_23",
+    "pg_toast_temp_26",
+    "pg_toast_temp_28",
+    "pg_toast_temp_29",
+    "pg_toast_temp_3",
+    "pg_toast_temp_30",
+    "pg_toast_temp_33",
+    "pg_toast_temp_34",
+    "pg_toast_temp_35",
+    "pg_toast_temp_38",
+    "pg_toast_temp_39",
+    "pg_toast_temp_4",
+    "pg_toast_temp_41",
+    "pg_toast_temp_42",
+    "pg_toast_temp_43",
+    "pg_toast_temp_45",
+    "pg_toast_temp_47",
+    "pg_toast_temp_49",
+    "pg_toast_temp_5",
+    "pg_toast_temp_51",
+    "pg_toast_temp_52",
+    "pg_toast_temp_53",
+    "pg_toast_temp_55",
+    "pg_toast_temp_59",
+    "pg_toast_temp_6",
+    "pg_toast_temp_8",
+    "pg_toast_temp_9",
+    "pgbouncer",
+    "private",
+    "public",
+    "realtime",
+    "storage",
+    "supabase_migrations",
+    "vault"
+  ],
+  "extensions": [
+    {
+      "extname": "hypopg",
+      "extversion": "1.4.1",
+      "schema": "extensions"
+    },
+    {
+      "extname": "index_advisor",
+      "extversion": "0.2.0",
+      "schema": "extensions"
+    },
+    {
+      "extname": "pg_cron",
+      "extversion": "1.6.4",
+      "schema": "pg_catalog"
+    },
+    {
+      "extname": "pg_stat_statements",
+      "extversion": "1.11",
+      "schema": "extensions"
+    },
+    {
+      "extname": "pgcrypto",
+      "extversion": "1.3",
+      "schema": "extensions"
+    },
+    {
+      "extname": "plpgsql",
+      "extversion": "1.0",
+      "schema": "pg_catalog"
+    },
+    {
+      "extname": "supabase_vault",
+      "extversion": "0.3.1",
+      "schema": "vault"
+    },
+    {
+      "extname": "uuid-ossp",
+      "extversion": "1.1",
+      "schema": "extensions"
+    }
+  ],
+  "roles": [
+    {
+      "rolname": "anon",
+      "rolsuper": false,
+      "rolinherit": true,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": false,
+      "rolreplication": false,
+      "rolbypassrls": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "authenticated",
+      "rolsuper": false,
+      "rolinherit": true,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": false,
+      "rolreplication": false,
+      "rolbypassrls": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "authenticator",
+      "rolsuper": false,
+      "rolinherit": false,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": true,
+      "rolreplication": false,
+      "rolbypassrls": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "cli_login_postgres",
+      "rolsuper": false,
+      "rolinherit": false,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": true,
+      "rolreplication": false,
+      "rolbypassrls": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "dashboard_user",
+      "rolsuper": false,
+      "rolinherit": true,
+      "rolcreaterole": true,
+      "rolcreatedb": true,
+      "rolcanlogin": false,
+      "rolreplication": true,
+      "rolbypassrls": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "postgres",
+      "rolsuper": false,
+      "rolinherit": true,
+      "rolcreaterole": true,
+      "rolcreatedb": true,
+      "rolcanlogin": true,
+      "rolreplication": true,
+      "rolbypassrls": true,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "service_role",
+      "rolsuper": false,
+      "rolinherit": true,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": false,
+      "rolreplication": false,
+      "rolbypassrls": true,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "supabase_admin",
+      "rolsuper": true,
+      "rolinherit": true,
+      "rolcreaterole": true,
+      "rolcreatedb": true,
+      "rolcanlogin": true,
+      "rolreplication": true,
+      "rolbypassrls": true,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "supabase_auth_admin",
+      "rolsuper": false,
+      "rolinherit": false,
+      "rolcreaterole": true,
+      "rolcreatedb": false,
+      "rolcanlogin": true,
+      "rolreplication": false,
+      "rolbypassrls": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "supabase_etl_admin",
+      "rolsuper": false,
+      "rolinherit": true,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": true,
+      "rolreplication": true,
+      "rolbypassrls": true,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "supabase_privileged_role",
+      "rolsuper": false,
+      "rolinherit": true,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": false,
+      "rolreplication": false,
+      "rolbypassrls": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "supabase_read_only_user",
+      "rolsuper": false,
+      "rolinherit": true,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": true,
+      "rolreplication": false,
+      "rolbypassrls": true,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "supabase_realtime_admin",
+      "rolsuper": false,
+      "rolinherit": false,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": false,
+      "rolreplication": false,
+      "rolbypassrls": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "supabase_replication_admin",
+      "rolsuper": false,
+      "rolinherit": true,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": true,
+      "rolreplication": true,
+      "rolbypassrls": false,
+      "rolconnlimit": -1
+    },
+    {
+      "rolname": "supabase_storage_admin",
+      "rolsuper": false,
+      "rolinherit": false,
+      "rolcreaterole": true,
+      "rolcreatedb": false,
+      "rolcanlogin": true,
+      "rolreplication": false,
+      "rolbypassrls": false,
+      "rolconnlimit": -1
+    }
+  ],
+  "publications": {
+    "supabase_realtime": {
+      "allTables": false,
+      "tables": [
+        "public.ambulance_location_updates",
+        "public.appointments",
+        "public.doctor_availability",
+        "public.doctor_blocked_dates",
+        "public.doctor_directory_updates",
+        "public.family_members",
+        "public.health_records",
+        "public.prescription_investigations",
+        "public.prescription_medicines",
+        "public.prescription_referrals",
+        "public.prescriptions",
+        "public.referrals",
+        "public.review_public",
+        "public.reviews"
+      ]
+    }
+  },
+  "cronJobs": [
+    {
+      "jobid": "1",
+      "schedule": "0 * * * *",
+      "command": "\n        UPDATE promoted_ads\n        SET status = 'expired',\n            updated_at = CURRENT_TIMESTAMP\n        WHERE status = 'active'\n          AND end_time <= CURRENT_TIMESTAMP;\n    ",
+      "nodename": "localhost",
+      "nodeport": 5432,
+      "database": "postgres",
+      "username": "postgres",
+      "active": true
+    },
+    {
+      "jobid": "2",
+      "schedule": "0 3 * * *",
+      "command": "\n        DELETE FROM otp_challenges\n        WHERE expires_at < CURRENT_TIMESTAMP - INTERVAL '1 day';\n\n        DELETE FROM otp_verification_sessions\n        WHERE expires_at < CURRENT_TIMESTAMP - INTERVAL '1 day';\n    ",
+      "nodename": "localhost",
+      "nodeport": 5432,
+      "database": "postgres",
+      "username": "postgres",
+      "active": true
+    },
+    {
+      "jobid": "3",
+      "schedule": "15 3 * * *",
+      "command": "\n        DELETE FROM abuse_rate_limits\n        WHERE window_start < CURRENT_TIMESTAMP - INTERVAL '7 days';\n    ",
+      "nodename": "localhost",
+      "nodeport": 5432,
+      "database": "postgres",
+      "username": "postgres",
+      "active": true
+    },
+    {
+      "jobid": "4",
+      "schedule": "*/5 * * * *",
+      "command": "SELECT public.expire_stale_ambulance_broadcasts();",
+      "nodename": "localhost",
+      "nodeport": 5432,
+      "database": "postgres",
+      "username": "postgres",
+      "active": true
+    }
+  ],
+  "netTriggers": [],
+  "netFunctions": [
+    {
+      "schema": "extensions",
+      "function": "grant_pg_net_access"
+    }
+  ],
+  "rowCounts": [
+    {
+      "schema": "private",
+      "table": "admin_users",
+      "count": 0
+    },
+    {
+      "schema": "private",
+      "table": "provisioning_errors",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "abuse_rate_limits",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "admin_audit_logs",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "ambulance_broadcasts",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "ambulance_invites",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "ambulance_location_updates",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "ambulance_locations",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "ambulance_private_settings",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "ambulance_requests",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "ambulance_trip_contacts",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "ambulances",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "appointments",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "community_body_parts",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "community_diagnoses",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "community_lab_tests",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "community_medicines",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "community_radiology",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "doctor_availability",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "doctor_blocked_dates",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "doctor_directory_updates",
+      "count": 1
+    },
+    {
+      "schema": "public",
+      "table": "doctor_education",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "doctor_facilities",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "doctor_invites",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "doctor_private",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "doctors",
+      "count": 2
+    },
+    {
+      "schema": "public",
+      "table": "facilities",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "family_members",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "health_records",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "in_app_notifications",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "lab_bookings",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "lab_catalog_tests",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "lab_connections",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "lab_orders",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "labs",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "mail_queue",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "medical_directory",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "medical_stores",
+      "count": 2
+    },
+    {
+      "schema": "public",
+      "table": "otp_challenges",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "otp_verification_sessions",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "patient_care_team",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "patient_doctor_links",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "patients",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "pharmacy_connections",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "pharmacy_deliveries",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "pharmacy_delivery_medicines",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "pharmacy_doctor_invites",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "prescription_investigations",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "prescription_medicines",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "prescription_referrals",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "prescriptions",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "promoted_ads",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "razorpay_orders",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "razorpay_payments",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "razorpay_webhook_events",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "referrals",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "review_public",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "review_votes",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "reviews",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "security_events",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "storage_audit_logs",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "super_admins",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "support_ticket_messages",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "support_tickets",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "sync_dead_letter_queue",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "system_config",
+      "count": 3
+    },
+    {
+      "schema": "public",
+      "table": "user_devices",
+      "count": 0
+    },
+    {
+      "schema": "public",
+      "table": "users",
+      "count": 0
+    }
+  ]
+}

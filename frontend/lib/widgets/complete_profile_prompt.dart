@@ -1,12 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../core/supabase/repositories/supabase_user_repository.dart';
+import '../core/firebase/models/medibond_user_profile.dart';
 import '../core/auth/demo_auth_config.dart';
 import '../core/auth/profile_completion_service.dart';
 import '../core/auth/verification_lifecycle.dart';
 import '../core/enums/user_type.dart';
 import '../core/firebase/firebase_bootstrap.dart';
-import '../core/firebase/firestore_paths.dart';
 import '../core/session/ambulance_session.dart';
 import '../core/session/doctor_session.dart';
 import '../core/session/lab_session.dart';
@@ -223,11 +223,8 @@ class ProfileDataGate extends StatelessWidget {
       return CompleteProfilePrompt(role: role);
     }
 
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection(FirestorePaths.users)
-          .doc(uid)
-          .snapshots(),
+    return StreamBuilder<DoctorNectUserProfile?>(
+      stream: SupabaseUserRepository.instance.watchProfile(uid),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data == null) {
           if (isDemoAccount) return child;
@@ -237,16 +234,9 @@ class ProfileDataGate extends StatelessWidget {
           return CompleteProfilePrompt(role: role);
         }
 
-        final data = snapshot.data!.data();
-        if (data == null) {
-          if (isDemoAccount) return child;
-          return CompleteProfilePrompt(role: role);
-        }
-
-        final mobile = data['mobile'] as String? ??
-            data['phone'] as String? ??
-            data['phoneNumber'] as String?;
-        final profileId = data['profileId'] as String? ?? '';
+        final profile = snapshot.data!;
+        final mobile = profile.mobile;
+        final profileId = profile.profileId;
         final isDemo = DemoAuthConfig.isDemoAllowed &&
             (isDemoAccount ||
                 DemoAuthConfig.isDemoRolePhone(role, mobile) ||
@@ -258,32 +248,17 @@ class ProfileDataGate extends StatelessWidget {
                 (role == UserType.ambulance &&
                     DemoAuthConfig.isDemoAmbulanceId(profileId)));
         if (isDemo) {
-          if (data['verified'] != true ||
-              data['verificationStatus'] != 'verified' ||
-              data['status'] != 'approved') {
-            FirebaseFirestore.instance
-                .collection(FirestorePaths.users)
-                .doc(uid)
-                .set({
-              'verified': true,
-              'verificationStatus': 'verified',
-              'status': 'approved',
-              'profileCompleted': true,
-            }, SetOptions(merge: true));
-          }
           return child;
         }
 
-        final isVerified = data['verified'] == true ||
-            data['verificationStatus'] == 'verified' ||
-            data['status'] == 'approved';
+        final isVerified = profile.verificationStatus == 'verified' ||
+            profile.verificationStatus == 'approved';
         if (isVerified) return child;
 
-        final statusStr = data['verificationStatus'] as String? ??
-            data['status'] as String? ??
+        final statusStr = profile.verificationStatus ??
             (verificationPending ? 'submitted_for_verification' : 'registered');
         final stage = VerificationStage.fromString(statusStr);
-        final reason = data['rejectionReason'] as String?;
+        final reason = profile.rejectionReason;
 
         return CompleteProfilePrompt(
           role: role,

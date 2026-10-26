@@ -37,7 +37,7 @@ abstract final class StorageFeatureFlag {
         ),
       );
       await remoteConfig.setDefaults({
-        flagKey: false,
+        flagKey: true,
         'min_supported_build_android': 0,
         'min_supported_build_ios': 0,
         'update_required_message': 'Please update DoctorNect to continue.',
@@ -55,7 +55,7 @@ abstract final class StorageFeatureFlag {
     }
   }
 
-  /// Whether S3 storage is enabled for uploads. Defaults strictly to `false`.
+  /// Whether S3 storage is enabled for uploads. Defaults to `true`.
   static bool get useS3Storage {
     if (debugOverride != null) return debugOverride!;
 
@@ -67,12 +67,12 @@ abstract final class StorageFeatureFlag {
       return true;
     }
 
-    if (!FirebaseBootstrap.isReady) return false;
+    if (!FirebaseBootstrap.isReady) return true;
 
     try {
       return FirebaseRemoteConfig.instance.getBool(flagKey);
     } catch (_) {
-      return false;
+      return true;
     }
   }
 }

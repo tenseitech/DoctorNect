@@ -18,6 +18,86 @@ const {
 } = require('../appointment_slots');
 const { LIMITS, enforceAbuseLimit } = require('../abuse_rate_limit');
 const { backfillSingleSlotTransaction } = require('../../scripts/backfill_doctor_slots');
+const { _resetRemoteConfigCache } = require('../sync_flags');
+const { setRedisClientForTesting } = require('../redis');
+
+function createMockRedis() {
+  const store = new Map();
+  const recordedKeys = [];
+
+  function cleanExpired(key) {
+    const entry = store.get(key);
+    if (!entry) return null;
+    if (entry.expireAt && Date.now() > entry.expireAt) {
+      store.delete(key);
+      return null;
+    }
+    return entry;
+  }
+
+  return {
+    store,
+    recordedKeys,
+    async eval(script, numKeys, key, ...args) {
+      recordedKeys.push(key);
+      const windowMs = Number(args[0]) || 60000;
+      let entry = cleanExpired(key);
+      if (!entry) {
+        entry = { val: 1, expireAt: Date.now() + windowMs };
+        store.set(key, entry);
+        return 1;
+      }
+      entry.val += 1;
+      return entry.val;
+    },
+    async incr(key) {
+      recordedKeys.push(key);
+      let entry = cleanExpired(key);
+      if (!entry) {
+        entry = { val: 1, expireAt: null };
+        store.set(key, entry);
+        return 1;
+      }
+      entry.val += 1;
+      return entry.val;
+    },
+    async pexpire(key, ms) {
+      const entry = cleanExpired(key);
+      if (entry) {
+        entry.expireAt = Date.now() + Number(ms);
+      }
+      return 1;
+    },
+  };
+}
+
+let origEnvCutover;
+let origRateLimitBackend;
+let currentMockRedis;
+test.beforeEach(() => {
+  origEnvCutover = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+  origRateLimitBackend = process.env.RATE_LIMIT_BACKEND;
+  process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+  process.env.RATE_LIMIT_BACKEND = 'redis';
+  currentMockRedis = createMockRedis();
+  setRedisClientForTesting(currentMockRedis);
+  _resetRemoteConfigCache();
+});
+
+test.afterEach(() => {
+  setRedisClientForTesting(null);
+  if (origEnvCutover === undefined) {
+    delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+  } else {
+    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origEnvCutover;
+  }
+  if (origRateLimitBackend === undefined) {
+    delete process.env.RATE_LIMIT_BACKEND;
+  } else {
+    process.env.RATE_LIMIT_BACKEND = origRateLimitBackend;
+  }
+  _resetRemoteConfigCache();
+});
 
 function applyFieldTransforms(base, data) {
   const result = { ...base };
@@ -1262,6 +1342,85 @@ test('reconcileAppointmentSlot is idempotent after rescheduleAppointment has mov
 
   assert.deepEqual(db.docs.get(`doctor_slots/${newSlotId}`).activeAppointmentIds, ['appt_move']);
   assert.deepEqual(db.docs.get(`doctor_slots/${oldSlotId}`).activeAppointmentIds, []);
+});
+
+test('reconcileAppointmentSlotHandler exits early with cutover_supabase_primary when USE_SUPABASE_DB_DOCTOR_PATIENT=1', async () => {
+  process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '1';
+  _resetRemoteConfigCache();
+  try {
+    const db = createConcurrentMockFirestore();
+    const event = {
+      params: { appointmentId: 'appt_cutover_test' },
+      data: {
+        after: {
+          id: 'appt_cutover_test',
+          data: () => ({ doctorId: 'doc_1', dateTime: new Date() }),
+        },
+      },
+    };
+    const res = await reconcileAppointmentSlotHandler(event, db);
+    assert.deepEqual(res, { reconciled: false, reason: 'cutover_supabase_primary' });
+  } finally {
+    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+    _resetRemoteConfigCache();
+  }
+});
+
+test('booking rate limit: production default Redis path enforces limits', async () => {
+  process.env.RATE_LIMIT_BACKEND = 'redis';
+  const db = createConcurrentMockFirestore();
+  const req = {
+    rawRequest: { ip: '10.0.0.1' },
+    auth: { uid: 'pat_rate_test_redis' },
+    data: { doctorId: 'doc_1' },
+  };
+  // booking limit per user is LIMITS.booking.user.max = 10
+  for (let i = 1; i <= 10; i++) {
+    await enforceAbuseLimit(db, req, 'booking');
+  }
+  await assert.rejects(
+    async () => {
+      await enforceAbuseLimit(db, req, 'booking');
+    },
+    (err) => {
+      assert.equal(err.code, 'resource-exhausted');
+      return true;
+    },
+  );
+  assert.ok(currentMockRedis.recordedKeys.length >= 1, 'Expected Redis keys to be recorded');
+});
+
+test('booking rate limit: fallback Firestore path enforces limits when RATE_LIMIT_BACKEND=firestore', async () => {
+  process.env.RATE_LIMIT_BACKEND = 'firestore';
+  const db = createConcurrentMockFirestore();
+  const req = {
+    rawRequest: { ip: '10.0.0.2' },
+    auth: { uid: 'pat_rate_test_fs' },
+    data: { doctorId: 'doc_1' },
+  };
+  for (let i = 1; i <= 10; i++) {
+    await enforceAbuseLimit(db, req, 'booking');
+  }
+  await assert.rejects(
+    async () => {
+      await enforceAbuseLimit(db, req, 'booking');
+    },
+    (err) => {
+      assert.equal(err.code, 'resource-exhausted');
+      return true;
+    },
+  );
+  const fsKeys = [...db.docs.keys()].filter((k) => k.startsWith('abuse_rate_limits/'));
+  assert.ok(fsKeys.length >= 1, 'Expected Firestore abuse_rate_limits document to be written');
+});
+
+test.after(async () => {
+  try {
+    const { redis } = require('../redis');
+    if (redis && typeof redis.disconnect === 'function') {
+      redis.disconnect();
+    }
+  } catch (_) {}
 });
 
 

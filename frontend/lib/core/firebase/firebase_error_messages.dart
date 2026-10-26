@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import '../supabase/supabase_bootstrap.dart';
 
 bool _isGenericMessage(String? message) {
   if (message == null) return true;
@@ -109,6 +110,9 @@ String describeUserFacingError(
   Object error, {
   String fallback = 'Something went wrong. Please try again.',
 }) {
+  if (error is MissingSupabaseClaimException) {
+    return 'Your account session is initializing security claims. Please sign in again or refresh.';
+  }
   if (error is FirebaseAuthException) {
     return describeFirebaseAuthError(error, fallback: fallback);
   }

@@ -76,6 +76,46 @@ class SupabasePharmacyRepository {
     );
   }
 
+  /// Fetches a single delivery by its [deliveryId].
+  Future<PharmacyPrescriptionDelivery?> fetchDeliveryById(
+    String deliveryId,
+  ) async {
+    if (!SupabaseBootstrap.isReady || deliveryId.isEmpty) return null;
+    try {
+      final res = await _client
+          .from('pharmacy_deliveries')
+          .select('*, pharmacy_delivery_medicines(*)')
+          .eq('delivery_id', deliveryId)
+          .maybeSingle();
+      if (res == null) return null;
+      return PharmacySupabaseMapper.deliveryFromRow(res);
+    } catch (e) {
+      if (kDebugMode) debugPrint('[SupabasePharmacy] fetchDeliveryById error: $e');
+      return null;
+    }
+  }
+
+  /// Fetches a single delivery by associated [prescriptionId].
+  Future<PharmacyPrescriptionDelivery?> fetchDeliveryByPrescriptionId(
+    String prescriptionId,
+  ) async {
+    if (!SupabaseBootstrap.isReady || prescriptionId.isEmpty) return null;
+    try {
+      final res = await _client
+          .from('pharmacy_deliveries')
+          .select('*, pharmacy_delivery_medicines(*)')
+          .eq('prescription_id', prescriptionId)
+          .maybeSingle();
+      if (res == null) return null;
+      return PharmacySupabaseMapper.deliveryFromRow(res);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[SupabasePharmacy] fetchDeliveryByPrescriptionId error: $e');
+      }
+      return null;
+    }
+  }
+
   /// Fetches pharmacy deliveries assigned to [storeId].
   Future<List<PharmacyPrescriptionDelivery>> fetchDeliveriesForStore(
     String storeId, {

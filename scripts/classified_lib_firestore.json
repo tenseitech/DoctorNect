@@ -1,0 +1,1598 @@
+{
+  "doctor": [
+    {
+      "file": "frontend/lib/core/firebase/mappers/doctor_availability_mapper.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/doctor_account_repository.dart",
+      "count": 9,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 50,
+          "snippet": "reference: FirebaseFirestore.instance"
+        },
+        {
+          "line": 116,
+          "snippet": "reference: FirebaseFirestore.instance"
+        },
+        {
+          "line": 142,
+          "snippet": "final batch = FirebaseFirestore.instance.batch();"
+        },
+        {
+          "line": 143,
+          "snippet": "final doctorRef = FirebaseFirestore.instance"
+        },
+        {
+          "line": 146,
+          "snippet": "final userRef = FirebaseFirestore.instance"
+        },
+        {
+          "line": 179,
+          "snippet": "final batch = FirebaseFirestore.instance.batch();"
+        },
+        {
+          "line": 180,
+          "snippet": "final doctorRef = FirebaseFirestore.instance"
+        },
+        {
+          "line": 183,
+          "snippet": "final userRef = FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/doctor_availability_repository.dart",
+      "count": 3,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 33,
+          "snippet": "reference: FirebaseFirestore.instance"
+        },
+        {
+          "line": 48,
+          "snippet": "await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/doctor_directory_repository.dart",
+      "count": 4,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 32,
+          "snippet": "Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection("
+        },
+        {
+          "line": 57,
+          "snippet": "Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection("
+        },
+        {
+          "line": 88,
+          "snippet": "reference: FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/doctor_profile_detail_repository.dart",
+      "count": 4,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 27,
+          "snippet": "reference: FirebaseFirestore.instance"
+        },
+        {
+          "line": 65,
+          "snippet": "final userSnap = await FirebaseFirestore.instance"
+        },
+        {
+          "line": 79,
+          "snippet": "final s2 = await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/doctor_profile_repository.dart",
+      "count": 3,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 41,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 74,
+          "snippet": "await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/invite/doctor_invite_service.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 82,
+          "snippet": "await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/invite/pharmacy_doctor_invite_service.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 31,
+          "snippet": "await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/doctor/clinical/data/clinical_prescription_store.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 3,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/doctor/clinical/data/community_diagnosis_repository.dart",
+      "count": 3,
+      "lines": [
+        {
+          "line": 4,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 67,
+          "snippet": "final query = FirebaseFirestore.instance"
+        },
+        {
+          "line": 179,
+          "snippet": "final doc = await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/doctor/clinical/data/community_investigations_repository.dart",
+      "count": 7,
+      "lines": [
+        {
+          "line": 4,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 125,
+          "snippet": "final query = FirebaseFirestore.instance"
+        },
+        {
+          "line": 147,
+          "snippet": "final query = FirebaseFirestore.instance"
+        },
+        {
+          "line": 169,
+          "snippet": "final query = FirebaseFirestore.instance"
+        },
+        {
+          "line": 255,
+          "snippet": "final docRef = await FirebaseFirestore.instance"
+        },
+        {
+          "line": 294,
+          "snippet": "final docRef = await FirebaseFirestore.instance"
+        },
+        {
+          "line": 330,
+          "snippet": "final doc = await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/doctor/clinical/data/community_medicine_repository.dart",
+      "count": 3,
+      "lines": [
+        {
+          "line": 4,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 99,
+          "snippet": "final query = FirebaseFirestore.instance"
+        },
+        {
+          "line": 210,
+          "snippet": "final doc = await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/doctor/clinical/data/lab_order_store.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 3,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/doctor/doctor_shell.dart",
+      "count": 3,
+      "lines": [
+        {
+          "line": 3,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 135,
+          "snippet": "FirebaseFirestore.instance"
+        },
+        {
+          "line": 149,
+          "snippet": "FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/doctor/profile/data/doctor_profile_store.dart",
+      "count": 7,
+      "lines": [
+        {
+          "line": 5,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 82,
+          "snippet": "_doctorSub = FirebaseFirestore.instance"
+        },
+        {
+          "line": 127,
+          "snippet": "final ref = FirebaseFirestore.instance"
+        },
+        {
+          "line": 410,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 448,
+          "snippet": "final ref = FirebaseFirestore.instance"
+        },
+        {
+          "line": 483,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 509,
+          "snippet": "final ref = FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/doctor/profile/data/medical_directory_store.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 5,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/patient/data/registered_doctors_store.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 5,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    }
+  ],
+  "patient": [
+    {
+      "file": "frontend/lib/core/firebase/repositories/patient_profile_repository.dart",
+      "count": 10,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 116,
+          "snippet": "reference: FirebaseFirestore.instance"
+        },
+        {
+          "line": 159,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 187,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 209,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 228,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 295,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 328,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 343,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 376,
+          "snippet": "final ref = FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/notifications/patient_notification_prefs_sync.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 3,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 45,
+          "snippet": "_sub = FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/patient/booking/utils/booking_flow_helpers.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 25,
+          "snippet": "FirebaseFirestore.instance.collection('appointments');"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/patient/profile/data/patient_photo_local_store.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 27,
+          "snippet": "static Future<String?> uploadToFirebaseStorage("
+        },
+        {
+          "line": 31,
+          "snippet": "LocalAvatarStore.uploadToFirebaseStorage("
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/patient/profile/data/patient_profile_mock.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 5,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 176,
+          "snippet": "_patientSub = FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/patient/profile/support/help_support_screen.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 3,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 51,
+          "snippet": "await FirebaseFirestore.instance.collection('support_tickets').add({"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/patient/profile/support/support_tickets_history_screen.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 93,
+          "snippet": "stream: FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/patient/records/data/health_record_file_store.dart",
+      "count": 8,
+      "lines": [
+        {
+          "line": 4,
+          "snippet": "import 'package:firebase_storage/firebase_storage.dart';"
+        },
+        {
+          "line": 93,
+          "snippet": "final ref = FirebaseStorage.instance.refFromURL(storageUrl);"
+        },
+        {
+          "line": 105,
+          "snippet": "final ref = FirebaseStorage.instance.ref(path);"
+        },
+        {
+          "line": 142,
+          "snippet": "final url = await uploadToFirebaseStorage("
+        },
+        {
+          "line": 326,
+          "snippet": "static Future<String?> uploadToFirebaseStorage({"
+        },
+        {
+          "line": 342,
+          "snippet": "final ref = FirebaseStorage.instance.ref("
+        },
+        {
+          "line": 352,
+          "snippet": "'HealthRecordFileStore.uploadToFirebaseStorage failed: $e\\n$st',"
+        },
+        {
+          "line": 366,
+          "snippet": "await FirebaseStorage.instance"
+        }
+      ]
+    }
+  ],
+  "pharmacy": [
+    {
+      "file": "frontend/lib/core/auth/profile_draft_store.dart",
+      "count": 4,
+      "lines": [
+        {
+          "line": 3,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 42,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 81,
+          "snippet": "final doc = await FirebaseFirestore.instance"
+        },
+        {
+          "line": 114,
+          "snippet": "await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/data/local_avatar_store.dart",
+      "count": 3,
+      "lines": [
+        {
+          "line": 4,
+          "snippet": "import 'package:firebase_storage/firebase_storage.dart';"
+        },
+        {
+          "line": 131,
+          "snippet": "static Future<String?> uploadToFirebaseStorage({"
+        },
+        {
+          "line": 141,
+          "snippet": "final ref = FirebaseStorage.instance.ref(storagePath);"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/firestore_read_helper.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 29,
+          "snippet": "plugin: 'cloud_firestore',"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/lab_report_file_store.dart",
+      "count": 4,
+      "lines": [
+        {
+          "line": 3,
+          "snippet": "import 'package:firebase_storage/firebase_storage.dart';"
+        },
+        {
+          "line": 199,
+          "snippet": "final ref = FirebaseStorage.instance.ref("
+        },
+        {
+          "line": 224,
+          "snippet": "final ref = FirebaseStorage.instance.refFromURL(storageUrl);"
+        },
+        {
+          "line": 294,
+          "snippet": "final ref = FirebaseStorage.instance.ref(path);"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/mappers/appointment_firestore_mapper.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/mappers/in_app_notification_firestore_mapper.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/mappers/lab_order_firestore_mapper.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/mappers/medical_directory_firestore_mapper.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/mappers/referral_firestore_mapper.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/models/firestore_page.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/medical_store_repository.dart",
+      "count": 5,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 23,
+          "snippet": "reference: FirebaseFirestore.instance"
+        },
+        {
+          "line": 41,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 124,
+          "snippet": "reference: FirebaseFirestore.instance"
+        },
+        {
+          "line": 166,
+          "snippet": "await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/pharmacy_firestore_repository.dart",
+      "count": 14,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 24,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 46,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 82,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 153,
+          "snippet": "reference: FirebaseFirestore.instance"
+        },
+        {
+          "line": 175,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 198,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 224,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 250,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 274,
+          "snippet": "return FirebaseFirestore.instance"
+        },
+        {
+          "line": 298,
+          "snippet": "return FirebaseFirestore.instance"
+        },
+        {
+          "line": 359,
+          "snippet": "return FirebaseFirestore.instance"
+        },
+        {
+          "line": 378,
+          "snippet": "return FirebaseFirestore.instance"
+        },
+        {
+          "line": 439,
+          "snippet": "Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection("
+        }
+      ]
+    }
+  ],
+  "lab": [
+    {
+      "file": "frontend/lib/core/firebase/repositories/lab_booking_repository.dart",
+      "count": 12,
+      "lines": [
+        {
+          "line": 3,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 97,
+          "snippet": "FirebaseFirestore? firestoreOverride;"
+        },
+        {
+          "line": 99,
+          "snippet": "FirebaseFirestore get firestore =>"
+        },
+        {
+          "line": 100,
+          "snippet": "firestoreOverride ?? FirebaseFirestore.instance;"
+        },
+        {
+          "line": 158,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 241,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 286,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 322,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 344,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 365,
+          "snippet": "return FirebaseFirestore.instance"
+        },
+        {
+          "line": 387,
+          "snippet": "return FirebaseFirestore.instance"
+        },
+        {
+          "line": 410,
+          "snippet": "await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/lab_catalog_repository.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 27,
+          "snippet": "final ref = FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/lab_connection_repository.dart",
+      "count": 5,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 20,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 46,
+          "snippet": "return FirebaseFirestore.instance"
+        },
+        {
+          "line": 62,
+          "snippet": "return FirebaseFirestore.instance"
+        },
+        {
+          "line": 121,
+          "snippet": "Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection("
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/lab_order_repository.dart",
+      "count": 11,
+      "lines": [
+        {
+          "line": 3,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 26,
+          "snippet": "FirebaseFirestore? firestoreOverride;"
+        },
+        {
+          "line": 28,
+          "snippet": "FirebaseFirestore get firestore =>"
+        },
+        {
+          "line": 29,
+          "snippet": "firestoreOverride ?? FirebaseFirestore.instance;"
+        },
+        {
+          "line": 37,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 61,
+          "snippet": "final baseQuery = FirebaseFirestore.instance"
+        },
+        {
+          "line": 102,
+          "snippet": "final baseQuery = FirebaseFirestore.instance"
+        },
+        {
+          "line": 171,
+          "snippet": "final baseQuery = FirebaseFirestore.instance"
+        },
+        {
+          "line": 205,
+          "snippet": "return FirebaseFirestore.instance"
+        },
+        {
+          "line": 227,
+          "snippet": "return FirebaseFirestore.instance"
+        },
+        {
+          "line": 255,
+          "snippet": "await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/lab_repository.dart",
+      "count": 5,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 92,
+          "snippet": "FirebaseFirestore.instance.collection(FirestorePaths.labs).doc(labId),"
+        },
+        {
+          "line": 107,
+          "snippet": "FirebaseFirestore.instance.collection(FirestorePaths.labs).doc(labId),"
+        },
+        {
+          "line": 120,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 228,
+          "snippet": "await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/lab/widgets/lab_report_upload_sheet.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 7,
+          "snippet": "import 'package:firebase_storage/firebase_storage.dart';"
+        },
+        {
+          "line": 324,
+          "snippet": "? plugin == 'firebase_storage'"
+        }
+      ]
+    }
+  ],
+  "ambulance": [
+    {
+      "file": "frontend/lib/core/firebase/repositories/ambulance_repository.dart",
+      "count": 18,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 89,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 173,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 214,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 250,
+          "snippet": "final ref = FirebaseFirestore.instance"
+        },
+        {
+          "line": 318,
+          "snippet": "final ref = FirebaseFirestore.instance"
+        },
+        {
+          "line": 357,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 411,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 450,
+          "snippet": "query: FirebaseFirestore.instance.collection(FirestorePaths.ambulances),"
+        },
+        {
+          "line": 569,
+          "snippet": "final firestore = FirebaseFirestore.instance;"
+        },
+        {
+          "line": 660,
+          "snippet": "final firestore = FirebaseFirestore.instance;"
+        },
+        {
+          "line": 736,
+          "snippet": "final firestore = FirebaseFirestore.instance;"
+        },
+        {
+          "line": 945,
+          "snippet": "final firestore = FirebaseFirestore.instance;"
+        },
+        {
+          "line": 1019,
+          "snippet": "final firestore = FirebaseFirestore.instance;"
+        },
+        {
+          "line": 1078,
+          "snippet": "final firestore = FirebaseFirestore.instance;"
+        },
+        {
+          "line": 1139,
+          "snippet": "final firestore = FirebaseFirestore.instance;"
+        },
+        {
+          "line": 1211,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 1230,
+          "snippet": "await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/invite/ambulance_invite_service.dart",
+      "count": 3,
+      "lines": [
+        {
+          "line": 5,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 90,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 171,
+          "snippet": "await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/ambulance/ambulance_booking_screen.dart",
+      "count": 3,
+      "lines": [
+        {
+          "line": 7,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 260,
+          "snippet": "final doc = await FirebaseFirestore.instance"
+        },
+        {
+          "line": 2028,
+          "snippet": "_rejectedSub = FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/ambulance/ambulance_driver_home_screen.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 13,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 71,
+          "snippet": "final firestore = FirebaseFirestore.instance;"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/ambulance/ambulance_profile_screen.dart",
+      "count": 5,
+      "lines": [
+        {
+          "line": 35,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 976,
+          "snippet": "final batch = FirebaseFirestore.instance.batch();"
+        },
+        {
+          "line": 979,
+          "snippet": "FirebaseFirestore.instance.collection(FirestorePaths.users).doc(uid);"
+        },
+        {
+          "line": 991,
+          "snippet": "final ambRef = FirebaseFirestore.instance"
+        },
+        {
+          "line": 1081,
+          "snippet": "stream: FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/ambulance/data/ambulance_booking_sync.dart",
+      "count": 4,
+      "lines": [
+        {
+          "line": 3,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 69,
+          "snippet": "_driverSub = FirebaseFirestore.instance"
+        },
+        {
+          "line": 118,
+          "snippet": "_patientSub = FirebaseFirestore.instance"
+        },
+        {
+          "line": 159,
+          "snippet": "_patientHistorySub = FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/ambulance/models/ambulance_invite.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    }
+  ],
+  "core": [
+    {
+      "file": "frontend/lib/core/admin/super_admin_verification_service.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 87,
+          "snippet": "FirebaseFirestore get _firestore => FirebaseFirestore.instance;"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/auth/onboarding_service.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 4,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 152,
+          "snippet": "final db = FirebaseFirestore.instance;"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/auth/profile_completion_service.dart",
+      "count": 8,
+      "lines": [
+        {
+          "line": 3,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 59,
+          "snippet": "reference: FirebaseFirestore.instance"
+        },
+        {
+          "line": 110,
+          "snippet": "reference: FirebaseFirestore.instance"
+        },
+        {
+          "line": 145,
+          "snippet": "final batch = FirebaseFirestore.instance.batch();"
+        },
+        {
+          "line": 147,
+          "snippet": "FirebaseFirestore.instance.collection(FirestorePaths.users).doc(uid);"
+        },
+        {
+          "line": 166,
+          "snippet": "FirebaseFirestore.instance.collection(roleCollection).doc(profileId),"
+        },
+        {
+          "line": 179,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 214,
+          "snippet": "FirebaseFirestore.instance.collection(collection).doc(profileId),"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/firebase_bootstrap.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 4,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 39,
+          "snippet": "if (!FirestoreForbiddenGuard.isForbidden) FirebaseFirestore.instance.settings = const Settings("
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/models/medibond_user_profile.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/appointment_repository.dart",
+      "count": 6,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 33,
+          "snippet": "plugin: 'cloud_firestore',"
+        },
+        {
+          "line": 40,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 116,
+          "snippet": "return FirebaseFirestore.instance"
+        },
+        {
+          "line": 127,
+          "snippet": "return FirebaseFirestore.instance"
+        },
+        {
+          "line": 159,
+          "snippet": "query: FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/family_member_repository.dart",
+      "count": 4,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 22,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 38,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 64,
+          "snippet": "await FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/in_app_notification_repository.dart",
+      "count": 5,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 28,
+          "snippet": "return FirebaseFirestore.instance"
+        },
+        {
+          "line": 46,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 68,
+          "snippet": "final batch = FirebaseFirestore.instance.batch();"
+        },
+        {
+          "line": 69,
+          "snippet": "final collection = FirebaseFirestore.instance.collection("
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/medical_directory_repository.dart",
+      "count": 5,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 25,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 41,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 55,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 77,
+          "snippet": "final baseQuery = FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/medicine_suggestion_repository.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 11,
+          "snippet": "FirebaseFirestore get _db => FirebaseFirestore.instance;"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/prescription_repository.dart",
+      "count": 5,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 42,
+          "snippet": "final ref = FirebaseFirestore.instance"
+        },
+        {
+          "line": 77,
+          "snippet": "FirebaseFirestore.instance"
+        },
+        {
+          "line": 105,
+          "snippet": "FirebaseFirestore.instance"
+        },
+        {
+          "line": 163,
+          "snippet": "FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/referral_repository.dart",
+      "count": 5,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 25,
+          "snippet": "await FirebaseFirestore.instance"
+        },
+        {
+          "line": 46,
+          "snippet": "plugin: 'cloud_firestore',"
+        },
+        {
+          "line": 67,
+          "snippet": "reference: FirebaseFirestore.instance"
+        },
+        {
+          "line": 118,
+          "snippet": "query: FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/review_repository.dart",
+      "count": 11,
+      "lines": [
+        {
+          "line": 3,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 34,
+          "snippet": "final docRef = FirebaseFirestore.instance"
+        },
+        {
+          "line": 45,
+          "snippet": "final query = FirebaseFirestore.instance"
+        },
+        {
+          "line": 80,
+          "snippet": "final snapshot = await FirebaseFirestore.instance"
+        },
+        {
+          "line": 139,
+          "snippet": "final firestore = FirebaseFirestore.instance;"
+        },
+        {
+          "line": 195,
+          "snippet": "final firestore = FirebaseFirestore.instance;"
+        },
+        {
+          "line": 244,
+          "snippet": "final query = FirebaseFirestore.instance"
+        },
+        {
+          "line": 270,
+          "snippet": "final docRef = FirebaseFirestore.instance"
+        },
+        {
+          "line": 295,
+          "snippet": "query: FirebaseFirestore.instance"
+        },
+        {
+          "line": 372,
+          "snippet": "final firestore = FirebaseFirestore.instance;"
+        },
+        {
+          "line": 418,
+          "snippet": "final firestore = FirebaseFirestore.instance;"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/firebase/repositories/user_repository.dart",
+      "count": 3,
+      "lines": [
+        {
+          "line": 6,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 20,
+          "snippet": "static FirebaseFirestore? debugFirestore;"
+        },
+        {
+          "line": 25,
+          "snippet": "FirebaseFirestore get _db => debugFirestore ?? FirebaseFirestore.instance;"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/models/banner_config_model.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/models/promoted_ad_model.dart",
+      "count": 1,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/services/banner_config_service.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 3,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 17,
+          "snippet": "static FirebaseFirestore get _db => FirebaseFirestore.instance;"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/services/promoted_ads_service.dart",
+      "count": 4,
+      "lines": [
+        {
+          "line": 4,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 18,
+          "snippet": "static final _firestore = FirebaseFirestore.instance;"
+        },
+        {
+          "line": 32,
+          "snippet": "static FirebaseFirestore? firestoreOverride;"
+        },
+        {
+          "line": 33,
+          "snippet": "static FirebaseFirestore get _db => firestoreOverride ?? _firestore;"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/core/storage/profile_photo_uploader.dart",
+      "count": 5,
+      "lines": [
+        {
+          "line": 2,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 35,
+          "snippet": "FirebaseFirestore? firestoreOverride;"
+        },
+        {
+          "line": 36,
+          "snippet": "FirebaseFirestore get _db => firestoreOverride ?? FirebaseFirestore.instance;"
+        },
+        {
+          "line": 137,
+          "snippet": "remoteUrl = await PatientPhotoLocalStore.uploadToFirebaseStorage("
+        },
+        {
+          "line": 268,
+          "snippet": "storageUrl = await LocalAvatarStore.uploadToFirebaseStorage("
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/admin/promoted_ad_review_screen.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 24,
+          "snippet": "return FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/features/profile/profile_completion_modal.dart",
+      "count": 3,
+      "lines": [
+        {
+          "line": 2,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 210,
+          "snippet": "final doc = await FirebaseFirestore.instance"
+        },
+        {
+          "line": 390,
+          "snippet": "final db = FirebaseFirestore.instance;"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/widgets/complete_profile_prompt.dart",
+      "count": 3,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 227,
+          "snippet": "stream: FirebaseFirestore.instance"
+        },
+        {
+          "line": 264,
+          "snippet": "FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/widgets/verification_status_banner.dart",
+      "count": 2,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 85,
+          "snippet": "stream: FirebaseFirestore.instance"
+        }
+      ]
+    },
+    {
+      "file": "frontend/lib/widgets/verification_submission_card.dart",
+      "count": 5,
+      "lines": [
+        {
+          "line": 1,
+          "snippet": "import 'package:cloud_firestore/cloud_firestore.dart';"
+        },
+        {
+          "line": 54,
+          "snippet": "final batch = FirebaseFirestore.instance.batch();"
+        },
+        {
+          "line": 56,
+          "snippet": "FirebaseFirestore.instance.collection(FirestorePaths.users).doc(uid);"
+        },
+        {
+          "line": 77,
+          "snippet": "FirebaseFirestore.instance.collection(roleCol).doc(profileId);"
+        },
+        {
+          "line": 113,
+          "snippet": "stream: FirebaseFirestore.instance"
+        }
+      ]
+    }
+  ]
+}

@@ -42,6 +42,25 @@ const {
   otpRedisKey,
 } = require('../registration_otp');
 
+let origCutover;
+test.beforeEach(() => {
+  origCutover = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+  process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+  try {
+    const { _resetRemoteConfigCache } = require('../sync_flags');
+    _resetRemoteConfigCache();
+  } catch (_) {}
+});
+
+test.afterEach(() => {
+  if (origCutover === undefined) delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+  else process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origCutover;
+  try {
+    const { _resetRemoteConfigCache } = require('../sync_flags');
+    _resetRemoteConfigCache();
+  } catch (_) {}
+});
+
 function mobileHash(role, digits) {
   return crypto.createHash('sha256').update(`${role}:${digits}`).digest('hex');
 }

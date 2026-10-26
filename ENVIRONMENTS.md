@@ -14,14 +14,26 @@ DoctorNect maintains **two strictly isolated environments**: **Staging** and **P
 
 | Component | Staging Environment (`staging`) | Production Environment (`production`) | Enforcement Mechanism |
 |---|---|---|---|
-| **Supabase Project** | Dedicated staging project (`irpkyedfmdsuvapfnrim`) | Dedicated production project (`medibond-prod` / current ref) | Separate Supabase project URL & Service Role keys |
-| **PostgreSQL Database** | Staging PostgreSQL instance | Production PostgreSQL instance (with PITR enabled) | Network, project ID, and credential segregation |
-| **Firebase Auth & Project** | `medibond-staging` (or staging app id) | `medibond-45fad` / `medibond-prod` | Separate `google-services.json` & `GoogleService-Info.plist` |
-| **AWS S3 Storage Bucket** | `doctornect-staging-vault` | `doctornect-prod-vault` | Separate AWS IAM bucket policies & KMS CMKs |
-| **Razorpay Gateway** | Test Mode (`rzp_test_*`) | Live Mode (`rzp_live_*`) | Gateway key prefix check & webhook signature keys |
-| **Redis Cache** | Staging Redis cluster / db 1 | Production Redis cluster / db 0 | Separate host, port, and TLS credentials |
-| **Secret Manager** | GCP Secret Manager staging path | GCP Secret Manager prod path | IAM service account role binding |
-| **Client Flavor** | `staging` flavor | `prod` flavor | Android productFlavors / iOS build schemes |
+| **Database** | Current Supabase (`rnltknemwnjrjxthtull`) | New Amazon RDS PostgreSQL 17 (Option A) | Complete database & network segregation |
+| **Access Layer** | Direct Supabase PostgREST | AWS PostgREST + Node.js Auth Gateway | Independent endpoints & JWT signing |
+| **Firebase Auth & Project** | `medibond-45fad` (Shared today) | `medibond-45fad` (Shared today) | Claim/role tagging & separate staging app ID recommended |
+| **AWS S3 Storage Bucket** | `doctornect` (Shared today) | `doctornect-prod-vault` (Dedicated recommended) | S3 key prefix `staging/` or dedicated production bucket |
+| **Razorpay Gateway** | Test Mode (`rzp_test_*`) | Live Mode (`rzp_live_*`) | Gateway key prefix check & webhook signature verification |
+| **Redis Ephemeral Cache** | Redis DB 1 (or staging cluster) | Redis DB 0 (Dedicated production cluster) | Separate host/DB index & key namespace |
+| **Client Target** | `staging` target / Supabase client | `prod` target / Gateway client | Flutter `--dart-define` compilation |
+
+---
+
+## 2. Shared Cloud Resources Risk Evaluation (Phase 3.4)
+
+| Resource | Used by Staging | Used by Production | Isolation Today | Recommendation & Risk Assessment | Cloud Action Needed from Operator |
+|---|---|---|---|---|---|
+| **Firebase Project (`medibond-45fad`)** | YES | YES | **SHARED** | **High Risk:** Staging and production users reside in the same Firebase Auth user pool. A staging test user could authenticate against production unless claims are strictly verified. Recommended: Dedicated `medibond-staging` project. | Provision `medibond-staging` project in Firebase console OR register staging-specific package ID (`com.doctornect.app.staging`). (MANUAL_ACTIONS Item 4) |
+| **AWS S3 Storage Bucket** | YES | YES | **SHARED** | **Critical PHI Risk:** Staging test files and production prescriptions currently land in the same S3 bucket. Cross-environment deletion or key collisions could expose patient health records. | Create dedicated production S3 bucket `doctornect-prod-vault` in `ap-south-1` with KMS SSE encryption. (MANUAL_ACTIONS Item 5) |
+| **Redis / Memorystore** | YES | YES | **SHARED** | **Medium Risk:** Ephemeral rate limits, OTP sessions, and live ambulance GPS coordinates share the same cache. Cache flushes on staging would evict production sessions. | Configure separate Redis cluster or allocate Redis DB index 1 with strict key prefixing for staging. (MANUAL_ACTIONS Item 6) |
+| **Firebase Cloud Functions** | YES | YES | **SHARED** | **High Risk:** Currently a single codebase is deployed to Firebase Functions. Database calls must dynamically resolve endpoints via `APP_ENV`. | Configure GCP Secret Manager for `PROD_GATEWAY_SERVICE_KEY` and `STAGING_SUPABASE_SERVICE_ROLE_KEY`. (MANUAL_ACTIONS Item 7) |
+| **MSG91 SMS Gateway** | YES | YES | **SHARED** | **Low Risk:** Single DLT-registered sender ID `DRNECT`. Staging uses SMS quota. Test phones (reviewer accounts) bypass live SMS. | Verify production DLT templates and ensure SMS balance monitoring. |
+| **Razorpay Gateway** | YES | YES | **LOGICALLY ISOLATED** | **Zero Risk:** Razorpay strictly enforces `rzp_test_*` vs `rzp_live_*` key segregation. Build scripts fail fast if test keys are bundled in production. | Generate live Razorpay API Key ID and Webhook Secret in dashboard. (MANUAL_ACTIONS Item 8) |
 
 ---
 
@@ -69,7 +81,6 @@ Configuration files are maintained in JSON format for compile-time injection:
   "APP_ENV": "staging",
   "SUPABASE_URL": "https://irpkyedfmdsuvapfnrim.supabase.co",
   "SUPABASE_ANON_KEY": "<STAGING_ANON_KEY>",
-  "USE_SUPABASE_AUTH": "true",
   "USE_S3_STORAGE": "true",
   "USE_SUPABASE_DB_DOCTOR_PATIENT": "true",
   "FIREBASE_API_KEY_ANDROID": "<STAGING_ANDROID_KEY>",
@@ -83,9 +94,8 @@ Configuration files are maintained in JSON format for compile-time injection:
 ```json
 {
   "APP_ENV": "production",
-  "SUPABASE_URL": "https://<PROD_PROJECT_REF>.supabase.co",
+  "SUPABASE_URL": "https://rnltknemwnjrjxthtull.supabase.co",
   "SUPABASE_ANON_KEY": "<PROD_ANON_KEY>",
-  "USE_SUPABASE_AUTH": "true",
   "USE_S3_STORAGE": "true",
   "USE_SUPABASE_DB_DOCTOR_PATIENT": "true",
   "FIREBASE_API_KEY_ANDROID": "<PROD_ANDROID_KEY>",

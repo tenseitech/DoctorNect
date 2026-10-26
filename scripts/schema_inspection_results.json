@@ -1,0 +1,769 @@
+{
+  "tablesWithoutRls": [],
+  "tablesWithRlsZeroPolicies": [
+    "abuse_rate_limits",
+    "ambulance_locations",
+    "ambulance_trip_contacts",
+    "otp_challenges"
+  ],
+  "views": [
+    {
+      "view_name": "doctor_directory",
+      "reloptions": [
+        "security_invoker=false"
+      ],
+      "security_invoker": false
+    },
+    {
+      "view_name": "patient_safe",
+      "reloptions": [
+        "security_invoker=false"
+      ],
+      "security_invoker": false
+    }
+  ],
+  "securityDefinerFunctions": [
+    {
+      "name": "accept_ambulance_request",
+      "args": "p_broadcast_id character varying, p_request_id character varying",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "book_appointment_atomic",
+      "args": "p_appointment_id character varying, p_doctor_id character varying, p_doctor_name character varying, p_specialization character varying, p_patient_name character varying, p_patient_age integer, p_patient_gender character varying, p_date_time timestamp with time zone, p_slot_label character varying, p_visit_type character varying, p_token_number integer, p_clinic_name character varying, p_clinic_address text, p_sync_origin character varying, p_patient_id character varying",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "cancel_ambulance_broadcast",
+      "args": "p_broadcast_id character varying, p_reason text",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "complete_ambulance_trip",
+      "args": "p_broadcast_id character varying",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "create_prescription_atomic",
+      "args": "payload jsonb",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "current_profile_id",
+      "args": "",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "current_user_role",
+      "args": "",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "name": "doctor_can_access_patient",
+      "args": "target_patient_id text",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "expire_stale_ambulance_broadcasts",
+      "args": "",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "fn_sync_review_aggregates",
+      "args": "",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "fn_sync_review_helpful_count",
+      "args": "",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "fn_touch_doctor_directory",
+      "args": "",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "get_ambulance_trip_contact",
+      "args": "p_broadcast_id character varying",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "get_ambulance_trip_location",
+      "args": "p_broadcast_id character varying",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "is_profile_completed",
+      "args": "",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "is_super_admin",
+      "args": "check_uid text",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "is_super_admin",
+      "args": "",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "is_verified_doctor",
+      "args": "",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "register_device_token",
+      "args": "p_platform text, p_fcm_token text",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "reschedule_appointment_atomic",
+      "args": "p_appointment_id character varying, p_doctor_id character varying, p_new_date date, p_new_slot character varying, p_rescheduled_by character varying, p_reason text",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "rls_auto_enable",
+      "args": "",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "update_ambulance_location",
+      "args": "p_broadcast_id character varying, p_latitude double precision, p_longitude double precision, p_heading double precision, p_speed double precision",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "update_lab_booking_status",
+      "args": "p_booking_id character varying, p_new_status character varying, p_notes text",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "update_lab_order_status",
+      "args": "p_order_id character varying, p_new_status character varying, p_notes text",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "name": "update_pharmacy_delivery_status",
+      "args": "p_delivery_id character varying, p_new_status character varying, p_notes text, p_medicine_lines jsonb",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    }
+  ],
+  "grants": [
+    {
+      "table_name": "admin_audit_logs",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "admin_audit_logs",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "ambulance_broadcasts",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "ambulance_broadcasts",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "ambulance_invites",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "ambulance_invites",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "ambulance_location_updates",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "ambulance_private_settings",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "ambulance_private_settings",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "ambulance_requests",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "ambulance_requests",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "ambulances",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "ambulances",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "appointments",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "appointments",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "community_body_parts",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "community_body_parts",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "community_diagnoses",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "community_diagnoses",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "community_lab_tests",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "community_lab_tests",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "community_medicines",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "community_medicines",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "community_radiology",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "community_radiology",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "doctor_availability",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "doctor_availability",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "doctor_blocked_dates",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "doctor_blocked_dates",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "doctor_directory",
+      "grantee": "authenticated",
+      "privileges": "SELECT"
+    },
+    {
+      "table_name": "doctor_directory_updates",
+      "grantee": "authenticated",
+      "privileges": "SELECT"
+    },
+    {
+      "table_name": "doctor_education",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "doctor_education",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "doctor_facilities",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "doctor_facilities",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "doctor_invites",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "doctor_invites",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "doctor_private",
+      "grantee": "authenticated",
+      "privileges": "SELECT"
+    },
+    {
+      "table_name": "doctors",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "doctors",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "facilities",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "facilities",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "family_members",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "family_members",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "health_records",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "health_records",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "in_app_notifications",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "in_app_notifications",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "lab_bookings",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "lab_bookings",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "lab_catalog_tests",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "lab_catalog_tests",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "lab_connections",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "lab_connections",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "lab_orders",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "lab_orders",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "labs",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "labs",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "mail_queue",
+      "grantee": "authenticated",
+      "privileges": "INSERT, SELECT"
+    },
+    {
+      "table_name": "medical_directory",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "medical_directory",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "medical_stores",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "medical_stores",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "patient_care_team",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "patient_care_team",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "patient_doctor_links",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "patient_doctor_links",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "patient_safe",
+      "grantee": "authenticated",
+      "privileges": "SELECT"
+    },
+    {
+      "table_name": "patients",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "patients",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "pharmacy_connections",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "pharmacy_connections",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "pharmacy_deliveries",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "pharmacy_deliveries",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "pharmacy_delivery_medicines",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "pharmacy_delivery_medicines",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "pharmacy_doctor_invites",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "pharmacy_doctor_invites",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "prescription_investigations",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "prescription_investigations",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "prescription_medicines",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "prescription_medicines",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "prescription_referrals",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "prescription_referrals",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "prescriptions",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "prescriptions",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "promoted_ads",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "promoted_ads",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "razorpay_orders",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "razorpay_orders",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "razorpay_payments",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "razorpay_payments",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "razorpay_webhook_events",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "razorpay_webhook_events",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "referrals",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "referrals",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "review_public",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "review_public",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "review_votes",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "review_votes",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "reviews",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "reviews",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "security_events",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "security_events",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "storage_audit_logs",
+      "grantee": "authenticated",
+      "privileges": "SELECT"
+    },
+    {
+      "table_name": "super_admins",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "super_admins",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "support_ticket_messages",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "support_ticket_messages",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "support_tickets",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "support_tickets",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "sync_dead_letter_queue",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "sync_dead_letter_queue",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "system_config",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "system_config",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "user_devices",
+      "grantee": "authenticated",
+      "privileges": "DELETE, INSERT, SELECT, UPDATE"
+    },
+    {
+      "table_name": "users",
+      "grantee": "anon",
+      "privileges": "DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE"
+    },
+    {
+      "table_name": "users",
+      "grantee": "authenticated",
+      "privileges": "DELETE, REFERENCES, SELECT, TRIGGER, TRUNCATE"
+    }
+  ]
+}

@@ -83,6 +83,38 @@ class PromotedAdModel {
     return '$mins mins remaining';
   }
 
+  factory PromotedAdModel.fromRow(Map<String, dynamic> row) {
+    DateTime? parseDate(dynamic val) {
+      if (val is DateTime) return val;
+      if (val is String) return DateTime.tryParse(val);
+      return null;
+    }
+
+    return PromotedAdModel(
+      adId: (row['ad_id'] ?? row['adId'] ?? '').toString(),
+      providerType:
+          ((row['provider_type'] ?? row['providerType']) as String?)?.toLowerCase() ?? 'doctor',
+      providerId: (row['provider_id'] ?? row['providerId'] ?? '').toString(),
+      title: (row['title'] ?? '').toString(),
+      description: (row['description'] ?? '').toString(),
+      imageUrl: (row['image_url'] ?? row['imageUrl'] ?? '').toString(),
+      imageKey: (row['image_s3_key'] ?? row['image_key'] ?? row['imageKey']) as String?,
+      imageStorage: (row['image_storage_provider'] ?? row['image_storage'] ?? row['imageStorage'] ?? 's3') as String?,
+      ctaLabel: (row['cta_label'] ?? row['ctaLabel'] ?? 'View Details').toString(),
+      durationHours: ((row['duration_hours'] ?? row['durationHours']) as num?)?.toInt() ?? 24,
+      amountPaid: ((row['amount_paid'] ?? row['amountPaid']) as num?) ?? 300,
+      targetCity: (row['target_city'] ?? row['targetCity']) as String?,
+      razorpayOrderId: (row['razorpay_order_id'] ?? row['razorpayOrderId']) as String?,
+      razorpayPaymentId: (row['razorpay_payment_id'] ?? row['razorpayPaymentId']) as String?,
+      paymentStatus:
+          ((row['payment_status'] ?? row['paymentStatus']) as String?)?.toLowerCase() ?? 'pending',
+      status: ((row['status']) as String?)?.toLowerCase() ?? 'draft',
+      startTime: parseDate(row['start_time'] ?? row['startTime']),
+      endTime: parseDate(row['end_time'] ?? row['endTime']),
+      createdAt: parseDate(row['created_at'] ?? row['createdAt']),
+    );
+  }
+
   factory PromotedAdModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
 

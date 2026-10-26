@@ -49,6 +49,8 @@ abstract final class AmbulanceSupabaseMapper {
       AmbulanceBookingStatus status;
       switch (statusStr.toLowerCase()) {
         case 'accepted':
+        case 'in_progress':
+        case 'dispatched':
           status = AmbulanceBookingStatus.accepted;
           break;
         case 'completed':
@@ -66,17 +68,21 @@ abstract final class AmbulanceSupabaseMapper {
       final createdAtRaw = row['created_at'] as String?;
       final dt = createdAtRaw != null ? DateTime.parse(createdAtRaw) : DateTime.now();
 
+      final pickup = row['pickup_location'] as String? ?? row['pickup_address'] as String? ?? '';
+      final phone = row['contact_phone'] as String? ?? row['patient_phone'] as String? ?? '';
+      final driverId = row['accepted_driver_id'] as String? ?? row['assigned_driver_id'] as String?;
+
       return AmbulanceBooking(
         id: row['broadcast_id'] as String? ?? '',
         patientName: row['patient_name'] as String? ?? '',
-        pickupLocation: row['pickup_address'] as String? ?? '',
-        contactPhone: row['patient_phone'] as String? ?? '',
+        pickupLocation: pickup,
+        contactPhone: phone,
         bookedByRole: AmbulanceBookedByRole.patient,
         bookedByName: row['patient_name'] as String? ?? '',
         bookedById: row['patient_id'] as String? ?? '',
         createdAt: dt,
         status: status,
-        acceptedAmbulanceId: row['assigned_driver_id'] as String?,
+        acceptedAmbulanceId: driverId,
       );
     } catch (_) {
       return null;
@@ -93,14 +99,12 @@ abstract final class AmbulanceSupabaseMapper {
       'broadcast_id': booking.id,
       'patient_id': booking.bookedById,
       'patient_name': booking.patientName,
-      'patient_phone': booking.contactPhone,
-      'pickup_latitude': pickupLat ?? 0.0,
-      'pickup_longitude': pickupLng ?? 0.0,
-      'pickup_address': booking.pickupLocation,
-      'destination_address': destinationAddress ?? '',
+      'pickup_location': booking.pickupLocation,
+      'drop_location': destinationAddress ?? '',
+      'contact_phone': booking.contactPhone,
       'status': booking.status.name,
       if (booking.acceptedAmbulanceId != null)
-        'assigned_driver_id': booking.acceptedAmbulanceId,
+        'accepted_driver_id': booking.acceptedAmbulanceId,
     };
   }
 
@@ -127,13 +131,16 @@ abstract final class AmbulanceSupabaseMapper {
       final dt = createdAtRaw != null ? DateTime.parse(createdAtRaw) : DateTime.now();
 
       final broadcast = row['ambulance_broadcasts'] as Map<String, dynamic>?;
+      final pickup = row['pickup_location'] as String? ?? broadcast?['pickup_location'] as String? ?? broadcast?['pickup_address'] as String? ?? '';
+      final drop = row['drop_location'] as String? ?? broadcast?['drop_location'] as String? ?? broadcast?['destination_address'] as String? ?? '';
+      final patientId = row['patient_id'] as String? ?? broadcast?['patient_id'] as String? ?? '';
 
       return AmbulanceRequest(
         id: row['request_id'] as String? ?? '',
         driverId: row['driver_id'] as String? ?? '',
-        patientId: broadcast?['patient_id'] as String? ?? '',
-        pickupLocation: broadcast?['pickup_address'] as String? ?? '',
-        dropLocation: broadcast?['destination_address'] as String? ?? '',
+        patientId: patientId,
+        pickupLocation: pickup,
+        dropLocation: drop,
         status: status,
         createdAt: dt,
       );

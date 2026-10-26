@@ -20,10 +20,15 @@ const { enforceAbuseLimit } = require('./abuse_rate_limit');
 // Firebase Secret Manager declarations
 const awsAccessKeyId = defineSecret('AWS_ACCESS_KEY_ID');
 const awsSecretAccessKey = defineSecret('AWS_SECRET_ACCESS_KEY');
+const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');
 
 const CALLABLE_REGION = 'asia-south1';
 const AWS_REGION = process.env.AWS_REGION || 'ap-south-1';
-const S3_BUCKET = process.env.S3_BUCKET || 'doctornect';
+const S3_BUCKET =
+  process.env.S3_BUCKET ||
+  process.env.S3_BUCKET_NAME ||
+  process.env.AWS_S3_VAULT_BUCKET ||
+  'doctornect-672027759702-ap-south-1-an';
 
 const ENFORCE_ABUSE_APP_CHECK = String(
   process.env.ENFORCE_ABUSE_APP_CHECK || process.env.ENFORCE_OTP_APP_CHECK || 'true',
@@ -69,7 +74,7 @@ function setSupabaseClientForTesting(client) {
 function getSupabaseAdminClient() {
   if (_testingSupabaseClient) return _testingSupabaseClient;
   const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseKey = (typeof supabaseServiceRoleKey?.value === 'function' ? supabaseServiceRoleKey.value() : null) || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseKey) return null;
   return createClient(supabaseUrl, supabaseKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -1431,7 +1436,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
 
 const CALLABLE_OPTIONS = {
   region: CALLABLE_REGION,
-  secrets: [awsAccessKeyId, awsSecretAccessKey],
+  secrets: [awsAccessKeyId, awsSecretAccessKey, supabaseServiceRoleKey],
   enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
 };
 
@@ -1472,6 +1477,7 @@ exports.confirmS3Upload = onCall(CALLABLE_OPTIONS, async (request) => {
 
 exports.awsAccessKeyId = awsAccessKeyId;
 exports.awsSecretAccessKey = awsSecretAccessKey;
+exports.supabaseServiceRoleKey = supabaseServiceRoleKey;
 
 exports.s3DownloadUrlCacheKey = s3DownloadUrlCacheKey;
 exports.getCachedDownloadUrl = getCachedDownloadUrl;

@@ -4,6 +4,9 @@
 > **Target Function:** `sync-to-firestore` (Supabase Edge Function)  
 > **Production Project Reference:** `rnltknemwnjrjxthtull`  
 > **Status:** Edge function deployed (`--no-verify-jwt`), pending secrets configuration and DB webhook binding.
+>
+> **NOTE (CLEAN CUTOVER): NOT REQUIRED FOR LAUNCH**  
+> DoctorNect is launching via a clean cutover architecture with no live production users. The Firestore<->Supabase sync bridge (`ENABLE_SUPABASE_SYNC`, `sync-to-firestore`, DB webhooks) is **NOT required for launch**. Keep `ENABLE_SUPABASE_SYNC=0` (disabled) and do not configure or trigger this bridge. Retain this runbook solely for prospective future phased migrations if needed.
 
 ---
 

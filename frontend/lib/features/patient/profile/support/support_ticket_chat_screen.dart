@@ -2,14 +2,11 @@ import '../../../../core/notifications/app_toast.dart';
 
 import 'dart:math';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/config/doctor_patient_cutover_flag.dart';
 import '../../../../core/session/patient_session.dart';
-import '../../../../core/supabase/supabase_bootstrap.dart';
 import '../../../../core/supabase/support_ticket_supabase_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../widgets/patient_profile_form_styles.dart';
@@ -79,64 +76,17 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
     _controller.clear();
 
     try {
-      if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
-        final senderId = PatientSession.loggedInPatientId.isNotEmpty
-            ? PatientSession.loggedInPatientId
-            : (FirebaseAuth.instance.currentUser?.uid ?? 'patient');
-        await SupportTicketSupabaseRepository.instance.sendMessage(
-          ticketId: widget.ticketId,
-          senderId: senderId,
-          senderName: 'You',
-          senderRole: 'patient',
-          text: text,
-        );
-        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-        return;
-      }
-
-      final messageData = {
-        'senderId': PatientSession.loggedInPatientId,
-        'senderName': 'You',
-        'senderRole': 'patient',
-        'text': text,
-        'createdAt': FieldValue.serverTimestamp(),
-      };
-
-      await FirebaseFirestore.instance
-          .collection('support_tickets')
-          .doc(widget.ticketId)
-          .collection('messages')
-          .add(messageData);
-
-      // Auto scroll
+      final senderId = PatientSession.loggedInPatientId.isNotEmpty
+          ? PatientSession.loggedInPatientId
+          : (FirebaseAuth.instance.currentUser?.uid ?? 'patient');
+      await SupportTicketSupabaseRepository.instance.sendMessage(
+        ticketId: widget.ticketId,
+        senderId: senderId,
+        senderName: 'You',
+        senderRole: 'patient',
+        text: text,
+      );
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-
-      // Simulate Support Agent response after 1.5s
-      Future.delayed(const Duration(milliseconds: 1500), () async {
-        if (!mounted) return;
-        final replies = [
-          "Thank you for the update. Our support team is reviewing your ticket and will resolve it as soon as possible.",
-          "Got it. We have passed this information to our technical team.",
-          "Understood. We are looking into this details right now.",
-          "We have noted your query. Is there anything else you'd like to add while we investigate?",
-          "We are on it! A support representative will update you shortly.",
-        ];
-        final replyText = replies[Random().nextInt(replies.length)];
-
-        await FirebaseFirestore.instance
-            .collection('support_tickets')
-            .doc(widget.ticketId)
-            .collection('messages')
-            .add({
-          'senderId': 'support_agent_mock',
-          'senderName': 'Support Agent',
-          'senderRole': 'support',
-          'text': replyText,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-
-        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-      });
     } catch (e) {
       if (!mounted) return;
       AppToast.info(context, 'Failed to send message: $e');
@@ -307,10 +257,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
 
                   // Chat Messages Area
                   Expanded(
-                    child: (DoctorPatientCutoverFlag.isEnabled &&
-                            SupabaseBootstrap.isReady)
-                        ? _buildSupabaseMessages(constraints)
-                        : _buildFirestoreMessages(constraints),
+                    child: _buildSupabaseMessages(constraints),
                   ),
 
                   // Message Input Bar
@@ -415,42 +362,6 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
     );
   }
 
-  Widget _buildFirestoreMessages(BoxConstraints constraints) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('support_tickets')
-          .doc(widget.ticketId)
-          .collection('messages')
-          .orderBy('createdAt', descending: false)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting &&
-            !snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.patientTeal),
-          );
-        }
-
-        final docs = snapshot.data?.docs ?? [];
-        final messages = docs.map((doc) {
-          final msgData = doc.data() as Map<String, dynamic>;
-          final timestamp = msgData['createdAt'] as Timestamp?;
-          return _ChatMessageItemData(
-            senderRole: msgData['senderRole'] as String? ?? 'patient',
-            senderName: msgData['senderName'] as String? ?? 'User',
-            text: msgData['text'] as String? ?? '',
-            createdAt: timestamp?.toDate(),
-          );
-        }).toList();
-
-        if (messages.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-        }
-
-        return _buildMessagesList(messages, constraints);
-      },
-    );
-  }
 
   Widget _buildMessagesList(
     List<_ChatMessageItemData> messages,

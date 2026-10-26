@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -8,7 +7,7 @@ import '../../core/auth/profile_draft_store.dart';
 import '../../core/auth/unified_auth_coordinator.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/firebase/firebase_bootstrap.dart';
-import '../../core/firebase/firestore_paths.dart';
+import '../../core/supabase/supabase_bootstrap.dart';
 import '../../core/layout/responsive_layout.dart';
 import '../../core/notifications/app_toast.dart';
 import '../../core/session/ambulance_session.dart';
@@ -203,15 +202,16 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
       }
     }
 
-    // 3. Overlay Firestore domain doc if ready
-    if (FirebaseBootstrap.isReady && id.isNotEmpty) {
+    // 3. Overlay Supabase domain doc if ready
+    if (SupabaseBootstrap.isReady && id.isNotEmpty) {
       try {
-        final collection = _collectionForRole();
-        final doc = await FirebaseFirestore.instance
-            .collection(collection)
-            .doc(id)
-            .get();
-        final data = doc.data();
+        final domainTable = _domainTableForRole();
+        final pk = _primaryKeyForRole();
+        final data = await SupabaseBootstrap.client
+            .from(domainTable)
+            .select()
+            .eq(pk, id)
+            .maybeSingle();
         if (data != null) {
           _applyDataToControllers(data);
         }
@@ -247,14 +247,25 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
     };
   }
 
-  String _collectionForRole() {
+  String _domainTableForRole() {
     return switch (widget.role) {
-      UserType.doctor => FirestorePaths.doctors,
-      UserType.patient => FirestorePaths.patients,
-      UserType.medical || UserType.medicalStore => FirestorePaths.medicalStores,
-      UserType.lab => FirestorePaths.labs,
-      UserType.ambulance => FirestorePaths.ambulances,
-      UserType.superAdmin => FirestorePaths.users,
+      UserType.doctor => 'doctors',
+      UserType.patient => 'patients',
+      UserType.medical || UserType.medicalStore => 'medical_stores',
+      UserType.lab => 'labs',
+      UserType.ambulance => 'ambulances',
+      UserType.superAdmin => 'users',
+    };
+  }
+
+  String _primaryKeyForRole() {
+    return switch (widget.role) {
+      UserType.doctor => 'doctor_id',
+      UserType.patient => 'patient_id',
+      UserType.medical || UserType.medicalStore => 'store_id',
+      UserType.lab => 'lab_id',
+      UserType.ambulance => 'ambulance_id',
+      UserType.superAdmin => 'id',
     };
   }
 
@@ -382,47 +393,26 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
     });
 
     try {
-      final data = _collectFormData();
       final id = _userId;
       final uid = FirebaseAuth.instance.currentUser?.uid;
 
-      if (FirebaseBootstrap.isReady) {
-        final db = FirebaseFirestore.instance;
-        final batch = db.batch();
-
-        // 1. Update user document
+      if (SupabaseBootstrap.isReady) {
+        final client = SupabaseBootstrap.client;
         if (uid != null && uid.isNotEmpty) {
-          final userRef = db.collection(FirestorePaths.users).doc(uid);
-          batch.set(
-            userRef,
-            {
-              'displayName': name,
-              'name': name,
-              'profileCompleted': true,
-              'profileCompletionStatus': 'complete',
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
-            SetOptions(merge: true),
-          );
+          await client.from('users').update({
+            'name': name,
+            'profile_completed': true,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          }).eq('id', uid);
         }
-
-        // 2. Update role domain document
-        final domainCollection = _collectionForRole();
-        if (id.isNotEmpty) {
-          final domainRef = db.collection(domainCollection).doc(id);
-          batch.set(
-            domainRef,
-            {
-              ...data,
-              'profileCompleted': true,
-              'profileCompletionStatus': 'complete',
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
-            SetOptions(merge: true),
-          );
+        final domainTable = _domainTableForRole();
+        final pk = _primaryKeyForRole();
+        if (id.isNotEmpty && domainTable != 'users') {
+          await client.from(domainTable).update({
+            'profile_completed': true,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          }).eq(pk, id);
         }
-
-        await batch.commit();
       }
 
       // 3. Clear draft now that profile is saved

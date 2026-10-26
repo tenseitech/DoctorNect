@@ -131,3 +131,11 @@ test('functions/redis.js root export matches functions/src/config/redis.js', () 
   assert.equal(rootModule.getRedisClient, getRedisClient);
   assert.equal(rootModule.redisHostSecret, redisHostSecret);
 });
+
+test.after(() => {
+  try {
+    if (redis && typeof redis.disconnect === 'function') {
+      redis.disconnect();
+    }
+  } catch (_) {}
+});

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/doctor_patient_cutover_flag.dart';
 import '../../supabase/repositories/supabase_lab_repository.dart';
+import '../../supabase/supabase_bootstrap.dart';
 import '../../constants/app_constants.dart';
 import '../../../features/patient/lab/models/lab_models.dart';
 import '../../../features/patient/lab/utils/patient_selected_investigations_mapper.dart';
@@ -450,12 +451,17 @@ class LabBookingRepository {
       storageKey: uploadResult.objectKey,
     );
 
-    if (DoctorPatientCutoverFlag.isEnabled) {
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
       await SupabaseLabRepository.instance.updateLabBookingStatus(
         bookingId: bookingId,
         newStatus: 'completed',
         notes: uploadResult.objectKey,
       );
+      if (existingReportStorageKey != null &&
+          existingReportStorageKey.trim().isNotEmpty &&
+          existingReportStorageKey != uploadResult.objectKey) {
+        await LabReportFileStore.deleteS3Report(existingReportStorageKey);
+      }
       return uploadResult;
     }
 

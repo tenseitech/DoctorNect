@@ -18,6 +18,7 @@ set -euo pipefail
 DRY_RUN=0
 SKIP_INCREMENT=0
 ALLOW_STAGING=0
+LAUNCH=0
 
 EXTRA_DEFINES=()
 
@@ -26,10 +27,22 @@ for arg in "$@"; do
     --dry-run) DRY_RUN=1 ;;
     --skip-increment) SKIP_INCREMENT=1 ;;
     --allow-staging) ALLOW_STAGING=1 ;;
+    --launch)
+      LAUNCH=1
+      export ENABLE_SUPABASE=1
+      export USE_SUPABASE_DB_DOCTOR_PATIENT="true"
+      if [[ -z "${SUPABASE_URL:-}" ]]; then
+        export SUPABASE_URL="https://rnltknemwnjrjxthtull.supabase.co"
+      fi
+      if [[ -z "${SUPABASE_ANON_KEY:-}" ]]; then
+        export SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJubHRrbmVtd25qcmp4dGh0dWxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NjM3MjIsImV4cCI6MjEwNjUzOTcyMn0.d4bALRDReFuGSNKpxz0iOTyHpaE95Tlpd3DfDxvzvAY"
+      fi
+      echo "LAUNCH PROFILE ACTIVE: Building release with Supabase primary database enabled." >&2
+      ;;
     --dart-define=*) EXTRA_DEFINES+=("$arg") ;;
     *)
       echo "Unknown argument: $arg" >&2
-      echo "Usage: $0 [--dry-run] [--skip-increment] [--allow-staging]" >&2
+      echo "Usage: $0 [--dry-run] [--skip-increment] [--allow-staging] [--launch]" >&2
       exit 1
       ;;
   esac
@@ -138,6 +151,9 @@ EOF
     fi
     DART_DEFINES+=(--dart-define=SUPABASE_URL="$SUPABASE_URL")
     DART_DEFINES+=(--dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY")
+    if [[ "$LAUNCH" == "1" || "${USE_SUPABASE_DB_DOCTOR_PATIENT:-}" == "true" ]]; then
+      DART_DEFINES+=(--dart-define=USE_SUPABASE_DB_DOCTOR_PATIENT=true)
+    fi
   fi
 
   local all_defines=("${DART_DEFINES[@]}" "${EXTRA_DEFINES[@]}")
@@ -151,7 +167,7 @@ EOF
   done
 
   # Strict allowlist: confirm only intended keys reach dart-defines
-  local allowed_keys=("FIREBASE_API_KEY_ANDROID" "GOOGLE_MAPS_API_KEY" "RECAPTCHA_SITE_KEY" "SUPABASE_URL" "SUPABASE_ANON_KEY")
+  local allowed_keys=("FIREBASE_API_KEY_ANDROID" "GOOGLE_MAPS_API_KEY" "RECAPTCHA_SITE_KEY" "SUPABASE_URL" "SUPABASE_ANON_KEY" "USE_SUPABASE_DB_DOCTOR_PATIENT")
   for define in "${all_defines[@]}"; do
     local key="${define#--dart-define=}"
     key="${key%%=*}"
@@ -178,6 +194,20 @@ EOF
 }
 
 validate_production_build_config() {
+  local staging_url="${STAGING_SUPABASE_URL:-https://rnltknemwnjrjxthtull.supabase.co}"
+  local prod_endpoint="${PROD_GATEWAY_URL:-${SUPABASE_URL:-}}"
+
+  if [[ "$ALLOW_STAGING" -ne 1 && "${ALLOW_STAGING_BUILD:-}" != "true" ]]; then
+    if [[ -z "$prod_endpoint" ]]; then
+      echo "FAIL-FAST SECURITY GATE: Production release build requires a dedicated production API endpoint (PROD_GATEWAY_URL). None configured. Release build aborted." >&2
+      exit 1
+    fi
+    if [[ "$prod_endpoint" == "$staging_url" || "$prod_endpoint" =~ rnltknemwnjrjxthtull ]]; then
+      echo "FAIL-FAST SECURITY GATE: Production release build detected STAGING endpoint ($prod_endpoint). Production build must point to dedicated production access layer and differ from staging. Pass --allow-staging if building a staging artifact." >&2
+      exit 1
+    fi
+  fi
+
   local validator="$SCRIPT_DIR/verify_production_build_config.js"
   if [[ ! -f "$validator" ]]; then
     validator="$PROJECT_ROOT/../backend/scripts/verify_production_build_config.js"

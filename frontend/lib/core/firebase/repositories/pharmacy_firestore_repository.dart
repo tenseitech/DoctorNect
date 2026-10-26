@@ -144,6 +144,9 @@ class PharmacyFirestoreRepository {
     String deliveryId, {
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance.fetchDeliveryById(deliveryId);
+    }
     if (!FirebaseBootstrap.isReady || deliveryId.isEmpty) return null;
 
     final doc = await FirestoreReadHelper.getDocument(
@@ -162,6 +165,10 @@ class PharmacyFirestoreRepository {
     String prescriptionId, {
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance
+          .fetchDeliveryByPrescriptionId(prescriptionId);
+    }
     if (!FirebaseBootstrap.isReady || prescriptionId.isEmpty) return null;
 
     final snapshot = await FirestoreReadHelper.getQuery(

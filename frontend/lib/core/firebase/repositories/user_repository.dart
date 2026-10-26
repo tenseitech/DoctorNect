@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import '../../config/doctor_patient_cutover_flag.dart';
 import '../../supabase/supabase_bootstrap.dart';
 import '../../supabase/repositories/supabase_user_repository.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -11,7 +10,6 @@ import '../../enums/user_type.dart';
 import '../../validators/form_validators.dart';
 import '../firestore_paths.dart';
 import '../models/medibond_user_profile.dart';
-import '../firestore_read_helper.dart';
 
 class UserRepository {
   UserRepository._();
@@ -32,7 +30,7 @@ class UserRepository {
     String uid, {
     bool preferCache = true,
   }) async {
-    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+    if (SupabaseBootstrap.isReady) {
       try {
         final client = SupabaseBootstrap.client;
         final res = await client
@@ -63,13 +61,13 @@ class UserRepository {
         }
       }
     }
-
-    final snap = await FirestoreReadHelper.getDocument(
-      reference: _db.collection(FirestorePaths.users).doc(uid),
-      preferCache: preferCache,
-    );
-    if (!snap.exists || snap.data() == null) return null;
-    return DoctorNectUserProfile.fromMap(uid, snap.data()!);
+    if (debugFirestore != null) {
+      final snap = await _db.collection('users').doc(uid).get();
+      if (snap.exists && snap.data() != null) {
+        return DoctorNectUserProfile.fromMap(uid, snap.data()!);
+      }
+    }
+    return null;
   }
 
   Future<void> createProfile({
@@ -81,7 +79,7 @@ class UserRepository {
     bool mobileVerified = false,
     Map<String, dynamic>? roleData,
   }) async {
-    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+    if (debugFirestore != null) {
       try {
         await _supabaseRepo.createProfile(
           user: user,
@@ -91,88 +89,43 @@ class UserRepository {
           mobile: mobile,
           mobileVerified: mobileVerified,
           roleData: roleData,
-        ).timeout(const Duration(seconds: 5));
+        );
       } catch (e) {
-        if (kDebugMode) {
-          debugPrint('[UserRepository] Supabase createProfile non-fatal error: $e');
-        }
+        final roleString = switch (role) {
+          UserType.superAdmin => 'super_admin',
+          UserType.doctor => 'doctor',
+          UserType.medical => 'medical',
+          UserType.medicalStore => 'medicalStore',
+          UserType.patient => 'patient',
+          UserType.lab => 'lab',
+          UserType.ambulance => 'ambulance',
+        };
+        final batch = _db.batch();
+        batch.set(_db.collection('users').doc(user.uid), {
+          'role': roleString,
+          'profileId': profileId,
+          'displayName': displayName,
+          'email': user.email ?? '',
+          if (mobile != null) 'mobile': mobile,
+        });
+        batch.set(_db.collection('profile_claims').doc(profileId), {
+          'uid': user.uid,
+          'role': roleString,
+        });
+        await batch.commit();
       }
-    }
-    final userRef = _db.collection(FirestorePaths.users).doc(user.uid);
-    final normalizedMobile =
-        mobile == null ? null : FormValidators.mobileDigits(mobile);
-    final isDemoDoctor = role == UserType.doctor &&
-        (DemoAuthConfig.isDemoDoctorPhone(normalizedMobile) ||
-            DemoAuthConfig.isDemoDoctorPhone(mobile));
-    final requiresVerification = (role == UserType.doctor ||
-            role == UserType.medical ||
-            role == UserType.medicalStore ||
-            role == UserType.lab ||
-            role == UserType.ambulance) &&
-        !isDemoDoctor;
-    final batch = _db.batch();
-
-    final roleString = switch (role) {
-      UserType.superAdmin => 'super_admin',
-      UserType.doctor => 'doctor',
-      UserType.medical => 'medical',
-      UserType.medicalStore => 'medicalStore',
-      UserType.patient => 'patient',
-      UserType.lab => 'lab',
-      UserType.ambulance => 'ambulance',
-    };
-
-    // 1. Claim profileId atomically in same batch
-    final claimRef = _db.collection('profile_claims').doc(profileId);
-    batch.set(claimRef, {
-      'uid': user.uid,
-      'role': roleString,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-
-    // 2. Provision users/{uid}
-    batch.set(userRef, {
-      'role': roleString,
-      'profileId': profileId,
-      'displayName': displayName,
-      'email': _normalizeEmail(
-        user.email?.isNotEmpty == true
-            ? user.email
-            : roleData?['email'] as String?,
-      ),
-      if (normalizedMobile != null) 'mobile': normalizedMobile,
-      if (mobileVerified || isDemoDoctor) ...{
-        'mobileVerified': true,
-        'mobileVerifiedAt': FieldValue.serverTimestamp(),
-      },
-      'verified': !requiresVerification,
-      'verificationStatus':
-          requiresVerification ? 'profile_incomplete' : 'verified',
-      'status': requiresVerification ? 'pending_review' : 'approved',
-      'profileCompleted': isDemoDoctor ? true : false,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
-    // 3. Provision domain profile doc
-    if (roleData != null) {
-      final collection = switch (role) {
-        UserType.superAdmin => FirestorePaths.users,
-        UserType.doctor => FirestorePaths.doctors,
-        UserType.medical => FirestorePaths.medicalStores,
-        UserType.medicalStore => FirestorePaths.medicalStores,
-        UserType.patient => FirestorePaths.patients,
-        UserType.lab => FirestorePaths.labs,
-        UserType.ambulance => FirestorePaths.ambulances,
-      };
-      final profileRef = _db.collection(collection).doc(profileId);
-      batch.set(profileRef, {
-        ...roleData,
-        'profileCompleted': roleData['profileCompleted'] ?? false,
-      });
+      return;
     }
 
-    await batch.commit();
+    await _supabaseRepo.createProfile(
+      user: user,
+      role: role,
+      profileId: profileId,
+      displayName: displayName,
+      mobile: mobile,
+      mobileVerified: mobileVerified,
+      roleData: roleData,
+    );
   }
 
   /// Repairs auth accounts where Firebase Auth exists but users/{uid} was never saved.

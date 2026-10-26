@@ -406,8 +406,11 @@ void main() {
         },
       ));
 
-      // Wait a moment for async network + codec decoding
-      await Future<void>.delayed(const Duration(milliseconds: 150));
+      // Wait adaptively for async network + codec decoding to complete
+      final deadline = DateTime.now().add(const Duration(seconds: 3));
+      while (!imageLoaded && !failed && DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
 
       expect(callCount, 2);
       expect(fakeClient.requestedUris[0].toString(), initialExpiredUrl);

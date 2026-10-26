@@ -12,7 +12,7 @@ const { defineSecret } = require('firebase-functions/params');
 const { toUserUuid } = require('./user_id_bridge');
 const { readSupabaseServiceRoleKey } = require('./secure_config');
 
-const supabaseUrl = defineSecret('SUPABASE_URL');
+
 const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');
 
 let _testingSupabaseFetch = null;
@@ -673,7 +673,7 @@ function readBoundSecret(secret, envName) {
 }
 
 function getSupabaseServiceConfig() {
-  const url = (readBoundSecret(supabaseUrl, 'SUPABASE_URL') || String(process.env.SUPABASE_URL || '')).replace(/\/+$/, '');
+  const url = String(process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
   const key = readBoundSecret(supabaseServiceRoleKey, 'SUPABASE_SERVICE_ROLE_KEY') ||
     readSupabaseServiceRoleKey({ required: false }) ||
     String(process.env.SUPABASE_SECRET_KEY || '').trim() ||
@@ -1234,6 +1234,6 @@ module.exports = {
   setS3ClientForTesting,
   setSupabaseFetchForTesting,
   getS3Client,
-  supabaseUrl,
+
   supabaseServiceRoleKey,
 };

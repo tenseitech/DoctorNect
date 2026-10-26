@@ -530,6 +530,29 @@ class AmbulanceRepository {
 
     final driverIds = drivers.map((d) => d.id).toList();
 
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      final broadcastId = 'broadcast-${DateTime.now().millisecondsSinceEpoch}';
+      final booking = AmbulanceBooking(
+        id: broadcastId,
+        patientName: patientName?.trim().isNotEmpty == true
+            ? patientName!.trim()
+            : 'Patient',
+        pickupLocation: pickupLocation.trim(),
+        contactPhone: contactPhone?.trim() ?? '',
+        notes: 'Destination: ${dropLocation.trim()}',
+        bookedByRole: bookedByRole == AmbulanceBookedByRole.doctor.name
+            ? AmbulanceBookedByRole.doctor
+            : AmbulanceBookedByRole.patient,
+        bookedByName: patientName ?? 'Patient',
+        bookedById: patientId,
+        status: AmbulanceBookingStatus.pending,
+        createdAt: DateTime.now(),
+      );
+      await SupabaseAmbulanceRepository.instance.saveBroadcast(booking);
+      AmbulanceStore.instance.upsertBooking(booking);
+      return broadcastId;
+    }
+
     if (!FirebaseBootstrap.isReady) {
       return AmbulanceStore.instance.createBroadcastRequest(
         driverIds: driverIds,

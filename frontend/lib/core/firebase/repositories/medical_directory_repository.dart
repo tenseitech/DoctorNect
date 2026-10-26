@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/repositories/supabase_medical_directory_repository.dart';
 import '../firebase_bootstrap.dart';
 import '../firestore_paths.dart';
 import '../firestore_query_limits.dart';
@@ -15,6 +17,9 @@ class MedicalDirectoryRepository {
       MedicalDirectoryRepository._();
 
   Future<void> save(DoctorMedicalDirectoryEntry entry) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseMedicalDirectoryRepository.instance.save(entry);
+    }
     if (!FirebaseBootstrap.isReady) return;
 
     await FirebaseFirestore.instance
@@ -28,6 +33,9 @@ class MedicalDirectoryRepository {
   }
 
   Future<void> update(DoctorMedicalDirectoryEntry entry) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseMedicalDirectoryRepository.instance.update(entry);
+    }
     if (!FirebaseBootstrap.isReady) return;
 
     await FirebaseFirestore.instance
@@ -40,6 +48,9 @@ class MedicalDirectoryRepository {
   }
 
   Future<void> delete(String entryId) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseMedicalDirectoryRepository.instance.delete(entryId);
+    }
     if (!FirebaseBootstrap.isReady) return;
     await FirebaseFirestore.instance
         .collection(FirestorePaths.medicalDirectory)
@@ -53,6 +64,12 @@ class MedicalDirectoryRepository {
     int limit = FirestoreQueryLimits.medicalDirectoryPage,
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseMedicalDirectoryRepository.instance.fetchForDoctor(
+        doctorId,
+        limit: limit,
+      );
+    }
     if (!FirebaseBootstrap.isReady) {
       return const FirestorePage(items: [], hasMore: false);
     }

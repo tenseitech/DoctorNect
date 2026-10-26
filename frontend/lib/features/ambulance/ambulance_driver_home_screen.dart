@@ -7,10 +7,9 @@ import 'package:intl/intl.dart';
 import '../../core/auth/profile_action_guard.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/firebase/ambulance_auth_helper.dart';
-import '../../core/firebase/firestore_paths.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/supabase/supabase_bootstrap.dart';
 import '../../core/notifications/ambulance_push_service.dart';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/session/ambulance_session.dart';
 import '../../core/theme/app_colors.dart';
@@ -64,35 +63,15 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
     if (driverId.isEmpty) return;
 
     await AmbulanceAuthHelper.ensureSignedIn();
-    await FirestoreService.instance.ambulance.linkDriverAuth(driverId);
-
-    // Self-healing: pull missing ratings from broadcasts for old trips
-    try {
-      final firestore = FirebaseFirestore.instance;
-      final reqs = await firestore
-          .collection(FirestorePaths.ambulanceRequests)
-          .where('driverId', isEqualTo: driverId)
-          .where('status', isEqualTo: 'completed')
-          .get();
-      for (final doc in reqs.docs) {
-        if (doc.data()['rating'] == null) {
-          final broadcastId = doc.data()['broadcastId'] as String?;
-          if (broadcastId != null) {
-            final bDoc = await firestore
-                .collection(FirestorePaths.ambulanceBroadcasts)
-                .doc(broadcastId)
-                .get();
-            if (bDoc.exists && bDoc.data()?['rating'] != null) {
-              await doc.reference.update({
-                'rating': bDoc.data()!['rating'],
-                'review': bDoc.data()!['review'],
-                'ratedAt': bDoc.data()!['ratedAt'],
-              });
-            }
-          }
-        }
-      }
-    } catch (_) {}
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null && uid.isNotEmpty && SupabaseBootstrap.isReady) {
+      try {
+        await SupabaseBootstrap.client
+            .from('ambulances')
+            .update({'auth_uid': uid})
+            .eq('ambulance_id', driverId);
+      } catch (_) {}
+    }
 
     if (!mounted) return;
     AmbulanceBookingSync.instance.watchDriverRequests(driverId);

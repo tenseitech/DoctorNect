@@ -1,6 +1,7 @@
 require('./firestore_forbidden_guard');
 const crypto = require('crypto');
 const { HttpsError } = require('firebase-functions/v2/https');
+const logger = require('firebase-functions/logger');
 const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
 const { FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
@@ -2324,6 +2325,36 @@ async function consumeOtpVerificationSessionAtomically(
     expired: 'OTP verification session expired. Verify again.',
     ...messages,
   };
+
+  const redis = getOtpRedisClient() || (isDoctorPatientSupabasePrimary() ? require('./redis').redis : null);
+  if (redis && typeof redis.get === 'function') {
+    try {
+      const raw = await withOtpRedisTimeout(redis.get(`otp:session:${sessionId}`));
+      if (raw) {
+        const session = JSON.parse(raw);
+        if (session.consumed === true) {
+          throw new HttpsError('failed-precondition', msg.alreadyUsed);
+        }
+        const expiresAt = session.expiresAt ? new Date(session.expiresAt) : null;
+        if (!expiresAt || Date.now() > expiresAt.getTime()) {
+          await withOtpRedisTimeout(redis.del(`otp:session:${sessionId}`)).catch(() => {});
+          throw new HttpsError('failed-precondition', msg.expired);
+        }
+        if (assertSession) {
+          assertSession(session);
+        }
+        await withOtpRedisTimeout(redis.del(`otp:session:${sessionId}`)).catch(() => {});
+        if (session.mobileDigits) {
+          await withOtpRedisTimeout(redis.del(`otp:session:${mobileHash(session.role, session.mobileDigits)}`)).catch(() => {});
+        }
+        return { status: 'consumed', session };
+      }
+    } catch (err) {
+      if (err instanceof HttpsError) throw err;
+      logger.warn('[OTP] Redis session lookup error', { error: err.message });
+    }
+  }
+
   const sessionRef = db.collection('otp_verification_sessions').doc(sessionId);
 
   const outcome = await db.runTransaction(async (tx) => {
@@ -2365,6 +2396,15 @@ async function consumeOtpVerificationSessionAtomically(
 
     return { status: 'consumed', session };
   });
+
+  if (outcome.status === 'consumed') {
+    try {
+      const redis = getOtpRedisClient() || (isDoctorPatientSupabasePrimary() ? require('./redis').redis : null);
+      if (redis && typeof redis.del === 'function') {
+        withOtpRedisTimeout(redis.del(`otp:session:${sessionId}`)).catch(() => {});
+      }
+    } catch (_) {}
+  }
 
   switch (outcome.status) {
     case 'missing':
@@ -2474,29 +2514,31 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
     }
   }
 
-  // Handles user and ambulance registration OTPs via MSG91 — session used after signup or ambulance PIN reset.
-  await db.collection('otp_verification_sessions').doc(sessionId).set({
-    role,
-    identifier: isEmail ? emailInput : digits,
-    email: isEmail ? emailInput : null,
-    mobileDigits: isEmail ? null : digits,
-    mobileVerified: !isEmail,
-    emailVerified: isEmail,
-    verifiedAt,
-    expiresAt: sessionExpiresAt,
-    consumed: false,
-  });
-
-  if (!isEmail) {
-    await db.collection('otp_verification_sessions').doc(mobileHash(role, digits)).set({
-      role,
-      mobileDigits: digits,
-      mobileVerified: true,
-      verifiedAt,
-      expiresAt: sessionExpiresAt,
-      sessionId,
-      consumed: false,
-    });
+  // Handles user and ambulance registration OTPs via MSG91 — session stored exclusively in Redis with 900s TTL.
+  try {
+    const redis = getOtpRedisClient() || (isDoctorPatientSupabasePrimary() ? require('./redis').redis : null);
+    if (redis && typeof redis.set === 'function') {
+      const ttlSec = 900;
+      const sessionData = {
+        role,
+        identifier: isEmail ? emailInput : digits,
+        email: isEmail ? emailInput : null,
+        mobileDigits: isEmail ? null : digits,
+        mobileVerified: !isEmail,
+        emailVerified: isEmail,
+        verifiedAt: new Date().toISOString(),
+        expiresAt: sessionExpiresAt.toDate ? sessionExpiresAt.toDate().toISOString() : new Date(Date.now() + SESSION_EXPIRY_MS).toISOString(),
+        sessionId,
+        consumed: false,
+      };
+      const jsonStr = JSON.stringify(sessionData);
+      await withOtpRedisTimeout(redis.set(`otp:session:${sessionId}`, jsonStr, 'EX', ttlSec));
+      if (!isEmail) {
+        await withOtpRedisTimeout(redis.set(`otp:session:${mobileHash(role, digits)}`, jsonStr, 'EX', ttlSec));
+      }
+    }
+  } catch (err) {
+    console.warn('[OTP] Redis session write failed', { sessionId, error: err.message });
   }
 
   // Phone OTP login must establish a real Firebase Auth session.

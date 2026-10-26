@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../config/doctor_patient_cutover_flag.dart';
 import '../../supabase/repositories/supabase_lab_repository.dart';
+import '../../supabase/supabase_bootstrap.dart';
 import '../firebase_bootstrap.dart';
 import '../lab_report_file_store.dart';
 import '../../storage/storage_service.dart';
@@ -291,12 +292,17 @@ class LabOrderRepository {
       storageKey: uploadResult.objectKey,
     );
 
-    if (DoctorPatientCutoverFlag.isEnabled) {
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
       await SupabaseLabRepository.instance.updateLabOrderStatus(
         orderId: orderId,
         newStatus: 'completed',
         notes: uploadResult.objectKey,
       );
+      if (existingReportStorageKey != null &&
+          existingReportStorageKey.trim().isNotEmpty &&
+          existingReportStorageKey != uploadResult.objectKey) {
+        await LabReportFileStore.deleteS3Report(existingReportStorageKey);
+      }
       return uploadResult;
     }
 

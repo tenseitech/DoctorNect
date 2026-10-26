@@ -1,0 +1,668 @@
+[
+  {
+    "file": "frontend/lib/features/ambulance/ambulance_booking_screen.dart",
+    "module": "Ambulance",
+    "lineCount": 3,
+    "firstLine": 7,
+    "lines": "7, 260, 2028",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/features/ambulance/ambulance_profile_screen.dart",
+    "module": "Ambulance",
+    "lineCount": 5,
+    "firstLine": 35,
+    "lines": "35, 976, 979, 991, 1081",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/features/ambulance/data/ambulance_booking_sync.dart",
+    "module": "Ambulance",
+    "lineCount": 4,
+    "firstLine": 3,
+    "lines": "3, 69, 118, 159",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/auth/onboarding_service.dart",
+    "module": "Core / Shared",
+    "lineCount": 2,
+    "firstLine": 4,
+    "lines": "4, 152",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/auth/profile_completion_service.dart",
+    "module": "Core / Shared",
+    "lineCount": 8,
+    "firstLine": 3,
+    "lines": "3, 59, 110, 145, 147, 166, 179, 214",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/auth/profile_draft_store.dart",
+    "module": "Core / Shared",
+    "lineCount": 4,
+    "firstLine": 3,
+    "lines": "3, 42, 81, 114",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/ambulance_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 18,
+    "firstLine": 1,
+    "lines": "1, 89, 173, 214, 250, 318, 357, 411, 450, 569, 660, 736, 945, 1019, 1078, 1139, 1211, 1230",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/appointment_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 6,
+    "firstLine": 1,
+    "lines": "1, 33, 40, 116, 127, 159",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/doctor_availability_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 3,
+    "firstLine": 1,
+    "lines": "1, 33, 48",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/doctor_directory_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 4,
+    "firstLine": 1,
+    "lines": "1, 32, 57, 88",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/doctor_profile_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 3,
+    "firstLine": 1,
+    "lines": "1, 41, 74",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/family_member_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 4,
+    "firstLine": 1,
+    "lines": "1, 22, 38, 64",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/in_app_notification_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 5,
+    "firstLine": 1,
+    "lines": "1, 28, 46, 68, 69",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/lab_booking_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 12,
+    "firstLine": 3,
+    "lines": "3, 97, 99, 100, 158, 241, 286, 322, 344, 365, 387, 410",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/lab_connection_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 5,
+    "firstLine": 1,
+    "lines": "1, 20, 46, 62, 121",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/lab_order_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 11,
+    "firstLine": 3,
+    "lines": "3, 26, 28, 29, 37, 61, 102, 171, 205, 227, 255",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/medical_directory_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 5,
+    "firstLine": 1,
+    "lines": "1, 25, 41, 55, 77",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/medical_store_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 5,
+    "firstLine": 1,
+    "lines": "1, 23, 41, 124, 166",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/patient_profile_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 10,
+    "firstLine": 1,
+    "lines": "1, 116, 159, 187, 209, 228, 295, 328, 343, 376",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/pharmacy_firestore_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 14,
+    "firstLine": 1,
+    "lines": "1, 24, 46, 82, 153, 175, 198, 224, 250, 274, 298, 359, 378, 439",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/prescription_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 5,
+    "firstLine": 1,
+    "lines": "1, 42, 77, 105, 163",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/referral_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 5,
+    "firstLine": 1,
+    "lines": "1, 25, 46, 67, 118",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/review_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 11,
+    "firstLine": 3,
+    "lines": "3, 34, 45, 80, 139, 195, 244, 270, 295, 372, 418",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/notifications/patient_notification_prefs_sync.dart",
+    "module": "Core / Shared",
+    "lineCount": 2,
+    "firstLine": 3,
+    "lines": "3, 45",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/services/banner_config_service.dart",
+    "module": "Core / Shared",
+    "lineCount": 2,
+    "firstLine": 3,
+    "lines": "3, 17",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/storage/profile_photo_uploader.dart",
+    "module": "Core / Shared",
+    "lineCount": 5,
+    "firstLine": 2,
+    "lines": "2, 35, 36, 137, 268",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/features/doctor/clinical/data/community_diagnosis_repository.dart",
+    "module": "Doctor",
+    "lineCount": 3,
+    "firstLine": 4,
+    "lines": "4, 67, 179",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/features/doctor/clinical/data/community_investigations_repository.dart",
+    "module": "Doctor",
+    "lineCount": 7,
+    "firstLine": 4,
+    "lines": "4, 125, 147, 169, 255, 294, 330",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/features/doctor/clinical/data/community_medicine_repository.dart",
+    "module": "Doctor",
+    "lineCount": 3,
+    "firstLine": 4,
+    "lines": "4, 99, 210",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/features/doctor/profile/data/doctor_profile_store.dart",
+    "module": "Doctor",
+    "lineCount": 7,
+    "firstLine": 5,
+    "lines": "5, 82, 127, 410, 448, 483, 509",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/features/patient/profile/data/patient_profile_mock.dart",
+    "module": "Patient",
+    "lineCount": 2,
+    "firstLine": 5,
+    "lines": "5, 176",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/features/patient/profile/support/help_support_screen.dart",
+    "module": "Patient",
+    "lineCount": 2,
+    "firstLine": 3,
+    "lines": "3, 51",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/features/patient/profile/support/support_tickets_history_screen.dart",
+    "module": "Patient",
+    "lineCount": 2,
+    "firstLine": 1,
+    "lines": "1, 93",
+    "category": "Guarded Legacy (Dead in Cutover)",
+    "rationale": "Guarded by DoctorPatientCutoverFlag.isEnabled; executes Supabase branch at runtime"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/doctor_account_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 9,
+    "firstLine": 1,
+    "lines": "1, 50, 116, 142, 143, 146, 179, 180, 183",
+    "category": "Legacy Repository",
+    "rationale": "Legacy repository implementation or fallback branch"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/doctor_profile_detail_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 4,
+    "firstLine": 1,
+    "lines": "1, 27, 65, 79",
+    "category": "Legacy Repository",
+    "rationale": "Legacy repository implementation or fallback branch"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/lab_catalog_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 2,
+    "firstLine": 1,
+    "lines": "1, 27",
+    "category": "Legacy Repository",
+    "rationale": "Legacy repository implementation or fallback branch"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/lab_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 5,
+    "firstLine": 1,
+    "lines": "1, 92, 107, 120, 228",
+    "category": "Legacy Repository",
+    "rationale": "Legacy repository implementation or fallback branch"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/medicine_suggestion_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 2,
+    "firstLine": 1,
+    "lines": "1, 11",
+    "category": "Legacy Repository",
+    "rationale": "Legacy repository implementation or fallback branch"
+  },
+  {
+    "file": "frontend/lib/core/firebase/repositories/user_repository.dart",
+    "module": "Core / Shared",
+    "lineCount": 3,
+    "firstLine": 6,
+    "lines": "6, 20, 25",
+    "category": "Legacy Repository",
+    "rationale": "Legacy repository implementation or fallback branch"
+  },
+  {
+    "file": "frontend/lib/features/ambulance/ambulance_driver_home_screen.dart",
+    "module": "Ambulance",
+    "lineCount": 2,
+    "firstLine": 13,
+    "lines": "13, 71",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/features/ambulance/models/ambulance_invite.dart",
+    "module": "Ambulance",
+    "lineCount": 1,
+    "firstLine": 1,
+    "lines": "1",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/admin/super_admin_verification_service.dart",
+    "module": "Core / Shared",
+    "lineCount": 2,
+    "firstLine": 1,
+    "lines": "1, 87",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/data/local_avatar_store.dart",
+    "module": "Core / Shared",
+    "lineCount": 3,
+    "firstLine": 4,
+    "lines": "4, 131, 141",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/firebase/firebase_bootstrap.dart",
+    "module": "Core / Shared",
+    "lineCount": 2,
+    "firstLine": 4,
+    "lines": "4, 39",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/firebase/firestore_read_helper.dart",
+    "module": "Core / Shared",
+    "lineCount": 2,
+    "firstLine": 1,
+    "lines": "1, 29",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/firebase/lab_report_file_store.dart",
+    "module": "Core / Shared",
+    "lineCount": 4,
+    "firstLine": 3,
+    "lines": "3, 199, 224, 294",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/firebase/mappers/appointment_firestore_mapper.dart",
+    "module": "Core / Shared",
+    "lineCount": 1,
+    "firstLine": 1,
+    "lines": "1",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/firebase/mappers/doctor_availability_mapper.dart",
+    "module": "Core / Shared",
+    "lineCount": 1,
+    "firstLine": 1,
+    "lines": "1",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/firebase/mappers/in_app_notification_firestore_mapper.dart",
+    "module": "Core / Shared",
+    "lineCount": 1,
+    "firstLine": 1,
+    "lines": "1",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/firebase/mappers/lab_order_firestore_mapper.dart",
+    "module": "Core / Shared",
+    "lineCount": 1,
+    "firstLine": 1,
+    "lines": "1",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/firebase/mappers/medical_directory_firestore_mapper.dart",
+    "module": "Core / Shared",
+    "lineCount": 1,
+    "firstLine": 1,
+    "lines": "1",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/firebase/mappers/referral_firestore_mapper.dart",
+    "module": "Core / Shared",
+    "lineCount": 1,
+    "firstLine": 1,
+    "lines": "1",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/firebase/models/firestore_page.dart",
+    "module": "Core / Shared",
+    "lineCount": 1,
+    "firstLine": 1,
+    "lines": "1",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/firebase/models/medibond_user_profile.dart",
+    "module": "Core / Shared",
+    "lineCount": 1,
+    "firstLine": 1,
+    "lines": "1",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/invite/ambulance_invite_service.dart",
+    "module": "Core / Shared",
+    "lineCount": 3,
+    "firstLine": 5,
+    "lines": "5, 90, 171",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/invite/doctor_invite_service.dart",
+    "module": "Core / Shared",
+    "lineCount": 2,
+    "firstLine": 1,
+    "lines": "1, 82",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/invite/pharmacy_doctor_invite_service.dart",
+    "module": "Core / Shared",
+    "lineCount": 2,
+    "firstLine": 1,
+    "lines": "1, 31",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/models/banner_config_model.dart",
+    "module": "Core / Shared",
+    "lineCount": 1,
+    "firstLine": 1,
+    "lines": "1",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/core/models/promoted_ad_model.dart",
+    "module": "Core / Shared",
+    "lineCount": 1,
+    "firstLine": 1,
+    "lines": "1",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/features/admin/promoted_ad_review_screen.dart",
+    "module": "Core / Shared",
+    "lineCount": 2,
+    "firstLine": 1,
+    "lines": "1, 24",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/features/profile/profile_completion_modal.dart",
+    "module": "Core / Shared",
+    "lineCount": 3,
+    "firstLine": 2,
+    "lines": "2, 210, 390",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/features/doctor/clinical/data/clinical_prescription_store.dart",
+    "module": "Doctor",
+    "lineCount": 1,
+    "firstLine": 3,
+    "lines": "3",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/features/doctor/clinical/data/lab_order_store.dart",
+    "module": "Doctor",
+    "lineCount": 1,
+    "firstLine": 3,
+    "lines": "3",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/features/doctor/doctor_shell.dart",
+    "module": "Doctor",
+    "lineCount": 3,
+    "firstLine": 3,
+    "lines": "3, 135, 149",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/features/doctor/profile/data/medical_directory_store.dart",
+    "module": "Doctor",
+    "lineCount": 1,
+    "firstLine": 5,
+    "lines": "5",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/features/patient/booking/utils/booking_flow_helpers.dart",
+    "module": "Patient",
+    "lineCount": 2,
+    "firstLine": 1,
+    "lines": "1, 25",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/features/patient/data/registered_doctors_store.dart",
+    "module": "Patient",
+    "lineCount": 1,
+    "firstLine": 5,
+    "lines": "5",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/features/patient/profile/data/patient_photo_local_store.dart",
+    "module": "Patient",
+    "lineCount": 2,
+    "firstLine": 27,
+    "lines": "27, 31",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/features/patient/records/data/health_record_file_store.dart",
+    "module": "Patient",
+    "lineCount": 8,
+    "firstLine": 4,
+    "lines": "4, 93, 105, 142, 326, 342, 352, 366",
+    "category": "Other / Shared Utility",
+    "rationale": "Shared utility, model, or helper"
+  },
+  {
+    "file": "frontend/lib/widgets/complete_profile_prompt.dart",
+    "module": "Core / Shared",
+    "lineCount": 3,
+    "firstLine": 1,
+    "lines": "1, 227, 264",
+    "category": "Runtime-Reachable (UI)",
+    "rationale": "Active UI presentation screen/widget directly referencing Firestore"
+  },
+  {
+    "file": "frontend/lib/widgets/verification_status_banner.dart",
+    "module": "Core / Shared",
+    "lineCount": 2,
+    "firstLine": 1,
+    "lines": "1, 85",
+    "category": "Runtime-Reachable (UI)",
+    "rationale": "Active UI presentation screen/widget directly referencing Firestore"
+  },
+  {
+    "file": "frontend/lib/widgets/verification_submission_card.dart",
+    "module": "Core / Shared",
+    "lineCount": 5,
+    "firstLine": 1,
+    "lines": "1, 54, 56, 77, 113",
+    "category": "Runtime-Reachable (UI)",
+    "rationale": "Active UI presentation screen/widget directly referencing Firestore"
+  },
+  {
+    "file": "frontend/lib/features/lab/widgets/lab_report_upload_sheet.dart",
+    "module": "Lab",
+    "lineCount": 2,
+    "firstLine": 7,
+    "lines": "7, 324",
+    "category": "Runtime-Reachable (UI)",
+    "rationale": "Active UI presentation screen/widget directly referencing Firestore"
+  },
+  {
+    "file": "frontend/lib/core/services/promoted_ads_service.dart",
+    "module": "Core / Shared",
+    "lineCount": 4,
+    "firstLine": 4,
+    "lines": "4, 18, 32, 33",
+    "category": "Service",
+    "rationale": "Service-level Firestore or Storage reference"
+  }
+]

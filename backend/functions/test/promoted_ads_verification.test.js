@@ -1,6 +1,6 @@
 'use strict';
 
-const { before, after, beforeEach, test, describe } = require('node:test');
+const { before, after, beforeEach, afterEach, test, describe } = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('crypto');
 const EventEmitter = require('events');
@@ -340,6 +340,12 @@ const TEST_KEY_ID = 'rzp_test_key_abc123';
 const TEST_KEY_SECRET = 'rzp_test_secret_xyz789';
 process.env.RAZORPAY_KEY_ID = TEST_KEY_ID;
 process.env.RAZORPAY_KEY_SECRET = TEST_KEY_SECRET;
+const origCutoverPart2 = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+try {
+  const { _resetRemoteConfigCache } = require('../sync_flags');
+  _resetRemoteConfigCache();
+} catch (_) {}
 
 // In-memory Firestore mock store
 let mockFirestoreStore = new Map();
@@ -1720,9 +1726,28 @@ describe('reviewPromotedAd and App Check', () => {
   const ADMIN_UID = 'super_admin_uid';
   const AD_ID = 'ad_promoted_1001';
 
+  let origCutover;
   beforeEach(() => {
     mockFirestoreStore.clear();
     mockFirestoreWrites = [];
+    origCutover = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+    try {
+      const { _resetRemoteConfigCache } = require('../sync_flags');
+      _resetRemoteConfigCache();
+    } catch (_) {}
+  });
+
+  afterEach(() => {
+    if (origCutover === undefined) {
+      delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+    } else {
+      process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origCutover;
+    }
+    try {
+      const { _resetRemoteConfigCache } = require('../sync_flags');
+      _resetRemoteConfigCache();
+    } catch (_) {}
   });
 
   test('createRazorpayOrder and verifyRazorpayPayment require App Check', async () => {
@@ -1928,5 +1953,14 @@ describe('reviewPromotedAd and App Check', () => {
     assert.equal(result.totalExpired, 0);
     assert.ok(queries.some((q) => q.field === 'status' && q.op === '==' && q.value === 'active'));
     assert.equal(queries.some((q) => q.value === 'pending_approval'), false);
+  });
+
+  after(() => {
+    if (origCutoverPart2 === undefined) delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+    else process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origCutoverPart2;
+    try {
+      const { _resetRemoteConfigCache } = require('../sync_flags');
+      _resetRemoteConfigCache();
+    } catch (_) {}
   });
 });

@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const cp = require('child_process');
-const { before, after, test, describe } = require('node:test');
+const { before, after, beforeEach, afterEach, test, describe } = require('node:test');
 const assert = require('node:assert/strict');
 const {
   initializeTestEnvironment,
@@ -393,6 +393,24 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('completeAmbulanceMobileOtpLogin unit test with fake db', () => {
+  let origCutover;
+  beforeEach(() => {
+    origCutover = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+    try {
+      const { _resetRemoteConfigCache } = require('../sync_flags');
+      _resetRemoteConfigCache();
+    } catch (_) {}
+  });
+
+  afterEach(() => {
+    if (origCutover === undefined) delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+    else process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origCutover;
+    try {
+      const { _resetRemoteConfigCache } = require('../sync_flags');
+      _resetRemoteConfigCache();
+    } catch (_) {}
+  });
 
   function createFakeDb(initialDocs = {}) {
     const store = new Map(Object.entries(initialDocs));

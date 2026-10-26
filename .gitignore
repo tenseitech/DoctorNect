@@ -120,3 +120,6 @@ secrets*.txt
 # Local agent tooling (not project files)
 .agents/skills/gravitas/
 
+# Migration backups and scratch artifacts
+backups/
+.artifacts/

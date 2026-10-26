@@ -1,12 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
-import '../firebase_bootstrap.dart';
-import '../firestore_paths.dart';
 import '../../auth/demo_auth_config.dart';
-import '../../config/doctor_patient_cutover_flag.dart';
 import '../../supabase/repositories/supabase_doctor_repository.dart';
-import 'doctor_account_repository.dart';
+import '../firebase_bootstrap.dart';
 
 /// Real-time doctor admin-approval status for the verification gate.
 class DoctorVerificationRepository {
@@ -23,7 +19,7 @@ class DoctorVerificationRepository {
     debugWatchVerifiedOverride = null;
   }
 
-  /// Parses Firestore `verified` field (bool or string) for gate routing.
+  /// Parses `verified` field (bool or string) for gate routing.
   @visibleForTesting
   static bool parseVerifiedFromDoctorData(Map<String, dynamic>? data) {
     if (data == null) return false;
@@ -49,42 +45,21 @@ class DoctorVerificationRepository {
       return debugWatchVerifiedOverride!(doctorId);
     }
 
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseDoctorRepository.instance
-          .watchDoctor(doctorId)
-          .map(parseVerifiedFromDoctorData);
+    final docId = doctorId.trim();
+    if (docId.isEmpty || !FirebaseBootstrap.isReady) {
+      return Stream.value(false);
     }
 
-    if (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        DemoAuthConfig.isDemoDoctorId(doctorId)) {
-      return Stream<bool>.value(true);
-    }
-
-    if (!FirebaseBootstrap.isReady || doctorId.isEmpty) {
-      return Stream<bool>.value(false);
-    }
-
-    return FirebaseFirestore.instance
-        .collection(FirestorePaths.doctors)
-        .doc(doctorId)
-        .snapshots()
-        .map((snap) {
-      if (!snap.exists || snap.data() == null) return false;
-      return parseVerifiedFromDoctorData(snap.data());
-    });
+    return SupabaseDoctorRepository.instance
+        .watchDoctor(docId)
+        .map(parseVerifiedFromDoctorData);
   }
 
   Future<bool> fetchVerified(String doctorId, {bool preferCache = false}) {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseDoctorRepository.instance.isDoctorVerified(doctorId);
+    final docId = doctorId.trim();
+    if (docId.isEmpty || !FirebaseBootstrap.isReady) {
+      return Future.value(false);
     }
-    if (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        DemoAuthConfig.isDemoDoctorId(doctorId)) {
-      return Future<bool>.value(true);
-    }
-    return DoctorAccountRepository.instance.isVerified(
-      doctorId,
-      preferCache: preferCache,
-    );
+    return SupabaseDoctorRepository.instance.isDoctorVerified(docId);
   }
 }

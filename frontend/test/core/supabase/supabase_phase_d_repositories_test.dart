@@ -373,7 +373,7 @@ void main() {
       final payload = AmbulanceSupabaseMapper.bookingToRow(booking);
       expect(payload['broadcast_id'], 'bcast_300');
       expect(payload['status'], 'accepted');
-      expect(payload['assigned_driver_id'], 'amb_001');
+      expect(payload['accepted_driver_id'], 'amb_001');
     });
   });
 }
