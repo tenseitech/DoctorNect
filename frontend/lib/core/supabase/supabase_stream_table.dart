@@ -26,6 +26,10 @@ class StreamTableOptions {
 /// - Polls at adaptive frequency (~3s for high-frequency active trips, ~8s standard).
 /// - Skips emissions if snapshot is unchanged to prevent redundant widget rebuilds.
 /// - Responds immediately when an external push trigger (e.g. FCM message) fires.
+/// Test-only hook to supply table rows without a network connection.
+@visibleForTesting
+Future<List<Map<String, dynamic>>> Function(String table)? debugTableFetcher;
+
 Stream<List<Map<String, dynamic>>> streamTable({
   required String table,
   required List<String> primaryKey,
@@ -69,6 +73,8 @@ Stream<List<Map<String, dynamic>>> streamTable({
 
       if (customFetcher != null) {
         rows = await customFetcher();
+      } else if (debugTableFetcher != null) {
+        rows = await debugTableFetcher!(table);
       } else if (SupabaseBootstrap.isReady) {
         var query = SupabaseBootstrap.client.from(table).select();
 

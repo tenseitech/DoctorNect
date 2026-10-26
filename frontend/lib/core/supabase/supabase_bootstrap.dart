@@ -160,8 +160,12 @@ abstract final class SupabaseBootstrap {
     return defaultClientId;
   }
 
+  @visibleForTesting
+  static SupabaseClient? debugClientOverride;
+
   /// Global accessor to the Supabase client instance
   static SupabaseClient get client {
+    if (debugClientOverride != null) return debugClientOverride!;
     if (!isReady) {
       throw StateError(
         'Supabase has not been initialized. Call SupabaseBootstrap.initialize() first.',
@@ -174,6 +178,7 @@ abstract final class SupabaseBootstrap {
   static void resetForTesting() {
     isReady = false;
     lastInitError = null;
+    debugClientOverride = null;
     debugFirebaseUserActiveOverride = null;
     debugSupabaseUserLoggedInOverride = null;
     debugHasActiveSessionOverride = null;
