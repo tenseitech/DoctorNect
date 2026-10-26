@@ -1526,7 +1526,7 @@ The separate Admin application currently interacts with this backend across the 
   - Bypasses read restriction in `authorizeRead` ([s3_storage.js:472](file:///c:/Users/khije/Downloads/DoctorNect/doctor/backend/functions/s3_storage.js#L472)).
   - Bypasses delete restriction in `authorizeDelete` ([s3_storage.js:571](file:///c:/Users/khije/Downloads/DoctorNect/doctor/backend/functions/s3_storage.js#L571)).
 - **PostgreSQL Row-Level Security (RLS):**
-  - Security Definer Function: `private.is_super_admin()` ([20261020000001_consolidated_firebase_schema_and_rls.sql:1212](file:///c:/Users/khije/Downloads/DoctorNect/doctor/backend/supabase/migrations/20261020000001_consolidated_firebase_schema_and_rls.sql#L1212)) checks `auth.jwt() ->> 'user_role' IN ('admin', 'super_admin')` or membership in `private.admin_users`.
+  - Security Definer Function: `private.is_super_admin()` ([20261020000001_consolidated_firebase_schema_and_rls.sql:1212](file:///c:/Users/khije/Downloads/DoctorNect/doctor/db/migrations/20261020000001_consolidated_firebase_schema_and_rls.sql#L1212)) checks `auth.jwt() ->> 'user_role' IN ('admin', 'super_admin')` or membership in `private.admin_users`.
   - Every protected domain table includes an admin bypass policy:
     - `public.users`: SELECT/INSERT/UPDATE/DELETE lines 1546, 1552, 1557, 1562, 1574
     - `public.doctors`: SELECT/INSERT/UPDATE/DELETE lines 1586, 1594, 1600, 1602, 1613
@@ -1599,7 +1599,7 @@ The following files and blocks exist in this repository purely for the Admin mod
 | **Admin Navigation Test** | [`frontend/test/super_admin_promoted_ad_review_navigation_test.dart:1-55`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/frontend/test/super_admin_promoted_ad_review_navigation_test.dart) | Widget test for admin review screen navigation | **Delete** (belongs to separate Admin app) |
 | **Dashboard Shell Admin Route** | [`frontend/lib/features/dashboard/dashboard_shell.dart:26-28`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/frontend/lib/features/dashboard/dashboard_shell.dart#L26) | `if (userType == UserType.superAdmin) return const SuperAdminVerificationScreen();` | **Remove Branch** (client app does not route admin) |
 | **Ad Audit Trail Callable** | [`backend/functions/promoted_ads.js:875-920`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/backend/functions/promoted_ads.js#L875) | Admin-only audit trail query for ad decisions | **Retain or Migrate to Supabase RPC** |
-| **Admin Users Table** | [`private.admin_users`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/backend/supabase/migrations/20261020000001_consolidated_firebase_schema_and_rls.sql#L130) | Dedicated admin table in Supabase `private` schema | **Retain** as backend dependency table for Admin app |
+| **Admin Users Table** | [`private.admin_users`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/db/migrations/20261020000001_consolidated_firebase_schema_and_rls.sql#L130) | Dedicated admin table in Supabase `private` schema | **Retain** as backend dependency table for Admin app |
 
 ---
 *Migration Plan updated under Gravitas architectural review protocol.*

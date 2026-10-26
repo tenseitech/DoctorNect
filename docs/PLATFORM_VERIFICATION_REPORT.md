@@ -473,7 +473,7 @@ All commands below are strictly read-only:
 10. **Add Missing Indexes on Foreign Keys in PostgreSQL**
     * *Effort:* 2 hours.
     * *Risk:* Slow joins and table locks during high-concurrency writes once Supabase sync is live.
-    * *Location:* `backend/supabase/migrations/`.
+    * *Location:* `db/migrations/`.
 
 ---
 
@@ -614,7 +614,7 @@ The two sets are distinct and the earlier numbers are not coincidentally identic
 52. `system_config`
 53. `users`
 
-*(Source: `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` across `backend/supabase/migrations/*.sql`)*
+*(Source: `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` across `db/migrations/*.sql`)*
 
 #### Complete List of 31 Foreign Keys Lacking a Dedicated Index:
 *(Out of 78 total Foreign Key constraints across 21 migration files, exactly 31 lack an index on the referencing column)*
@@ -1052,7 +1052,7 @@ Every `path:line` citation in Addendum 1 sections 2.1 and 5 whose number is a mu
 
 ### 2.2 Unmapped Schema Fields Breakdown
 
-Comparison between Firestore document model fields handled by client/backend code and the PostgreSQL table schemas defined in `backend/supabase/migrations/20260923000001_doctornect_schema.sql`:
+Comparison between Firestore document model fields handled by client/backend code and the PostgreSQL table schemas defined in `db/migrations/20260923000001_doctornect_schema.sql`:
 
 | Entity / Collection | Firestore Field in App / Mapper | Quoted Mapper / Model Line | Missing Supabase Table Column | Architectural Impact |
 | :--- | :--- | :--- | :--- | :--- |
@@ -1078,7 +1078,7 @@ Comparison between Firestore document model fields handled by client/backend cod
 ### 3.1 How a Users Row is Created for a Firebase UID
 
 1. **Foreign Key Constraint:**
-   In `backend/supabase/migrations/20260923000001_doctornect_schema.sql:31`:
+   In `db/migrations/20260923000001_doctornect_schema.sql:31`:
    ```sql
    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
    firebase_uid VARCHAR(128) UNIQUE,
@@ -1124,7 +1124,7 @@ Comparison between Firestore document model fields handled by client/backend cod
 When a client connects using the Supabase `anon` key with Firebase authentication:
 
 1. **How the Caller is Identified:**
-   In `backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:12-20`:
+   In `db/migrations/20261008000001_firebase_uid_identity.sql:12-20`:
    ```sql
    CREATE OR REPLACE FUNCTION private.current_firebase_uid()
    RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
@@ -1415,7 +1415,7 @@ await clearFailedLogins(firestore, { identifier: `ambulance:${username}` });
 
 ### 7.2 Recount of Unindexed Foreign Keys in PostgreSQL
 
-Across all 21 SQL migration files in `backend/supabase/migrations/*.sql`, there are **78 total foreign key constraints**.
+Across all 21 SQL migration files in `db/migrations/*.sql`, there are **78 total foreign key constraints**.
 
 When excluding:
 1. Columns that are the table's Primary Key (e.g. `users.id`, `ambulance_private_settings.ambulance_id`, `review_public.review_id`), and
@@ -2508,7 +2508,7 @@ const cached = await withRedisTimeout(client.get(cacheKey), 1500);
 ## 3. Supabase Ownership, RLS Policies & Runtime Resolution
 
 ### 3.1 RLS Policies and Helpers in Migrations (Corrected)
-In `backend/supabase/migrations/20261008000001_firebase_uid_identity.sql`:
+In `db/migrations/20261008000001_firebase_uid_identity.sql`:
 - **Identity Helpers (`20261008000001_firebase_uid_identity.sql:12-20, 35-43`):**
 ```sql
 CREATE OR REPLACE FUNCTION private.current_firebase_uid()
@@ -3009,22 +3009,22 @@ function checkForDuplicateKeys(isEmulator, keys, fullEnv, envsWithoutLocal) {
 
 ### 3.1 Raw Output of Migration Grep
 ```text
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:12:CREATE OR REPLACE FUNCTION private.current_firebase_uid()
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:19:  SELECT NULLIF(auth.jwt() ->> 'sub', '');
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:35:CREATE OR REPLACE FUNCTION private.current_profile_id()
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:42:  SELECT profile_id FROM public.users WHERE firebase_uid = private.current_firebase_uid() LIMIT 1;
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:350:CREATE POLICY "doctors_update" ON public.doctors
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:353:        owner_uid = private.current_firebase_uid()
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:354:        OR doctor_id = private.current_profile_id()
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:410:CREATE POLICY "medical_stores_update" ON public.medical_stores
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:413:        owner_uid = private.current_firebase_uid()
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:414:        OR store_id = private.current_profile_id()
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:444:CREATE POLICY "labs_update" ON public.labs
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:447:        owner_uid = private.current_firebase_uid()
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:448:        OR lab_id = private.current_profile_id()
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:480:CREATE POLICY "ambulances_update" ON public.ambulances
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:483:        auth_uid = private.current_firebase_uid()
-backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:484:        OR ambulance_id = private.current_profile_id()
+db/migrations/20261008000001_firebase_uid_identity.sql:12:CREATE OR REPLACE FUNCTION private.current_firebase_uid()
+db/migrations/20261008000001_firebase_uid_identity.sql:19:  SELECT NULLIF(auth.jwt() ->> 'sub', '');
+db/migrations/20261008000001_firebase_uid_identity.sql:35:CREATE OR REPLACE FUNCTION private.current_profile_id()
+db/migrations/20261008000001_firebase_uid_identity.sql:42:  SELECT profile_id FROM public.users WHERE firebase_uid = private.current_firebase_uid() LIMIT 1;
+db/migrations/20261008000001_firebase_uid_identity.sql:350:CREATE POLICY "doctors_update" ON public.doctors
+db/migrations/20261008000001_firebase_uid_identity.sql:353:        owner_uid = private.current_firebase_uid()
+db/migrations/20261008000001_firebase_uid_identity.sql:354:        OR doctor_id = private.current_profile_id()
+db/migrations/20261008000001_firebase_uid_identity.sql:410:CREATE POLICY "medical_stores_update" ON public.medical_stores
+db/migrations/20261008000001_firebase_uid_identity.sql:413:        owner_uid = private.current_firebase_uid()
+db/migrations/20261008000001_firebase_uid_identity.sql:414:        OR store_id = private.current_profile_id()
+db/migrations/20261008000001_firebase_uid_identity.sql:444:CREATE POLICY "labs_update" ON public.labs
+db/migrations/20261008000001_firebase_uid_identity.sql:447:        owner_uid = private.current_firebase_uid()
+db/migrations/20261008000001_firebase_uid_identity.sql:448:        OR lab_id = private.current_profile_id()
+db/migrations/20261008000001_firebase_uid_identity.sql:480:CREATE POLICY "ambulances_update" ON public.ambulances
+db/migrations/20261008000001_firebase_uid_identity.sql:483:        auth_uid = private.current_firebase_uid()
+db/migrations/20261008000001_firebase_uid_identity.sql:484:        OR ambulance_id = private.current_profile_id()
 ```
 
 ### 3.2 Full Functions & Policies with File and Lines
@@ -3441,7 +3441,7 @@ function withAbuseProtection(dbFactory, {
 - **Conclusion:** Missing-secret protection does not reside in `abuse_rate_limit.js:165–260`; it relies on the dual safety net of `src/config/redis.js:37–44` (catching secret evaluation) and `abuse_rate_limit.js:140–154` (catching Redis failure and executing Firestore fallback).
 
 ### 7.3 Reconciliation of Users Table Line (:31 vs :61)
-In `backend/supabase/migrations/20260923000001_doctornect_schema.sql`:
+In `db/migrations/20260923000001_doctornect_schema.sql`:
 - **Line 31:** `CREATE TABLE IF NOT EXISTS facilities (`
 - **Line 61:** `CREATE TABLE IF NOT EXISTS users (`
 - **Line 62:** `id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,`

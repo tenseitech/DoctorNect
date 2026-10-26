@@ -107,7 +107,7 @@ The following code fixes have been applied directly to the codebase:
 
 ### 3.2 The Consolidated Migration
 All 22 migrations have been unified into a single canonical migration file:
-**`backend/supabase/migrations/20261020000001_consolidated_firebase_schema_and_rls.sql`**
+**`db/migrations/20261020000001_consolidated_firebase_schema_and_rls.sql`**
 
 **Key Structural Guarantees in Consolidated Migration:**
 1. **Natively TEXT Primary Key:** `public.users.id TEXT PRIMARY KEY` holds the Firebase UID directly.
@@ -115,7 +115,7 @@ All 22 migrations have been unified into a single canonical migration file:
 3. **Uniform Foreign Keys:** All child tables (`doctors.owner_uid`, `patients.owner_uid`, `medical_stores.owner_uid`, `labs.owner_uid`, `ambulances.auth_uid`, `in_app_notifications.recipient_uid`, `admin_audit_logs.admin_uid`, `security_events.uid`, `private.admin_users.user_id`) are `TEXT REFERENCES public.users(id)`.
 4. **Consolidated S3 Storage Columns:** Inlined directly into `health_records`, `lab_bookings`, `lab_orders`, `users`, `doctors`, `patients`, and `promoted_ads`.
 5. **Idempotent and Transaction-Safe:** Contains complete schema, indexes, timestamp triggers, helper functions, and RLS policies.
-6. **Not Applied to Live DB:** As requested, this SQL file is saved in `backend/supabase/migrations/` ready for your review.
+6. **Not Applied to Live DB:** As requested, this SQL file is saved in `db/migrations/` ready for your review.
 
 ---
 
@@ -240,7 +240,7 @@ Please perform the following actions in the respective cloud dashboards:
 ### Step 2: Supabase Dashboard — Review & Apply Consolidated Migration
 1. In the Supabase Dashboard, navigate to the **SQL Editor**.
 2. Open and review the migration script:
-   `backend/supabase/migrations/20261020000001_consolidated_firebase_schema_and_rls.sql`
+   `db/migrations/20261020000001_consolidated_firebase_schema_and_rls.sql`
 3. Paste and run the SQL script. Verify that all 53 tables have `RLS: enabled and forced` and that all functions compile cleanly.
 4. (Optional) Run the test suite:
    `backend/supabase/tests/rls_policies_test.sql`

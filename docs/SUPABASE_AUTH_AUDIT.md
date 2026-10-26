@@ -27,11 +27,11 @@ Prior touchpoints across the repository:
 
 ## 2. Inventory of `find_auth_user` Database Function
 
-1. `backend/supabase/migrations/20260930000007_auth_user_lookup.sql`:
+1. `db/migrations/20260930000007_auth_user_lookup.sql`:
    - Initial definition of `public.find_auth_user(TEXT)`.
-2. `backend/supabase/migrations/20261001000002_harden_auth_provisioning.sql`:
+2. `db/migrations/20261001000002_harden_auth_provisioning.sql`:
    - Security hardening of `find_auth_user`.
-3. `backend/supabase/migrations/20261021000006_db_hardening.sql`:
+3. `db/migrations/20261021000006_db_hardening.sql`:
    - Search path hardened to `search_path = ''`.
    - Permissions restricted:
      ```sql
@@ -44,10 +44,10 @@ Prior touchpoints across the repository:
 
 ## 3. Inventory of `on_auth_user_created` Trigger & Function
 
-1. `backend/supabase/migrations/20260930000005_users_provisioning.sql`:
+1. `db/migrations/20260930000005_users_provisioning.sql`:
    - `private.on_auth_user_created()` trigger function.
    - Trigger: `CREATE TRIGGER trg_on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION private.on_auth_user_created();`.
-2. `backend/supabase/migrations/20261001000002_harden_auth_provisioning.sql`:
+2. `db/migrations/20261001000002_harden_auth_provisioning.sql`:
    - Hardened error handling and search path.
    - `REVOKE ALL ON FUNCTION private.on_auth_user_created() FROM PUBLIC, anon, authenticated;`.
    - Because Supabase Auth sign-ups are disabled, `auth.users` will receive no new inserts, rendering this trigger inactive in production.

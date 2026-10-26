@@ -3,27 +3,28 @@
 **Audit Date:** October 26, 2026  
 **Auditor:** Senior Full-Stack Engineer & Security Auditor (Gravitas Engine)  
 **Target Environments:**
-- **Production Supabase:** `rnltknemwnjrjxthtull` (Garded: Read-only schema audit; zero seeding or destructive testing)
-- **Staging Supabase:** Pending creation by operator (credentials in `.env.migration`)
-- **Firebase Project:** `medibond-45fad`
+- **Staging Database:** Supabase project `rnltknemwnjrjxthtull` (Holds test data only; Write Gate prevents writes until backup verification passes)
+- **Production Database:** Amazon RDS PostgreSQL 17 (Empty, managed instance in `ap-south-1`)
+- **Production Access Layer:** Option A (AWS ECS Fargate PostgREST + Node.js Auth Gateway with Firebase RS256 JWKS verification + `streamTable()` adaptive polling)
+- **Firebase Project:** `medibond-45fad` (Unchanged: Firebase Auth, Redis ephemeral cache, AWS S3 storage)
 **Scope:** Doctor, Patient, Pharmacy, Lab, Ambulance (Admin console strictly out of scope)
 
 ---
 
 ## 1. Executive Summary & Module Go/No-Go Decision
 
-In accordance with `/gravitas` engineering discipline, **"READY" is not a status**. No module is marked "GO" or "CONDITIONAL GO" unless its complete end-to-end flow has been proven via live execution on staging or a physical device.
+In accordance with `/gravitas` engineering discipline, **"READY" is not a status**. No module is marked "PROVEN" or "READY" unless its complete end-to-end flow has been proven via live execution or unit-tested within this session.
 
 | Module | Architectural Target | Empirical Verification Status (PROVEN vs UNVERIFIED) | Release Recommendation |
 |---|---|---|---|
-| **Doctor** | Native Supabase PostgreSQL + Redis Slots + S3 Presigned KYC | **PROVEN:** UI screens migrated away from Firestore; Redis slot rate limiting passes (`doctor_slots.test.js`: 29/29 PASS); directory RPCs hardened.<br>**UNVERIFIED:** End-to-end doctor appointment lifecycle on live staging PostgREST / real device. | **BLOCKED / UNVERIFIED** (Awaiting Staging DB & Migration Run) |
-| **Patient** | Native Supabase PostgreSQL + S3 Clinical Vault | **PROVEN:** `patient_safe` view hardened with `security_invoker = true`; all 59 core Supabase Flutter tests PASS; full test suite passes (520/520).<br>**UNVERIFIED:** Live appointment booking and presigned S3 prescription download on real device. | **BLOCKED / UNVERIFIED** (Awaiting Staging DB & Migration Run) |
-| **Pharmacy** | Native Supabase PostgreSQL + S3 Documents | **PROVEN:** PostgREST mapping to `medical_stores`; profile completion decoupled from Firestore (25/25 Flutter tests PASS).<br>**UNVERIFIED:** Realtime prescription delivery status progression from pharmacy app to patient device. | **BLOCKED / UNVERIFIED** (Awaiting Staging DB & Migration Run) |
-| **Lab** | Native Supabase PostgreSQL + S3 Reports | **PROVEN:** Lab booking and report upload sheets decoupled from Firestore; RLS policies enforce store/lab isolation.<br>**UNVERIFIED:** Live PDF report upload to S3 and auto-linking on staging database. | **BLOCKED / UNVERIFIED** (Awaiting Staging DB & Migration Run) |
-| **Ambulance** | Native Supabase PostgreSQL + Redis Live GPS | **PROVEN:** UI screens (`ambulance_booking_screen.dart`, `ambulance_driver_home_screen.dart`, `ambulance_booking_sync.dart`) decoupled; real Postgres columns (`accepted_driver_id`) verified; mapping tests pass (6/6).<br>**UNVERIFIED:** Live GPS stream through Redis and driver atomic claim (`accept_ambulance_request`) on staging. | **BLOCKED / UNVERIFIED** (Awaiting Staging DB & Migration Run) |
+| **Doctor** | Native RDS PostgreSQL + Option A Gateway + Redis Slots + S3 Presigned KYC | **PROVEN:** UI screens decoupled from Firestore; Redis slot rate limiting passes (`doctor_slots.test.js`: 29/29 PASS); Gateway JWT verification passes (14/14 PASS); DB client abstraction passes (5/5 PASS).<br>**UNVERIFIED:** End-to-end appointment lifecycle through deployed AWS ECS Gateway to real RDS. | **BLOCKED ON RDS PROVISIONING** |
+| **Patient** | Native RDS PostgreSQL + Option A Gateway + S3 Clinical Vault + `streamTable()` Polling | **PROVEN:** `patient_safe` view hardened with `security_invoker = true`; `streamTable()` adaptive polling verified (5/5 PASS); all 525 Flutter tests PASS (0 failures, 0 analyze issues).<br>**UNVERIFIED:** Live appointment booking through AWS Gateway to real RDS. | **BLOCKED ON RDS PROVISIONING** |
+| **Pharmacy** | Native RDS PostgreSQL + Option A Gateway + S3 Documents + `streamTable()` Polling | **PROVEN:** PostgREST mapping to `medical_stores`; profile completion decoupled from Firestore (25/25 Flutter tests PASS); adaptive order polling with change detection.<br>**UNVERIFIED:** Live order progression through deployed AWS Gateway. | **BLOCKED ON RDS PROVISIONING** |
+| **Lab** | Native RDS PostgreSQL + Option A Gateway + S3 Reports | **PROVEN:** Lab booking and report upload sheets decoupled from Firestore; RLS policies enforce store/lab isolation; S3 presigned URLs intact.<br>**UNVERIFIED:** Live PDF report upload to S3 and auto-linking on production RDS. | **BLOCKED ON RDS PROVISIONING** |
+| **Ambulance** | Native RDS PostgreSQL + Option A Gateway + Redis Live GPS + `streamTable()` (3s Polling) | **PROVEN:** UI screens decoupled; real Postgres columns (`accepted_driver_id`) verified; mapping tests pass (6/6); high-frequency polling verified.<br>**UNVERIFIED:** Live GPS stream through Redis and driver atomic claim (`accept_ambulance_request`) on RDS. | **BLOCKED ON RDS PROVISIONING** |
 
-**Overall Deployment Decision:** **BLOCKED / UNVERIFIED**.  
-All production migrations, Firebase Cloud Function deployments, and Firestore lockdown rules are **STRICTLY ON HOLD** until staging credentials are provided and verified.
+**Overall Deployment Decision:** **BLOCKED ON OPERATOR ACTIONS**.  
+All production infrastructure and application code for Option A has been built, tested, and locked in. Physical database writes remain **STRICTLY GATED** until the operator completes Manual Actions Item 1 (native `pg_dump` 17 client tools) and Item 2 (Amazon RDS PostgreSQL 17 provisioning).
 
 ---
 
@@ -34,8 +35,8 @@ All production migrations, Firebase Cloud Function deployments, and Firestore lo
 - As instructed, all automated execution against Supabase has halted at this boundary. Safety guards in `scripts/test_live_rls_idor.js` and `scripts/replay_client_postgrest.js` prevent any unintended execution against production (`rnltknemwnjrjxthtull`).
 
 ### 2.2 Migration Directory & Rollback Isolation
-- Real migration files live in `backend/supabase/migrations/` (where `backend/supabase/config.toml` resides).
-- **Rollback File Isolated:** The rollback script `20261025000001_least_privilege_grants_and_rls_rollback.sql` was moved from `backend/supabase/migrations/` to `backend/supabase/rollbacks/`. This prevents `supabase db push` from automatically executing the rollback immediately after the migration.
+- Real migration files live in `db/migrations/` (restructured from `backend/supabase/migrations/`).
+- **Rollback File Isolated:** The rollback script `20261025000001_least_privilege_grants_and_rls_rollback.sql` was moved from `db/migrations/` to `backend/supabase/rollbacks/`. This prevents `supabase db push` from automatically executing the rollback immediately after the migration.
 - **Migration Order & Clean Apply Inspection:**
   - `20261020000001_initial_schema.sql`: Core tables, schemas, and extensions.
   - `20261021000001_sensitive_data_isolation.sql`: Sensitive tables, views, and schemas.

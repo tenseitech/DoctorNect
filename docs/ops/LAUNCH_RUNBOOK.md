@@ -69,7 +69,7 @@ npx supabase migration list --workdir backend --project-ref rnltknemwnjrjxthtull
 ```
 
 **Expected Result:**
-All 31 migrations (`20260923000001` through `20261022000001`) must appear with timestamps in both `Local` and `Remote` columns. If any migration is missing, do NOT run destructive resets; inspect `backend/supabase/migrations/` and apply missing migrations strictly via `npx supabase db push --workdir backend --project-ref rnltknemwnjrjxthtull`.
+All 31 migrations (`20260923000001` through `20261022000001`) must appear with timestamps in both `Local` and `Remote` columns. If any migration is missing, do NOT run destructive resets; inspect `db/migrations/` and apply missing migrations strictly via `npx supabase db push --workdir backend --project-ref rnltknemwnjrjxthtull`.
 
 ---
 

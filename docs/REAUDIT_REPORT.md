@@ -8,7 +8,7 @@ Read-only check of commits `b84a4ee`, `c8d037f`, `0bf62c7`, `6c14d62`, and `542e
 
 1. A patient booking now creates the Firestore appointment in `bookAppointment`, then keeps a different in-memory id (`pa` + timestamp). Cancel and reschedule persist that in-memory id, so they write a second document (or fail once patient creates are denied) and leave the callable document unchanged (`frontend/lib/core/data/shared_appointments_store.dart:654-664`, `frontend/lib/core/firebase/repositories/appointment_repository.dart:34-39`, `backend/firestore.rules:537`).
 2. Web ambulance login calls `verifyAmbulanceDriverLoginHttp`. That handler returns 503 whenever `ENFORCE_AMBULANCE_HTTP_APP_CHECK` is not `true`, and the flag defaults to false (`frontend/lib/core/firebase/ambulance_callable_client.dart:26-29`, `backend/functions/index.js:1478-1485`, `backend/functions/http_endpoint_security.js:62-65`). Mobile still uses the callable.
-3. Appointment sync no longer invents age, token, or slot, but other payloads still invent `age || 30` and `experience_years || 1` (`backend/functions/cross_role_sync.js:843`, `backend/functions/cross_role_sync.js:1491`). Do not set `ENABLE_SUPABASE_SYNC=on` until those are removed. The identity SQL has not been executed (`backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:5-10`).
+3. Appointment sync no longer invents age, token, or slot, but other payloads still invent `age || 30` and `experience_years || 1` (`backend/functions/cross_role_sync.js:843`, `backend/functions/cross_role_sync.js:1491`). Do not set `ENABLE_SUPABASE_SYNC=on` until those are removed. The identity SQL has not been executed (`db/migrations/20261008000001_firebase_uid_identity.sql:5-10`).
 
 ## 2. Scope check
 
@@ -30,7 +30,7 @@ Every file in the diff maps to a finding, a test, a checklist, or a new migratio
 | --- | --- |
 | `backend/functions/cross_role_sync.js`, `test/cross_role_sync.test.js` | C-3, L-4 |
 | `backend/functions/index.js`, `test/supabase_sync_gate.test.js` | H-6, M-8 |
-| `backend/supabase/migrations/20261008000001_firebase_uid_identity.sql`, `backend/supabase/config.toml`, `frontend/lib/core/supabase/supabase_bootstrap.dart`, `backend/functions/registration_otp.js` (claims), `test/firebase_supabase_claims.test.js`, `frontend/test/supabase_firebase_access_token_test.dart` | C-1 |
+| `db/migrations/20261008000001_firebase_uid_identity.sql`, `backend/supabase/config.toml`, `frontend/lib/core/supabase/supabase_bootstrap.dart`, `backend/functions/registration_otp.js` (claims), `test/firebase_supabase_claims.test.js`, `frontend/test/supabase_firebase_access_token_test.dart` | C-1 |
 | `backend/supabase/functions/sync-to-firestore/index.ts`, `frontend/lib/features/patient/booking/booking_flow_screen.dart`, `frontend/lib/core/data/shared_appointments_store.dart`, `test/sync_to_firestore_honest.test.js`, `frontend/test/patient_cancel_firestore_test.dart` | C-2 |
 | `frontend/lib/features/doctor/clinical/data/clinical_prescription_store.dart`, `frontend/test/prescription_merge_test.dart` | M-3 |
 | `frontend/lib/features/patient/records/add_record_screen.dart`, `frontend/lib/features/patient/profile/health/vaccination_records_screen.dart` | M-4 |
@@ -40,7 +40,7 @@ Every file in the diff maps to a finding, a test, a checklist, or a new migratio
 | `backend/functions/registration_otp.js`, OTP tests | H-3, H-4 |
 | `docs/DEPLOY_CHECKLIST.md` | M-1, L-5 |
 | `backend/functions/s3_storage.js`, `test/s3_storage.test.js` | M-2 |
-| `backend/supabase/migrations/20261008000002_super_admin_from_admin_users.sql` | M-6 |
+| `db/migrations/20261008000002_super_admin_from_admin_users.sql` | M-6 |
 | `docs/SECRET_ROTATION_CHECKLIST.md` | M-7 |
 | `backend/functions/test/http_endpoint_security.test.js` | M-8 |
 | `frontend/lib/features/patient/profile/settings/notifications_settings_screen.dart` | M-9 |
@@ -55,7 +55,7 @@ Every file in the diff maps to a finding, a test, a checklist, or a new migratio
 
 `frontend/scripts/release_build.ps1` and `release_build.sh` are not in the diff. They still inject Supabase defines only when `ENABLE_SUPABASE` is already `1` (`frontend/scripts/release_build.ps1:84-86`). They do not set it. No committed file in the diff sets `ENABLE_SUPABASE_SYNC` to `on`. The gate is `=== 'on'` (`backend/functions/index.js:122`).
 
-`git diff 317af8d..HEAD -- backend/supabase/migrations/` is only the two new files `20261008000001_firebase_uid_identity.sql` and `20261008000002_super_admin_from_admin_users.sql`. No migration at or before `20261002000001` was edited.
+`git diff 317af8d..HEAD -- db/migrations/` is only the two new files `20261008000001_firebase_uid_identity.sql` and `20261008000002_super_admin_from_admin_users.sql`. No migration at or before `20261002000001` was edited.
 
 Added lines that contain `@` are the seed address `admin@doctornect.com` plus Dart annotations. No other mailbox was added.
 

@@ -92,7 +92,9 @@ Perform complete mobile registration flow on device for each role:
 
 ### Expected Result
 - State transitions execute via `update_pharmacy_delivery_status` RPC.
-- Supabase Realtime channel broadcasts status changes immediately to Patient UI.
+- **Realtime / Polling Behavior:**
+  - *Staging (`APP_ENV=staging`):* Supabase Realtime WebSocket broadcasts status changes immediately to Patient UI.
+  - *Production (`APP_ENV=production`):* `streamTable()` adaptive polling (~8s standard) with change detection re-fetches and updates Patient UI without manual refresh; skips redundant rebuilds if status has not changed.
 
 ### Database Verification
 - **Postgres Table:** `public.pharmacy_orders` / `public.pharmacy_prescriptions`
@@ -139,6 +141,9 @@ Perform complete mobile registration flow on device for each role:
 - Broadcast accepted via `accept_ambulance_request` RPC (atomic row-lock, race-safe).
 - Sibling pending requests automatically marked `taken`.
 - Live location coordinates cached in Redis (`ambulance:location:<BROADCAST_ID>`) with 300s TTL.
+- **Tracking Stream Behavior:**
+  - *Staging (`APP_ENV=staging`):* Direct Supabase WebSocket stream.
+  - *Production (`APP_ENV=production`):* `streamTable(isHighFrequency: true)` polls every ~3 seconds for active trips, delivering fresh coordinates without opening a persistent WebSocket.
 - Patient map displays live ambulance movement.
 - Completed via `complete_ambulance_trip` RPC (`status = 'completed'`).
 

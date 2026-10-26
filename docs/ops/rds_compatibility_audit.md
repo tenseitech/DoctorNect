@@ -1,7 +1,7 @@
 # RDS PostgreSQL Compatibility Audit of Supabase Migrations
 
 **Date:** October 26, 2026  
-**Audit Scope:** 32 migration files in `backend/supabase/migrations/` against plain PostgreSQL 17 on AWS RDS.  
+**Audit Scope:** 32 migration files in `db/migrations/` against plain PostgreSQL 17 on AWS RDS.  
 
 ## 1. Summary of Constructs Requiring RDS Adaptation
 

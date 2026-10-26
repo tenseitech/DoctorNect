@@ -314,7 +314,7 @@ flutter test test/core/storage/s3_storage_confirmation_test.dart
 
 ## 6. Audit Log Rules: Dual Targets
 
-### 6.1 PostgreSQL Storage Audit Logs (`backend/supabase/migrations/20261020000002_phase_c_doctor_patient_cutover.sql`)
+### 6.1 PostgreSQL Storage Audit Logs (`db/migrations/20261020000002_phase_c_doctor_patient_cutover.sql`)
 ```sql
 CREATE TABLE IF NOT EXISTS public.storage_audit_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
