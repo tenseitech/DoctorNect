@@ -25,10 +25,10 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# ECS Security Group: Inbound HTTP (3000) from ALB only
+# ECS Security Group: Inbound HTTP (3000) from ALB only; Egress strictly 443 (HTTPS) and 5432 (RDS only)
 resource "aws_security_group" "ecs" {
   name_prefix = "${var.project_name}-${var.environment}-ecs-sg-"
-  description = "Isolates DoctorNect ECS Fargate Tasks"
+  description = "Isolates DoctorNect ECS Fargate Tasks (Egress: 443 to Web/NAT, 5432 to RDS SG only)"
   vpc_id      = var.vpc_id
 
   ingress {
@@ -40,11 +40,19 @@ resource "aws_security_group" "ecs" {
   }
 
   egress {
-    description = "Outbound to anywhere in VPC or NAT Gateway (JWKS, S3, Firebase)"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description = "Outbound HTTPS (443) to Google JWKS, AWS Secrets Manager, ECR, and CloudWatch via NAT/VPC endpoints"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description     = "Outbound PostgreSQL (5432) strictly to RDS Security Group only"
+    from_port       = var.rds_port
+    to_port         = var.rds_port
+    protocol        = "tcp"
+    security_groups = [var.rds_security_group_id]
   }
 
   tags = {

@@ -23,12 +23,12 @@ variable "vpc_id" {
 
 variable "public_subnet_ids" {
   type        = list(string)
-  description = "Public subnet IDs across at least 2 AZs for ALB"
+  description = "Public subnet IDs across at least 2 AZs for ALB. Expected as existing inputs, not created by this module."
 }
 
 variable "private_subnet_ids" {
   type        = list(string)
-  description = "Private subnet IDs across at least 2 AZs for ECS tasks"
+  description = "Private subnet IDs across at least 2 AZs for ECS tasks. NOTE: Private subnets and NAT Gateways are expected as existing inputs, not created by this module. The route tables for these subnets MUST have a 0.0.0.0/0 route pointing to a functional NAT Gateway. If the VPC has no NAT Gateway, ECS tasks in private subnets cannot reach the internet, causing outbound HTTPS (port 443) requests to Google JWKS (https://www.googleapis.com) to hang and time out, resulting in HTTP 504 Gateway Timeouts on all authenticated requests."
 }
 
 variable "domain_name" {
