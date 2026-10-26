@@ -645,4 +645,84 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
     assert.strictEqual(receivedPostgrestRequests.length, 1);
     assert.strictEqual(receivedPostgrestRequests[0].url, '/rpc/book_appointment_atomic');
   });
+
+  describe('Path Normalization and Resource Embedding', () => {
+    it('normalizes multiple/double slashes (//rest//v1//doctors)', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_norm_1' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '//rest//v1//doctors',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/doctors');
+    });
+
+    it('normalizes dot segments (/rest/v1/./doctors)', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_norm_2' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/./doctors',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/doctors');
+    });
+
+    it('normalizes URL-encoded characters in table name (/rest/v1/%64octors)', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_norm_3' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/%64octors', // %64 = 'd' -> 'doctors'
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/doctors');
+    });
+
+    it('normalizes trailing slashes (/rest/v1/doctors/)', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_norm_4' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/doctors/',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/doctors');
+    });
+
+    it('normalizes uppercase table names to lowercase (/rest/v1/DOCTORS)', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_norm_5' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/DOCTORS',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/doctors');
+    });
+
+    it('permits resource embedding queries via an allowlisted table (/rest/v1/appointments?select=*,patients(*))', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_norm_6' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,patients(*)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/appointments?select=*,patients(*)');
+    });
+  });
 });

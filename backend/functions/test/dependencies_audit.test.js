@@ -67,6 +67,9 @@ test('npm audit reports no moderate or higher vulnerabilities', (t) => {
     if (err.stdout) {
       output = err.stdout;
     } else {
+      if (process.env.CI === 'true') {
+        assert.fail(`npm audit failed or timed out in CI: ${err.message}`);
+      }
       t.skip(`npm audit skipped: ${err.message}`);
       return;
     }

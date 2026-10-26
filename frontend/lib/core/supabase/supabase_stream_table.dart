@@ -27,8 +27,21 @@ class StreamTableOptions {
 /// - Skips emissions if snapshot is unchanged to prevent redundant widget rebuilds.
 /// - Responds immediately when an external push trigger (e.g. FCM message) fires.
 /// Test-only hook to supply table rows without a network connection.
+Future<List<Map<String, dynamic>>> Function(String table)? _debugTableFetcher;
+
 @visibleForTesting
-Future<List<Map<String, dynamic>>> Function(String table)? debugTableFetcher;
+Future<List<Map<String, dynamic>>> Function(String table)? get debugTableFetcher =>
+    _debugTableFetcher;
+
+@visibleForTesting
+set debugTableFetcher(
+  Future<List<Map<String, dynamic>>> Function(String table)? value,
+) {
+  if (kReleaseMode && value != null) {
+    throw UnsupportedError('debugTableFetcher cannot be set in release mode.');
+  }
+  _debugTableFetcher = value;
+}
 
 Stream<List<Map<String, dynamic>>> streamTable({
   required String table,
@@ -73,8 +86,8 @@ Stream<List<Map<String, dynamic>>> streamTable({
 
       if (customFetcher != null) {
         rows = await customFetcher();
-      } else if (debugTableFetcher != null) {
-        rows = await debugTableFetcher!(table);
+      } else if (!kReleaseMode && _debugTableFetcher != null) {
+        rows = await _debugTableFetcher!(table);
       } else if (SupabaseBootstrap.isReady) {
         var query = SupabaseBootstrap.client.from(table).select();
 

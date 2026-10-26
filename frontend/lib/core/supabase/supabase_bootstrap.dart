@@ -160,12 +160,22 @@ abstract final class SupabaseBootstrap {
     return defaultClientId;
   }
 
+  static SupabaseClient? _debugClientOverride;
+
   @visibleForTesting
-  static SupabaseClient? debugClientOverride;
+  static SupabaseClient? get debugClientOverride => _debugClientOverride;
+
+  @visibleForTesting
+  static set debugClientOverride(SupabaseClient? value) {
+    if (kReleaseMode && value != null) {
+      throw UnsupportedError('debugClientOverride cannot be set in release mode.');
+    }
+    _debugClientOverride = value;
+  }
 
   /// Global accessor to the Supabase client instance
   static SupabaseClient get client {
-    if (debugClientOverride != null) return debugClientOverride!;
+    if (!kReleaseMode && _debugClientOverride != null) return _debugClientOverride!;
     if (!isReady) {
       throw StateError(
         'Supabase has not been initialized. Call SupabaseBootstrap.initialize() first.',
@@ -178,7 +188,7 @@ abstract final class SupabaseBootstrap {
   static void resetForTesting() {
     isReady = false;
     lastInitError = null;
-    debugClientOverride = null;
+    _debugClientOverride = null;
     debugFirebaseUserActiveOverride = null;
     debugSupabaseUserLoggedInOverride = null;
     debugHasActiveSessionOverride = null;

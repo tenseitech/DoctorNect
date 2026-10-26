@@ -4,6 +4,8 @@ const http = require('node:http');
 const https = require('node:https');
 const { URL } = require('node:url');
 
+const path = require('node:path');
+
 /**
  * Proxies an authenticated request to the backing PostgREST instance.
  *
@@ -16,12 +18,29 @@ const { URL } = require('node:url');
  */
 function proxyToPostgrest(req, res, options) {
   const targetUrl = new URL(options.targetBaseUrl);
-  // Map /rest/v1/* -> /*
-  let forwardPath = req.url;
-  if (forwardPath.startsWith('/rest/v1')) {
-    forwardPath = forwardPath.slice('/rest/v1'.length);
-    if (!forwardPath.startsWith('/')) forwardPath = '/' + forwardPath;
+  // Normalize and map /rest/v1/* -> /*
+  const [urlPath, queryString] = (req.url || '/').split('?');
+  let decodedPath = urlPath;
+  try {
+    decodedPath = decodeURIComponent(urlPath);
+  } catch (_) {}
+  let normPath = path.posix.normalize(decodedPath).replace(/^\/+/, '/').replace(/\/+$/, '') || '/';
+  if (normPath.startsWith('/rest/v1')) {
+    normPath = normPath.slice('/rest/v1'.length);
+    if (!normPath.startsWith('/')) normPath = '/' + normPath;
   }
+  normPath = normPath.replace(/\/+$/, '') || '/';
+  // Lowercase table or rpc resource name for PostgREST
+  const parts = normPath.split('/');
+  if (parts.length > 1) {
+    if (parts[1].toLowerCase() === 'rpc' && parts.length > 2) {
+      parts[2] = parts[2].toLowerCase();
+    } else {
+      parts[1] = parts[1].toLowerCase();
+    }
+    normPath = parts.join('/');
+  }
+  const forwardPath = queryString ? `${normPath}?${queryString}` : normPath;
 
   // Forwarded header positive allowlist (replaces header denylist)
   const FORWARDED_HEADER_ALLOWLIST = new Set([

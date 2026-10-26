@@ -1,6 +1,7 @@
 'use strict';
 
 const http = require('node:http');
+const path = require('node:path');
 const config = require('./config');
 const { verifyFirebaseIdToken } = require('./token_verifier');
 const { mintPostgrestJwt } = require('./jwt_minter');
@@ -71,8 +72,15 @@ function createGatewayServer(overrides = {}) {
       });
     }
 
+    // Extract and normalize request URL path
+    const [rawPath] = (req.url || '/').split('?');
+    let decodedPath = rawPath;
+    try {
+      decodedPath = decodeURIComponent(rawPath);
+    } catch (_) {}
+    let cleanPath = path.posix.normalize(decodedPath).replace(/^\/+/, '/').replace(/\/+$/, '') || '/';
+
     // Health check
-    const cleanPath = (req.url || '/').split('?')[0];
     if (cleanPath === '/healthz') {
       return sendJson(200, {
         status: 'healthy',
@@ -145,7 +153,7 @@ function createGatewayServer(overrides = {}) {
     }
 
     if (subPath.startsWith('/rpc/')) {
-      const rpcName = subPath.slice('/rpc/'.length).split('/')[0];
+      const rpcName = subPath.slice('/rpc/'.length).replace(/^\/+/, '').split('/')[0].toLowerCase();
       if (!allowedRpcsSet.has(rpcName)) {
         return sendJson(404, {
           error: 'Not Found',
@@ -153,7 +161,7 @@ function createGatewayServer(overrides = {}) {
         });
       }
     } else {
-      const tableName = subPath.replace(/^\/+/, '').split('/')[0];
+      const tableName = subPath.replace(/^\/+/, '').split('/')[0].toLowerCase();
       if (!allowedTablesSet.has(tableName)) {
         return sendJson(404, {
           error: 'Not Found',
@@ -226,7 +234,10 @@ function createGatewayServer(overrides = {}) {
     }
 
     // 3. Anonymous Request
-    const isAllowlisted = cfg.anonPublicAllowlist.some((allowed) => cleanPath.startsWith(allowed));
+    const lowerCleanPath = cleanPath.toLowerCase();
+    const isAllowlisted = cfg.anonPublicAllowlist.some((allowed) =>
+      lowerCleanPath.startsWith(allowed.toLowerCase())
+    );
     if (isAllowlisted) {
       clientRole = 'anon';
 

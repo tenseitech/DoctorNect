@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "description": "Old-to-new file path mappings for repository restructuring",
+  "mappings": [
+    {
+      "old": "backend/supabase/migrations/",
+      "new": "db/migrations/"
+    },
+    {
+      "old": "scripts/db/",
+      "new": "scripts/db/"
+    },
+    {
+      "old": "scripts/verify/",
+      "new": "scripts/verify/"
+    },
+    {
+      "old": "services/api-gateway/",
+      "new": "services/api-gateway/"
+    },
+    {
+      "old": "infra/aws/",
+      "new": "infra/aws/"
+    },
+    {
+      "old": "DOCTORNECT_VERIFICATION_REPORT.md",
+      "new": "docs/reports/DOCTORNECT_VERIFICATION_REPORT.md"
+    },
+    {
+      "old": "RDS_PRODUCTION_CHECKLIST.md",
+      "new": "docs/checklists/RDS_PRODUCTION_CHECKLIST.md"
+    },
+    {
+      "old": "PRE_LAUNCH_CHECKLIST.md",
+      "new": "docs/checklists/PRE_LAUNCH_CHECKLIST.md"
+    },
+    {
+      "old": "DEVICE_SMOKE_TEST_CHECKLIST.md",
+      "new": "docs/checklists/DEVICE_SMOKE_TEST_CHECKLIST.md"
+    }
+  ],
+  "preserved_entry_points": [
+    "firebase.json",
+    ".firebaserc",
+    "frontend/pubspec.yaml",
+    "frontend/android/",
+    "frontend/ios/",
+    "backend/functions/index.js"
+  ]
+}

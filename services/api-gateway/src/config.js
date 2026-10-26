@@ -102,6 +102,7 @@ module.exports = {
     'accept_ambulance_request',
     'book_appointment_atomic',
     'cancel_ambulance_broadcast',
+    'cancel_ambulance_trip',
     'complete_ambulance_trip',
     'create_prescription_atomic',
     'current_profile_id',

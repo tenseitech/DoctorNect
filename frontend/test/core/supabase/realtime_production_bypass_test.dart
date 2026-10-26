@@ -591,5 +591,15 @@ void main() {
       // In staging/uninitialized mode (mutation): throws AssertionError because Supabase.instance is not initialized!
       expect(() => getStream(isProd: false), throwsA(isA<AssertionError>()));
     });
+
+    test('debugTableFetcher and debugClientOverride release protection guards', () {
+      // In test/debug environment, assignments succeed
+      debugTableFetcher = (table) async => [];
+      expect(debugTableFetcher, isNotNull);
+      debugTableFetcher = null;
+
+      SupabaseBootstrap.debugClientOverride = null;
+      expect(SupabaseBootstrap.debugClientOverride, isNull);
+    });
   });
 }
