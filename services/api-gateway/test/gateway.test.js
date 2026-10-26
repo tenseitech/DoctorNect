@@ -483,4 +483,166 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
     // Restore original mock key state for subsequent tests
     mockJwksClient.setMockKeys(new Map([[testKid, testPublicKey]]));
   });
+
+  it('forwards only allowlisted headers and drops forbidden/untrusted headers', async () => {
+    const validToken = createTestFirebaseToken({ sub: 'user_headers_1' });
+    const res = await makeRequest({
+      method: 'GET',
+      path: '/rest/v1/appointments',
+      headers: {
+        authorization: `Bearer ${validToken}`,
+        accept: 'application/json',
+        prefer: 'return=representation',
+        range: '0-9',
+        'x-client-info': 'doctornect-flutter/2.0.0',
+        cookie: 'session_id=fake_cookie',
+        'x-custom-attack': 'malicious-value',
+        'x-forwarded-for': '1.2.3.4',
+      },
+    });
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(receivedPostgrestRequests.length, 1);
+    const postgrestReq = receivedPostgrestRequests[0];
+
+    // Allowed headers must be forwarded
+    assert.strictEqual(postgrestReq.headers.accept, 'application/json');
+    assert.strictEqual(postgrestReq.headers.prefer, 'return=representation');
+    assert.strictEqual(postgrestReq.headers.range, '0-9');
+    assert.strictEqual(postgrestReq.headers['x-client-info'], 'doctornect-flutter/2.0.0');
+
+    // Forbidden / un-allowlisted headers must be stripped
+    assert.strictEqual(postgrestReq.headers.cookie, undefined);
+    assert.strictEqual(postgrestReq.headers['x-custom-attack'], undefined);
+    assert.strictEqual(postgrestReq.headers['x-forwarded-for'], undefined);
+
+    // Schema profiles must be forced to public
+    assert.strictEqual(postgrestReq.headers['accept-profile'], 'public');
+    assert.strictEqual(postgrestReq.headers['content-profile'], 'public');
+  });
+
+  it('rejects non-public Accept-Profile with 400 Bad Request', async () => {
+    const validToken = createTestFirebaseToken({ sub: 'user_profile_1' });
+    const res = await makeRequest({
+      method: 'GET',
+      path: '/rest/v1/appointments',
+      headers: {
+        authorization: `Bearer ${validToken}`,
+        'accept-profile': 'private',
+      },
+    });
+
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.json.error, 'Bad Request');
+    assert.match(res.json.message, /only 'public' schema is permitted/i);
+    assert.strictEqual(receivedPostgrestRequests.length, 0);
+  });
+
+  it('rejects non-public Content-Profile with 400 Bad Request', async () => {
+    const validToken = createTestFirebaseToken({ sub: 'user_profile_2' });
+    const res = await makeRequest({
+      method: 'POST',
+      path: '/rest/v1/appointments',
+      headers: {
+        authorization: `Bearer ${validToken}`,
+        'content-type': 'application/json',
+        'content-profile': 'auth',
+      },
+      body: JSON.stringify({ notes: 'test' }),
+    });
+
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.json.error, 'Bad Request');
+    assert.match(res.json.message, /only 'public' schema is permitted/i);
+    assert.strictEqual(receivedPostgrestRequests.length, 0);
+  });
+
+  it('accepts explicit Accept-Profile: public and forwards it', async () => {
+    const validToken = createTestFirebaseToken({ sub: 'user_profile_3' });
+    const res = await makeRequest({
+      method: 'GET',
+      path: '/rest/v1/appointments',
+      headers: {
+        authorization: `Bearer ${validToken}`,
+        'accept-profile': 'public',
+      },
+    });
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(receivedPostgrestRequests.length, 1);
+    assert.strictEqual(receivedPostgrestRequests[0].headers['accept-profile'], 'public');
+  });
+
+  it('rejects disallowed HTTP methods with 405 Method Not Allowed', async () => {
+    const res = await makeRequest({
+      method: 'TRACE',
+      path: '/rest/v1/doctor_directory',
+    });
+
+    assert.strictEqual(res.statusCode, 405);
+    assert.strictEqual(res.json.error, 'Method Not Allowed');
+    assert.strictEqual(receivedPostgrestRequests.length, 0);
+  });
+
+  it('rejects access to unallowlisted table with 404 Not Found', async () => {
+    const validToken = createTestFirebaseToken({ sub: 'user_table_1' });
+    const res = await makeRequest({
+      method: 'GET',
+      path: '/rest/v1/unauthorized_table_xyz',
+      headers: { authorization: `Bearer ${validToken}` },
+    });
+
+    assert.strictEqual(res.statusCode, 404);
+    assert.strictEqual(res.json.error, 'Not Found');
+    assert.match(res.json.message, /Resource table 'unauthorized_table_xyz' is not allowed/i);
+    assert.strictEqual(receivedPostgrestRequests.length, 0);
+  });
+
+  it('allows access to allowlisted table with 200 OK', async () => {
+    const validToken = createTestFirebaseToken({ sub: 'user_table_2' });
+    const res = await makeRequest({
+      method: 'GET',
+      path: '/rest/v1/appointments',
+      headers: { authorization: `Bearer ${validToken}` },
+    });
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(receivedPostgrestRequests.length, 1);
+    assert.strictEqual(receivedPostgrestRequests[0].url, '/appointments');
+  });
+
+  it('rejects access to unallowlisted RPC with 404 Not Found', async () => {
+    const validToken = createTestFirebaseToken({ sub: 'user_rpc_1' });
+    const res = await makeRequest({
+      method: 'POST',
+      path: '/rest/v1/rpc/drop_all_tables',
+      headers: {
+        authorization: `Bearer ${validToken}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    });
+
+    assert.strictEqual(res.statusCode, 404);
+    assert.strictEqual(res.json.error, 'Not Found');
+    assert.match(res.json.message, /RPC function 'drop_all_tables' is not allowed/i);
+    assert.strictEqual(receivedPostgrestRequests.length, 0);
+  });
+
+  it('allows access to allowlisted RPC with 200 OK', async () => {
+    const validToken = createTestFirebaseToken({ sub: 'user_rpc_2' });
+    const res = await makeRequest({
+      method: 'POST',
+      path: '/rest/v1/rpc/book_appointment_atomic',
+      headers: {
+        authorization: `Bearer ${validToken}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ p_appointment_id: 'appt_1' }),
+    });
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(receivedPostgrestRequests.length, 1);
+    assert.strictEqual(receivedPostgrestRequests[0].url, '/rpc/book_appointment_atomic');
+  });
 });

@@ -15,6 +15,9 @@ function createGatewayServer(overrides = {}) {
     maxRequests: cfg.rateLimitMaxRequests,
   });
   const jwksClient = cfg.jwksClient || defaultJwksClient;
+  const allowedMethodsSet = new Set((cfg.allowedMethods || []).map((m) => m.toUpperCase()));
+  const allowedTablesSet = new Set(cfg.allowedTables || []);
+  const allowedRpcsSet = new Set(cfg.allowedRpcs || []);
 
   const server = http.createServer(async (req, res) => {
     const startTime = process.hrtime();
@@ -58,6 +61,14 @@ function createGatewayServer(overrides = {}) {
       });
       res.end();
       return;
+    }
+
+    // Validate HTTP Method
+    if (!allowedMethodsSet.has((req.method || '').toUpperCase())) {
+      return sendJson(405, {
+        error: 'Method Not Allowed',
+        message: `HTTP method ${req.method} is not permitted.`,
+      });
     }
 
     // Health check
@@ -108,6 +119,47 @@ function createGatewayServer(overrides = {}) {
     // Validate that route belongs to /rest/v1/*
     if (!cleanPath.startsWith('/rest/v1')) {
       return sendJson(404, { error: 'Not Found', message: 'Endpoint not found.' });
+    }
+
+    // Validate Accept-Profile and Content-Profile schema restrictions
+    const acceptProfile = req.headers['accept-profile'];
+    if (acceptProfile && acceptProfile.trim().toLowerCase() !== 'public') {
+      return sendJson(400, {
+        error: 'Bad Request',
+        message: "Invalid Accept-Profile: only 'public' schema is permitted.",
+      });
+    }
+
+    const contentProfile = req.headers['content-profile'];
+    if (contentProfile && contentProfile.trim().toLowerCase() !== 'public') {
+      return sendJson(400, {
+        error: 'Bad Request',
+        message: "Invalid Content-Profile: only 'public' schema is permitted.",
+      });
+    }
+
+    // Validate path against allowed tables and RPCs
+    const subPath = cleanPath.slice('/rest/v1'.length);
+    if (!subPath || subPath === '/') {
+      return sendJson(404, { error: 'Not Found', message: 'Endpoint not found.' });
+    }
+
+    if (subPath.startsWith('/rpc/')) {
+      const rpcName = subPath.slice('/rpc/'.length).split('/')[0];
+      if (!allowedRpcsSet.has(rpcName)) {
+        return sendJson(404, {
+          error: 'Not Found',
+          message: `RPC function '${rpcName}' is not allowed or not found.`,
+        });
+      }
+    } else {
+      const tableName = subPath.replace(/^\/+/, '').split('/')[0];
+      if (!allowedTablesSet.has(tableName)) {
+        return sendJson(404, {
+          error: 'Not Found',
+          message: `Resource table '${tableName}' is not allowed or not found.`,
+        });
+      }
     }
 
     // Extract authorization credentials

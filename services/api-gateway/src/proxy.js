@@ -23,14 +23,33 @@ function proxyToPostgrest(req, res, options) {
     if (!forwardPath.startsWith('/')) forwardPath = '/' + forwardPath;
   }
 
-  const forwardHeaders = { ...req.headers };
-  delete forwardHeaders.host;
-  delete forwardHeaders.authorization;
-  delete forwardHeaders.apikey;
-  delete forwardHeaders.role;
-  delete forwardHeaders['x-role'];
+  // Forwarded header positive allowlist (replaces header denylist)
+  const FORWARDED_HEADER_ALLOWLIST = new Set([
+    'accept',
+    'content-type',
+    'prefer',
+    'range',
+    'accept-profile',
+    'content-profile',
+    'x-client-info',
+    'content-range',
+    'accept-range',
+  ]);
 
-  // Inject PostgREST authorization
+  const forwardHeaders = {};
+  for (const [key, val] of Object.entries(req.headers || {})) {
+    const lowerKey = key.toLowerCase();
+    if (FORWARDED_HEADER_ALLOWLIST.has(lowerKey)) {
+      forwardHeaders[lowerKey] = val;
+    }
+  }
+
+  // Schema Profile Handling: PostgREST is locked to 'public'.
+  // Forwarded requests strictly declare public profile.
+  forwardHeaders['accept-profile'] = 'public';
+  forwardHeaders['content-profile'] = 'public';
+
+  // Inject minted PostgREST authorization
   forwardHeaders.authorization = `Bearer ${options.postgrestJwt}`;
 
   if (options.body && options.body.length > 0) {
