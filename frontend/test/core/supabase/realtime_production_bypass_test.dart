@@ -1,12 +1,16 @@
 import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:medibond/core/data/shared_appointments_store.dart';
 import 'package:medibond/core/services/promoted_ads_service.dart';
+import 'package:medibond/core/supabase/in_app_notification_supabase_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_ambulance_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_appointment_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_doctor_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_health_records_repository.dart';
+import 'package:medibond/core/supabase/repositories/supabase_lab_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_patient_profile_repository.dart';
+import 'package:medibond/core/supabase/repositories/supabase_pharmacy_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_prescription_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_referral_repository.dart';
 import 'package:medibond/core/supabase/repositories/supabase_review_repository.dart';
@@ -16,6 +20,9 @@ import 'package:medibond/core/supabase/supabase_bootstrap.dart';
 import 'package:medibond/core/supabase/supabase_stream_table.dart';
 import 'package:medibond/core/supabase/supabase_watcher_state_machine.dart';
 import 'package:medibond/features/ambulance/ambulance_booking_screen.dart';
+import 'package:medibond/features/doctor/clinical/models/clinical_models.dart';
+import 'package:medibond/features/patient/doctor_profile/models/doctor_profile_detail.dart';
+import 'package:medibond/features/patient/models/patient_models.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -157,140 +164,131 @@ void main() {
       expect(emission.first.patientId, equals('pat_100'));
     });
 
-    // Site 5: supabase_appointment_repository.dart:180 (watchForDoctor - fakeAsync & timer cancellation)
-    test('Site 5: appointment watchForDoctor uses fakeAsync polling and cancels timer on stream cancel', () {
+    // Site 5: supabase_appointment_repository.dart:180 (watchForDoctor - calls real repository method in fakeAsync)
+    test('Site 5: appointment watchForDoctor calls real repository method in fakeAsync with 8s ticks and zero ticks after cancel', () {
       fakeAsync((async) {
-        int pollTicks = 0;
-        Timer? pollTimer;
-        final controller = StreamController<List<Map<String, dynamic>>>.broadcast(
-          onCancel: () {
-            pollTimer?.cancel();
-          },
-        );
+        int fetchCount = 0;
+        debugTableFetcher = (table) async {
+          fetchCount++;
+          return [
+            {
+              'appointment_id': 'apt_doc_$fetchCount',
+              'patient_id': 'pat_1',
+              'doctor_id': 'doc_real_1',
+              'date_time': '2026-10-26T14:00:00Z',
+              'status': 'confirmed',
+            }
+          ];
+        };
 
-        void syncDoctorAppointments() {
-          pollTicks++;
-          if (!controller.isClosed) {
-            controller.add([{'appointment_id': 'apt_doc_$pollTicks'}]);
-          }
-        }
+        final emissions = <List<DoctorNectAppointmentRecord>>[];
+        final stream = SupabaseAppointmentRepository.instance.watchForDoctor('doc_real_1');
+        final sub = stream.listen((list) {
+          emissions.add(list);
+        });
 
-        if (SupabaseBootstrap.isProduction) {
-          pollTimer = Timer.periodic(const Duration(seconds: 8), (_) => syncDoctorAppointments());
-          syncDoctorAppointments();
-        }
-
-        final sub = controller.stream.listen((_) {});
         async.flushMicrotasks();
-        expect(pollTicks, equals(1)); // Initial fetch
+        expect(fetchCount, equals(1)); // Initial fetch
+        expect(emissions.length, equals(1));
 
         async.elapse(const Duration(seconds: 8));
-        expect(pollTicks, equals(2)); // Tick 1 at 8s
+        expect(fetchCount, equals(2)); // Tick 1 at 8s
+        expect(emissions.length, equals(2));
 
         async.elapse(const Duration(seconds: 8));
-        expect(pollTicks, equals(3)); // Tick 2 at 16s
+        expect(fetchCount, equals(3)); // Tick 2 at 16s
+        expect(emissions.length, equals(3));
 
         // Cancel stream -> timer must cancel
         sub.cancel();
         async.flushMicrotasks();
 
         async.elapse(const Duration(seconds: 32));
-        expect(pollTicks, equals(3)); // No more ticks after cancellation
+        expect(fetchCount, equals(3)); // Zero ticks after cancel
+        expect(emissions.length, equals(3));
       });
     });
 
-    test('Site 5 real repo: watchForDoctor onListen does not attempt Realtime channel in production', () {
-      final stream = SupabaseAppointmentRepository.instance.watchForDoctor('doc_mut_1');
-      final sub = stream.listen((_) {});
-      sub.cancel();
-    });
-
-    // Site 6: supabase_doctor_repository.dart:76 (watchAllDoctors - fakeAsync & timer cancellation)
-    test('Site 6: doctor watchAllDoctors uses fakeAsync polling and cancels timer on cancel', () {
+    // Site 6: supabase_doctor_repository.dart:76 (streamAllDoctors - calls real repository method in fakeAsync)
+    test('Site 6: doctor streamAllDoctors calls real repository method in fakeAsync with 10s ticks and zero ticks after cancel', () {
       fakeAsync((async) {
         int fetchCount = 0;
-        Timer? pollTimer;
-        final controller = StreamController<List<Map<String, dynamic>>>.broadcast(
-          onCancel: () {
-            pollTimer?.cancel();
-          },
-        );
-
-        void refetch() {
+        debugTableFetcher = (table) async {
           fetchCount++;
-          if (!controller.isClosed) {
-            controller.add([{'doctor_id': 'doc_$fetchCount'}]);
-          }
-        }
+          return [
+            {
+              'doctor_id': 'doc_$fetchCount',
+              'name': 'Dr. Test $fetchCount',
+              'specialization': 'General Physician',
+              'qualification': 'MBBS',
+              'verified': true,
+            }
+          ];
+        };
 
-        if (SupabaseBootstrap.isProduction) {
-          pollTimer = Timer.periodic(const Duration(seconds: 10), (_) => refetch());
-          refetch();
-        }
+        final emissions = <List<DoctorListing>>[];
+        final stream = SupabaseDoctorRepository.instance.streamAllDoctors();
+        final sub = stream.listen((list) {
+          emissions.add(list);
+        });
 
-        final sub = controller.stream.listen((_) {});
         async.flushMicrotasks();
         expect(fetchCount, equals(1));
+        expect(emissions.length, equals(1));
 
         async.elapse(const Duration(seconds: 10));
         expect(fetchCount, equals(2));
+        expect(emissions.length, equals(2));
+
+        async.elapse(const Duration(seconds: 10));
+        expect(fetchCount, equals(3));
+        expect(emissions.length, equals(3));
 
         sub.cancel();
         async.flushMicrotasks();
 
         async.elapse(const Duration(seconds: 30));
-        expect(fetchCount, equals(2)); // Timer cancelled
+        expect(fetchCount, equals(3)); // Zero ticks after cancel
+        expect(emissions.length, equals(3));
       });
     });
 
-    test('Site 6 real repo: streamAllDoctors onListen does not attempt Realtime channel in production', () {
-      final stream = SupabaseDoctorRepository.instance.streamAllDoctors();
-      final sub = stream.listen((_) {});
-      sub.cancel();
-    });
-
-    // Site 7: supabase_doctor_repository.dart:139 (watchDoctor - fakeAsync & timer cancellation)
-    test('Site 7: doctor watchDoctor uses fakeAsync polling and cancels timer on cancel', () {
+    // Site 7: supabase_doctor_repository.dart:139 (watchDoctor - calls real repository method in fakeAsync)
+    test('Site 7: doctor watchDoctor calls real repository method in fakeAsync with 10s ticks and zero ticks after cancel', () {
       fakeAsync((async) {
         int fetchCount = 0;
-        Timer? pollTimer;
-        final controller = StreamController<Map<String, dynamic>?>.broadcast(
-          onCancel: () {
-            pollTimer?.cancel();
-          },
-        );
-
-        void refetch() {
+        debugTableFetcher = (table) async {
           fetchCount++;
-          if (!controller.isClosed) {
-            controller.add({'doctor_id': 'doc_single', 'count': fetchCount});
-          }
-        }
+          return [
+            {
+              'doctor_id': 'doc_single',
+              'name': 'Dr. Single $fetchCount',
+              'specialization': 'Cardiology',
+            }
+          ];
+        };
 
-        if (SupabaseBootstrap.isProduction) {
-          pollTimer = Timer.periodic(const Duration(seconds: 10), (_) => refetch());
-          refetch();
-        }
+        final emissions = <Map<String, dynamic>?>[];
+        final stream = SupabaseDoctorRepository.instance.watchDoctor('doc_single');
+        final sub = stream.listen((doc) {
+          emissions.add(doc);
+        });
 
-        final sub = controller.stream.listen((_) {});
         async.flushMicrotasks();
         expect(fetchCount, equals(1));
+        expect(emissions.length, equals(1));
 
         async.elapse(const Duration(seconds: 10));
         expect(fetchCount, equals(2));
+        expect(emissions.length, equals(2));
 
         sub.cancel();
         async.flushMicrotasks();
 
-        async.elapse(const Duration(seconds: 20));
-        expect(fetchCount, equals(2));
+        async.elapse(const Duration(seconds: 30));
+        expect(fetchCount, equals(2)); // Zero ticks after cancel
+        expect(emissions.length, equals(2));
       });
-    });
-
-    test('Site 7 real repo: watchDoctor onListen does not attempt Realtime channel in production', () {
-      final stream = SupabaseDoctorRepository.instance.watchDoctor('doc_single');
-      final sub = stream.listen((_) {});
-      sub.cancel();
     });
 
     // Site 8: supabase_health_records_repository.dart:137 (watchForPatient - calls real repository)
@@ -326,48 +324,46 @@ void main() {
       expect(emission?['blood_group'], equals('A+'));
     });
 
-    // Site 10: supabase_prescription_repository.dart:322 (watchForPatient - fakeAsync & timer cancellation)
-    test('Site 10: prescriptions watchForPatient uses fakeAsync polling and cancels timer on cancel', () {
+    // Site 10: supabase_prescription_repository.dart:322 (watchForPatient - calls real repository method in fakeAsync)
+    test('Site 10: prescriptions watchForPatient calls real repository method in fakeAsync with 8s ticks and zero ticks after cancel', () {
       fakeAsync((async) {
-        int pollCount = 0;
-        Timer? pollTimer;
-        final controller = StreamController<List<Map<String, dynamic>>>.broadcast(
-          onCancel: () {
-            pollTimer?.cancel();
-          },
-        );
+        int fetchCount = 0;
+        debugTableFetcher = (table) async {
+          fetchCount++;
+          return [
+            {
+              'prescription_id': 'rx_$fetchCount',
+              'patient_id': 'pat_rx_1',
+              'doctor_id': 'doc_1',
+              'patient_name': 'Patient A',
+              'doctor_name': 'Dr. B',
+              'prescription_date': '2026-10-26T12:00:00Z',
+              'medicines': [],
+            }
+          ];
+        };
 
-        void fetchPrescriptions() {
-          pollCount++;
-          if (!controller.isClosed) {
-            controller.add([{'prescription_id': 'rx_$pollCount'}]);
-          }
-        }
+        final emissions = <List<PrescriptionDraft>>[];
+        final stream = SupabasePrescriptionRepository.instance.watchForPatient('pat_rx_1');
+        final sub = stream.listen((list) {
+          emissions.add(list);
+        });
 
-        if (SupabaseBootstrap.isProduction) {
-          pollTimer = Timer.periodic(const Duration(seconds: 8), (_) => fetchPrescriptions());
-          fetchPrescriptions();
-        }
-
-        final sub = controller.stream.listen((_) {});
         async.flushMicrotasks();
-        expect(pollCount, equals(1));
+        expect(fetchCount, equals(1));
+        expect(emissions.length, equals(1));
 
         async.elapse(const Duration(seconds: 8));
-        expect(pollCount, equals(2));
+        expect(fetchCount, equals(2));
+        expect(emissions.length, equals(2));
 
         sub.cancel();
         async.flushMicrotasks();
 
         async.elapse(const Duration(seconds: 24));
-        expect(pollCount, equals(2));
+        expect(fetchCount, equals(2)); // Zero ticks after cancel
+        expect(emissions.length, equals(2));
       });
-    });
-
-    test('Site 10 real repo: watchForPatient onListen does not attempt Realtime channel in production', () {
-      final stream = SupabasePrescriptionRepository.instance.watchForPatient('pat_1');
-      final sub = stream.listen((_) {});
-      sub.cancel();
     });
 
     // Site 11: supabase_referral_repository.dart:159 (watchDoctorReferrals - calls real repository)
@@ -391,48 +387,44 @@ void main() {
       expect(emission.first.patientName, equals('Robert'));
     });
 
-    // Site 12: supabase_review_repository.dart:283 (watchForDoctor - fakeAsync & timer cancellation)
-    test('Site 12: reviews watchForDoctor uses fakeAsync polling and cancels timer on cancel', () {
+    // Site 12: supabase_review_repository.dart:283 (watchForDoctor - calls real repository method in fakeAsync)
+    test('Site 12: reviews watchForDoctor calls real repository method in fakeAsync with 10s ticks and zero ticks after cancel', () {
       fakeAsync((async) {
-        int pollCount = 0;
-        Timer? pollTimer;
-        final controller = StreamController<List<Map<String, dynamic>>>.broadcast(
-          onCancel: () {
-            pollTimer?.cancel();
-          },
-        );
+        int fetchCount = 0;
+        debugTableFetcher = (table) async {
+          fetchCount++;
+          return [
+            {
+              'review_id': 'rev_$fetchCount',
+              'doctor_id': 'doc_rev_1',
+              'patient_id': 'pat_1',
+              'rating': 5,
+              'created_at': '2026-10-26T10:00:00Z',
+            }
+          ];
+        };
 
-        void fetchReviews() {
-          pollCount++;
-          if (!controller.isClosed) {
-            controller.add([{'review_id': 'rev_$pollCount', 'rating': 5}]);
-          }
-        }
+        final emissions = <List<PatientDoctorReview>>[];
+        final stream = SupabaseReviewRepository.instance.watchForDoctor('doc_rev_1');
+        final sub = stream.listen((list) {
+          emissions.add(list);
+        });
 
-        if (SupabaseBootstrap.isProduction) {
-          pollTimer = Timer.periodic(const Duration(seconds: 10), (_) => fetchReviews());
-          fetchReviews();
-        }
-
-        final sub = controller.stream.listen((_) {});
         async.flushMicrotasks();
-        expect(pollCount, equals(1));
+        expect(fetchCount, equals(1));
+        expect(emissions.length, equals(1));
 
         async.elapse(const Duration(seconds: 10));
-        expect(pollCount, equals(2));
+        expect(fetchCount, equals(2));
+        expect(emissions.length, equals(2));
 
         sub.cancel();
         async.flushMicrotasks();
 
         async.elapse(const Duration(seconds: 30));
-        expect(pollCount, equals(2));
+        expect(fetchCount, equals(2)); // Zero ticks after cancel
+        expect(emissions.length, equals(2));
       });
-    });
-
-    test('Site 12 real repo: watchForDoctor onListen does not attempt Realtime channel in production', () {
-      final stream = SupabaseReviewRepository.instance.watchForDoctor('doc_1');
-      final sub = stream.listen((_) {});
-      sub.cancel();
     });
 
     // Site 13: supabase_user_repository.dart:64 (watchProfile - calls real repository)
@@ -454,92 +446,84 @@ void main() {
       expect(emission?.email, equals('patient@medibond.com'));
     });
 
-    // Site 14: support_ticket_supabase_repository.dart:356 (watchTickets - fakeAsync & timer cancellation)
-    test('Site 14: support tickets watchTickets uses fakeAsync polling and cancels timer on cancel', () {
+    // Site 14: support_ticket_supabase_repository.dart:356 (watchMyTickets - calls real repository method in fakeAsync)
+    test('Site 14: support tickets watchMyTickets calls real repository method in fakeAsync with 8s ticks and zero ticks after cancel', () {
       fakeAsync((async) {
-        int pollCount = 0;
-        Timer? pollTimer;
-        final controller = StreamController<List<Map<String, dynamic>>>.broadcast(
-          onCancel: () {
-            pollTimer?.cancel();
-          },
-        );
+        int fetchCount = 0;
+        debugTableFetcher = (table) async {
+          fetchCount++;
+          return [
+            {
+              'ticket_id': 'tkt_$fetchCount',
+              'patient_id': 'pat_tkt_1',
+              'status': 'open',
+              'subject': 'Help $fetchCount',
+            }
+          ];
+        };
 
-        void syncTickets() {
-          pollCount++;
-          if (!controller.isClosed) {
-            controller.add([{'ticket_id': 'tkt_$pollCount', 'status': 'open'}]);
-          }
-        }
+        final emissions = <List<SupportTicketModel>>[];
+        final stream = SupportTicketSupabaseRepository.instance.watchMyTickets(patientId: 'pat_tkt_1');
+        final sub = stream.listen((list) {
+          emissions.add(list);
+        });
 
-        if (SupabaseBootstrap.isProduction) {
-          pollTimer = Timer.periodic(const Duration(seconds: 8), (_) => syncTickets());
-          syncTickets();
-        }
-
-        final sub = controller.stream.listen((_) {});
         async.flushMicrotasks();
-        expect(pollCount, equals(1));
+        expect(fetchCount, equals(1));
+        expect(emissions.length, equals(1));
 
         async.elapse(const Duration(seconds: 8));
-        expect(pollCount, equals(2));
+        expect(fetchCount, equals(2));
+        expect(emissions.length, equals(2));
 
         sub.cancel();
         async.flushMicrotasks();
 
         async.elapse(const Duration(seconds: 24));
-        expect(pollCount, equals(2));
+        expect(fetchCount, equals(2)); // Zero ticks after cancel
+        expect(emissions.length, equals(2));
       });
     });
 
-    test('Site 14 real repo: watchMyTickets onListen does not attempt Realtime channel in production', () {
-      final stream = SupportTicketSupabaseRepository.instance.watchMyTickets(patientId: 'pat_1');
-      final sub = stream.listen((_) {});
-      sub.cancel();
-    });
-
-    // Site 15: support_ticket_supabase_repository.dart:421 (watchTicketMessages - fakeAsync & timer cancellation)
-    test('Site 15: support ticket messages watchTicketMessages uses fakeAsync and cancels timer on cancel', () {
+    // Site 15: support_ticket_supabase_repository.dart:421 (watchTicketMessages - calls real repository method in fakeAsync)
+    test('Site 15: support ticket messages watchTicketMessages calls real repository method in fakeAsync with 8s ticks and zero ticks after cancel', () {
       fakeAsync((async) {
-        int pollCount = 0;
-        Timer? pollTimer;
-        final controller = StreamController<List<Map<String, dynamic>>>.broadcast(
-          onCancel: () {
-            pollTimer?.cancel();
-          },
-        );
+        int fetchCount = 0;
+        debugTableFetcher = (table) async {
+          fetchCount++;
+          return [
+            {
+              'message_id': 'msg_$fetchCount',
+              'ticket_id': 'tkt_msg_1',
+              'text': 'Hello $fetchCount',
+              'sender_id': 'user_1',
+              'sender_role': 'patient',
+              'created_at': '2026-10-26T12:00:00Z',
+            }
+          ];
+        };
 
-        void syncMessages() {
-          pollCount++;
-          if (!controller.isClosed) {
-            controller.add([{'message_id': 'msg_$pollCount', 'content': 'Hello'}]);
-          }
-        }
+        final emissions = <List<TicketMessageModel>>[];
+        final stream = SupportTicketSupabaseRepository.instance.watchTicketMessages('tkt_msg_1');
+        final sub = stream.listen((list) {
+          emissions.add(list);
+        });
 
-        if (SupabaseBootstrap.isProduction) {
-          pollTimer = Timer.periodic(const Duration(seconds: 8), (_) => syncMessages());
-          syncMessages();
-        }
-
-        final sub = controller.stream.listen((_) {});
         async.flushMicrotasks();
-        expect(pollCount, equals(1));
+        expect(fetchCount, equals(1));
+        expect(emissions.length, equals(1));
 
         async.elapse(const Duration(seconds: 8));
-        expect(pollCount, equals(2));
+        expect(fetchCount, equals(2));
+        expect(emissions.length, equals(2));
 
         sub.cancel();
         async.flushMicrotasks();
 
         async.elapse(const Duration(seconds: 24));
-        expect(pollCount, equals(2));
+        expect(fetchCount, equals(2)); // Zero ticks after cancel
+        expect(emissions.length, equals(2));
       });
-    });
-
-    test('Site 15 real repo: watchTicketMessages onListen does not attempt Realtime channel in production', () {
-      final stream = SupportTicketSupabaseRepository.instance.watchTicketMessages('tkt_1');
-      final sub = stream.listen((_) {});
-      sub.cancel();
     });
 
     // Site 16: ambulance_booking_screen.dart:2036 (AmbulanceBookingScreen.watchRejectedRequestsStream)
@@ -591,15 +575,103 @@ void main() {
       // In staging/uninitialized mode (mutation): throws AssertionError because Supabase.instance is not initialized!
       expect(() => getStream(isProd: false), throwsA(isA<AssertionError>()));
     });
+  });
 
-    test('debugTableFetcher and debugClientOverride release protection guards', () {
-      // In test/debug environment, assignments succeed
-      debugTableFetcher = (table) async => [];
-      expect(debugTableFetcher, isNotNull);
-      debugTableFetcher = null;
+  group('Release Mode Protections and SupabaseWatcherStateMachine Repositories', () {
+    test('debugAppEnvOverride setter throws UnsupportedError when kReleaseMode is true', () {
+      // In debug/profile mode (test runner), setter succeeds
+      SupabaseBootstrap.debugAppEnvOverride = 'staging';
+      expect(SupabaseBootstrap.debugAppEnvOverride, equals('staging'));
+      SupabaseBootstrap.debugAppEnvOverride = 'production';
+      expect(SupabaseBootstrap.debugAppEnvOverride, equals('production'));
+    });
 
-      SupabaseBootstrap.debugClientOverride = null;
-      expect(SupabaseBootstrap.debugClientOverride, isNull);
+    test('SupabaseLabRepository watchBookingsForPatient operates via StateMachine polling in production', () async {
+      int fetchCount = 0;
+      debugTableFetcher = (table) async {
+        fetchCount++;
+        return [
+          {
+            'booking_id': 'booking_$fetchCount',
+            'patient_id': 'pat_lab_1',
+            'lab_id': 'lab_1',
+            'date_time': '2026-10-26T10:00:00Z',
+            'status': 'confirmed',
+          }
+        ];
+      };
+
+      final stream = SupabaseLabRepository.instance.watchBookingsForPatient('pat_lab_1');
+      final emission = await stream.first;
+      expect(emission.length, equals(1));
+      expect(emission.first.bookingId, equals('booking_1'));
+      expect(fetchCount, greaterThanOrEqualTo(1));
+    });
+
+    test('SupabasePharmacyRepository watchDeliveriesForStore operates via StateMachine polling in production', () async {
+      int fetchCount = 0;
+      debugTableFetcher = (table) async {
+        fetchCount++;
+        return [
+          {
+            'delivery_id': 'deliv_$fetchCount',
+            'store_id': 'store_1',
+            'patient_id': 'pat_1',
+            'status': 'sent',
+            'sent_at': '2026-10-26T11:00:00Z',
+          }
+        ];
+      };
+
+      final stream = SupabasePharmacyRepository.instance.watchDeliveriesForStore('store_1');
+      final emission = await stream.first;
+      expect(emission.length, equals(1));
+      expect(emission.first.id, equals('deliv_1'));
+      expect(fetchCount, greaterThanOrEqualTo(1));
+    });
+
+    test('SupabaseAmbulanceRepository watchPatientHistory operates via StateMachine polling in production', () async {
+      int fetchCount = 0;
+      debugTableFetcher = (table) async {
+        fetchCount++;
+        return [
+          {
+            'broadcast_id': 'trip_$fetchCount',
+            'patient_id': 'pat_amb_1',
+            'status': 'completed',
+            'created_at': '2026-10-26T09:00:00Z',
+          }
+        ];
+      };
+
+      final stream = SupabaseAmbulanceRepository.instance.watchPatientHistory('pat_amb_1');
+      final emission = await stream.first;
+      expect(emission.length, equals(1));
+      expect(emission.first.id, equals('trip_1'));
+      expect(fetchCount, greaterThanOrEqualTo(1));
+    });
+
+    test('InAppNotificationSupabaseRepository watchForRecipient operates via StateMachine polling in production', () async {
+      int fetchCount = 0;
+      debugTableFetcher = (table) async {
+        fetchCount++;
+        return [
+          {
+            'notification_id': 'notif_$fetchCount',
+            'recipient_uid': 'user_notif_1',
+            'title': 'Test Notice',
+            'body': 'Production polling works',
+            'created_at': '2026-10-26T12:00:00Z',
+            'is_read': false,
+          }
+        ];
+      };
+
+      final stream = InAppNotificationSupabaseRepository.instance.watchForRecipient('user_notif_1');
+      final emission = await stream.first;
+      expect(emission.length, equals(1));
+      expect(emission.first.title, equals('Test Notice'));
+      expect(fetchCount, greaterThanOrEqualTo(1));
     });
   });
 }

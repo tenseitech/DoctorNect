@@ -7,6 +7,7 @@ import '../../firebase/models/firestore_page.dart';
 import '../../../features/pharmacy/models/pharmacy_models.dart';
 import '../mappers/pharmacy_supabase_mapper.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_stream_table.dart';
 import '../supabase_watcher_state_machine.dart';
 
 /// Supabase repository for Pharmacy (Medical Stores, Connections, Deliveries).
@@ -123,6 +124,14 @@ class SupabasePharmacyRepository {
   }) async {
     if (!SupabaseBootstrap.isReady || storeId.isEmpty) return const [];
     try {
+      if (!kReleaseMode && debugTableFetcher != null) {
+        final rows = await debugTableFetcher!('pharmacy_deliveries');
+        return rows
+            .map(PharmacySupabaseMapper.deliveryFromRow)
+            .whereType<PharmacyPrescriptionDelivery>()
+            .toList();
+      }
+
       var query = _client
           .from('pharmacy_deliveries')
           .select('*, pharmacy_delivery_medicines(*)')

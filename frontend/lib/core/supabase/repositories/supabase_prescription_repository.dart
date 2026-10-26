@@ -8,6 +8,7 @@ import '../../firebase/firestore_query_limits.dart';
 import '../../firebase/models/firestore_page.dart';
 import '../mappers/prescription_supabase_mapper.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_stream_table.dart';
 import 'supabase_patient_profile_repository.dart';
 
 /// Supabase Repository for Prescriptions.
@@ -185,6 +186,18 @@ class SupabasePrescriptionRepository {
     }
 
     try {
+      if (!kReleaseMode && debugTableFetcher != null) {
+        final rows = await debugTableFetcher!('prescriptions');
+        final items = rows
+            .map(PrescriptionSupabaseMapper.fromRow)
+            .whereType<PrescriptionDraft>()
+            .toList();
+        return FirestorePage(
+          items: items,
+          hasMore: false,
+        );
+      }
+
       final res = await _client
           .from('prescriptions')
           .select(_selectQuery)

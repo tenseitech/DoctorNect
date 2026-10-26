@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../features/patient/data/registered_doctors_store.dart';
 import '../../../features/patient/doctor_profile/models/doctor_profile_detail.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_stream_table.dart';
 
 /// Supabase Repository for Doctor Reviews and Ratings.
 /// Replaces Firestore `reviews/{reviewId}` and `review_public/{reviewId}`.
@@ -235,6 +236,11 @@ class SupabaseReviewRepository {
     if (!SupabaseBootstrap.isReady || doctorId.isEmpty) return const [];
 
     try {
+      if (!kReleaseMode && debugTableFetcher != null) {
+        final rows = await debugTableFetcher!('review_public');
+        return rows.map(_reviewFromPublicRow).toList();
+      }
+
       final res = await _client
           .from('review_public')
           .select()

@@ -29,7 +29,6 @@ class StreamTableOptions {
 /// Test-only hook to supply table rows without a network connection.
 Future<List<Map<String, dynamic>>> Function(String table)? _debugTableFetcher;
 
-@visibleForTesting
 Future<List<Map<String, dynamic>>> Function(String table)? get debugTableFetcher =>
     _debugTableFetcher;
 

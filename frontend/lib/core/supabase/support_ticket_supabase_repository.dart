@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'supabase_bootstrap.dart';
+import 'supabase_stream_table.dart';
 import 'supabase_watcher_state_machine.dart';
 
 class SupportTicketModel {
@@ -230,6 +231,11 @@ class SupportTicketSupabaseRepository {
     String? labId,
     String? ambulanceId,
   }) async {
+    if (!kReleaseMode && debugTableFetcher != null) {
+      final rows = await debugTableFetcher!('support_tickets');
+      return rows.map((r) => SupportTicketModel.fromJson(r)).toList();
+    }
+
     var query = _client.from('support_tickets').select();
     if (patientId != null && patientId.isNotEmpty) {
       query = query.eq('patient_id', patientId);
@@ -250,6 +256,11 @@ class SupportTicketSupabaseRepository {
   }
 
   Future<List<TicketMessageModel>> fetchTicketMessages(String ticketId) async {
+    if (!kReleaseMode && debugTableFetcher != null) {
+      final rows = await debugTableFetcher!('support_ticket_messages');
+      return rows.map((r) => TicketMessageModel.fromJson(r)).toList();
+    }
+
     final res = await _client
         .from('support_ticket_messages')
         .select()

@@ -6,6 +6,7 @@ import '../notifications/app_notification.dart';
 import '../notifications/doctor_notification_trigger.dart';
 import '../notifications/patient_notification_trigger.dart';
 import 'supabase_bootstrap.dart';
+import 'supabase_stream_table.dart';
 import 'supabase_watcher_state_machine.dart';
 
 class InAppNotificationSupabaseRepository {
@@ -107,6 +108,16 @@ class InAppNotificationSupabaseRepository {
   }
 
   Future<List<AppNotification>> fetchForRecipient(String recipientUid) async {
+    if (!kReleaseMode && debugTableFetcher != null) {
+      final rows = await debugTableFetcher!('in_app_notifications');
+      final list = <AppNotification>[];
+      for (final row in rows) {
+        final notif = notificationFromRow(row);
+        if (notif != null) list.add(notif);
+      }
+      return list;
+    }
+
     final res = await _client
         .from('in_app_notifications')
         .select()

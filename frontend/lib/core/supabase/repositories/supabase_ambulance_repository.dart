@@ -293,6 +293,14 @@ class SupabaseAmbulanceRepository {
     }
     final watcher = SupabaseWatcherStateMachine<AmbulanceBooking>(
       fetcher: () async {
+        if (!kReleaseMode && debugTableFetcher != null) {
+          final rows = await debugTableFetcher!('ambulance_broadcasts');
+          return rows
+              .map(AmbulanceSupabaseMapper.bookingFromRow)
+              .whereType<AmbulanceBooking>()
+              .toList();
+        }
+
         final res = await _client
             .from('ambulance_broadcasts')
             .select()

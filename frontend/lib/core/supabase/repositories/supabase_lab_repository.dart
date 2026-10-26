@@ -10,6 +10,7 @@ import '../../../features/lab/models/lab_connection_models.dart';
 import '../../../features/patient/lab/models/lab_models.dart';
 import '../mappers/lab_supabase_mapper.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_stream_table.dart';
 import '../supabase_watcher_state_machine.dart';
 
 /// Supabase repository for Diagnostic Laboratories (Bookings, Orders, Tests, Reports).
@@ -108,6 +109,14 @@ class SupabaseLabRepository {
   ) async {
     if (!SupabaseBootstrap.isReady || patientId.isEmpty) return const [];
     try {
+      if (!kReleaseMode && debugTableFetcher != null) {
+        final rows = await debugTableFetcher!('lab_bookings');
+        return rows
+            .map(LabSupabaseMapper.bookingFromRow)
+            .whereType<LabBookingRecord>()
+            .toList();
+      }
+
       final res = await _client
           .from('lab_bookings')
           .select()

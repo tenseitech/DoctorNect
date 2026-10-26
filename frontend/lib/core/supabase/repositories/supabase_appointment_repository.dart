@@ -42,6 +42,14 @@ class SupabaseAppointmentRepository {
     if (!SupabaseBootstrap.isReady || doctorId.isEmpty) return const [];
 
     try {
+      if (!kReleaseMode && debugTableFetcher != null) {
+        final rows = await debugTableFetcher!('appointments');
+        return rows
+            .map(AppointmentSupabaseMapper.fromRow)
+            .whereType<DoctorNectAppointmentRecord>()
+            .toList();
+      }
+
       final cutoff = DateTime.now().subtract(const Duration(days: 365));
       final res = await _client
           .from('appointments')

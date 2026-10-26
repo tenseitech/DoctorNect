@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../features/patient/models/patient_models.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_stream_table.dart';
 
 /// Supabase Repository for Doctor Directory, Verification, and Profile Data.
 /// Replaces Firestore `doctors/{doctorId}` queries and streams.
@@ -25,6 +27,14 @@ class SupabaseDoctorRepository {
     if (!SupabaseBootstrap.isReady) return const [];
 
     try {
+      if (!kReleaseMode && debugTableFetcher != null) {
+        final rows = await debugTableFetcher!('doctor_directory');
+        return rows
+            .map((row) => _fromRow(row['doctor_id'] as String? ?? '', row))
+            .whereType<DoctorListing>()
+            .toList();
+      }
+
       final res = await _client.from('doctor_directory').select().limit(50);
       final rows = List<Map<String, dynamic>>.from(res as List);
       return rows
@@ -109,6 +119,18 @@ class SupabaseDoctorRepository {
 
     Future<void> refetch() async {
       try {
+        if (!kReleaseMode && debugTableFetcher != null) {
+          final rows = await debugTableFetcher!('doctor_directory');
+          final match = rows.firstWhere(
+            (r) => r['doctor_id'] == doctorId,
+            orElse: () => rows.isNotEmpty ? rows.first : <String, dynamic>{},
+          );
+          if (!controller.isClosed) {
+            controller.add(match.isEmpty ? null : match);
+          }
+          return;
+        }
+
         final res = await _client
             .from('doctor_directory')
             .select()

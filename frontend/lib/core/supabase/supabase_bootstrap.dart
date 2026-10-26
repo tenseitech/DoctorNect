@@ -17,11 +17,25 @@ abstract final class SupabaseBootstrap {
   static const String appEnv =
       String.fromEnvironment('APP_ENV', defaultValue: 'staging');
 
-  @visibleForTesting
-  static String? debugAppEnvOverride;
+  static String? _debugAppEnvOverride;
 
-  static bool get isProduction =>
-      (debugAppEnvOverride ?? appEnv).toLowerCase() == 'production';
+  @visibleForTesting
+  static String? get debugAppEnvOverride => _debugAppEnvOverride;
+
+  @visibleForTesting
+  static set debugAppEnvOverride(String? value) {
+    if (kReleaseMode && value != null) {
+      throw UnsupportedError('debugAppEnvOverride cannot be set in release mode.');
+    }
+    _debugAppEnvOverride = value;
+  }
+
+  static bool get isProduction {
+    if (kReleaseMode) {
+      return appEnv.toLowerCase() == 'production';
+    }
+    return (_debugAppEnvOverride ?? appEnv).toLowerCase() == 'production';
+  }
 
   static const bool useSupabaseAuth =
       bool.fromEnvironment('USE_SUPABASE_AUTH', defaultValue: false);
