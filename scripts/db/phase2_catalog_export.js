@@ -164,7 +164,7 @@ async function exportCatalogAndArtifacts() {
       console.warn('Could not query supabase_migrations.schema_migrations:', err.message);
     }
 
-    const localMigrationsDir = path.resolve('backend/supabase/migrations');
+    const localMigrationsDir = path.resolve('db/migrations');
     const localFiles = fs.readdirSync(localMigrationsDir).filter(f => f.endsWith('.sql')).sort();
     const localMigrations = localFiles.map(f => {
       const content = fs.readFileSync(path.join(localMigrationsDir, f));

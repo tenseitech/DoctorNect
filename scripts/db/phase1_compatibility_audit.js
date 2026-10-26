@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const migrationsDir = path.resolve('backend/supabase/migrations');
+const migrationsDir = path.resolve('db/migrations');
 const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
 
 const constructs = [
@@ -98,7 +98,7 @@ console.log('Findings summary by type:', summaryByType);
 // Write comprehensive markdown report
 let md = `# RDS PostgreSQL Compatibility Audit of Supabase Migrations\n\n`;
 md += `**Date:** October 26, 2026  \n`;
-md += `**Audit Scope:** 32 migration files in \`backend/supabase/migrations/\` against plain PostgreSQL 17 on AWS RDS.  \n\n`;
+md += `**Audit Scope:** 32 migration files in \`db/migrations/\` against plain PostgreSQL 17 on AWS RDS.  \n\n`;
 
 md += `## 1. Summary of Constructs Requiring RDS Adaptation\n\n`;
 md += `| Supabase Construct Type | Occurrences | RDS Strategy / Equivalent |\n`;

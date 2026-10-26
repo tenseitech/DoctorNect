@@ -8,7 +8,7 @@ const path = require('path');
 test('Migration 20261008000003: Safely drops users_id_fkey without destructive statements', () => {
   const migrationPath = path.resolve(
     __dirname,
-    '../../supabase/migrations/20261008000003_allow_firebase_users_drop_fkey.sql'
+    '../../../db/migrations/20261008000003_allow_firebase_users_drop_fkey.sql'
   );
 
   assert.ok(fs.existsSync(migrationPath), 'Migration 20261008000003 must exist');
@@ -81,7 +81,7 @@ test('Migration 20261008000003: Safely drops users_id_fkey without destructive s
 test('Migration 20261008000001: Firebase identity functions and policies are type-correct (TASK 1d)', () => {
   const migrationPath = path.resolve(
     __dirname,
-    '../../supabase/migrations/20261008000001_firebase_uid_identity.sql'
+    '../../../db/migrations/20261008000001_firebase_uid_identity.sql'
   );
 
   assert.ok(fs.existsSync(migrationPath), 'Migration 20261008000001 must exist');
