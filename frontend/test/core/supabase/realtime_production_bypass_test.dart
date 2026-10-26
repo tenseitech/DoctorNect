@@ -584,6 +584,17 @@ void main() {
       expect(SupabaseBootstrap.debugAppEnvOverride, equals('staging'));
       SupabaseBootstrap.debugAppEnvOverride = 'production';
       expect(SupabaseBootstrap.debugAppEnvOverride, equals('production'));
+
+      // Simulate kReleaseMode via test hook: setter must throw UnsupportedError
+      try {
+        SupabaseBootstrap.debugIsReleaseModeOverride = true;
+        expect(
+          () => SupabaseBootstrap.debugAppEnvOverride = 'staging',
+          throwsA(isA<UnsupportedError>()),
+        );
+      } finally {
+        SupabaseBootstrap.debugIsReleaseModeOverride = null;
+      }
     });
 
     test('SupabaseLabRepository watchBookingsForPatient operates via StateMachine polling in production', () async {

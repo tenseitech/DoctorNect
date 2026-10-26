@@ -14,26 +14,47 @@ function extractEmbeddedRelations(queryString) {
   const relations = new Set();
   const params = new URLSearchParams(queryString);
 
-  const selectParam = params.get('select');
-  if (selectParam) {
-    const matches = selectParam.matchAll(/(?:([a-zA-Z0-9_]+):)?([a-zA-Z0-9_]+)(?:![a-zA-Z0-9_]+)?\s*\(/g);
-    for (const m of matches) {
-      relations.add(m[2].toLowerCase());
+  const selectAll = params.getAll('select');
+  if (selectAll.length > 1) {
+    const err = new Error('Duplicate select parameter is not permitted.');
+    err.code = 'ERR_DUPLICATE_SELECT';
+    throw err;
+  }
+
+  for (const selectParam of selectAll) {
+    // Supports:
+    // - normal: appointments(*), doctors(*)
+    // - aliased: my_alias:doctors(*) or "my_alias":"doctors"(*)
+    // - quoted: "doctors"(*)
+    // - spread: ...doctors(*) or ... "doctors" (*)
+    // - hints/inner: doctors!inner(*) or doctors!fk_hint!inner(*) or "doctors"!"hint"!inner(*)
+    const selectRegex = /(?:(?:"([^"]+)"|([a-zA-Z0-9_]+))\s*:\s*)?(?:\.\.\.\s*)?(?:"([^"]+)"|([a-zA-Z0-9_]+))(?:!(?:[a-zA-Z0-9_"]+))*\s*\(/g;
+    for (const m of selectParam.matchAll(selectRegex)) {
+      const rel = (m[3] || m[4]).toLowerCase();
+      relations.add(rel);
     }
   }
 
   for (const [key, val] of params.entries()) {
     if (key.includes('.')) {
       const parts = key.split('.');
-      const prefix = parts[0].trim().toLowerCase();
+      const prefix = parts[0].trim().replace(/^"/, '').replace(/"$/, '').toLowerCase();
       if (prefix && prefix !== 'or' && prefix !== 'and' && prefix !== 'not') {
         relations.add(prefix);
       }
     }
+    // PostgREST ordering on embedded resources: order=relation(col) or order=relation.col.desc
+    if (key === 'order' || key.endsWith('.order')) {
+      const orderMatch = val.match(/(?:(?:"([^"]+)"|([a-zA-Z0-9_]+))\s*\()|(?:(?:"([^"]+)"|([a-zA-Z0-9_]+))\.[a-zA-Z0-9_]+)/);
+      if (orderMatch) {
+        const rel = (orderMatch[1] || orderMatch[2] || orderMatch[3] || orderMatch[4]).toLowerCase();
+        relations.add(rel);
+      }
+    }
     if (key === 'or' || key === 'and' || key.endsWith('.or') || key.endsWith('.and')) {
-      const matches = val.matchAll(/([a-zA-Z0-9_]+)\.[a-zA-Z0-9_]+\.(eq|neq|gt|gte|lt|lte|like|ilike|is|in|cs|cd|ov|sl|sr|nxr|nxl|adj|fts|plfts|phfts|wfts)/g);
+      const matches = val.matchAll(/(?:"([^"]+)"|([a-zA-Z0-9_]+))\.[a-zA-Z0-9_]+\.(eq|neq|gt|gte|lt|lte|like|ilike|is|in|cs|cd|ov|sl|sr|nxr|nxl|adj|fts|plfts|phfts|wfts)/g);
       for (const m of matches) {
-        relations.add(m[1].toLowerCase());
+        relations.add((m[1] || m[2]).toLowerCase());
       }
     }
   }
@@ -258,7 +279,22 @@ function createGatewayServer(overrides = {}) {
       }
 
       // Validate embedded relations in select parameter and filters
-      const embeddedRelations = extractEmbeddedRelations(queryString);
+      let embeddedRelations;
+      try {
+        embeddedRelations = extractEmbeddedRelations(queryString);
+      } catch (err) {
+        if (err.code === 'ERR_DUPLICATE_SELECT') {
+          return sendJson(400, {
+            error: 'Bad Request',
+            message: err.message,
+          });
+        }
+        return sendJson(400, {
+          error: 'Bad Request',
+          message: `Malformed query parameters: ${err.message}`,
+        });
+      }
+
       for (const rel of embeddedRelations) {
         if (!effectiveAllowedTables.has(rel)) {
           return sendJson(404, {

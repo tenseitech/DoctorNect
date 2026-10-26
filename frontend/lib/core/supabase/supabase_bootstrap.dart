@@ -20,18 +20,23 @@ abstract final class SupabaseBootstrap {
   static String? _debugAppEnvOverride;
 
   @visibleForTesting
+  static bool? debugIsReleaseModeOverride;
+
+  static bool get _effectiveReleaseMode => debugIsReleaseModeOverride ?? kReleaseMode;
+
+  @visibleForTesting
   static String? get debugAppEnvOverride => _debugAppEnvOverride;
 
   @visibleForTesting
   static set debugAppEnvOverride(String? value) {
-    if (kReleaseMode && value != null) {
+    if (_effectiveReleaseMode && value != null) {
       throw UnsupportedError('debugAppEnvOverride cannot be set in release mode.');
     }
     _debugAppEnvOverride = value;
   }
 
   static bool get isProduction {
-    if (kReleaseMode) {
+    if (_effectiveReleaseMode) {
       return appEnv.toLowerCase() == 'production';
     }
     return (_debugAppEnvOverride ?? appEnv).toLowerCase() == 'production';
@@ -209,6 +214,7 @@ abstract final class SupabaseBootstrap {
     debugUseSupabaseAuthOverride = null;
     debugAccessTokenOverride = null;
     debugAppEnvOverride = null;
+    debugIsReleaseModeOverride = null;
   }
 
   /// Initializes Supabase client with local persistence and auto refresh.

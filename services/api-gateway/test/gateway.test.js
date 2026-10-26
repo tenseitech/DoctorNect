@@ -924,5 +924,118 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         assert.strictEqual(receivedPostgrestRequests[0].url, `/${table}`);
       }
     });
+
+    it('rejects requests with duplicate select params with 400 Bad Request', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_dup_select' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*&select=razorpay_orders(*)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 400);
+      assert.match(res.json.message, /Duplicate select parameter is not permitted/);
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+    });
+
+    it('rejects double-quoted unallowlisted embedded identifiers ("razorpay_orders"(*))', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_quoted_embed' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,"razorpay_orders"(*)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 404);
+      assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+    });
+
+    it('allows double-quoted allowlisted embedded identifiers ("doctors"(*))', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_quoted_allow' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,"doctors"(*)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+    });
+
+    it('rejects spread unallowlisted embed (...razorpay_orders(*))', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_spread_embed' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,...razorpay_orders(*)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 404);
+      assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+    });
+
+    it('allows spread allowlisted embed (...doctors(*))', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_spread_allow' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,...doctors(*)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+    });
+
+    it('rejects unallowlisted embedded relation in order= query (order=razorpay_orders(created_at.desc))', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_order_embed' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,patients(*)&order=razorpay_orders(created_at.desc)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 404);
+      assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+    });
+
+    it('allows allowlisted embedded relation in order= query (order=doctors(rating.desc))', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_order_allow' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,doctors(*)&order=doctors(rating.desc)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+    });
+
+    it('rejects unallowlisted embedded relation with !hint!inner combo (!fk!inner)', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_hint_inner' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,razorpay_orders!fk_order!inner(*)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 404);
+      assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+    });
+
+    it('allows allowlisted embedded relation with !hint!inner combo (!fk!inner)', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_hint_inner_allow' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,doctors!fk_doctor!inner(*)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+    });
   });
 });

@@ -210,5 +210,31 @@ describe('Gateway Allowlist Completeness Scanner', () => {
       allowedRpcsSet.has('reschedule_appointment_atomic'),
       'reschedule_appointment_atomic must be explicitly allowlisted in gateway allowedRpcs'
     );
+
+    // Confirm ambulance_location_updates, lab_orders, lab_connections, pharmacy_connections,
+    // patient_doctor_links, family_members, review_votes, medical_directory are allowlisted for callers
+    const clientAllowedSet = new Set(config.clientAllowedTables);
+    const requiredCallerTables = [
+      'ambulance_location_updates',
+      'lab_orders',
+      'lab_connections',
+      'pharmacy_connections',
+      'patient_doctor_links',
+      'family_members',
+      'review_votes',
+      'medical_directory',
+    ];
+
+    for (const table of requiredCallerTables) {
+      assert.ok(
+        clientAllowedSet.has(table),
+        `Required caller table '${table}' must be in config.clientAllowedTables`
+      );
+    }
+
+    assert.ok(
+      config.clientAllowedRpcs.includes('cancel_ambulance_broadcast'),
+      'cancel_ambulance_broadcast must be in config.clientAllowedRpcs'
+    );
   });
 });

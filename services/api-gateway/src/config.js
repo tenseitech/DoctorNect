@@ -106,6 +106,7 @@ module.exports = {
   clientAllowedRpcs: [
     'accept_ambulance_request',
     'book_appointment_atomic',
+    'cancel_ambulance_broadcast',
     'cancel_ambulance_trip',
     'complete_ambulance_trip',
     'create_prescription_atomic',
@@ -120,7 +121,6 @@ module.exports = {
   ],
   // RPCs callable strictly by service_role (in addition to client RPCs)
   serviceRoleOnlyRpcs: [
-    'cancel_ambulance_broadcast',
     'delete_my_account',
   ],
   get serviceRoleAllowedRpcs() {
