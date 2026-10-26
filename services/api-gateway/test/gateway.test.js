@@ -724,5 +724,205 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
       assert.strictEqual(receivedPostgrestRequests.length, 1);
       assert.strictEqual(receivedPostgrestRequests[0].url, '/appointments?select=*,patients(*)');
     });
+    it('rejects client embedding of service_role-only relation (/appointments?select=*,razorpay_orders(*)) with 404', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_embed_1' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,razorpay_orders(*)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 404);
+      assert.strictEqual(res.json.error, 'Not Found');
+      assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+    });
+
+    it('allows service_role to embed service_role-only tables (/appointments?select=*,razorpay_orders(*))', async () => {
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,razorpay_orders(*)',
+        headers: { apikey: testServiceRoleKey },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/appointments?select=*,razorpay_orders(*)');
+    });
+
+    it('rejects nested unallowlisted embed (/appointments?select=*,doctors(*,doctor_facilities(*))) for client', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_embed_2' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,doctors(*,doctor_facilities(*))',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 404);
+      assert.match(res.json.message, /Embedded resource 'doctor_facilities' is not allowed/);
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+    });
+
+    it('allows nested allowlisted embed (/appointments?select=*,doctors(*,reviews(*))) for client', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_embed_3' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,doctors(*,reviews(*))',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/appointments?select=*,doctors(*,reviews(*))');
+    });
+
+    it('rejects aliased embed pointing to unallowlisted table (/appointments?select=*,payment:razorpay_orders(*))', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_embed_4' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,payment:razorpay_orders(*)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 404);
+      assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+    });
+
+    it('allows aliased embed pointing to allowlisted table (/appointments?select=*,my_doctor:doctors(*))', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_embed_5' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,my_doctor:doctors(*)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/appointments?select=*,my_doctor:doctors(*)');
+    });
+
+    it('rejects unallowlisted embedded table referenced in or= filter', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_embed_6' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,patients(*)&or=(status.eq.active,razorpay_orders.id.eq.1)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 404);
+      assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+    });
+
+    it('rejects service_role-only embedded table referenced in and= filter', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_embed_7' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,patients(*)&and=(status.eq.active,user_devices.device_id.eq.1)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 404);
+      assert.match(res.json.message, /Embedded resource 'user_devices' is not allowed/);
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+    });
+
+    it('allows allowlisted embedded table referenced in or= filter', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_embed_8' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments?select=*,patients(*)&or=(status.eq.active,doctors.id.eq.1)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+    });
+
+    it('asserts upstream forwarded path strictly equals normalized path and not raw path', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_norm_strict' });
+
+      // Case 1: Double slashes
+      receivedPostgrestRequests = [];
+      const res1 = await makeRequest({
+        method: 'GET',
+        path: '//rest//v1//doctors',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+      assert.strictEqual(res1.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/doctors');
+      assert.notStrictEqual(receivedPostgrestRequests[0].url, '//rest//v1//doctors');
+
+      // Case 2: URL encoding %64octors -> doctors
+      receivedPostgrestRequests = [];
+      const res2 = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/%64octors',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+      assert.strictEqual(res2.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/doctors');
+      assert.notStrictEqual(receivedPostgrestRequests[0].url, '/rest/v1/%64octors');
+      assert.notStrictEqual(receivedPostgrestRequests[0].url, '/%64octors');
+
+      // Case 3: Dot segment /./
+      receivedPostgrestRequests = [];
+      const res3 = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/./doctors',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+      assert.strictEqual(res3.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/doctors');
+      assert.notStrictEqual(receivedPostgrestRequests[0].url, '/rest/v1/./doctors');
+      assert.notStrictEqual(receivedPostgrestRequests[0].url, '/./doctors');
+    });
+
+    it('strictly denies client access to serviceRoleOnlyTables (razorpay_*, mail_queue, user_devices, etc.)', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_service_tables' });
+      const serviceRoleOnly = [
+        'razorpay_orders',
+        'razorpay_payments',
+        'razorpay_webhook_events',
+        'mail_queue',
+        'security_events',
+        'storage_audit_logs',
+        'user_devices',
+      ];
+
+      for (const table of serviceRoleOnly) {
+        receivedPostgrestRequests = [];
+        const res = await makeRequest({
+          method: 'GET',
+          path: `/rest/v1/${table}`,
+          headers: { authorization: `Bearer ${validToken}` },
+        });
+        assert.strictEqual(res.statusCode, 404, `Client should receive 404 on service_role-only table ${table}`);
+        assert.strictEqual(receivedPostgrestRequests.length, 0);
+      }
+    });
+
+    it('allows service_role access to serviceRoleOnlyTables', async () => {
+      const serviceRoleOnly = [
+        'razorpay_orders',
+        'razorpay_payments',
+        'mail_queue',
+        'security_events',
+        'user_devices',
+      ];
+
+      for (const table of serviceRoleOnly) {
+        receivedPostgrestRequests = [];
+        const res = await makeRequest({
+          method: 'GET',
+          path: `/rest/v1/${table}`,
+          headers: { apikey: testServiceRoleKey },
+        });
+        assert.strictEqual(res.statusCode, 200, `Service role should access ${table}`);
+        assert.strictEqual(receivedPostgrestRequests.length, 1);
+        assert.strictEqual(receivedPostgrestRequests[0].url, `/${table}`);
+      }
+    });
   });
 });

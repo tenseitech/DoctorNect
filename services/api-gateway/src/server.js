@@ -9,6 +9,38 @@ const { secureCompare, hashUid, RateLimiter, emitAuditLog } = require('./securit
 const { proxyToPostgrest } = require('./proxy');
 const { defaultJwksClient } = require('./jwks');
 
+function extractEmbeddedRelations(queryString) {
+  if (!queryString) return [];
+  const relations = new Set();
+  const params = new URLSearchParams(queryString);
+
+  const selectParam = params.get('select');
+  if (selectParam) {
+    const matches = selectParam.matchAll(/(?:([a-zA-Z0-9_]+):)?([a-zA-Z0-9_]+)(?:![a-zA-Z0-9_]+)?\s*\(/g);
+    for (const m of matches) {
+      relations.add(m[2].toLowerCase());
+    }
+  }
+
+  for (const [key, val] of params.entries()) {
+    if (key.includes('.')) {
+      const parts = key.split('.');
+      const prefix = parts[0].trim().toLowerCase();
+      if (prefix && prefix !== 'or' && prefix !== 'and' && prefix !== 'not') {
+        relations.add(prefix);
+      }
+    }
+    if (key === 'or' || key === 'and' || key.endsWith('.or') || key.endsWith('.and')) {
+      const matches = val.matchAll(/([a-zA-Z0-9_]+)\.[a-zA-Z0-9_]+\.(eq|neq|gt|gte|lt|lte|like|ilike|is|in|cs|cd|ov|sl|sr|nxr|nxl|adj|fts|plfts|phfts|wfts)/g);
+      for (const m of matches) {
+        relations.add(m[1].toLowerCase());
+      }
+    }
+  }
+
+  return Array.from(relations);
+}
+
 function createGatewayServer(overrides = {}) {
   const cfg = { ...config, ...overrides };
   const rateLimiter = new RateLimiter({
@@ -17,8 +49,10 @@ function createGatewayServer(overrides = {}) {
   });
   const jwksClient = cfg.jwksClient || defaultJwksClient;
   const allowedMethodsSet = new Set((cfg.allowedMethods || []).map((m) => m.toUpperCase()));
-  const allowedTablesSet = new Set(cfg.allowedTables || []);
-  const allowedRpcsSet = new Set(cfg.allowedRpcs || []);
+  const clientAllowedTablesSet = new Set((cfg.clientAllowedTables || cfg.allowedTables || []).map((t) => t.toLowerCase()));
+  const serviceRoleAllowedTablesSet = new Set((cfg.serviceRoleAllowedTables || cfg.allowedTables || []).map((t) => t.toLowerCase()));
+  const clientAllowedRpcsSet = new Set((cfg.clientAllowedRpcs || cfg.allowedRpcs || []).map((r) => r.toLowerCase()));
+  const serviceRoleAllowedRpcsSet = new Set((cfg.serviceRoleAllowedRpcs || cfg.allowedRpcs || []).map((r) => r.toLowerCase()));
 
   const server = http.createServer(async (req, res) => {
     const startTime = process.hrtime();
@@ -73,7 +107,7 @@ function createGatewayServer(overrides = {}) {
     }
 
     // Extract and normalize request URL path
-    const [rawPath] = (req.url || '/').split('?');
+    const [rawPath, queryString] = (req.url || '/').split('?');
     let decodedPath = rawPath;
     try {
       decodedPath = decodeURIComponent(rawPath);
@@ -146,30 +180,6 @@ function createGatewayServer(overrides = {}) {
       });
     }
 
-    // Validate path against allowed tables and RPCs
-    const subPath = cleanPath.slice('/rest/v1'.length);
-    if (!subPath || subPath === '/') {
-      return sendJson(404, { error: 'Not Found', message: 'Endpoint not found.' });
-    }
-
-    if (subPath.startsWith('/rpc/')) {
-      const rpcName = subPath.slice('/rpc/'.length).replace(/^\/+/, '').split('/')[0].toLowerCase();
-      if (!allowedRpcsSet.has(rpcName)) {
-        return sendJson(404, {
-          error: 'Not Found',
-          message: `RPC function '${rpcName}' is not allowed or not found.`,
-        });
-      }
-    } else {
-      const tableName = subPath.replace(/^\/+/, '').split('/')[0].toLowerCase();
-      if (!allowedTablesSet.has(tableName)) {
-        return sendJson(404, {
-          error: 'Not Found',
-          message: `Resource table '${tableName}' is not allowed or not found.`,
-        });
-      }
-    }
-
     // Extract authorization credentials
     const authHeader = req.headers.authorization || '';
     const apikeyHeader = req.headers.apikey || '';
@@ -179,6 +189,8 @@ function createGatewayServer(overrides = {}) {
       bearerToken = authHeader.slice(7).trim();
     }
 
+    let authenticatedPayload = null;
+
     // 1. Service Role Key Check (Constant Time)
     if (
       cfg.serviceRoleKey &&
@@ -186,73 +198,107 @@ function createGatewayServer(overrides = {}) {
     ) {
       clientRole = 'service_role';
       clientUidHash = 'service_role';
-
-      const postgrestJwt = mintPostgrestJwt({
-        role: 'service_role',
-        jwtSecret: cfg.postgrestJwtSecret,
-        jwtAud: cfg.postgrestJwtAud,
-      });
-
-      return proxyToPostgrest(req, res, {
-        targetBaseUrl: cfg.postgrestUrl,
-        postgrestJwt,
-        body: bodyBuf,
-      });
-    }
-
-    // 2. Firebase ID Token Verification
-    if (bearerToken && bearerToken !== cfg.anonKey) {
+    } else if (bearerToken && bearerToken !== cfg.anonKey) {
+      // 2. Firebase ID Token Verification
       try {
-        const verified = await verifyFirebaseIdToken(bearerToken, {
+        authenticatedPayload = await verifyFirebaseIdToken(bearerToken, {
           jwksClient,
           projectId: cfg.firebaseProjectId,
         });
-
         clientRole = 'authenticated';
-        clientUidHash = hashUid(verified.uid);
-
-        const postgrestJwt = mintPostgrestJwt({
-          role: 'authenticated',
-          sub: verified.uid,
-          appRole: verified.appRole,
-          verified: verified.verified,
-          jwtSecret: cfg.postgrestJwtSecret,
-          jwtAud: cfg.postgrestJwtAud,
-        });
-
-        return proxyToPostgrest(req, res, {
-          targetBaseUrl: cfg.postgrestUrl,
-          postgrestJwt,
-          body: bodyBuf,
-        });
+        clientUidHash = hashUid(authenticatedPayload.uid);
       } catch (err) {
         return sendJson(401, {
           error: 'Unauthorized',
           message: `Authentication failed: ${err.message}`,
         });
       }
+    } else {
+      // 3. Anonymous Request
+      const lowerCleanPath = cleanPath.toLowerCase();
+      const isAllowlisted = cfg.anonPublicAllowlist.some((allowed) =>
+        lowerCleanPath.startsWith(allowed.toLowerCase())
+      );
+      if (isAllowlisted) {
+        clientRole = 'anon';
+      } else {
+        return sendJson(401, {
+          error: 'Unauthorized',
+          message: 'Authentication token required for this resource.',
+        });
+      }
     }
 
-    // 3. Anonymous Request
-    const lowerCleanPath = cleanPath.toLowerCase();
-    const isAllowlisted = cfg.anonPublicAllowlist.some((allowed) =>
-      lowerCleanPath.startsWith(allowed.toLowerCase())
-    );
-    if (isAllowlisted) {
-      clientRole = 'anon';
+    // Role-dependent allowlist enforcement
+    const isServiceRole = clientRole === 'service_role';
+    const effectiveAllowedTables = isServiceRole ? serviceRoleAllowedTablesSet : clientAllowedTablesSet;
+    const effectiveAllowedRpcs = isServiceRole ? serviceRoleAllowedRpcsSet : clientAllowedRpcsSet;
 
-      const postgrestJwt = mintPostgrestJwt({
+    // Validate path against allowed tables and RPCs
+    const subPath = cleanPath.slice('/rest/v1'.length);
+    if (!subPath || subPath === '/') {
+      return sendJson(404, { error: 'Not Found', message: 'Endpoint not found.' });
+    }
+
+    if (subPath.startsWith('/rpc/')) {
+      const rpcName = subPath.slice('/rpc/'.length).replace(/^\/+/, '').split('/')[0].toLowerCase();
+      if (!effectiveAllowedRpcs.has(rpcName)) {
+        return sendJson(404, {
+          error: 'Not Found',
+          message: `RPC function '${rpcName}' is not allowed or not found.`,
+        });
+      }
+    } else {
+      const tableName = subPath.replace(/^\/+/, '').split('/')[0].toLowerCase();
+      if (!effectiveAllowedTables.has(tableName)) {
+        return sendJson(404, {
+          error: 'Not Found',
+          message: `Resource table '${tableName}' is not allowed or not found.`,
+        });
+      }
+
+      // Validate embedded relations in select parameter and filters
+      const embeddedRelations = extractEmbeddedRelations(queryString);
+      for (const rel of embeddedRelations) {
+        if (!effectiveAllowedTables.has(rel)) {
+          return sendJson(404, {
+            error: 'Not Found',
+            message: `Embedded resource '${rel}' is not allowed or not found.`,
+          });
+        }
+      }
+    }
+
+    // Mint appropriate PostgREST JWT and proxy
+    let postgrestJwt;
+    if (clientRole === 'service_role') {
+      postgrestJwt = mintPostgrestJwt({
+        role: 'service_role',
+        jwtSecret: cfg.postgrestJwtSecret,
+        jwtAud: cfg.postgrestJwtAud,
+      });
+    } else if (clientRole === 'authenticated') {
+      postgrestJwt = mintPostgrestJwt({
+        role: 'authenticated',
+        sub: authenticatedPayload.uid,
+        appRole: authenticatedPayload.appRole,
+        verified: authenticatedPayload.verified,
+        jwtSecret: cfg.postgrestJwtSecret,
+        jwtAud: cfg.postgrestJwtAud,
+      });
+    } else {
+      postgrestJwt = mintPostgrestJwt({
         role: 'anon',
         jwtSecret: cfg.postgrestJwtSecret,
         jwtAud: cfg.postgrestJwtAud,
       });
-
-      return proxyToPostgrest(req, res, {
-        targetBaseUrl: cfg.postgrestUrl,
-        postgrestJwt,
-        body: bodyBuf,
-      });
     }
+
+    return proxyToPostgrest(req, res, {
+      targetBaseUrl: cfg.postgrestUrl,
+      postgrestJwt,
+      body: bodyBuf,
+    });
 
     // Default deny for non-public paths without authentication
     return sendJson(401, {
@@ -277,4 +323,5 @@ if (require.main === module) {
 
 module.exports = {
   createGatewayServer,
+  extractEmbeddedRelations,
 };
