@@ -155,6 +155,11 @@ function Test-ProductionBuildConfig {
         [switch]$AllowStaging
     )
 
+    # Only validate API endpoint when Supabase/Gateway connectivity is enabled or targeting production
+    if ($env:ENABLE_SUPABASE -ne '1' -and $env:APP_ENV -ne 'production') {
+        return
+    }
+
     $stagingUrl = if (-not [string]::IsNullOrWhiteSpace($env:STAGING_SUPABASE_URL)) { $env:STAGING_SUPABASE_URL } else { "https://rnltknemwnjrjxthtull.supabase.co" }
     $prodEndpoint = if (-not [string]::IsNullOrWhiteSpace($env:PROD_GATEWAY_URL)) { $env:PROD_GATEWAY_URL } else { $env:SUPABASE_URL }
 

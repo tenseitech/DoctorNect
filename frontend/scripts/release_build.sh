@@ -194,6 +194,11 @@ EOF
 }
 
 validate_production_build_config() {
+  # Only validate API endpoint when Supabase/Gateway connectivity is enabled or targeting production
+  if [[ "${ENABLE_SUPABASE:-}" != "1" && "${APP_ENV:-}" != "production" ]]; then
+    return 0
+  fi
+
   local staging_url="${STAGING_SUPABASE_URL:-https://rnltknemwnjrjxthtull.supabase.co}"
   local prod_endpoint="${PROD_GATEWAY_URL:-${SUPABASE_URL:-}}"
 
