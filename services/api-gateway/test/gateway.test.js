@@ -1232,5 +1232,39 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
       });
       assert.strictEqual(otherClientRes.statusCode, 200);
     });
+
+    it('service_role traffic is exempt from rate limiting and succeeds for 500 requests in a minute', async () => {
+      const sharedIp = '198.51.100.99';
+
+      // Send 500 requests with service_role key from the same IP (in batches of 25 to respect socket pools)
+      const responses = [];
+      const batchSize = 25;
+      for (let i = 0; i < 500; i += batchSize) {
+        const batch = [];
+        for (let j = 0; j < batchSize && (i + j) < 500; j++) {
+          batch.push(
+            makeRequest({
+              method: 'GET',
+              path: '/rest/v1/doctors',
+              headers: {
+                apikey: testServiceRoleKey,
+                authorization: `Bearer ${testServiceRoleKey}`,
+                'x-forwarded-for': sharedIp,
+              },
+            })
+          );
+        }
+        const batchRes = await Promise.all(batch);
+        responses.push(...batchRes);
+      }
+
+      assert.strictEqual(responses.length, 500);
+
+      // Verify that all 500 requests succeeded with status 200 and none received 429
+      for (const res of responses) {
+        assert.strictEqual(res.statusCode, 200, `Expected 200 OK but got ${res.statusCode}: ${JSON.stringify(res.json)}`);
+      }
+    });
   });
 });
+
