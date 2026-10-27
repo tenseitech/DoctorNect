@@ -219,7 +219,7 @@ class SupabaseAmbulanceRepository {
     if (!SupabaseBootstrap.isReady || broadcastId.isEmpty) return false;
     try {
       final res = await _client.rpc(
-        'cancel_ambulance_trip',
+        'cancel_ambulance_broadcast',
         params: {
           'p_broadcast_id': broadcastId,
           'p_reason': reason,

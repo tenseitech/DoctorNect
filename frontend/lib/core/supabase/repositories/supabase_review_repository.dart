@@ -335,58 +335,19 @@ class SupabaseReviewRepository {
           .maybeSingle();
 
       if (existing != null) {
-        // Delete vote
+        // Delete vote (DB trigger fn_sync_review_helpful_count synchronizes count)
         await _client
             .from('review_votes')
             .delete()
             .eq('review_id', reviewId)
             .eq('patient_id', patientId);
-
-        // Decrement helpful count
-        await _client.rpc('decrement_review_helpful_count', params: {
-          'p_review_id': reviewId,
-        }).catchError((_) async {
-          // Fallback direct update
-          final current = await _client
-              .from('review_public')
-              .select('helpful_count')
-              .eq('review_id', reviewId)
-              .maybeSingle();
-          final count = (current?['helpful_count'] as num?)?.toInt() ?? 1;
-          await _client
-              .from('review_public')
-              .update({'helpful_count': (count - 1).clamp(0, 999999)}).eq(
-                  'review_id', reviewId);
-          await _client
-              .from('reviews')
-              .update({'helpful_count': (count - 1).clamp(0, 999999)}).eq(
-                  'review_id', reviewId);
-        });
         return false;
       } else {
-        // Insert vote
+        // Insert vote (DB trigger fn_sync_review_helpful_count synchronizes count)
         await _client.from('review_votes').insert({
           'review_id': reviewId,
           'patient_id': patientId,
           'created_at': DateTime.now().toIso8601String(),
-        });
-
-        // Increment helpful count
-        await _client.rpc('increment_review_helpful_count', params: {
-          'p_review_id': reviewId,
-        }).catchError((_) async {
-          final current = await _client
-              .from('review_public')
-              .select('helpful_count')
-              .eq('review_id', reviewId)
-              .maybeSingle();
-          final count = (current?['helpful_count'] as num?)?.toInt() ?? 0;
-          await _client
-              .from('review_public')
-              .update({'helpful_count': count + 1}).eq('review_id', reviewId);
-          await _client
-              .from('reviews')
-              .update({'helpful_count': count + 1}).eq('review_id', reviewId);
         });
         return true;
       }
