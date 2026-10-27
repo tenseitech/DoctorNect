@@ -245,3 +245,82 @@ test('with APP_ENV=production, delete_my_account and getDatabaseClient route to 
   delete process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY;
   resetDatabaseClientForTesting();
 });
+
+test('Integration: cleanupUserSupabaseRows runs against mock gateway built from config.js with zero denied requests', async () => {
+  const gatewayConfig = require('../../../services/api-gateway/src/config');
+  const serviceRoleAllowedTables = new Set(gatewayConfig.serviceRoleAllowedTables);
+  assert.ok(serviceRoleAllowedTables.size > 0);
+
+  const deniedCalls = [];
+  const allowedCalls = [];
+
+  setSupabaseFetchForTesting(async (url, options) => {
+    // URL format: https://example.supabase.co/rest/v1/<tableAndQuery>
+    const fullPath = url.replace('https://example.supabase.co/rest/v1/', '');
+    const tableName = fullPath.split('?')[0];
+
+    if (!serviceRoleAllowedTables.has(tableName)) {
+      deniedCalls.push({ table: tableName, url, method: options.method });
+      return {
+        ok: false,
+        status: 404,
+        text: async () => JSON.stringify({ error: 'Not Found', message: `Table ${tableName} not in serviceRoleAllowedTables` }),
+      };
+    }
+
+    allowedCalls.push({ table: tableName, url, method: options.method });
+
+    // Mock minimal responses for GET queries so traversal discovers dependent entities
+    if (tableName === 'users' && options.method === 'GET') {
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify([{ id: 'uuid-1234', profile_id: 'prof-1234', role: 'patient' }]),
+      };
+    }
+    if (options.method === 'GET') {
+      return { ok: true, status: 200, text: async () => JSON.stringify([{ [`${tableName.slice(0, -1)}_id`]: 'id-1' }]) };
+    }
+
+    return { ok: true, status: 200, text: async () => '[]' };
+  });
+
+  // Test cleanup for all account roles
+  const testRoles = [
+    { role: 'patient', profileId: 'pat_test_1' },
+    { role: 'doctor', profileId: 'doc_test_1' },
+    { role: 'medicalStore', profileId: 'store_test_1' },
+    { role: 'lab', profileId: 'lab_test_1' },
+    { role: 'ambulance', profileId: 'amb_test_1' },
+  ];
+
+  for (const { role, profileId } of testRoles) {
+    const res = await cleanupUserSupabaseRows({
+      uid: `uid_${role}`,
+      role,
+      profileId,
+    });
+
+    assert.equal(res.skipped, false);
+    assert.deepEqual(res.failedSupabaseTables, [], `Expected 0 failed tables for role ${role}`);
+  }
+
+  // Assert ZERO denied requests across all roles and all traversed tables
+  assert.equal(deniedCalls.length, 0, `Expected zero denied calls, but got: ${JSON.stringify(deniedCalls)}`);
+  assert.ok(allowedCalls.length > 20, `Expected extensive table traversal, got ${allowedCalls.length} calls`);
+
+  // Verify that if an unallowlisted table is accessed, it fails loudly and throws
+  setSupabaseFetchForTesting(async (url) => {
+    return {
+      ok: false,
+      status: 404,
+      text: async () => JSON.stringify({ error: 'Not Found' }),
+    };
+  });
+
+  await assert.rejects(
+    () => cleanupUserSupabaseRows({ uid: 'uid_test', role: 'patient', profileId: 'pat_1' }),
+    (err) => err.status === 404
+  );
+});
+

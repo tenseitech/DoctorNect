@@ -753,6 +753,9 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     try {
       await supabaseRequest(config, 'DELETE', `${table}?${query}`);
     } catch (err) {
+      if (err?.status === 403 || err?.status === 404) {
+        throw err;
+      }
       recordFailure(table, err);
     }
   };
@@ -761,6 +764,9 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     try {
       return await supabaseRequest(config, 'GET', `${table}?${query}&select=${field}`);
     } catch (err) {
+      if (err?.status === 403 || err?.status === 404) {
+        throw err;
+      }
       recordFailure(table, err);
       return [];
     }
@@ -782,6 +788,9 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
       if (!supabaseRole) supabaseRole = String(rows[0].role || '').trim();
     }
   } catch (err) {
+    if (err?.status === 403 || err?.status === 404) {
+      throw err;
+    }
     recordFailure('users', err);
   }
 
@@ -972,12 +981,18 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
       { user_uid: null },
     );
   } catch (err) {
+    if (err?.status === 403 || err?.status === 404) {
+      throw err;
+    }
     recordFailure('razorpay_orders', err);
   }
 
   try {
     await supabaseRequest(config, 'DELETE', `users?firebase_uid=eq.${encodeURIComponent(uid)}`);
   } catch (deleteErr) {
+    if (deleteErr?.status === 403 || deleteErr?.status === 404) {
+      throw deleteErr;
+    }
     try {
       await supabaseRequest(
         config,
@@ -993,6 +1008,9 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
         },
       );
     } catch (patchErr) {
+      if (patchErr?.status === 403 || patchErr?.status === 404) {
+        throw patchErr;
+      }
       recordFailure('users', patchErr || deleteErr);
     }
   }
@@ -1076,6 +1094,9 @@ async function deleteMyAccountHandler(uid) {
       });
       failedSupabaseTables = supabaseCleanup.failedSupabaseTables || [];
     } catch (sbErr) {
+      if (sbErr?.status === 403 || sbErr?.status === 404) {
+        throw new HttpsError('internal', `Account deletion blocked by gateway authorization: ${sbErr.message}`);
+      }
       logger.warn('deleteMyAccount Supabase cleanup unexpected failure (soft-fail)', {
         uid: normalizedUid,
         message: sbErr?.message || 'unknown',
