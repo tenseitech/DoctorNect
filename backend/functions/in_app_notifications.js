@@ -71,23 +71,19 @@ async function createInAppNotification(db, payload) {
   await ref.set(data, { merge: true });
 
   try {
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.STAGING_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-    if (supabaseUrl && supabaseKey) {
-      const { createClient } = require('@supabase/supabase-js');
-      const sbClient = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
-      await sbClient.from('in_app_notifications').upsert({
-        id: docId,
-        recipient_uid: recipientUid,
-        recipient_role: payload.recipientRole,
-        title: payload.title,
-        body: payload.body,
-        type: payload.type,
-        target_screen: payload.target || null,
-        target_id: payload.targetId || null,
-        is_read: false,
-      });
-    }
+    const { getDatabaseClient } = require('./src/db/client');
+    const sbClient = getDatabaseClient();
+    await sbClient.from('in_app_notifications').upsert({
+      id: docId,
+      recipient_uid: recipientUid,
+      recipient_role: payload.recipientRole,
+      title: payload.title,
+      body: payload.body,
+      type: payload.type,
+      target_screen: payload.target || null,
+      target_id: payload.targetId || null,
+      is_read: false,
+    });
   } catch (_) {}
 
   return docId;

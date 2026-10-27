@@ -1,7 +1,6 @@
 'use strict';
 
 const { HttpsError } = require('firebase-functions/v2/https');
-const { createClient } = require('@supabase/supabase-js');
 const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
 
 let _testingSupabaseClient = null;
@@ -12,12 +11,12 @@ function setSupabaseClientForTesting(client) {
 
 function getSupabaseAdminClient() {
   if (_testingSupabaseClient) return _testingSupabaseClient;
-  const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseKey) return null;
-  return createClient(supabaseUrl, supabaseKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  try {
+    const { getDatabaseClient } = require('./src/db/client');
+    return getDatabaseClient();
+  } catch (_) {
+    return null;
+  }
 }
 
 /**

@@ -784,13 +784,9 @@ async function approveUserAccount(db, data, auth) {
 
   if (await isDoctorPatientSupabasePrimary()) {
     try {
-      const { createClient } = require('@supabase/supabase-js');
-      const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (supabaseKey) {
-        const client = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
-        await client.from('users').update({ verified: true, updated_at: new Date().toISOString() }).eq('firebase_uid', ownerUid);
-      }
+      const { getDatabaseClient } = require('./src/db/client');
+      const client = getDatabaseClient();
+      await client.from('users').update({ verified: true, updated_at: new Date().toISOString() }).eq('firebase_uid', ownerUid);
     } catch (sbErr) {
       console.warn('[approveUserAccount] Supabase user verify update skipped:', sbErr?.message || sbErr);
     }
@@ -1430,16 +1426,12 @@ async function resolveActiveAccountUid(db, role, doc) {
 async function findUserByMobileDigits(db, digits) {
   if (await isDoctorPatientSupabasePrimary()) {
     try {
-      const { createClient } = require('@supabase/supabase-js');
-      const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (supabaseKey) {
-        const client = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
-        const candidates = [digits, '+91' + digits, '+91 ' + digits, '+91-' + digits, '91' + digits, '0' + digits];
-        const { data } = await client.from('users').select('id, role, mobile, profile_id').in('mobile', candidates).limit(1);
-        if (data && data[0]) {
-          return { found: true, role: data[0].role, uid: data[0].id, data: data[0] };
-        }
+      const { getDatabaseClient } = require('./src/db/client');
+      const client = getDatabaseClient();
+      const candidates = [digits, '+91' + digits, '+91 ' + digits, '+91-' + digits, '91' + digits, '0' + digits];
+      const { data } = await client.from('users').select('id, role, mobile, profile_id').in('mobile', candidates).limit(1);
+      if (data && data[0]) {
+        return { found: true, role: data[0].role, uid: data[0].id, data: data[0] };
       }
     } catch (_) {}
     return { found: false, role: null, uid: null, data: null };

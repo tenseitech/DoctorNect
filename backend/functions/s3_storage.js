@@ -13,7 +13,6 @@ const {
   DeleteObjectCommand,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const { createClient } = require('@supabase/supabase-js');
 const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
 const { enforceAbuseLimit } = require('./abuse_rate_limit');
 
@@ -73,12 +72,12 @@ function setSupabaseClientForTesting(client) {
 
 function getSupabaseAdminClient() {
   if (_testingSupabaseClient) return _testingSupabaseClient;
-  const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
-  const supabaseKey = (typeof supabaseServiceRoleKey?.value === 'function' ? supabaseServiceRoleKey.value() : null) || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseKey) return null;
-  return createClient(supabaseUrl, supabaseKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  try {
+    const { getDatabaseClient } = require('./src/db/client');
+    return getDatabaseClient();
+  } catch (_) {
+    return null;
+  }
 }
 
 async function resolveStorageContext(dbOrOptions) {

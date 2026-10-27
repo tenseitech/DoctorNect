@@ -23,8 +23,13 @@ const { toUserUuid, executeUserSyncWithEmailFallback } = require('./user_id_brid
 
 // Resolve Supabase config from environment or Firebase functions config
 function getSupabaseConfig() {
-  const url = process.env.SUPABASE_URL || process.env.STAGING_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SECRET_KEY;
+  const isProduction = (process.env.APP_ENV || 'staging').toLowerCase() === 'production';
+  const url = isProduction
+    ? (process.env.PROD_GATEWAY_URL || '')
+    : (process.env.STAGING_SUPABASE_URL || process.env.SUPABASE_URL || '');
+  const key = isProduction
+    ? (process.env.PROD_GATEWAY_SERVICE_KEY || '')
+    : (process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SECRET_KEY || '');
   return { url, key };
 }
 

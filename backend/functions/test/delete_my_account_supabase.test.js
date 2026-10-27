@@ -10,7 +10,9 @@ const {
   cleanupUserRedisKeys,
   deleteMyAccountHandler,
   setSupabaseFetchForTesting,
+  getSupabaseServiceConfig,
 } = require('../delete_my_account');
+const { getDatabaseClient, resetDatabaseClientForTesting } = require('../src/db/client');
 const { setSupabaseClientForTesting } = require('../caller_identity');
 
 const UID = 'firebase_uid_patient_1';
@@ -189,4 +191,57 @@ test('cleanupUserRedisKeys removes keys when OTP_REDIS_MIRROR is on', async () =
     delete process.env.OTP_REDIS_MIRROR;
     setRedisClientForTesting(null);
   }
+});
+
+test('with APP_ENV=production, delete_my_account and getDatabaseClient route to PROD_GATEWAY and strictly ignore STAGING_SUPABASE', async () => {
+  process.env.APP_ENV = 'production';
+  process.env.PROD_GATEWAY_URL = 'https://api.doctornect.com';
+  process.env.PROD_GATEWAY_SERVICE_KEY = 'prod-gateway-service-secret-key';
+  process.env.STAGING_SUPABASE_URL = 'https://staging.supabase.co';
+  process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY = 'staging-supabase-key';
+  process.env.SUPABASE_URL = 'https://legacy-staging.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'legacy-staging-key';
+
+  resetDatabaseClientForTesting();
+
+  // 1. Verify getSupabaseServiceConfig() uses PROD_GATEWAY
+  const config = getSupabaseServiceConfig();
+  assert.equal(config.isProduction, true);
+  assert.equal(config.url, 'https://api.doctornect.com');
+  assert.equal(config.key, 'prod-gateway-service-secret-key');
+
+  // 2. Verify cleanupUserSupabaseRows strictly makes requests to PROD_GATEWAY_URL
+  const calls = [];
+  setSupabaseFetchForTesting(async (url, options) => {
+    calls.push({ url, headers: options.headers });
+    return { ok: true, status: 200, text: async () => '[]' };
+  });
+
+  await cleanupUserSupabaseRows({ uid: UID, role: 'patient', profileId: PATIENT_ID });
+  assert.ok(calls.length > 0);
+  for (const c of calls) {
+    assert.ok(c.url.startsWith('https://api.doctornect.com/rest/v1/'), `Expected URL to target production gateway, got: ${c.url}`);
+    assert.ok(!c.url.includes('staging.supabase.co'), `Staging URL must NEVER be contacted in production! URL: ${c.url}`);
+    assert.equal(c.headers.apikey, 'prod-gateway-service-secret-key');
+  }
+
+  // 3. Verify getDatabaseClient() targets PROD_GATEWAY_URL
+  const client = getDatabaseClient();
+  assert.equal(client.supabaseUrl, 'https://api.doctornect.com');
+
+  // 4. In production, if PROD_GATEWAY_URL is missing, getDatabaseClient strictly throws and refuses to fall back to staging
+  delete process.env.PROD_GATEWAY_URL;
+  resetDatabaseClientForTesting();
+  assert.throws(
+    () => getDatabaseClient({ forceNew: true }),
+    /Missing required credentials for APP_ENV="production": PROD_GATEWAY_URL/
+  );
+
+  // Clean up
+  delete process.env.APP_ENV;
+  delete process.env.PROD_GATEWAY_URL;
+  delete process.env.PROD_GATEWAY_SERVICE_KEY;
+  delete process.env.STAGING_SUPABASE_URL;
+  delete process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY;
+  resetDatabaseClientForTesting();
 });

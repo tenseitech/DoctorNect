@@ -673,13 +673,21 @@ function readBoundSecret(secret, envName) {
 }
 
 function getSupabaseServiceConfig() {
-  const url = String(process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
-  const key = readBoundSecret(supabaseServiceRoleKey, 'SUPABASE_SERVICE_ROLE_KEY') ||
-    readSupabaseServiceRoleKey({ required: false }) ||
-    String(process.env.SUPABASE_SECRET_KEY || '').trim() ||
-    String(process.env.SUPABASE_SERVICE_KEY || '').trim();
+  const isProduction = (process.env.APP_ENV || 'staging').toLowerCase() === 'production';
+  const url = isProduction
+    ? String(process.env.PROD_GATEWAY_URL || '').trim().replace(/\/+$/, '')
+    : String(process.env.STAGING_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
+
+  const key = isProduction
+    ? String(process.env.PROD_GATEWAY_SERVICE_KEY || '').trim()
+    : (readBoundSecret(supabaseServiceRoleKey, 'SUPABASE_SERVICE_ROLE_KEY') ||
+      readSupabaseServiceRoleKey({ required: false }) ||
+      String(process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY || '').trim() ||
+      String(process.env.SUPABASE_SECRET_KEY || '').trim() ||
+      String(process.env.SUPABASE_SERVICE_KEY || '').trim() ||
+      String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim());
   if (!url || !key) return null;
-  return { url, key };
+  return { url, key, isProduction };
 }
 
 function supabaseHeaders(key) {
@@ -1234,6 +1242,7 @@ module.exports = {
   setS3ClientForTesting,
   setSupabaseFetchForTesting,
   getS3Client,
+  getSupabaseServiceConfig,
 
   supabaseServiceRoleKey,
 };
