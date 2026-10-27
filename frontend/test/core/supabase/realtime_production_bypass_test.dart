@@ -684,5 +684,18 @@ void main() {
       expect(emission.first.title, equals('Test Notice'));
       expect(fetchCount, greaterThanOrEqualTo(1));
     });
+
+    test('Release mode invariant: _effectiveReleaseMode strictly enforces release protections', () {
+      // debugIsReleaseModeOverride = true forces release mode
+      SupabaseBootstrap.debugIsReleaseModeOverride = true;
+      expect(
+        () => SupabaseBootstrap.debugAppEnvOverride = 'staging',
+        throwsA(isA<UnsupportedError>()),
+      );
+
+      // Clean up
+      SupabaseBootstrap.debugIsReleaseModeOverride = null;
+    });
   });
 }
+

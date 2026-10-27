@@ -22,7 +22,7 @@ abstract final class SupabaseBootstrap {
   @visibleForTesting
   static bool? debugIsReleaseModeOverride;
 
-  static bool get _effectiveReleaseMode => debugIsReleaseModeOverride ?? kReleaseMode;
+  static bool get _effectiveReleaseMode => kReleaseMode || (debugIsReleaseModeOverride ?? false);
 
   @visibleForTesting
   static String? get debugAppEnvOverride => _debugAppEnvOverride;
