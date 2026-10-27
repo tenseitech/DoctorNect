@@ -657,6 +657,47 @@ async function runRlsSqlHarness() {
       expectedSqlState: '42501',
     });
 
+    // Task 2: Privilege Escalation & Column Tampering Harness Cases
+    // (a) Authenticated user updates own users.role to 'admin' -> Expect 42501
+    await testCase({
+      name: 'Privilege Escalation: Authenticated user updates own users.role to admin',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `UPDATE public.users SET role = 'admin' WHERE id = '${pA}';`,
+      expectedSqlState: '42501',
+    });
+
+    // (b) Authenticated user updates own users.profile_id to another user's id -> Expect 42501
+    await testCase({
+      name: 'Identity Tampering: Authenticated user updates own users.profile_id to victim id',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `UPDATE public.users SET profile_id = '${pB}' WHERE id = '${pA}';`,
+      expectedSqlState: '42501',
+    });
+
+    // (c) Authenticated user inserts a users row with a chosen role/profile_id -> Expect 42501
+    await testCase({
+      name: 'Account Provisioning Tampering: Authenticated user inserts users row claiming admin role',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', 'new_unregistered_attacker_uid'),
+      sql: `INSERT INTO public.users (id, role, profile_id, display_name) VALUES ('new_unregistered_attacker_uid', 'admin', 'victim_profile_id', 'Attacker Admin');`,
+      expectedSqlState: '42501',
+    });
+
+    // (d) Authenticated user changes patients.owner_uid -> Expect 42501
+    await testCase({
+      name: 'Resource Ownership Hijack: Authenticated user updates patients.owner_uid',
+      table: 'public.patients',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `UPDATE public.patients SET owner_uid = '${pB}' WHERE patient_id = '${pA}';`,
+      expectedSqlState: '42501',
+    });
+
     // Always ROLLBACK everything
     await client.query('ROLLBACK');
     console.log('✔ Transaction ROLLED BACK successfully.');

@@ -1000,7 +1000,7 @@ BEGIN
     -- Verify patient ownership: caller can only book for themselves or their owned family members
     IF p_patient_id IS NOT NULL AND trim(p_patient_id) != '' THEN
         v_patient_id := trim(p_patient_id);
-        IF NOT v_is_admin AND v_patient_id != v_caller_patient_id THEN
+        IF NOT v_is_admin AND (v_patient_id IS DISTINCT FROM v_caller_patient_id) THEN
             IF NOT EXISTS (
                 SELECT 1 FROM public.patients WHERE patient_id = v_patient_id AND owner_uid = v_caller_uid
             ) AND NOT EXISTS (
@@ -1473,3 +1473,161 @@ DROP POLICY IF EXISTS "system_config_select" ON public.system_config;
 CREATE POLICY "system_config_public_read" ON public.system_config
     FOR SELECT TO anon, authenticated
     USING (config_key IN ('patient_module_status', 'promoted_ads'));
+
+-- Purge demo_accounts from production system_config
+DELETE FROM public.system_config WHERE config_key = 'demo_accounts';
+
+
+-- 13. get_ambulance_trip_contact
+CREATE OR REPLACE FUNCTION public.get_ambulance_trip_contact(
+    p_broadcast_id VARCHAR(64)
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    v_caller_uid TEXT;
+    v_profile_id TEXT;
+    v_broadcast public.ambulance_broadcasts%ROWTYPE;
+    v_contacts public.ambulance_trip_contacts%ROWTYPE;
+    v_is_patient BOOLEAN;
+    v_is_driver BOOLEAN;
+    v_is_admin BOOLEAN;
+BEGIN
+    v_caller_uid := NULLIF(COALESCE(
+        auth.jwt() ->> 'sub',
+        auth.jwt() ->> 'uid',
+        current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
+    ), '');
+    IF v_caller_uid IS NULL THEN
+        RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501';
+    END IF;
+
+    v_profile_id := private.current_profile_id();
+    v_is_admin := COALESCE(private.is_super_admin(), FALSE);
+
+    IF v_profile_id IS NULL AND NOT v_is_admin THEN
+        RAISE EXCEPTION 'FORBIDDEN: Caller has no registered profile.' USING ERRCODE = '42501';
+    END IF;
+
+    SELECT * INTO v_broadcast FROM public.ambulance_broadcasts WHERE broadcast_id = p_broadcast_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Broadcast not found' USING ERRCODE = 'P0002';
+    END IF;
+
+    v_is_patient := (v_broadcast.patient_id IS NOT DISTINCT FROM v_profile_id) OR EXISTS (
+        SELECT 1 FROM public.patients p WHERE p.patient_id = v_broadcast.patient_id AND p.owner_uid = v_caller_uid
+    );
+    v_is_driver := (v_broadcast.accepted_driver_id IS NOT DISTINCT FROM v_profile_id) OR EXISTS (
+        SELECT 1 FROM public.ambulances a WHERE a.ambulance_id = v_broadcast.accepted_driver_id AND a.auth_uid = v_caller_uid
+    );
+
+    IF NOT (COALESCE(v_is_patient, FALSE) OR COALESCE(v_is_driver, FALSE) OR v_is_admin) THEN
+        RAISE EXCEPTION 'Unauthorized to view trip contact' USING ERRCODE = '42501';
+    END IF;
+
+    -- Visible to counterpart ONLY after acceptance and ONLY during active trip
+    IF v_broadcast.status != 'accepted' THEN
+        IF COALESCE(v_is_patient, FALSE) THEN
+            -- Patient can see own phone even when pending
+            SELECT * INTO v_contacts FROM public.ambulance_trip_contacts WHERE broadcast_id = p_broadcast_id;
+            RETURN jsonb_build_object(
+                'active', false,
+                'status', v_broadcast.status,
+                'patient_phone', COALESCE(v_contacts.patient_phone, v_broadcast.contact_phone),
+                'driver_phone', NULL
+            );
+        ELSE
+            -- Driver or others get NULL contact info
+            RETURN jsonb_build_object(
+                'active', false,
+                'status', v_broadcast.status,
+                'patient_phone', NULL,
+                'driver_phone', NULL
+            );
+        END IF;
+    END IF;
+
+    SELECT * INTO v_contacts FROM public.ambulance_trip_contacts WHERE broadcast_id = p_broadcast_id;
+    RETURN jsonb_build_object(
+        'active', true,
+        'status', 'accepted',
+        'patient_phone', COALESCE(v_contacts.patient_phone, v_broadcast.contact_phone),
+        'driver_phone', COALESCE(v_contacts.driver_phone, v_broadcast.accepted_driver_phone)
+    );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_ambulance_trip_contact(VARCHAR) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_ambulance_trip_contact(VARCHAR) TO authenticated, service_role;
+
+
+-- 14. Null-Safe Ambulance Broadcast Status & Rating Lock Trigger (phase_d:254 remediation)
+CREATE OR REPLACE FUNCTION private.trg_lock_ambulance_broadcast_status()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_profile_id TEXT;
+    v_is_admin BOOLEAN;
+BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        -- Status change requires session guard
+        IF OLD.status IS DISTINCT FROM NEW.status THEN
+            IF current_setting('app.allow_ambulance_status_change', true) IS DISTINCT FROM 'true' THEN
+                RAISE EXCEPTION 'Ambulance broadcast status can only be modified via accept/cancel/complete RPCs'
+                    USING ERRCODE = '42501';
+            END IF;
+        END IF;
+        -- Rating column lock: driver cannot rate themselves; only patient when trip is completed
+        IF OLD.rating IS DISTINCT FROM NEW.rating THEN
+            v_profile_id := private.current_profile_id();
+            v_is_admin := COALESCE(private.is_super_admin(), FALSE);
+            IF NOT v_is_admin AND (
+                v_profile_id IS NULL
+                OR OLD.patient_id IS DISTINCT FROM v_profile_id
+                OR OLD.status IS DISTINCT FROM 'completed'
+            ) THEN
+                RAISE EXCEPTION 'Only patient can rate completed ambulance trip' USING ERRCODE = '42501';
+            END IF;
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+
+-- 15. public.users Integrity Hardening (Role and Profile Lock on UPDATE, Guard on INSERT)
+DROP TRIGGER IF EXISTS trg_users_lock_role ON public.users;
+CREATE TRIGGER trg_users_lock_role
+    BEFORE UPDATE ON public.users
+    FOR EACH ROW
+    EXECUTE FUNCTION private.lock_columns('role', 'profile_id');
+
+CREATE OR REPLACE FUNCTION private.trg_users_guard_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NOT COALESCE(private.is_super_admin(), FALSE) THEN
+        -- Non-admin inserting self cannot claim administrative roles
+        IF NEW.role IN ('super_admin', 'superAdmin', 'admin') THEN
+            RAISE EXCEPTION 'FORBIDDEN: Cannot register with administrative role' USING ERRCODE = '42501';
+        END IF;
+        -- Ensure ID matches caller token
+        IF NEW.id IS DISTINCT FROM (auth.jwt() ->> 'sub') THEN
+            RAISE EXCEPTION 'FORBIDDEN: User ID must match authenticated token subject' USING ERRCODE = '42501';
+        END IF;
+        -- Cannot specify arbitrary profile_id unless matching own id or created via profile table
+        IF NEW.profile_id IS NOT NULL AND NEW.profile_id IS DISTINCT FROM NEW.id THEN
+            RAISE EXCEPTION 'FORBIDDEN: Initial profile_id must match user id or be assigned by system' USING ERRCODE = '42501';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+DROP TRIGGER IF EXISTS trg_users_guard_insert ON public.users;
+CREATE TRIGGER trg_users_guard_insert
+    BEFORE INSERT ON public.users
+    FOR EACH ROW
+    EXECUTE FUNCTION private.trg_users_guard_insert();
+
