@@ -122,7 +122,10 @@ async function runRlsSqlHarness() {
     const apptId = 'test_appt_alpha';
     const hrId = 'test_hr_alpha';
     const bcId = 'test_ambbc_alpha';
+    const bcPendingId = 'test_ambbc_pending';
+    const bcCancelledId = 'test_ambbc_cancelled';
     const reqId = 'test_ambreq_alpha';
+    const reqPendingId = 'test_ambreq_pending';
     const delId = 'test_del_alpha';
     const labBkId = 'test_lbbk_alpha';
     const labOrdId = 'test_lbord_alpha';
@@ -132,9 +135,12 @@ async function runRlsSqlHarness() {
       INSERT INTO public.health_records (record_id, patient_id, title, type, date, source, file_name, shared_with_doctors) VALUES
         ('${hrId}', '${pA}', 'CBC Report', 'labReport', CURRENT_DATE, 'selfUploaded', 'cbc.pdf', true);
       INSERT INTO public.ambulance_broadcasts (broadcast_id, patient_id, patient_name, contact_phone, pickup_address, pickup_latitude, pickup_longitude, status, accepted_driver_id) VALUES
-        ('${bcId}', '${pA}', 'Patient A', '+919999900001', 'Connaught Place', 28.6315, 77.2167, 'accepted', '${ambA}');
+        ('${bcId}', '${pA}', 'Patient A', '+919999900001', 'Connaught Place', 28.6315, 77.2167, 'accepted', '${ambA}'),
+        ('${bcPendingId}', '${pA}', 'Patient A', '+919999900001', 'Karol Bagh', 28.6515, 77.1900, 'pending', NULL),
+        ('${bcCancelledId}', '${pA}', 'Patient A', '+919999900001', 'Rohini', 28.7041, 77.1025, 'cancelled', '${ambA}');
       INSERT INTO public.ambulance_requests (request_id, broadcast_id, driver_id, status) VALUES
-        ('${reqId}', '${bcId}', '${ambA}', 'accepted');
+        ('${reqId}', '${bcId}', '${ambA}', 'accepted'),
+        ('${reqPendingId}', '${bcPendingId}', '${ambA}', 'pending');
       INSERT INTO public.pharmacy_deliveries (delivery_id, store_id, patient_id, delivery_address, delivery_pincode, contact_phone, status) VALUES
         ('${delId}', '${storeA}', '${pA}', '123 Test St', '110001', '+919999900001', 'sent');
       INSERT INTO public.lab_bookings (booking_id, lab_id, patient_id, test_id, test_name, sample_type, booking_date, slot, status) VALUES
@@ -403,6 +409,251 @@ async function runRlsSqlHarness() {
       role: 'authenticated',
       claims: getTestJwtClaims('medicalStore', storeB),
       sql: `SELECT public.update_pharmacy_delivery_status('${delId}', 'cancelled');`,
+      expectedSqlState: '42501',
+    });
+
+    // --- (a) UNPROFILED AUTHENTICATED CALLER (random sub, NO users row -> Expect 42501 FORBIDDEN across all 11 client RPCs) ---
+    const unprofiledSub = 'test_usr_unprofiled_xyz';
+    const claimsUnprofiled = getTestJwtClaims('patient', unprofiledSub);
+
+    await testCase({
+      name: 'Unprofiled Caller: book_appointment_atomic',
+      table: 'rpc/book_appointment_atomic',
+      role: 'authenticated',
+      claims: claimsUnprofiled,
+      sql: `SELECT public.book_appointment_atomic('appt_unprof_1', '${docA}', 'Dr. A', 'General', 'Anon', 30, 'Male', now() + interval '2 days', '10:00 AM');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Unprofiled Caller: reschedule_appointment_atomic',
+      table: 'rpc/reschedule_appointment_atomic',
+      role: 'authenticated',
+      claims: claimsUnprofiled,
+      sql: `SELECT public.reschedule_appointment_atomic('${apptId}', '${docA}', CURRENT_DATE + 3, '11:00 AM');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Unprofiled Caller: create_prescription_atomic',
+      table: 'rpc/create_prescription_atomic',
+      role: 'authenticated',
+      claims: claimsUnprofiled,
+      sql: `SELECT public.create_prescription_atomic(jsonb_build_object('prescription_id', 'rx_unprof_1', 'patient_id', '${pA}'));`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Unprofiled Caller: cancel_ambulance_broadcast',
+      table: 'rpc/cancel_ambulance_broadcast',
+      role: 'authenticated',
+      claims: claimsUnprofiled,
+      sql: `SELECT public.cancel_ambulance_broadcast('${bcId}', 'Cancel unprofiled');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Unprofiled Caller: complete_ambulance_trip',
+      table: 'rpc/complete_ambulance_trip',
+      role: 'authenticated',
+      claims: claimsUnprofiled,
+      sql: `SELECT public.complete_ambulance_trip('${bcId}');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Unprofiled Caller: update_ambulance_location',
+      table: 'rpc/update_ambulance_location',
+      role: 'authenticated',
+      claims: claimsUnprofiled,
+      sql: `SELECT public.update_ambulance_location('${bcId}', 28.5, 77.2);`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Unprofiled Caller: get_ambulance_trip_location',
+      table: 'rpc/get_ambulance_trip_location',
+      role: 'authenticated',
+      claims: claimsUnprofiled,
+      sql: `SELECT public.get_ambulance_trip_location('${bcId}');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Unprofiled Caller: accept_ambulance_request',
+      table: 'rpc/accept_ambulance_request',
+      role: 'authenticated',
+      claims: claimsUnprofiled,
+      sql: `SELECT public.accept_ambulance_request('${bcPendingId}');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Unprofiled Caller: update_lab_booking_status',
+      table: 'rpc/update_lab_booking_status',
+      role: 'authenticated',
+      claims: claimsUnprofiled,
+      sql: `SELECT public.update_lab_booking_status('${labBkId}', 'cancelled');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Unprofiled Caller: update_lab_order_status',
+      table: 'rpc/update_lab_order_status',
+      role: 'authenticated',
+      claims: claimsUnprofiled,
+      sql: `SELECT public.update_lab_order_status('${labOrdId}', 'cancelled');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Unprofiled Caller: update_pharmacy_delivery_status',
+      table: 'rpc/update_pharmacy_delivery_status',
+      role: 'authenticated',
+      claims: claimsUnprofiled,
+      sql: `SELECT public.update_pharmacy_delivery_status('${delId}', 'cancelled');`,
+      expectedSqlState: '42501',
+    });
+
+    // --- (b) CALLER OF WRONG ROLE / AMBULANCE LIFECYCLE (Expect 42501 FORBIDDEN) ---
+    // complete_ambulance_trip by patient on accepted, pending, cancelled broadcasts
+    await testCase({
+      name: 'Wrong Role: Patient calls complete_ambulance_trip on accepted broadcast',
+      table: 'rpc/complete_ambulance_trip',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.complete_ambulance_trip('${bcId}');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Wrong Role: Patient calls complete_ambulance_trip on pending broadcast',
+      table: 'rpc/complete_ambulance_trip',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.complete_ambulance_trip('${bcPendingId}');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Wrong Role: Patient calls complete_ambulance_trip on cancelled broadcast',
+      table: 'rpc/complete_ambulance_trip',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.complete_ambulance_trip('${bcCancelledId}');`,
+      expectedSqlState: '42501',
+    });
+
+    // accept_ambulance_request by patient on accepted, pending, cancelled broadcasts
+    await testCase({
+      name: 'Wrong Role: Patient calls accept_ambulance_request on accepted broadcast',
+      table: 'rpc/accept_ambulance_request',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.accept_ambulance_request('${bcId}');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Wrong Role: Patient calls accept_ambulance_request on pending broadcast',
+      table: 'rpc/accept_ambulance_request',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.accept_ambulance_request('${bcPendingId}');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Wrong Role: Patient calls accept_ambulance_request on cancelled broadcast',
+      table: 'rpc/accept_ambulance_request',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.accept_ambulance_request('${bcCancelledId}');`,
+      expectedSqlState: '42501',
+    });
+
+    // update_ambulance_location by patient
+    await testCase({
+      name: 'Wrong Role: Patient calls update_ambulance_location',
+      table: 'rpc/update_ambulance_location',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.update_ambulance_location('${bcId}', 28.5, 77.2);`,
+      expectedSqlState: '42501',
+    });
+
+    // create_prescription_atomic by medicalStore and patient
+    await testCase({
+      name: 'Wrong Role: Medical Store calls create_prescription_atomic',
+      table: 'rpc/create_prescription_atomic',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', storeA),
+      sql: `SELECT public.create_prescription_atomic(jsonb_build_object('prescription_id', 'rx_store_1', 'patient_id', '${pA}'));`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Wrong Role: Patient calls create_prescription_atomic',
+      table: 'rpc/create_prescription_atomic',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.create_prescription_atomic(jsonb_build_object('prescription_id', 'rx_pat_1', 'patient_id', '${pA}'));`,
+      expectedSqlState: '42501',
+    });
+
+    // update_pharmacy_delivery_status by doctor
+    await testCase({
+      name: 'Wrong Role: Doctor calls update_pharmacy_delivery_status',
+      table: 'rpc/update_pharmacy_delivery_status',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', docA),
+      sql: `SELECT public.update_pharmacy_delivery_status('${delId}', 'cancelled');`,
+      expectedSqlState: '42501',
+    });
+
+    // update_lab_booking_status by ambulance
+    await testCase({
+      name: 'Wrong Role: Ambulance driver calls update_lab_booking_status',
+      table: 'rpc/update_lab_booking_status',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambA),
+      sql: `SELECT public.update_lab_booking_status('${labBkId}', 'cancelled');`,
+      expectedSqlState: '42501',
+    });
+
+    // update_lab_order_status by medical store
+    await testCase({
+      name: 'Wrong Role: Medical Store calls update_lab_order_status',
+      table: 'rpc/update_lab_order_status',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', storeA),
+      sql: `SELECT public.update_lab_order_status('${labOrdId}', 'cancelled');`,
+      expectedSqlState: '42501',
+    });
+
+    // reschedule_appointment_atomic by ambulance
+    await testCase({
+      name: 'Wrong Role: Ambulance driver calls reschedule_appointment_atomic',
+      table: 'rpc/reschedule_appointment_atomic',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambA),
+      sql: `SELECT public.reschedule_appointment_atomic('${apptId}', '${docA}', CURRENT_DATE + 3, '11:00 AM');`,
+      expectedSqlState: '42501',
+    });
+
+    // cancel_ambulance_broadcast by unrelated medical store on pending broadcast
+    await testCase({
+      name: 'Wrong Role: Medical Store calls cancel_ambulance_broadcast on pending broadcast',
+      table: 'rpc/cancel_ambulance_broadcast',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', storeA),
+      sql: `SELECT public.cancel_ambulance_broadcast('${bcPendingId}', 'Unauthorized cancel');`,
+      expectedSqlState: '42501',
+    });
+
+    // get_ambulance_trip_location by unrelated medical store
+    await testCase({
+      name: 'Wrong Role: Medical Store calls get_ambulance_trip_location on broadcast',
+      table: 'rpc/get_ambulance_trip_location',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', storeA),
+      sql: `SELECT public.get_ambulance_trip_location('${bcId}');`,
+      expectedSqlState: '42501',
+    });
+
+    // --- IDEMPOTENCY / APPOINTMENT CONFLICT CASE ---
+    // Patient B calls book_appointment_atomic with Patient A's appointment_id and expects no data returned (42501)
+    await testCase({
+      name: 'Idempotency Conflict: Patient B calls book_appointment_atomic with Patient A appointment_id',
+      table: 'rpc/book_appointment_atomic',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pB),
+      sql: `SELECT public.book_appointment_atomic('${apptId}', '${docA}', 'Dr. A', 'General', 'Patient B', 25, 'Male', now() + interval '2 days', '10:00 AM', 'newVisit', null, null, null, 'patient_supabase', '${pB}');`,
       expectedSqlState: '42501',
     });
 
