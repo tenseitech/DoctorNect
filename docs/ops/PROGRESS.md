@@ -152,3 +152,51 @@
   - `backend npm test`: **473 passed, 0 failed, 23 skipped** (496 total).
   - `gateway npm test`: **59 passed, 0 failed** (100% pass).
 
+---
+
+### Phase 9: Security Fix Round & Null-Safe Authorization Hardening (Verified)
+- **Null-Safe Authorization & RPC Hardening (`db/migrations/20261026000001_rpc_null_safe_authz.sql`)**:
+  - Idempotent migration with `SET search_path = ''` hardening all 11 client RPCs against NULL evaluation vulnerabilities in plpgsql 3-valued boolean logic.
+  - Added early raise (`42501 FORBIDDEN`) when `v_profile_id IS NULL AND NOT v_is_admin`.
+  - Replaced nullable equality/inequality with `IS NOT DISTINCT FROM` / `IS DISTINCT FROM` and explicit boolean `COALESCE(..., false)`.
+  - `reschedule_appointment_atomic`: Enforces `IS NOT DISTINCT FROM` checks for `patient_id` and `doctor_id` against `v_profile_id`.
+  - `cancel_ambulance_broadcast`: Strict caller validation requiring `patient_id IS NOT DISTINCT FROM v_profile_id` or admin; guards status transition to `cancelled`.
+  - `get_ambulance_trip_location`: Restricts location access strictly to assigned patient, assigned driver (`IS NOT DISTINCT FROM`), or admin.
+  - `update_lab_booking_status`: Enforces strict caller match against `lab_id` (for lab statuses) or `patient_id` (for cancellation), or admin.
+  - `update_lab_order_status`: Enforces strict caller match against `lab_id` or ordering `doctor_id`, or admin.
+  - `update_pharmacy_delivery_status`: Prohibits client mutations to `p_medicine_lines` from non-store callers (only `store_id IS NOT DISTINCT FROM v_profile_id` or admin may supply medicine lines); restricts status updates to store or recipient patient.
+  - `complete_ambulance_trip`: Raises early if `v_driver_id IS NULL`; validates `driver_id IS NOT DISTINCT FROM v_driver_id`; requires broadcast `status = 'accepted'` (rejecting pending, completed, or cancelled broadcasts).
+  - `accept_ambulance_request`: Binds candidate row update with `broadcast_id = p_broadcast_id AND driver_id = v_driver_id`, preventing hijacking across disparate broadcast IDs.
+  - `book_appointment_atomic`: In the existing appointment path, checks `existing.patient_id IS NOT DISTINCT FROM v_patient_id` (raising `42501` on conflict, returning no data to unauthorized caller); validates doctor existence in `public.doctors` and derives `doctor_name` and `specialization` directly from trusted table rather than client input.
+  - `create_prescription_atomic`: Full body included; for non-admin callers, mandates an existing appointment or active row in `patient_doctor_links` for `p_patient_id` before creating or upserting prescription records.
+- **Extended SQL RLS Harness (`scripts/db/rls_sql_harness.js`)**:
+  - Added test fixtures for pending (`test_ambbc_pending`) and cancelled (`test_ambbc_cancelled`) ambulance broadcasts.
+  - Extended harness with 11 test cases for authenticated callers with a random `sub` and NO row in `public.users` across all client RPCs (all expecting `42501 FORBIDDEN`).
+  - Extended harness with 15 wrong-role caller tests (e.g. patients calling `complete_ambulance_trip`, `accept_ambulance_request`, lab order updates, pharmacy delivery updates), verifying `42501 FORBIDDEN` across pending, accepted, and cancelled states.
+  - Added cross-patient appointment conflict test: Patient B calls `book_appointment_atomic` with Patient A's `appointment_id`, expecting `42501` exception and no data returned.
+- **Nullable Logic Vulnerability Audit (`db/migrations/`)**:
+  - Identified 10 historical plpgsql sites where `!=` or `NOT (a OR b)` on nullable operands causes authorization bypass when caller profile is null. All mitigated by migration `20261026000001_rpc_null_safe_authz.sql`.
+- **Account Deletion & Gateway Allowlist Parity**:
+  - Reconciled all 41 tables touched by `backend/functions/src/delete_my_account.js`.
+  - Added previously missing tables (`doctor_invites`, `patient_care_team`, `pharmacy_doctor_invites`) to `serviceRoleOnlyTables` in `services/api-gateway/src/config.js`.
+  - Added automated test in `services/api-gateway/test/gateway.test.js` extracting tables from `delete_my_account.js` via regex AST and asserting 0 missing tables in `serviceRoleAllowedTables`.
+- **System Config Access Control & Least Privilege**:
+  - Inventoried all 3 keys: `demo_accounts` (internal/testing OTP credentials), `promoted_ads` (public banner pricing), `patient_module_status` (public service health flags).
+  - Identified `demo_accounts` as internal sensitive data.
+  - Hardened RLS policy `system_config_public_read` to permit SELECT strictly where `config_key IN ('patient_module_status', 'promoted_ads')` granted explicitly `TO anon, authenticated`.
+- **Gateway Rate Limiting Hardening & Real Screen Polling Budget**:
+  - Implemented rightmost trusted hop parsing for `X-Forwarded-For` (`hops[hops.length - 1]`), defeating client-spoofed leftmost headers behind AWS ALB.
+  - Separated rate limiting scopes: unauthenticated requests rate-limited per-IP; authenticated requests rate-limited per-UID. Authenticated traffic does not increment or exhaust the IP rate limit bucket.
+  - Added unit test in `services/api-gateway/test/gateway.test.js` validating spoofed XFF protection.
+  - Evaluated screen polling load:
+    - Patient Home Screen: Appointments (8s), Notifications (10s), Ads (10s) -> ~19.5 req/min idle; Emergency active trip (3s broadcast + 3s location) -> ~59.5 req/min peak.
+    - Doctor Home Screen: Appointments (8s), Directory (10s), Notifications (10s), Referrals (10s) -> ~25.5 req/min steady.
+    - Configured per-UID rate limit (300 req/min) provides 5x to 12x headroom above peak device load while isolating distinct hospital staff on shared NAT gateways.
+- **Verification Matrix**:
+  - `git grep -n createClient backend/functions ":!backend/functions/test/**"`: Single client factory in `backend/functions/src/db/client.js:3,41`.
+  - `services/api-gateway npm test`: **61 passed, 0 failed** across 3 test suites.
+  - `backend/functions CI=true npm test`: **474 passed, 0 failed, 22 skipped** across 17 test suites.
+  - `frontend flutter analyze`: **No issues found!** (0 errors, 0 warnings).
+  - `frontend flutter test`: **552 passed, 0 failed** (All tests passed).
+
+
