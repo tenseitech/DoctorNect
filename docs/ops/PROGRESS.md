@@ -123,9 +123,32 @@
   - Explicit NAT requirement: VPC, public subnets, private subnets, and NAT Gateway are expected as inputs, not created by this module. Without a NAT Gateway, private ECS tasks cannot reach Google JWKS (`https://www.googleapis.com`), causing token verification timeouts (HTTP 504).
   - Secrets Manager references and CloudWatch metric alarms.
 
-### Phase 7: Cutover Readiness
-- `docs/runbooks/PRODUCTION_CUTOVER_RDS.md`: 8-step ordered cutover runbook and rollback plan.
-- `scripts/verify/prod_smoke.js`: Automated end-to-end smoke verification script with health check and zero-residue proof.
-- `docs/checklists/RDS_PRODUCTION_CHECKLIST.md`: 15-point hardening checklist with read-only AWS CLI commands.
-- `docs/checklists/DEVICE_SMOKE_TEST_CHECKLIST.md`: Updated for adaptive polling realtime behavior.
-- `docs/reports/DOCTORNECT_VERIFICATION_REPORT.md`: Updated with full component verification matrix.
+### Phase 8: Final Security Hardening & Zero-Residue Access Layer (Final Code Round)
+- **RPC Authorization & Cross-Tenant Isolation**:
+  - Full function bodies and parameter audits for all client RPCs recorded in `docs/ops/rpc_analysis_raw.json`.
+  - Audited parameter binding to caller (`private.current_profile_id()` / `auth.uid()`) across all 11 active RPCs; identified and flagged `p_request_id` in `accept_ambulance_request` and unused `p_doctor_id` in `reschedule_appointment_atomic`.
+  - Added 11 cross-user exploit test cases to `scripts/db/rls_sql_harness.js` (expecting `42501 FORBIDDEN` within rolled-back transactions; zero DB writes).
+- **Client RPC & Review Trigger Convergence**:
+  - Client call in `frontend/lib/core/supabase/repositories/supabase_ambulance_repository.dart:222` corrected to call `cancel_ambulance_broadcast` directly.
+  - Gateway allowlist pruned: removed non-existent phantom RPCs `cancel_ambulance_trip`, `increment_review_helpful_count`, and `decrement_review_helpful_count`.
+  - Removed client RPC and direct-update fallback in `frontend/lib/core/supabase/repositories/supabase_review_repository.dart`, relying strictly on PostgreSQL trigger `trg_review_votes_helpful_count` (`fn_sync_review_helpful_count`).
+- **Backend DB Access Modernization (`getDatabaseClient`)**:
+  - Migrated all custom client instantiation files (`delete_my_account.js`, `registration_otp.js`, `caller_identity.js`, `in_app_notifications.js`, `promoted_ads.js`, `s3_storage.js`, `cross_role_sync.js`) to `getDatabaseClient()`.
+  - Production account deletion verified: `delete_my_account.js` routes via `PROD_GATEWAY_URL` with `PROD_GATEWAY_SERVICE_KEY` -> PostgREST -> AWS RDS.
+  - Added unit test in `backend/functions/test/delete_my_account_supabase.test.js` proving that under `APP_ENV=production`, staging Supabase is strictly ignored.
+- **Allowlist Categorization & Table Audit**:
+  - Gateway allowlist split into `clientDirectAllowedTables` and `clientEmbedOnlyTables` (`prescription_investigations`, `prescription_medicines`, `prescription_referrals`, `pharmacy_delivery_medicines`).
+  - Removed redundant alias table `pharmacies`. Direct top-level access to embed-only tables returns 404, while nested embedding in parent queries succeeds with 200.
+  - Verified `system_config` RLS policy (`system_config_public_read`); confirmed clients cannot read secrets (table contains only public app flags; all secrets reside in GCP/AWS Secret Manager).
+  - Proved zero client/backend runtime usage for all 8 unallowlisted tables (`admin_users`, `provisioning_errors`, `ambulance_trip_contacts`, `doctor_invites`, `facilities`, `otp_verification_sessions`, `patient_care_team`, `pharmacy_doctor_invites`).
+- **Rate Limiting Hardening**:
+  - Evaluated steady-state polling on busiest screen (`AmbulanceBookingScreen` with active emergency trip: ~36 requests/min peak).
+  - Configured sliding-window rate limiter with per-IP and per-UID tracking with default window 60s and 300 req/min max (providing 8.3x headroom above single-screen peak while protecting shared clinic NAT IPs).
+- **Release Protection Invariant**:
+  - Fixed `_effectiveReleaseMode` in `frontend/lib/core/supabase/supabase_bootstrap.dart` to `kReleaseMode || (debugIsReleaseModeOverride ?? false)`, making it structurally impossible for test overrides to relax release protections in release binaries.
+- **Verification Evidence Matrix**:
+  - `flutter analyze`: **0 issues** (clean).
+  - `flutter test`: **552 passed, 0 failed** (including 27/27 in `realtime_production_bypass_test.dart`).
+  - `backend npm test`: **473 passed, 0 failed, 23 skipped** (496 total).
+  - `gateway npm test`: **59 passed, 0 failed** (100% pass).
+
