@@ -1137,5 +1137,100 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
       assert.strictEqual(rateLimitedRes.json.error, 'Too Many Requests');
       assert.match(rateLimitedRes.json.message, /Rate limit exceeded for user/);
     });
+
+    it('fails if any table referenced by delete_my_account.js is missing from serviceRoleAllowedTables', () => {
+      const config = require('../src/config');
+      const deleteMyAccountTables = [
+        'users',
+        'patients',
+        'doctors',
+        'medical_stores',
+        'labs',
+        'ambulances',
+        'pharmacy_deliveries',
+        'pharmacy_delivery_medicines',
+        'lab_orders',
+        'lab_bookings',
+        'lab_connections',
+        'pharmacy_connections',
+        'referrals',
+        'prescriptions',
+        'prescription_medicines',
+        'prescription_investigations',
+        'prescription_referrals',
+        'health_records',
+        'family_members',
+        'review_votes',
+        'reviews',
+        'patient_doctor_links',
+        'patient_care_team',
+        'appointments',
+        'ambulance_requests',
+        'ambulance_broadcasts',
+        'doctor_invites',
+        'pharmacy_doctor_invites',
+        'doctor_private',
+        'doctor_availability',
+        'doctor_facilities',
+        'doctor_education',
+        'doctor_blocked_dates',
+        'ambulance_private_settings',
+        'ambulance_invites',
+        'ambulance_locations',
+        'support_tickets',
+        'support_ticket_messages',
+        'user_devices',
+        'in_app_notifications',
+        'razorpay_orders',
+      ];
+
+      const serviceRoleAllowedSet = new Set(config.serviceRoleAllowedTables);
+      const missingTables = deleteMyAccountTables.filter((t) => !serviceRoleAllowedSet.has(t));
+
+      assert.deepStrictEqual(
+        missingTables,
+        [],
+        `The following tables referenced in delete_my_account.js are missing from serviceRoleAllowedTables: ${missingTables.join(', ')}`
+      );
+    });
+
+    it('enforces rate limiting using rightmost trusted XFF hop and defeats spoofed client IPs', async () => {
+      const realClientIp = '203.0.113.195';
+
+      // Send 10 anonymous requests to public doctor_directory with spoofed leftmost IPs
+      for (let i = 0; i < 10; i++) {
+        const spoofedIp = `10.0.0.${i + 1}`;
+        const res = await makeRequest({
+          method: 'GET',
+          path: '/rest/v1/doctor_directory',
+          headers: {
+            'x-forwarded-for': `${spoofedIp}, ${realClientIp}`,
+          },
+        });
+        assert.strictEqual(res.statusCode, 200);
+      }
+
+      // 11th request with a new spoofed leftmost IP is still blocked because the rightmost hop is 203.0.113.195
+      const rateLimitedRes = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/doctor_directory',
+        headers: {
+          'x-forwarded-for': `10.0.0.99, ${realClientIp}`,
+        },
+      });
+      assert.strictEqual(rateLimitedRes.statusCode, 429);
+      assert.strictEqual(rateLimitedRes.json.error, 'Too Many Requests');
+      assert.match(rateLimitedRes.json.message, /Rate limit exceeded/);
+
+      // Distinct real client IP is NOT rate-limited
+      const otherClientRes = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/doctor_directory',
+        headers: {
+          'x-forwarded-for': '10.0.0.1, 198.51.100.22',
+        },
+      });
+      assert.strictEqual(otherClientRes.statusCode, 200);
+    });
   });
 });

@@ -81,6 +81,18 @@ function createGatewayServer(overrides = {}) {
     let clientRole = 'anon';
     let clientUidHash = null;
 
+    // Resolve client IP using rightmost trusted hop behind reverse proxy / ALB
+    let clientIp = 'unknown';
+    const xff = req.headers['x-forwarded-for'];
+    if (typeof xff === 'string' && xff.trim()) {
+      const hops = xff.split(',').map((h) => h.trim()).filter(Boolean);
+      if (hops.length > 0) {
+        clientIp = hops[hops.length - 1]; // rightmost trusted hop behind ALB
+      }
+    } else if (req.socket && req.socket.remoteAddress) {
+      clientIp = req.socket.remoteAddress;
+    }
+
     // Helper to send response and log
     const sendJson = (statusCode, data, headers = {}) => {
       const diff = process.hrtime(startTime);
@@ -104,7 +116,7 @@ function createGatewayServer(overrides = {}) {
         latencyMs,
         uidHash: clientUidHash,
         role: clientRole,
-        ip: req.socket.remoteAddress,
+        ip: clientIp,
       });
     };
 
@@ -143,15 +155,6 @@ function createGatewayServer(overrides = {}) {
         service: 'doctornect-auth-gateway',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-      });
-    }
-
-    // Rate limiting per IP or UID
-    const clientIp = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
-    if (!rateLimiter.isAllowed(clientIp)) {
-      return sendJson(429, {
-        error: 'Too Many Requests',
-        message: 'Rate limit exceeded. Please try again shortly.',
       });
     }
 
@@ -220,6 +223,7 @@ function createGatewayServer(overrides = {}) {
     ) {
       clientRole = 'service_role';
       clientUidHash = 'service_role';
+      // Service role callers bypass rate limiting
     } else if (bearerToken && bearerToken !== cfg.anonKey) {
       // 2. Firebase ID Token Verification
       try {
@@ -229,6 +233,7 @@ function createGatewayServer(overrides = {}) {
         });
         clientRole = 'authenticated';
         clientUidHash = hashUid(authenticatedPayload.uid);
+        // Per-UID rate limit for authenticated callers
         if (authenticatedPayload.uid && !rateLimiter.isAllowed(`uid:${authenticatedPayload.uid}`)) {
           return sendJson(429, {
             error: 'Too Many Requests',
@@ -236,13 +241,27 @@ function createGatewayServer(overrides = {}) {
           });
         }
       } catch (err) {
+        // Unauthenticated due to invalid token: apply per-IP rate limit before error
+        if (!rateLimiter.isAllowed(`ip:${clientIp}`)) {
+          return sendJson(429, {
+            error: 'Too Many Requests',
+            message: 'Rate limit exceeded. Please try again shortly.',
+          });
+        }
         return sendJson(401, {
           error: 'Unauthorized',
           message: `Authentication failed: ${err.message}`,
         });
       }
     } else {
-      // 3. Anonymous Request
+      // 3. Unauthenticated / Anonymous Request: per-IP rate limiting
+      if (!rateLimiter.isAllowed(`ip:${clientIp}`)) {
+        return sendJson(429, {
+          error: 'Too Many Requests',
+          message: 'Rate limit exceeded. Please try again shortly.',
+        });
+      }
+
       const lowerCleanPath = cleanPath.toLowerCase();
       const isAllowlisted = cfg.anonPublicAllowlist.some((allowed) =>
         lowerCleanPath.startsWith(allowed.toLowerCase())
