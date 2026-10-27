@@ -70,6 +70,7 @@ function createGatewayServer(overrides = {}) {
   });
   const jwksClient = cfg.jwksClient || defaultJwksClient;
   const allowedMethodsSet = new Set((cfg.allowedMethods || []).map((m) => m.toUpperCase()));
+  const clientDirectAllowedTablesSet = new Set((cfg.clientDirectAllowedTables || cfg.clientAllowedTables || []).map((t) => t.toLowerCase()));
   const clientAllowedTablesSet = new Set((cfg.clientAllowedTables || cfg.allowedTables || []).map((t) => t.toLowerCase()));
   const serviceRoleAllowedTablesSet = new Set((cfg.serviceRoleAllowedTables || cfg.allowedTables || []).map((t) => t.toLowerCase()));
   const clientAllowedRpcsSet = new Set((cfg.clientAllowedRpcs || cfg.allowedRpcs || []).map((r) => r.toLowerCase()));
@@ -146,7 +147,7 @@ function createGatewayServer(overrides = {}) {
     }
 
     // Rate limiting per IP or UID
-    const clientIp = req.socket.remoteAddress || 'unknown';
+    const clientIp = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
     if (!rateLimiter.isAllowed(clientIp)) {
       return sendJson(429, {
         error: 'Too Many Requests',
@@ -228,6 +229,12 @@ function createGatewayServer(overrides = {}) {
         });
         clientRole = 'authenticated';
         clientUidHash = hashUid(authenticatedPayload.uid);
+        if (authenticatedPayload.uid && !rateLimiter.isAllowed(`uid:${authenticatedPayload.uid}`)) {
+          return sendJson(429, {
+            error: 'Too Many Requests',
+            message: 'Rate limit exceeded for user. Please try again shortly.',
+          });
+        }
       } catch (err) {
         return sendJson(401, {
           error: 'Unauthorized',
@@ -252,6 +259,7 @@ function createGatewayServer(overrides = {}) {
 
     // Role-dependent allowlist enforcement
     const isServiceRole = clientRole === 'service_role';
+    const effectiveDirectAllowedTables = isServiceRole ? serviceRoleAllowedTablesSet : clientDirectAllowedTablesSet;
     const effectiveAllowedTables = isServiceRole ? serviceRoleAllowedTablesSet : clientAllowedTablesSet;
     const effectiveAllowedRpcs = isServiceRole ? serviceRoleAllowedRpcsSet : clientAllowedRpcsSet;
 
@@ -271,7 +279,7 @@ function createGatewayServer(overrides = {}) {
       }
     } else {
       const tableName = subPath.replace(/^\/+/, '').split('/')[0].toLowerCase();
-      if (!effectiveAllowedTables.has(tableName)) {
+      if (!effectiveDirectAllowedTables.has(tableName)) {
         return sendJson(404, {
           error: 'Not Found',
           message: `Resource table '${tableName}' is not allowed or not found.`,

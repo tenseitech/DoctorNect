@@ -1037,5 +1037,105 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
       assert.strictEqual(res.statusCode, 200);
       assert.strictEqual(receivedPostgrestRequests.length, 1);
     });
+
+    it('rejects direct top-level access to embed-only child tables with 404 Not Found', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_embed_only_direct' });
+      const embedOnly = [
+        'prescription_medicines',
+        'prescription_investigations',
+        'prescription_referrals',
+        'pharmacy_delivery_medicines',
+      ];
+
+      for (const table of embedOnly) {
+        const res = await makeRequest({
+          method: 'GET',
+          path: `/rest/v1/${table}`,
+          headers: { authorization: `Bearer ${validToken}` },
+        });
+
+        assert.strictEqual(res.statusCode, 404, `Expected 404 for direct access to ${table}`);
+        assert.match(res.json.message, new RegExp(`Resource table '${table}' is not allowed`));
+      }
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+    });
+
+    it('allows embedded queries on embed-only child tables via parent table with 200 OK', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_embed_only_ok' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/prescriptions?select=*,prescription_medicines(*),prescription_investigations(*)',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+    });
+
+    it('rejects access to removed RPCs (cancel_ambulance_trip, helpful counts) with 404', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_removed_rpcs' });
+      const removedRpcs = [
+        'cancel_ambulance_trip',
+        'increment_review_helpful_count',
+        'decrement_review_helpful_count',
+      ];
+
+      for (const rpc of removedRpcs) {
+        const res = await makeRequest({
+          method: 'POST',
+          path: `/rest/v1/rpc/${rpc}`,
+          headers: { authorization: `Bearer ${validToken}`, 'content-type': 'application/json' },
+          body: JSON.stringify({ p_id: '123' }),
+        });
+
+        assert.strictEqual(res.statusCode, 404, `Expected 404 for removed RPC ${rpc}`);
+        assert.match(res.json.message, new RegExp(`RPC function '${rpc}' is not allowed`));
+      }
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+    });
+
+    it('rejects removed pharmacies table alias with 404 Not Found', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_pharmacies_removed' });
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/pharmacies',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+
+      assert.strictEqual(res.statusCode, 404);
+      assert.match(res.json.message, /Resource table 'pharmacies' is not allowed/);
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+    });
+
+    it('enforces UID-based rate limiting across requests for authenticated user', async () => {
+      const uidToken = createTestFirebaseToken({ sub: 'rate_limited_user_test' });
+
+      // Gateway instance is configured with rateLimitMaxRequests: 10 in beforeEach
+      // Send 10 requests from distinct IPs to verify that UID-based limiter tracks across IPs
+      for (let i = 0; i < 10; i++) {
+        const res = await makeRequest({
+          method: 'GET',
+          path: '/rest/v1/appointments',
+          headers: {
+            authorization: `Bearer ${uidToken}`,
+            'x-forwarded-for': `192.168.1.${i + 1}`,
+          },
+        });
+        assert.strictEqual(res.statusCode, 200);
+      }
+
+      // 11th request with same UID from another distinct IP should be rate limited by UID
+      const rateLimitedRes = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments',
+        headers: {
+          authorization: `Bearer ${uidToken}`,
+          'x-forwarded-for': '192.168.1.99',
+        },
+      });
+      assert.strictEqual(rateLimitedRes.statusCode, 429);
+      assert.strictEqual(rateLimitedRes.json.error, 'Too Many Requests');
+      assert.match(rateLimitedRes.json.message, /Rate limit exceeded for user/);
+    });
   });
 });

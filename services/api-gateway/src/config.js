@@ -11,7 +11,7 @@ module.exports = {
   anonKey: process.env.ANON_KEY || 'doctornect-anon-public-key',
   maxBodySizeBytes: parseInt(process.env.MAX_BODY_SIZE_BYTES || '5242880', 10), // 5 MB
   rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10), // 1 min
-  rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '120', 10),
+  rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '300', 10), // 300 req/min
   // Public endpoints accessible without an authenticated user token
   anonPublicAllowlist: [
     '/rest/v1/doctor_directory',
@@ -27,8 +27,15 @@ module.exports = {
     'OPTIONS',
     'HEAD',
   ],
-  // Tables accessible by authenticated clients and public anonymous endpoints
-  clientAllowedTables: [
+  // Tables restricted to embedded relation queries only (cannot be queried directly as top-level endpoints by clients)
+  clientEmbedOnlyTables: [
+    'pharmacy_delivery_medicines',
+    'prescription_investigations',
+    'prescription_medicines',
+    'prescription_referrals',
+  ],
+  // Tables directly accessible as top-level endpoints by authenticated clients and public anonymous endpoints
+  clientDirectAllowedTables: [
     'ambulance_broadcasts',
     'ambulance_location_updates',
     'ambulance_requests',
@@ -56,14 +63,9 @@ module.exports = {
     'medical_stores',
     'patient_doctor_links',
     'patients',
-    'pharmacies',
     'pharmacy_connections',
     'pharmacy_deliveries',
-    'pharmacy_delivery_medicines',
     'prescriptions',
-    'prescription_investigations',
-    'prescription_medicines',
-    'prescription_referrals',
     'promoted_ads',
     'referrals',
     'review_public',
@@ -74,6 +76,9 @@ module.exports = {
     'system_config',
     'users',
   ],
+  get clientAllowedTables() {
+    return [...this.clientDirectAllowedTables, ...this.clientEmbedOnlyTables];
+  },
   // Tables restricted strictly to backend / service_role callers
   serviceRoleOnlyTables: [
     'abuse_rate_limits',
@@ -107,12 +112,9 @@ module.exports = {
     'accept_ambulance_request',
     'book_appointment_atomic',
     'cancel_ambulance_broadcast',
-    'cancel_ambulance_trip',
     'complete_ambulance_trip',
     'create_prescription_atomic',
-    'decrement_review_helpful_count',
     'get_ambulance_trip_location',
-    'increment_review_helpful_count',
     'reschedule_appointment_atomic',
     'update_ambulance_location',
     'update_lab_booking_status',
