@@ -199,4 +199,30 @@
   - `frontend flutter analyze`: **No issues found!** (0 errors, 0 warnings).
   - `frontend flutter test`: **552 passed, 0 failed** (All tests passed).
 
+---
+
+### Phase 10: Final Security Audit Round & Migration AST Validation (Verified)
+- **Migration SQL AST Parser (`scripts/db/validate_migration_sql.js`)**:
+  - Validates all 33 migration files in `db/migrations/` using `libpg-query` (PostgreSQL C parser binding).
+  - Scanned 1,687 parsed AST statements with **0 syntax errors** across all migrations.
+- **Trigger Remediation & Null-Safe Contact Exposure**:
+  - Remediated `phase_d:254` (`private.trg_lock_ambulance_broadcast_status`) in `20261026000001_rpc_null_safe_authz.sql` by enforcing null-safe profile checks (`v_profile_id IS NULL OR OLD.patient_id IS DISTINCT FROM v_profile_id OR OLD.status IS DISTINCT FROM 'completed'`).
+  - Added null-safe `public.get_ambulance_trip_contact` definition in `20261026000001_rpc_null_safe_authz.sql`.
+  - Re-ran nullable-authz scan on all functions in `20261026000001_rpc_null_safe_authz.sql`: **0 hits**.
+- **User Integrity & Privilege Escalation Hardening**:
+  - Updated `trg_users_lock_role` on `public.users` to lock both `role` and `profile_id` on UPDATE.
+  - Added `trg_users_guard_insert` BEFORE INSERT trigger on `public.users` preventing non-admins from claiming administrative roles (`admin`, `super_admin`) or spoofing initial `profile_id` on self-registration.
+  - Extended `scripts/db/rls_sql_harness.js` with 4 privilege escalation cases (updating role to admin, updating profile_id to victim, inserting admin users row, and updating `patients.owner_uid`), expecting 42501 denial.
+- **Account Deletion Fail-Loud Protection**:
+  - Updated `backend/functions/delete_my_account.js` to fail loudly and immediately abort on any 403/404 response from the gateway.
+  - Added integration test in `backend/functions/test/delete_my_account_supabase.test.js` validating that account deletion traversal across all 5 account roles runs cleanly against a mock gateway derived from `services/api-gateway/src/config.js` with **0 denied requests**.
+- **Service Role Rate Limiting Exemption**:
+  - Verified service_role traffic is not throttled by shared IP buckets; added unit test in `services/api-gateway/test/gateway.test.js` sending 500 requests per minute with 100% 200 OK responses.
+- **Verification Evidence Matrix**:
+  - `services/api-gateway node --test`: **62 passed, 0 failed** across 3 test suites.
+  - `backend/functions node --test`: **475 passed, 0 failed, 22 skipped** across 17 test suites.
+  - `frontend flutter analyze`: **No issues found!** (ran in 95.3s).
+  - `frontend flutter test`: **552 passed, 0 failed** (All tests passed).
+
+
 
