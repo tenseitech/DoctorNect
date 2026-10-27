@@ -121,11 +121,26 @@ async function runRlsSqlHarness() {
 
     const apptId = 'test_appt_alpha';
     const hrId = 'test_hr_alpha';
+    const bcId = 'test_ambbc_alpha';
+    const reqId = 'test_ambreq_alpha';
+    const delId = 'test_del_alpha';
+    const labBkId = 'test_lbbk_alpha';
+    const labOrdId = 'test_lbord_alpha';
     await client.query(`
       INSERT INTO public.appointments (appointment_id, doctor_id, patient_id, doctor_name, specialization, patient_name, patient_age, patient_gender, date_time, slot_label, visit_type, patient_status, doctor_status) VALUES
         ('${apptId}', '${docA}', '${pA}', 'Dr. A', 'General', 'Patient A', 30, 'Male', now(), '10:00 AM', 'newVisit', 'confirmed', 'confirmed');
       INSERT INTO public.health_records (record_id, patient_id, title, type, date, source, file_name, shared_with_doctors) VALUES
         ('${hrId}', '${pA}', 'CBC Report', 'labReport', CURRENT_DATE, 'selfUploaded', 'cbc.pdf', true);
+      INSERT INTO public.ambulance_broadcasts (broadcast_id, patient_id, patient_name, contact_phone, pickup_address, pickup_latitude, pickup_longitude, status, accepted_driver_id) VALUES
+        ('${bcId}', '${pA}', 'Patient A', '+919999900001', 'Connaught Place', 28.6315, 77.2167, 'accepted', '${ambA}');
+      INSERT INTO public.ambulance_requests (request_id, broadcast_id, driver_id, status) VALUES
+        ('${reqId}', '${bcId}', '${ambA}', 'accepted');
+      INSERT INTO public.pharmacy_deliveries (delivery_id, store_id, patient_id, delivery_address, delivery_pincode, contact_phone, status) VALUES
+        ('${delId}', '${storeA}', '${pA}', '123 Test St', '110001', '+919999900001', 'sent');
+      INSERT INTO public.lab_bookings (booking_id, lab_id, patient_id, test_id, test_name, sample_type, booking_date, slot, status) VALUES
+        ('${labBkId}', '${labA}', '${pA}', 't1', 'Blood Test', 'blood', CURRENT_DATE, '10:00 AM', 'confirmed');
+      INSERT INTO public.lab_orders (order_id, lab_id, doctor_id, patient_id, test_name, status) VALUES
+        ('${labOrdId}', '${labA}', '${docA}', '${pA}', 'Lipid Profile', 'ordered');
     `);
 
     async function testCase({ name, table, role, claims, sql, expectedRows, expectedSqlState = '00000', allowZeroRows = false }) {
@@ -299,6 +314,96 @@ async function runRlsSqlHarness() {
       claims: getTestJwtClaims('doctor', docB),
       sql: `SELECT * FROM public.health_records WHERE record_id = '${hrId}';`,
       expectedRows: 0,
+    });
+
+    // --- CLIENT RPC CROSS-USER AUTHORIZATION (Expect 42501 FORBIDDEN) ---
+    await testCase({
+      name: 'RPC Authz: book_appointment_atomic - Patient B books for Patient A',
+      table: 'rpc/book_appointment_atomic',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pB),
+      sql: `SELECT public.book_appointment_atomic('appt_cross_1', '${docA}', 'Dr. A', 'General', 'Patient B', 25, 'Male', now() + interval '2 days', '10:00 AM', 'newVisit', null, null, null, 'patient_supabase', '${pA}');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'RPC Authz: reschedule_appointment_atomic - Patient B reschedules Patient A appt',
+      table: 'rpc/reschedule_appointment_atomic',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pB),
+      sql: `SELECT public.reschedule_appointment_atomic('${apptId}', '${docA}', CURRENT_DATE + 3, '11:00 AM');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'RPC Authz: create_prescription_atomic - Doctor B prescribes for Doctor A appt',
+      table: 'rpc/create_prescription_atomic',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', docB),
+      sql: `SELECT public.create_prescription_atomic(jsonb_build_object('prescription_id', 'rx_cross_1', 'patient_id', '${pA}', 'appointment_id', '${apptId}'));`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'RPC Authz: cancel_ambulance_broadcast - Patient B cancels Patient A broadcast',
+      table: 'rpc/cancel_ambulance_broadcast',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pB),
+      sql: `SELECT public.cancel_ambulance_broadcast('${bcId}', 'Malicious cancel');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'RPC Authz: complete_ambulance_trip - Driver B completes Driver A trip',
+      table: 'rpc/complete_ambulance_trip',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambB),
+      sql: `SELECT public.complete_ambulance_trip('${bcId}');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'RPC Authz: update_ambulance_location - Driver B updates Driver A location',
+      table: 'rpc/update_ambulance_location',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambB),
+      sql: `SELECT public.update_ambulance_location('${bcId}', 28.5, 77.2);`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'RPC Authz: get_ambulance_trip_location - Driver B views Patient A trip location',
+      table: 'rpc/get_ambulance_trip_location',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambB),
+      sql: `SELECT public.get_ambulance_trip_location('${bcId}');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'RPC Authz: accept_ambulance_request - Patient A calls driver accept RPC',
+      table: 'rpc/accept_ambulance_request',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.accept_ambulance_request('${bcId}');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'RPC Authz: update_lab_booking_status - Lab B updates Lab A booking',
+      table: 'rpc/update_lab_booking_status',
+      role: 'authenticated',
+      claims: getTestJwtClaims('lab', labB),
+      sql: `SELECT public.update_lab_booking_status('${labBkId}', 'cancelled');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'RPC Authz: update_lab_order_status - Lab B updates Lab A order',
+      table: 'rpc/update_lab_order_status',
+      role: 'authenticated',
+      claims: getTestJwtClaims('lab', labB),
+      sql: `SELECT public.update_lab_order_status('${labOrdId}', 'cancelled');`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'RPC Authz: update_pharmacy_delivery_status - Store B updates Store A delivery',
+      table: 'rpc/update_pharmacy_delivery_status',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', storeB),
+      sql: `SELECT public.update_pharmacy_delivery_status('${delId}', 'cancelled');`,
+      expectedSqlState: '42501',
     });
 
     // Always ROLLBACK everything
