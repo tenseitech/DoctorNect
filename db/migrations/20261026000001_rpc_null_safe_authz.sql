@@ -53,9 +53,13 @@ BEGIN
         RAISE EXCEPTION 'APPOINTMENT_NOT_FOUND' USING ERRCODE = 'P0002';
     END IF;
 
-    -- Null-safe ownership validation using IS DISTINCT FROM
-    IF (v_appt.patient_id IS DISTINCT FROM v_profile_id)
-       AND (v_appt.doctor_id IS DISTINCT FROM v_profile_id)
+    -- Null-safe ownership validation: patient, doctor, family member owner, or super_admin
+    IF (v_appt.doctor_id IS DISTINCT FROM v_profile_id)
+       AND (v_appt.patient_id IS DISTINCT FROM v_profile_id)
+       AND NOT (
+           EXISTS (SELECT 1 FROM public.patients WHERE patient_id = v_appt.patient_id AND owner_uid = v_caller_uid)
+           OR EXISTS (SELECT 1 FROM public.family_members WHERE member_id = v_appt.patient_id AND patient_id = v_profile_id)
+       )
        AND NOT v_is_admin THEN
         RAISE EXCEPTION 'FORBIDDEN: You do not have permission to reschedule this appointment.' USING ERRCODE = '42501';
     END IF;
@@ -80,22 +84,27 @@ BEGIN
     WHERE doctor_id = v_appt.doctor_id
       AND date_time::date = p_new_date;
 
-    -- 4. Construct new target timestamp preserving slot or defaulting to midday
-    v_new_timestamp := (p_new_date::text || ' 10:00:00+00')::TIMESTAMPTZ;
+    -- 4. Construct new target timestamp (+05:30)
+    v_new_timestamp := (p_new_date::text || ' 10:00:00+05:30')::TIMESTAMPTZ;
 
     -- 5. Atomically update the appointment
     UPDATE public.appointments
     SET date_time = v_new_timestamp,
         slot_label = p_new_slot,
         token_number = v_token,
-        patient_status = CASE WHEN p_rescheduled_by = 'patient' THEN 'rescheduled' ELSE patient_status END,
-        doctor_status = CASE WHEN p_rescheduled_by = 'doctor' THEN 'rescheduled' ELSE doctor_status END,
-        cancellation_reason = COALESCE(p_reason, cancellation_reason),
+        patient_status = 'confirmed',
+        doctor_status = 'pendingRequest',
+        was_rescheduled = TRUE,
         updated_at = CURRENT_TIMESTAMP
-    WHERE appointment_id = p_appointment_id
-    RETURNING * INTO v_appt;
+    WHERE appointment_id = p_appointment_id;
 
-    RETURN to_jsonb(v_appt);
+    RETURN jsonb_build_object(
+        'ok', true,
+        'appointment_id', p_appointment_id,
+        'token_number', v_token,
+        'date_time', v_new_timestamp,
+        'slot_label', p_new_slot
+    );
 END;
 $$;
 
@@ -241,7 +250,7 @@ BEGIN
     END IF;
 
     -- Zero location returned unless active accepted trip
-    IF v_broadcast.status != 'accepted' THEN
+    IF v_broadcast.status IS DISTINCT FROM 'accepted' THEN
         RETURN jsonb_build_object(
             'active', false,
             'status', v_broadcast.status,
@@ -329,7 +338,7 @@ BEGIN
         RAISE EXCEPTION 'Only the assigned driver can transmit location' USING ERRCODE = '42501';
     END IF;
 
-    IF v_broadcast.status != 'accepted' THEN
+    IF v_broadcast.status IS DISTINCT FROM 'accepted' THEN
         RAISE EXCEPTION 'Location updates allowed only during active accepted trip (status: %)', v_broadcast.status
             USING ERRCODE = '42501';
     END IF;
@@ -414,7 +423,7 @@ BEGIN
     END IF;
 
     -- Require status = 'accepted'
-    IF v_broadcast.status != 'accepted' THEN
+    IF v_broadcast.status IS DISTINCT FROM 'accepted' THEN
         RAISE EXCEPTION 'Cannot complete trip: broadcast is not in accepted status (current status: %)', v_broadcast.status
             USING ERRCODE = '42501';
     END IF;
@@ -492,7 +501,7 @@ BEGIN
         RAISE EXCEPTION 'Ambulance driver profile not registered' USING ERRCODE = '42501';
     END IF;
 
-    IF v_driver.verified != TRUE THEN
+    IF v_driver.verified IS NOT TRUE THEN
         RAISE EXCEPTION 'Only verified ambulance drivers can accept emergency requests' USING ERRCODE = '42501';
     END IF;
 
@@ -508,7 +517,7 @@ BEGIN
         RAISE EXCEPTION 'Broadcast % not found', p_broadcast_id USING ERRCODE = 'P0002';
     END IF;
 
-    IF v_broadcast.status != 'pending' THEN
+    IF v_broadcast.status IS DISTINCT FROM 'pending' THEN
         RAISE EXCEPTION 'This emergency request has already been accepted or cancelled (status: %)', v_broadcast.status
             USING ERRCODE = '42501';
     END IF;
@@ -530,6 +539,11 @@ BEGIN
         FROM public.ambulance_requests
         WHERE broadcast_id = p_broadcast_id AND driver_id = v_driver_id
         LIMIT 1;
+
+        IF v_winning_request_id IS NULL THEN
+            RAISE EXCEPTION 'No matching ambulance request found for broadcast % and driver %', p_broadcast_id, v_driver_id
+                USING ERRCODE = '42501';
+        END IF;
     END IF;
 
     -- Look up contacts (patient phone)
@@ -663,7 +677,7 @@ BEGIN
         IF p_new_status != 'cancelled' THEN
             RAISE EXCEPTION 'Patients can only cancel lab bookings' USING ERRCODE = '42501';
         END IF;
-        IF v_booking.status != 'confirmed' THEN
+        IF v_booking.status IS DISTINCT FROM 'confirmed' THEN
             RAISE EXCEPTION 'Patient cannot cancel after sample collection (status: %)', v_booking.status
                 USING ERRCODE = '42501';
         END IF;
@@ -903,16 +917,12 @@ BEGIN
     IF p_medicine_lines IS NOT NULL AND jsonb_typeof(p_medicine_lines) = 'array' THEN
         FOR v_line IN SELECT * FROM jsonb_to_recordset(p_medicine_lines) AS x(
             medicine_entry_id VARCHAR(64),
-            dispensed_quantity INT,
-            substituted_medicine_name TEXT,
-            substituted_dosage TEXT,
-            status VARCHAR(32)
+            availability VARCHAR(32),
+            substitute_name VARCHAR(255)
         ) LOOP
             UPDATE public.pharmacy_delivery_medicines
-            SET dispensed_quantity = COALESCE(v_line.dispensed_quantity, dispensed_quantity),
-                substituted_medicine_name = COALESCE(v_line.substituted_medicine_name, substituted_medicine_name),
-                substituted_dosage = COALESCE(v_line.substituted_dosage, substituted_dosage),
-                status = COALESCE(v_line.status, status)
+            SET availability = COALESCE(v_line.availability, availability),
+                substitute_name = COALESCE(v_line.substitute_name, substitute_name)
             WHERE delivery_id = p_delivery_id
               AND medicine_entry_id = v_line.medicine_entry_id;
         END LOOP;
@@ -1067,7 +1077,7 @@ BEGIN
     IF v_active_count >= 3 THEN
         RAISE EXCEPTION 'SLOT_CAPACITY_REACHED: Slot "%" already reached its maximum capacity of 3 patients.',
             p_slot_label
-            USING ERRCODE = '54000';
+            USING ERRCODE = 'P0001';
     END IF;
 
     -- 5. Calculate Sequential Daily Token Number
@@ -1098,10 +1108,7 @@ BEGIN
         clinic_address,
         doctor_status,
         patient_status,
-        payment_status,
-        consultation_fee,
         sync_origin,
-        booked_by_uid,
         created_at,
         updated_at
     ) VALUES (
@@ -1120,11 +1127,8 @@ BEGIN
         p_clinic_name,
         p_clinic_address,
         'pendingRequest',
-        'pending',
-        'pending',
-        0.00,
+        'confirmed',
         COALESCE(p_sync_origin, 'patient_supabase'),
-        v_caller_uid,
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
     )
@@ -1529,7 +1533,7 @@ BEGIN
     END IF;
 
     -- Visible to counterpart ONLY after acceptance and ONLY during active trip
-    IF v_broadcast.status != 'accepted' THEN
+    IF v_broadcast.status IS DISTINCT FROM 'accepted' THEN
         IF COALESCE(v_is_patient, FALSE) THEN
             -- Patient can see own phone even when pending
             SELECT * INTO v_contacts FROM public.ambulance_trip_contacts WHERE broadcast_id = p_broadcast_id;
@@ -1596,13 +1600,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
+DROP TRIGGER IF EXISTS trg_lock_ambulance_broadcast_status ON public.ambulance_broadcasts;
+CREATE TRIGGER trg_lock_ambulance_broadcast_status
+    BEFORE UPDATE ON public.ambulance_broadcasts
+    FOR EACH ROW EXECUTE FUNCTION private.trg_lock_ambulance_broadcast_status();
 
 -- 15. public.users Integrity Hardening (Role and Profile Lock on UPDATE, Guard on INSERT)
 DROP TRIGGER IF EXISTS trg_users_lock_role ON public.users;
 CREATE TRIGGER trg_users_lock_role
     BEFORE UPDATE ON public.users
     FOR EACH ROW
-    EXECUTE FUNCTION private.lock_columns('role', 'profile_id');
+    EXECUTE FUNCTION private.lock_columns('role', 'profile_id', 'firebase_uid', 'email', 'mobile');
 
 CREATE OR REPLACE FUNCTION private.trg_users_guard_insert()
 RETURNS TRIGGER AS $$
@@ -1630,4 +1638,44 @@ CREATE TRIGGER trg_users_guard_insert
     BEFORE INSERT ON public.users
     FOR EACH ROW
     EXECUTE FUNCTION private.trg_users_guard_insert();
+
+-- 16. Family-member Parity on Appointment Cancellation
+DROP POLICY IF EXISTS "appointments_update" ON public.appointments;
+CREATE POLICY "appointments_update" ON public.appointments
+    FOR UPDATE TO authenticated
+    USING (
+        patient_id = private.current_profile_id()
+        OR doctor_id = private.current_profile_id()
+        OR EXISTS (
+            SELECT 1 FROM public.patients p
+            WHERE p.patient_id = appointments.patient_id
+              AND p.owner_uid = private.current_firebase_uid()
+        )
+        OR EXISTS (
+            SELECT 1 FROM public.family_members fm
+            WHERE fm.member_id = appointments.patient_id
+              AND fm.patient_id = private.current_profile_id()
+        )
+        OR private.is_super_admin()
+    )
+    WITH CHECK (
+        doctor_id = private.current_profile_id()
+        OR (
+            (
+                patient_id = private.current_profile_id()
+                OR EXISTS (
+                    SELECT 1 FROM public.patients p
+                    WHERE p.patient_id = appointments.patient_id
+                      AND p.owner_uid = private.current_firebase_uid()
+                )
+                OR EXISTS (
+                    SELECT 1 FROM public.family_members fm
+                    WHERE fm.member_id = appointments.patient_id
+                      AND fm.patient_id = private.current_profile_id()
+                )
+            )
+            AND patient_status = 'cancelled'
+        )
+        OR private.is_super_admin()
+    );
 

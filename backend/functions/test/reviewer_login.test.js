@@ -16,6 +16,8 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
   const origReviewNumbers = process.env.REVIEW_TEST_NUMBERS;
   const origReviewOtp = process.env.REVIEW_FIXED_OTP;
   const origReviewUntil = process.env.REVIEW_ACCESS_UNTIL;
+  const origAppEnv = process.env.APP_ENV;
+  const origEnableReviewDemo = process.env.ENABLE_REVIEW_DEMO;
   let origCutover;
 
   test.beforeEach(() => {
@@ -43,6 +45,12 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
 
     if (origReviewUntil === undefined) delete process.env.REVIEW_ACCESS_UNTIL;
     else process.env.REVIEW_ACCESS_UNTIL = origReviewUntil;
+
+    if (origAppEnv === undefined) delete process.env.APP_ENV;
+    else process.env.APP_ENV = origAppEnv;
+
+    if (origEnableReviewDemo === undefined) delete process.env.ENABLE_REVIEW_DEMO;
+    else process.env.ENABLE_REVIEW_DEMO = origEnableReviewDemo;
 
     resetReviewerRateLimitForTesting();
   });
@@ -202,6 +210,39 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
     } finally {
       setReviewerRedisClientForTesting(null);
     }
+  });
+
+  test('Case 8: APP_ENV=production disables reviewer bypass unless ENABLE_REVIEW_DEMO=true', () => {
+    process.env.APP_ENV = 'production';
+    delete process.env.ENABLE_REVIEW_DEMO;
+    process.env.REVIEW_TEST_NUMBERS = '9999900001';
+    process.env.REVIEW_FIXED_OTP = '112233';
+    process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
+
+    assert.equal(getReviewerConfig(), null, 'Must return null in production when ENABLE_REVIEW_DEMO is not true');
+    assert.equal(getReviewerConfig('patient'), null);
+    assert.equal(isReviewerPhone('9999900001', 'patient'), false);
+  });
+
+  test('Case 9: APP_ENV=production with ENABLE_REVIEW_DEMO=true is strictly limited to patient role', () => {
+    process.env.APP_ENV = 'production';
+    process.env.ENABLE_REVIEW_DEMO = 'true';
+    process.env.REVIEW_TEST_NUMBERS = '9999900001';
+    process.env.REVIEW_FIXED_OTP = '112233';
+    process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
+
+    // Patient role should succeed
+    const patientCfg = getReviewerConfig('patient');
+    assert.ok(patientCfg, 'Reviewer config must be active for patient role in prod when ENABLE_REVIEW_DEMO=true');
+    assert.equal(isReviewerPhone('9999900001', 'patient'), true);
+
+    // Doctor or other roles must be blocked
+    assert.equal(getReviewerConfig('doctor'), null, 'Doctor role must be rejected in prod even if ENABLE_REVIEW_DEMO=true');
+    assert.equal(isReviewerPhone('9999900001', 'doctor'), false);
+    assert.equal(getReviewerConfig('ambulance'), null, 'Ambulance role must be rejected in prod');
+    assert.equal(isReviewerPhone('9999900001', 'ambulance'), false);
+    assert.equal(getReviewerConfig('medical'), null, 'Medical role must be rejected in prod');
+    assert.equal(isReviewerPhone('9999900001', 'medical'), false);
   });
 });
 

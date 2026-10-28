@@ -115,7 +115,18 @@ const REVIEW_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const REVIEW_RATE_LIMIT_MAX = 5;
 let _testingReviewerRedis = null;
 
-function getReviewerConfig() {
+function getReviewerConfig(role) {
+  const isProd = (process.env.APP_ENV || '').toLowerCase() === 'production';
+  if (isProd) {
+    const enableReviewDemo = String(process.env.ENABLE_REVIEW_DEMO || '').toLowerCase() === 'true';
+    if (!enableReviewDemo) {
+      return null;
+    }
+    if (role && normalizeRole(role) !== 'patient') {
+      return null;
+    }
+  }
+
   const rawNumbers = String(process.env.REVIEW_TEST_NUMBERS || '').trim();
   const fixedOtp = String(process.env.REVIEW_FIXED_OTP || '').trim();
   const accessUntil = String(process.env.REVIEW_ACCESS_UNTIL || '').trim();
@@ -151,9 +162,15 @@ function getReviewerConfig() {
   };
 }
 
-function isReviewerPhone(digits) {
-  const config = getReviewerConfig();
+function isReviewerPhone(digits, role) {
+  const config = getReviewerConfig(role);
   if (!config) return false;
+  const isProd = (process.env.APP_ENV || '').toLowerCase() === 'production';
+  if (isProd) {
+    const enableReviewDemo = String(process.env.ENABLE_REVIEW_DEMO || '').toLowerCase() === 'true';
+    if (!enableReviewDemo) return false;
+    if (role && normalizeRole(role) !== 'patient') return false;
+  }
   const d = normalizeMobileDigits(digits);
   return config.testNumbers.includes(d);
 }
@@ -1726,7 +1743,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
 
   const isCutover = await isDoctorPatientSupabasePrimary();
   if (isCutover) {
-    const isReviewerAccount = isReviewerPhone(digits);
+    const isReviewerAccount = isReviewerPhone(digits, role);
     if (isReviewerAccount) {
       if (!(await checkReviewerRateLimit(digits))) {
         emit(SEVERITY.WARNING, 'security', 'reviewer.rate_limited', {
@@ -1762,7 +1779,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
       throw new HttpsError('resource-exhausted', 'Please wait a minute before requesting another OTP.');
     }
 
-    const reviewerConfig = getReviewerConfig();
+    const reviewerConfig = getReviewerConfig(role);
     const code = isReviewerAccount ? reviewerConfig.fixedOtp : generateOtpCode();
     const expiryMs = OTP_EXPIRY_MS;
     const ttlSec = Math.max(1, Math.floor(expiryMs / 1000));
@@ -1801,7 +1818,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
 
   const challengeRef = db.collection('otp_challenges').doc(mobileHash(role, digits));
   const existing = await challengeRef.get();
-  const isReviewerAccount = isReviewerPhone(digits);
+  const isReviewerAccount = isReviewerPhone(digits, role);
   if (isReviewerAccount) {
     if (!(await checkReviewerRateLimit(digits))) {
       emit(SEVERITY.WARNING, 'security', 'reviewer.rate_limited', {
@@ -1897,7 +1914,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     }
   }
 
-  const reviewerConfig = getReviewerConfig();
+  const reviewerConfig = getReviewerConfig(role);
   const code = isReviewerAccount ? reviewerConfig.fixedOtp : generateOtpCode();
   const expiryMs = OTP_EXPIRY_MS;
   const expiresAt = Timestamp.fromDate(new Date(Date.now() + expiryMs));
@@ -2072,8 +2089,8 @@ async function consumeOtpChallengeAtomically(
       throw new HttpsError('deadline-exceeded', 'OTP expired. Send a new one.');
     }
 
-    const reviewerCfg = getReviewerConfig();
-    const isReviewerValid = reviewerCfg && isReviewerPhone(digits || challenge.mobileDigits) && otp === reviewerCfg.fixedOtp;
+    const reviewerCfg = getReviewerConfig(normalizedRole || role);
+    const isReviewerValid = reviewerCfg && isReviewerPhone(digits || challenge.mobileDigits, normalizedRole || role) && otp === reviewerCfg.fixedOtp;
     const localMatch = isReviewerValid || verifyChallengeOtpHash(otp, challenge, role, digits);
 
     if (localMatch) {
@@ -2123,7 +2140,7 @@ async function consumeOtpChallengeAtomically(
   // Role-scoped challenge only. A missing doc is not replaced by another
   // role's challenge for the same mobile.
   const effectiveChallengeRef = challengeRef;
-  const isReviewer = isReviewerPhone(digits);
+  const isReviewer = isReviewerPhone(digits, normalizedRole || role);
   if (isReviewer) {
     if (!(await checkReviewerRateLimit(digits))) {
       emit(SEVERITY.WARNING, 'security', 'reviewer.rate_limited', {
@@ -2188,8 +2205,8 @@ async function consumeOtpChallengeAtomically(
       return { status: 'locked' };
     }
 
-    const reviewerCfg = getReviewerConfig();
-    const isReviewerValid = reviewerCfg && isReviewerPhone(digits || challenge.mobileDigits) && otp === reviewerCfg.fixedOtp;
+    const reviewerCfg = getReviewerConfig(normalizedRole || role);
+    const isReviewerValid = reviewerCfg && isReviewerPhone(digits || challenge.mobileDigits, normalizedRole || role) && otp === reviewerCfg.fixedOtp;
     const localMatch = isReviewerValid
       || verifyChallengeOtpHash(otp, challenge, role, digits)
       || (redisChallenge?.otpHash && verifyChallengeOtpHash(otp, {

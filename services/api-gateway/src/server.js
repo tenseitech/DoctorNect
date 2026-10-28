@@ -68,6 +68,10 @@ function createGatewayServer(overrides = {}) {
     windowMs: cfg.rateLimitWindowMs,
     maxRequests: cfg.rateLimitMaxRequests,
   });
+  const failedServiceKeyLimiter = new RateLimiter({
+    windowMs: cfg.failedServiceKeyWindowMs,
+    maxRequests: cfg.failedServiceKeyMaxAttempts,
+  });
   const jwksClient = cfg.jwksClient || defaultJwksClient;
   const allowedMethodsSet = new Set((cfg.allowedMethods || []).map((m) => m.toUpperCase()));
   const clientDirectAllowedTablesSet = new Set((cfg.clientDirectAllowedTables || cfg.clientAllowedTables || []).map((t) => t.toLowerCase()));
@@ -205,6 +209,14 @@ function createGatewayServer(overrides = {}) {
       });
     }
 
+    // Check if this IP is blocked due to excessive failed service-key attempts
+    if (failedServiceKeyLimiter.isBlocked(`ip:${clientIp}`)) {
+      return sendJson(429, {
+        error: 'Too Many Requests',
+        message: 'Too many failed service key attempts. Please try again later.',
+      });
+    }
+
     // Extract authorization credentials
     const authHeader = req.headers.authorization || '';
     const apikeyHeader = req.headers.apikey || '';
@@ -217,6 +229,10 @@ function createGatewayServer(overrides = {}) {
     let authenticatedPayload = null;
 
     // 1. Service Role Key Check (Constant Time)
+    const isServiceKeyCandidate =
+      Boolean(apikeyHeader && apikeyHeader !== cfg.anonKey) ||
+      Boolean(bearerToken && !bearerToken.includes('.') && bearerToken !== cfg.anonKey);
+
     if (
       cfg.serviceRoleKey &&
       (secureCompare(bearerToken || '', cfg.serviceRoleKey) || secureCompare(apikeyHeader, cfg.serviceRoleKey))
@@ -224,6 +240,19 @@ function createGatewayServer(overrides = {}) {
       clientRole = 'service_role';
       clientUidHash = 'service_role';
       // Service role callers bypass rate limiting
+    } else if (isServiceKeyCandidate) {
+      // Failed service key attempt: record failure and rate-limit per IP
+      const blockedNow = failedServiceKeyLimiter.recordFailure(`ip:${clientIp}`);
+      if (blockedNow) {
+        return sendJson(429, {
+          error: 'Too Many Requests',
+          message: 'Too many failed service key attempts. Please try again later.',
+        });
+      }
+      return sendJson(401, {
+        error: 'Unauthorized',
+        message: 'Invalid service key.',
+      });
     } else if (bearerToken && bearerToken !== cfg.anonKey) {
       // 2. Firebase ID Token Verification
       try {

@@ -224,5 +224,58 @@
   - `frontend flutter analyze`: **No issues found!** (ran in 95.3s).
   - `frontend flutter test`: **552 passed, 0 failed** (All tests passed).
 
+---
+
+### Phase 11: Migration Review Round (Deliverables 1-10 Complete & Verified)
+- **Deliverable 1: 14 Unified Diffs & Non-Auth Deviation Reversion**:
+  - Audited all 13 functions + trigger in `db/migrations/20261026000001_rpc_null_safe_authz.sql` against latest previous definitions.
+  - Reverted non-auth deviations back to baseline:
+    - `book_appointment_atomic`: statuses restored to `patient_status = 'confirmed', doctor_status = 'pendingRequest'`; capacity filter and error code `'P0001'` restored; extra phantom columns (`payment_status`, `consultation_fee`, `booked_by_uid`) removed from INSERT.
+    - `reschedule_appointment_atomic`: timestamp timezone `+05:30` restored; status updates `patient_status = 'confirmed', doctor_status = 'pendingRequest'` restored; `was_rescheduled = TRUE` restored; return shape `RETURN to_jsonb(v_appointment);` restored. Family member parity authorization check added.
+    - `update_pharmacy_delivery_status`: `p_medicine_lines` record fields restored strictly to `(medicine_entry_id, availability, substitute_name)`.
+    - `cancel_ambulance_broadcast`: restored `DELETE FROM public.ambulance_trip_contacts WHERE broadcast_id = p_broadcast_id;`.
+- **Deliverable 2: Static Column Checker (libpg-query AST)**:
+  - Built `scripts/db/check_migration_columns.js` using `libpg-query` AST parser placed in root/scripts `devDependencies` (`libpg-query: ^18.2.1`).
+  - Parsed all 33 migrations (1,691 statements, 70 tables). Verified all requisite columns and tables exist (`doctors.name`, `appointments.cancellation_reason`, `appointments.booked_by_uid`, `ambulance_broadcasts.rating`, `pharmacy_delivery_medicines` columns, `prescriptions` columns, `patient_doctor_links`).
+  - Verified 0 phantom column references in new function bodies.
+- **Deliverable 3: Exact Trigger & Function Identity for phase_d:254**:
+  - Exact trigger name: `trg_lock_ambulance_broadcast_status` on `public.ambulance_broadcasts`.
+  - Executed function: `private.trg_lock_ambulance_broadcast_status()`.
+  - Retained original logic plus null-safe checks with `IS DISTINCT FROM`.
+- **Deliverable 4: accept_ambulance_request & Nullable Record Scan**:
+  - Enforced `IF v_driver.verified IS NOT TRUE THEN` for driver verification.
+  - Enforced requirement for `ambulance_requests` row matching `(broadcast_id = p_broadcast_id, driver_id = v_driver_id)` else 42501.
+  - Replaced all record field `!=` / `<>` with `IS DISTINCT FROM`.
+  - Scanner `scripts/db/scan_nullable_record_fields.js` confirmed **0 nullable record field hits**.
+- **Deliverable 5: Role Pipeline & Bridge Gating**:
+  - Audited `firestore.rules`: client role assignment is strictly limited to non-admin roles (`doctor, patient, medicalStore, medical, lab, ambulance`); `role, profileId, verified, verifiedAt` are protected from client modification on update.
+  - `syncFirestoreUserToSupabase` role mapping normalizes roles; Postgres trigger `trg_users_guard_insert` rejects administrative roles.
+  - Production gating: `ENABLE_SUPABASE_SYNC=0` in production per `docs/ops/SYNC_ROLLOUT.md:9`.
+- **Deliverable 6: Server-Side Demo OTP Bypass Hardening**:
+  - Gated `getReviewerConfig(role)` and `isReviewerPhone(digits, role)` in `backend/functions/registration_otp.js`: disabled in `APP_ENV=production` unless `ENABLE_REVIEW_DEMO=true` (strictly restricted to `role === 'patient'`).
+  - All 9 unit tests pass in `backend/functions/test/reviewer_login.test.js`.
+- **Deliverable 7: public.users Lock Integrity & Family-Member Parity**:
+  - `trg_users_lock_role` locks `('role', 'profile_id', 'firebase_uid', 'email', 'mobile')` on UPDATE.
+  - Provisioning trace confirmed: `users_provisioning` trigger executes `INSERT INTO public.users` (not affected by UPDATE lock).
+  - Added Section 16 RLS policy `appointments_update` to `20261026000001_rpc_null_safe_authz.sql` providing family-member cancellation parity (`family_members` and `patients.owner_uid`).
+- **Deliverable 8: Comprehensive Account Deletion (delete_my_account)**:
+  - Audited all user/owner/phone/email-bearing tables across the schema.
+  - Implemented cleanup in `backend/functions/delete_my_account.js`:
+    - DELETED: `ambulance_trip_contacts`, `ambulance_location_updates`, `promoted_ads`, `medical_directory`, `super_admins`, `admin_users`, `provisioning_errors`.
+    - ANONYMIZED: `razorpay_orders` (`user_uid: null`).
+    - RETAINED with regulatory justification: `razorpay_payments` (tax/financial accounting), `admin_audit_logs` (regulatory compliance), `security_events` (pseudonymized fraud audit), `doctor_directory_updates` (cache signal), `facilities` (institutional directory).
+  - Updated gateway `serviceRoleOnlyTables` in `services/api-gateway/src/config.js` with `ambulance_trip_contacts`, `admin_users`, `provisioning_errors`.
+- **Deliverable 9: Gateway Failed Service-Key Rate Limiting**:
+  - Implemented `failedServiceKeyLimiter` in `services/api-gateway/src/server.js` and `security.js` tracking failed service key attempts per IP.
+  - Rejects with `429 Too Many Requests` when limit is exceeded (5 failed attempts per IP within 15-minute sliding window).
+  - Unit test in `services/api-gateway/test/gateway.test.js` passes.
+- **Deliverable 10: Verification Test Evidence Matrix (Artifacts Saved)**:
+  - `docs/ops/test_runs/gateway_test.txt`: **63 passed, 0 failed** across 3 test suites.
+  - `docs/ops/test_runs/backend_test.txt`: **477 passed, 0 failed, 22 skipped** across 17 test suites.
+  - `docs/ops/test_runs/backend_audit.txt`: **0 vulnerabilities found** (`npm audit --omit=dev`).
+  - `docs/ops/test_runs/flutter_analyze.txt`: **No issues found!** (ran in 173.8s).
+  - `docs/ops/test_runs/flutter_test.txt`: **552 passed, 0 failed** (All tests passed).
+
+
 
 

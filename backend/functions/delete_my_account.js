@@ -775,17 +775,19 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
   let supabaseUserId = '';
   let supabaseProfileId = String(profileId || '').trim();
   let supabaseRole = String(role || '').trim();
+  let supabaseMobile = '';
 
   try {
     const rows = await supabaseRequest(
       config,
       'GET',
-      `users?firebase_uid=eq.${encodeURIComponent(uid)}&select=id,profile_id,role`,
+      `users?firebase_uid=eq.${encodeURIComponent(uid)}&select=id,profile_id,role,mobile`,
     );
     if (Array.isArray(rows) && rows[0]) {
       supabaseUserId = String(rows[0].id || '').trim();
       if (!supabaseProfileId) supabaseProfileId = String(rows[0].profile_id || '').trim();
       if (!supabaseRole) supabaseRole = String(rows[0].role || '').trim();
+      supabaseMobile = String(rows[0].mobile || '').trim();
     }
   } catch (err) {
     if (err?.status === 403 || err?.status === 404) {
@@ -888,6 +890,23 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('prescriptions', q);
   }
 
+  // 4b. Ambulance trip contacts & location updates (linked to broadcasts/phones)
+  const broadcastIds = new Set();
+  for (const pid of patientIds) {
+    addIds(broadcastIds, await getRows('ambulance_broadcasts', `patient_id=eq.${encodeURIComponent(pid)}`, 'broadcast_id'), 'broadcast_id');
+  }
+  for (const aid of ambulanceIds) {
+    addIds(broadcastIds, await getRows('ambulance_broadcasts', `accepted_driver_id=eq.${encodeURIComponent(aid)}`, 'broadcast_id'), 'broadcast_id');
+  }
+  for (const bid of broadcastIds) {
+    await del('ambulance_trip_contacts', `broadcast_id=eq.${encodeURIComponent(bid)}`);
+    await del('ambulance_location_updates', `broadcast_id=eq.${encodeURIComponent(bid)}`);
+  }
+  if (supabaseMobile) {
+    await del('ambulance_trip_contacts', `patient_phone=eq.${encodeURIComponent(supabaseMobile)}`);
+    await del('ambulance_trip_contacts', `driver_phone=eq.${encodeURIComponent(supabaseMobile)}`);
+  }
+
   // 5. Patient records & relationships
   for (const patientId of patientIds) {
     const q = `patient_id=eq.${encodeURIComponent(patientId)}`;
@@ -897,6 +916,7 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('reviews', q);
     await del('patient_doctor_links', q);
     await del('patient_care_team', q);
+    await del('medical_directory', q);
     await del('appointments', q);
     await del('ambulance_requests', q);
     await del('ambulance_broadcasts', q);
@@ -915,6 +935,7 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('doctor_blocked_dates', q);
     await del('patient_doctor_links', q);
     await del('patient_care_team', q);
+    await del('medical_directory', q);
     await del('reviews', q);
     await del('appointments', q);
     await del('doctors', q);
@@ -970,7 +991,19 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
   if (supabaseUserId) {
     await del('user_devices', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
   }
-  await del('in_app_notifications', `recipient_uid=eq.${encodeURIComponent(uid)}`);
+  await del('in_app_notifications', `recipient_uid=${encodeURIComponent(uid)}`);
+
+  // 11. Promoted ads & admin/provisioning records
+  if (supabaseProfileId) {
+    await del('promoted_ads', `provider_id=eq=${encodeURIComponent(supabaseProfileId)}`);
+  }
+  if (supabaseUserId) {
+    await del('promoted_ads', `provider_id=eq=${encodeURIComponent(supabaseUserId)}`);
+    await del('admin_users', `user_id=eq=${encodeURIComponent(supabaseUserId)}`);
+  }
+  await del('promoted_ads', `provider_id=eq=${encodeURIComponent(uid)}`);
+  await del('super_admins', `user_uid=eq=${encodeURIComponent(uid)}`);
+  await del('provisioning_errors', `auth_user_id=eq=${encodeURIComponent(uid)}`);
 
   // Anonymize payment records (PII minimization while retaining accounting audit history)
   try {

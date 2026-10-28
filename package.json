@@ -1,0 +1,9 @@
+{
+  "name": "doctornect-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": {
+    "libpg-query": "^18.2.1"
+  }
+}
+

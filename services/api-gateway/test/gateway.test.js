@@ -1167,6 +1167,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         'appointments',
         'ambulance_requests',
         'ambulance_broadcasts',
+        'ambulance_trip_contacts',
         'doctor_invites',
         'pharmacy_doctor_invites',
         'doctor_private',
@@ -1182,6 +1183,8 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         'user_devices',
         'in_app_notifications',
         'razorpay_orders',
+        'admin_users',
+        'provisioning_errors',
       ];
 
       const serviceRoleAllowedSet = new Set(config.serviceRoleAllowedTables);
@@ -1264,6 +1267,62 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
       for (const res of responses) {
         assert.strictEqual(res.statusCode, 200, `Expected 200 OK but got ${res.statusCode}: ${JSON.stringify(res.json)}`);
       }
+    });
+
+    it('rate-limits failed service-key attempts per IP after exceeding limit', async () => {
+      const attackerIp = '198.51.100.111';
+      const wrongKey = 'totally-wrong-service-key-attempt';
+
+      // 1..4 failed attempts receive 401 Unauthorized
+      for (let i = 1; i <= 4; i++) {
+        const res = await makeRequest({
+          method: 'GET',
+          path: '/rest/v1/doctors',
+          headers: {
+            apikey: wrongKey,
+            'x-forwarded-for': attackerIp,
+          },
+        });
+        assert.strictEqual(res.statusCode, 401, `Attempt ${i} should return 401`);
+        assert.strictEqual(res.json.error, 'Unauthorized');
+      }
+
+      // 5th failed attempt reaches the limit (returns 429)
+      const fifthRes = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/doctors',
+        headers: {
+          apikey: wrongKey,
+          'x-forwarded-for': attackerIp,
+        },
+      });
+      assert.strictEqual(fifthRes.statusCode, 429);
+      assert.strictEqual(fifthRes.json.error, 'Too Many Requests');
+      assert.match(fifthRes.json.message, /Too many failed service key attempts/);
+
+      // Subsequent attempt from the same attacker IP is blocked immediately with 429
+      const blockedRes = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/doctors',
+        headers: {
+          apikey: wrongKey,
+          'x-forwarded-for': attackerIp,
+        },
+      });
+      assert.strictEqual(blockedRes.statusCode, 429);
+      assert.strictEqual(blockedRes.json.error, 'Too Many Requests');
+
+      // Different IP is NOT affected by the lockout
+      const innocentIp = '198.51.100.222';
+      const innocentRes = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/doctors',
+        headers: {
+          apikey: testServiceRoleKey,
+          'x-forwarded-for': innocentIp,
+        },
+      });
+      assert.strictEqual(innocentRes.statusCode, 200);
     });
   });
 });

@@ -55,6 +55,25 @@ class RateLimiter {
     return true;
   }
 
+  isBlocked(key) {
+    const now = Date.now();
+    const windowStart = now - this.windowMs;
+    let timestamps = this.requests.get(key) || [];
+    timestamps = timestamps.filter((t) => t > windowStart);
+    this.requests.set(key, timestamps);
+    return timestamps.length >= this.maxRequests;
+  }
+
+  recordFailure(key) {
+    const now = Date.now();
+    const windowStart = now - this.windowMs;
+    let timestamps = this.requests.get(key) || [];
+    timestamps = timestamps.filter((t) => t > windowStart);
+    timestamps.push(now);
+    this.requests.set(key, timestamps);
+    return timestamps.length >= this.maxRequests;
+  }
+
   cleanup() {
     const now = Date.now();
     const windowStart = now - this.windowMs;
