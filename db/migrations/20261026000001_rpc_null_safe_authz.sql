@@ -1564,8 +1564,8 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.get_ambulance_trip_contact(VARCHAR) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.get_ambulance_trip_contact(VARCHAR) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.get_ambulance_trip_contact(VARCHAR) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_ambulance_trip_contact(VARCHAR) TO service_role;
 
 
 -- 14. Null-Safe Ambulance Broadcast Status & Rating Lock Trigger (phase_d:254 remediation)
@@ -1615,7 +1615,13 @@ CREATE TRIGGER trg_users_lock_role
 CREATE OR REPLACE FUNCTION private.trg_users_guard_insert()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NOT COALESCE(private.is_super_admin(), FALSE) THEN
+    -- Service role / administrative / internal background provisioning bypass
+    IF current_user IN ('service_role', 'postgres')
+       OR (auth.jwt() ->> 'role') = 'service_role'
+       OR private.current_firebase_uid() IS NULL
+       OR COALESCE(private.is_super_admin(), FALSE) THEN
+        RETURN NEW;
+    END IF;
         -- Non-admin inserting self cannot claim administrative roles
         IF NEW.role IN ('super_admin', 'superAdmin', 'admin') THEN
             RAISE EXCEPTION 'FORBIDDEN: Cannot register with administrative role' USING ERRCODE = '42501';
@@ -1679,3 +1685,19 @@ CREATE POLICY "appointments_update" ON public.appointments
         OR private.is_super_admin()
     );
 
+-- 17. Security Definer RPCs & Trigger Hardening: Revoke client execution from uncalled RPCs and triggers
+REVOKE ALL ON FUNCTION public.expire_stale_ambulance_broadcasts() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.expire_stale_ambulance_broadcasts() TO service_role;
+
+REVOKE ALL ON FUNCTION public.register_device_token(TEXT, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.register_device_token(TEXT, TEXT) TO service_role;
+
+REVOKE ALL ON FUNCTION public.fn_sync_review_aggregates() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.fn_sync_review_aggregates() TO service_role;
+
+REVOKE ALL ON FUNCTION public.fn_sync_review_helpful_count() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.fn_sync_review_helpful_count() TO service_role;
+
+REVOKE ALL ON FUNCTION private.trg_lock_ambulance_broadcast_status() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION private.trg_users_lock_role() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION private.trg_users_guard_insert() FROM PUBLIC, anon, authenticated;

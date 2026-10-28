@@ -41,6 +41,9 @@ describe('Gateway Allowlist Completeness Scanner', () => {
     const streamTableRegex = /streamTable\s*\(\s*[^)]*table:\s*['"]([a-zA-Z0-9_]+)['"]/g;
     const tableParamRegex = /\btable:\s*['"]([a-zA-Z0-9_]+)['"]/g;
     const rpcRegex = /\.rpc\(\s*['"]([a-zA-Z0-9_]+)['"]/g;
+    const restRpcRegex = /\/rest\/v1\/rpc\/([a-zA-Z0-9_]+)/g;
+    const restTableRegex = /\/rest\/v1\/([a-zA-Z0-9_]+)/g;
+    const delRegex = /\bdel\(\s*['"]([a-zA-Z0-9_]+)['"]/g;
 
     function scanFile(file, isClient) {
       const content = fs.readFileSync(file, 'utf8');
@@ -57,6 +60,17 @@ describe('Gateway Allowlist Completeness Scanner', () => {
       }
       while ((m = rpcRegex.exec(content)) !== null) {
         if (isClient) clientRpcs.add(m[1]); else backendRpcs.add(m[1]);
+      }
+      while ((m = restRpcRegex.exec(content)) !== null) {
+        if (isClient) clientRpcs.add(m[1]); else backendRpcs.add(m[1]);
+      }
+      while ((m = restTableRegex.exec(content)) !== null) {
+        if (m[1] !== 'rpc') {
+          if (isClient) clientTables.add(m[1]); else backendTables.add(m[1]);
+        }
+      }
+      while ((m = delRegex.exec(content)) !== null) {
+        if (isClient) clientTables.add(m[1]); else backendTables.add(m[1]);
       }
 
       // Check for non-literal .from(, .rpc(, table: (ignoring built-in type constructors like List.from, Map.from, Buffer.from)
@@ -106,6 +120,17 @@ describe('Gateway Allowlist Completeness Scanner', () => {
               expr: arg,
             });
           }
+        }
+
+        const dynamicRestMatch = line.match(/\/rest\/v1\/\$\{([^}]+)\}/);
+        if (dynamicRestMatch) {
+          const arg = dynamicRestMatch[1].trim();
+          nonLiterals.push({
+            file: path.relative(repoRoot, file).replace(/\\/g, '/'),
+            line: idx + 1,
+            type: 'fetch(/rest/v1/${...})',
+            expr: arg,
+          });
         }
       });
     }
@@ -159,6 +184,54 @@ describe('Gateway Allowlist Completeness Scanner', () => {
         'labs',
         'medical_stores',
         'ambulances',
+      ],
+      'backend/functions/cross_role_sync.js': [
+        'appointments',
+        'prescriptions',
+        'doctors',
+        'medical_stores',
+        'labs',
+        'patients',
+        'pharmacy_deliveries',
+        'lab_bookings',
+        'lab_orders',
+        'ambulances',
+        'ambulance_broadcasts',
+      ],
+      'backend/functions/delete_my_account.js': [
+        'user_devices',
+        'patient_doctor_links',
+        'doctor_blocked_dates',
+        'doctor_education',
+        'doctor_availability',
+        'pharmacy_connections',
+        'lab_connections',
+        'family_members',
+        'review_votes',
+        'reviews',
+        'appointments',
+        'prescriptions',
+        'prescription_medicines',
+        'ambulance_requests',
+        'ambulance_broadcasts',
+        'lab_bookings',
+        'lab_orders',
+        'pharmacy_deliveries',
+        'pharmacy_delivery_medicines',
+        'lab_catalog_tests',
+        'ambulances',
+        'medical_stores',
+        'labs',
+        'doctors',
+        'patients',
+        'users',
+        'ambulance_trip_contacts',
+        'ambulance_location_updates',
+        'promoted_ads',
+        'medical_directory',
+        'super_admins',
+        'admin_users',
+        'provisioning_errors',
       ],
     };
 

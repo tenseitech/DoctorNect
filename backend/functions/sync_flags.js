@@ -13,6 +13,11 @@ function isSyncFlagEnabled(val) {
 }
 
 function isSupabaseSyncEnabled() {
+  // Dual-master hazard prevention: bridge is disabled when APP_ENV=production
+  // unless explicitly forced via FORCE_ENABLE_SUPABASE_SYNC_IN_PROD=1.
+  if (process.env.APP_ENV === 'production' && !isSyncFlagEnabled(process.env.FORCE_ENABLE_SUPABASE_SYNC_IN_PROD)) {
+    return false;
+  }
   return isSyncFlagEnabled(process.env.ENABLE_SUPABASE_SYNC);
 }
 

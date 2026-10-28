@@ -50,6 +50,14 @@ test('ENABLE_SUPABASE_SYNC defaults off and sync exports are registered only ins
 
     process.env.ENABLE_SUPABASE_SYNC = 'TRUE';
     assert.equal(isSupabaseSyncEnabled(), true);
+
+    // APP_ENV=production safety gate: disables bridge to avoid dual-master split-brain
+    process.env.APP_ENV = 'production';
+    assert.equal(isSupabaseSyncEnabled(), false, 'bridge must be disabled in APP_ENV=production');
+    process.env.FORCE_ENABLE_SUPABASE_SYNC_IN_PROD = '1';
+    assert.equal(isSupabaseSyncEnabled(), true, 'bridge can be forced via FORCE_ENABLE_SUPABASE_SYNC_IN_PROD=1');
+    delete process.env.FORCE_ENABLE_SUPABASE_SYNC_IN_PROD;
+    delete process.env.APP_ENV;
   } finally {
     if (originalEnv !== undefined) {
       process.env.ENABLE_SUPABASE_SYNC = originalEnv;
