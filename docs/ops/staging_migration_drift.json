@@ -1,0 +1,19 @@
+{
+  "tableDiffs": [
+    {
+      "table": "_schema_migrations",
+      "status": "EXTRA_IN_STAGING"
+    }
+  ],
+  "colDiffs": [],
+  "viewDiffs": [],
+  "liveCounts": {
+    "baseTables": 69,
+    "views": 2,
+    "columns": 838,
+    "constraints": 252,
+    "triggers": 56,
+    "policies": 184,
+    "functions": 73
+  }
+}

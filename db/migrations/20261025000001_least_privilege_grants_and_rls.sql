@@ -132,7 +132,6 @@ GRANT SELECT, INSERT, UPDATE ON public.users TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_devices TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.patients TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.doctors TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.pharmacies TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.medical_stores TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.labs TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON public.ambulances TO authenticated;

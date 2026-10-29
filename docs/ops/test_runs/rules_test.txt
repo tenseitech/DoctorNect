@@ -1,0 +1,438 @@
+npm notice run doctornect-workspace@1.0.0 test:rules
+npm notice run npx firebase-tools emulators:exec --only firestore,storage --project demo-doctornect-kyc "node scripts/run_rules_tests.js"
+npm notice run doctornect-workspace@1.0.0 npx
+npm notice run firebase emulators:exec --only firestore,storage --project demo-doctornect-kyc node scripts/run_rules_tests.js
+[36m[1mi  emulators:[22m[39m Starting emulators: firestore, storage
+[36m[1mi  emulators:[22m[39m Detected demo project ID "demo-doctornect-kyc", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnode scripts/run_rules_tests.js[22m
+Running rules and emulator test suites in backend/functions:
+  - test/client_payload_replay.rules.test.js
+  - test/client_read_replay.rules.test.js
+  - test/firestore_directory_and_appointments.rules.test.js
+  - test/firestore_reviews.rules.test.js
+  - test/storage_doctor_kyc.rules.test.js
+  - test/storage_live_app_paths.rules.test.js
+  - test/storage_provider_kyc.rules.test.js
+  - test/sync_dead_letters.rules.test.js
+  - test/doctor_slots_emulator.test.js
+  - test/sync_to_firestore_emulator.test.js
+▶ HEAD Rules Replay Suite (Real Baseline)
+  ✔ 1. Patient cancel (cancelByPatient): payload replay on real baseline (465.9197ms)
+  ✔ 2. Doctor cancel: payload replay on real baseline (170.8636ms)
+  ✔ 3. Doctor reschedule: payload replay on real baseline (169.0423ms)
+  ✔ 4. Doctor complete (saveConsultationOutcome): payload replay on real baseline (123.6365ms)
+[2026-10-29T11:35:46.673Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x89cc5926 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L555:24 for 'create' @ L555, false for 'create' @ L1427, evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+  ✔ 4b. Patient direct reschedule (client write regression test) (118.5136ms)
+  ✔ 5. Walk-in create (addWalkInAppointment): payload replay (67.56ms)
+  ✔ 6. Prescription create: payload replay (73.8123ms)
+  ✔ 7. Prescription update: payload replay (71.3516ms)
+  ✔ 8. Pharmacy delivery create (doctor): payload replay (71.4882ms)
+  ✔ 9. Pharmacy delivery update (store): payload replay (53.4828ms)
+  ✔ 10. community_medicines catalog add: payload replay (62.5141ms)
+  ✔ 11. community_diagnoses catalog add: payload replay (52.7797ms)
+  ✔ 12. community_lab_tests catalog add: payload replay (85.3427ms)
+  ✔ 13. community_radiology catalog add: payload replay (54.4683ms)
+  ✔ 14. community_body_parts catalog add: payload replay (59.8584ms)
+  ✔ 15. ambulance updateAvailability: payload replay (62.8256ms)
+[2026-10-29T11:35:47.446Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x89cc5932 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L1214:24 for 'create' @ L1214, false for 'create' @ L1427, evaluation error at L1219:24 for 'update' @ L1219, false for 'update' @ L1427, false for 'update' @ L1219, false for 'update' @ L1427
+  ✔ 16. ambulance updateAmbulanceProfile: with PIN in diff fails on both live and HEAD (55.3192ms)
+  ✔ 16b. ambulance updateAmbulanceProfile: clean profile without PIN passes on both (66.0757ms)
+  ✔ 17. ambulance registerAmbulance: payload replay (74.6898ms)
+✔ HEAD Rules Replay Suite (Real Baseline) (9812.2409ms)
+▶ Live Rules (7e0ab46) Replay Suite (Real Baseline)
+  ✔ 1. Patient cancel (cancelByPatient): payload replay on real baseline (90.4625ms)
+  ✔ 2. Doctor cancel: payload replay on real baseline (93.6474ms)
+  ✔ 3. Doctor reschedule: payload replay on real baseline (93.8162ms)
+  ✔ 4. Doctor complete (saveConsultationOutcome): payload replay on real baseline (71.5547ms)
+  ✔ 4b. Patient direct reschedule (client write regression test) (82.5662ms)
+  ✔ 5. Walk-in create (addWalkInAppointment): payload replay (56.1353ms)
+  ✔ 6. Prescription create: payload replay (59.8009ms)
+  ✔ 7. Prescription update: payload replay (50.8022ms)
+  ✔ 8. Pharmacy delivery create (doctor): payload replay (47.9551ms)
+  ✔ 9. Pharmacy delivery update (store): payload replay (41.6265ms)
+  ✔ 10. community_medicines catalog add: payload replay (41.7677ms)
+  ✔ 11. community_diagnoses catalog add: payload replay (37.6464ms)
+  ✔ 12. community_lab_tests catalog add: payload replay (45.7792ms)
+  ✔ 13. community_radiology catalog add: payload replay (34.261ms)
+  ✔ 14. community_body_parts catalog add: payload replay (37.2455ms)
+  ✔ 15. ambulance updateAvailability: payload replay (40.3867ms)
+[2026-10-29T11:35:48.552Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x89cc594a error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L1097:24 for 'create' @ L1097, false for 'create' @ L1285, evaluation error at L1102:24 for 'update' @ L1102, false for 'update' @ L1285, false for 'update' @ L1102, false for 'update' @ L1285
+  ✔ 16. ambulance updateAmbulanceProfile: with PIN in diff fails on both live and HEAD (36.5696ms)
+  ✔ 16b. ambulance updateAmbulanceProfile: clean profile without PIN passes on both (49.0818ms)
+  ✔ 17. ambulance registerAmbulance: payload replay (75.3676ms)
+✔ Live Rules (7e0ab46) Replay Suite (Real Baseline) (1088.6723ms)
+▶ 741cb46 Client Payload Replay Suite on Real Baseline (HEAD vs Live)
+  ✔ 741cb46 patient cancel on existing doc ID passes on both HEAD and Live (174.7637ms)
+[2026-10-29T11:35:48.901Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x89cc5951 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L555:24 for 'create' @ L555, false for 'create' @ L1427, evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'create' @ L555, false for 'create' @ L1427
+[2026-10-29T11:35:48.947Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x89cc5952 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L537:24 for 'create' @ L537, false for 'create' @ L1285, evaluation error at L538:24 for 'update' @ L538, false for 'update' @ L1285, false for 'create' @ L537, false for 'create' @ L1285
+  ✔ 741cb46 patient cancel on mismatching/new doc ID fails on both HEAD and Live (95.4776ms)
+  ✔ 741cb46 doctor cancel succeeds on both HEAD and Live (180.8281ms)
+  ✔ 741cb46 doctor reschedule succeeds on both HEAD and Live (187.1191ms)
+  ✔ 741cb46 walk-in create succeeds on both HEAD and Live (129.0863ms)
+  ✔ 741cb46 pharmacy delivery create (doctor) succeeds on both HEAD and Live (129.5218ms)
+  ✔ 741cb46 delivery update (store) succeeds on both HEAD and Live (144.719ms)
+✔ 741cb46 Client Payload Replay Suite on Real Baseline (HEAD vs Live) (1042.9099ms)
+▶ Baseline Comparison: WITHOUT createdVia (6532271) vs WITH createdVia under HEAD rules
+  ✔ A1. baseline WITHOUT createdVia: patient cancel succeeds under HEAD rules (140.3381ms)
+  ✔ A2. baseline WITHOUT createdVia: doctor cancel succeeds under HEAD rules (157.506ms)
+  ✔ A3. baseline WITHOUT createdVia: doctor reschedule succeeds under HEAD rules (149.1835ms)
+  ✔ A4. baseline WITHOUT createdVia: doctor complete succeeds under HEAD rules (143.0037ms)
+  ✔ B1. baseline WITH createdVia: patient cancel succeeds under HEAD rules (151.72ms)
+  ✔ B2. baseline WITH createdVia: doctor cancel succeeds under HEAD rules (119.6875ms)
+  ✔ B3. baseline WITH createdVia: doctor reschedule succeeds under HEAD rules (121.8607ms)
+  ✔ B4. baseline WITH createdVia: doctor complete succeeds under HEAD rules (111.9418ms)
+✔ Baseline Comparison: WITHOUT createdVia (6532271) vs WITH createdVia under HEAD rules (1096.6839ms)
+▶ Replay against Live Rules (7e0ab46)
+  ✔ 1. fetchAllDoctors(verifiedOnly: false) [doctors.limit(40) without verified filter] (133.7702ms)
+  ✔ 2. fetchAllDoctors(verifiedOnly: true) [doctors.where(verified == true).limit(40)] (130.6804ms)
+  ✔ 3. councilNumber lookup at 741cb46 [doctors.where(councilNumber == ...).limit(1) without verified filter] (55.1806ms)
+  ✔ 4. councilNumber lookup at HEAD [doctors.where(verified == true).where(councilNumber == ...).limit(1)] (63.3449ms)
+  ✔ 5. Doctor single doc get (verified doctor) (64.3511ms)
+  ✔ 6. Doctor single doc get (unverified doctor by stranger: denied) (58.1567ms)
+  ✔ 7. Doctor single doc get (unverified doctor by owner: allowed) (51.6174ms)
+  ✔ 8. Medical stores directory list (fetchVerifiedStores: verified == true, limit <= 100) (47.2049ms)
+  ✔ 9. Medical stores unfiltered list (denied) (47.8285ms)
+  ✔ 10. Labs directory list (fetchVerifiedLabs: verified == true, limit <= 100) (46.9419ms)
+  ✔ 11. Labs unfiltered list (denied) (46.6452ms)
+  ✔ 12. Ambulance single doc get (registered ambulance) (47.4982ms)
+  ✔ 13. Ambulance collection query (client where/unfiltered list: denied by list rule evaluation) (47.5438ms)
+  ✔ 14. Users collection list query by normal user (741cb46 user_repository queries: denied) (63.8452ms)
+  ✔ 15. Users single doc get (own user doc: allowed; other user doc: denied) (62.4383ms)
+  ✔ 16. medical_directory read by doctor with doctorId filter (allowed); patient or unverified (denied) (124.3043ms)
+  ✔ 17. lab_catalog read / get (signed in: allowed) (48.4233ms)
+  ✔ 18. community_* catalogs read / list (signed in: allowed) (109.5318ms)
+  ✔ 19. doctor_slots client read (denied) (46.8006ms)
+✔ Replay against Live Rules (7e0ab46) (5193.2482ms)
+▶ Replay against HEAD Rules
+  ✔ 1. fetchAllDoctors(verifiedOnly: false) [doctors.limit(40) without verified filter] (62.2745ms)
+  ✔ 2. fetchAllDoctors(verifiedOnly: true) [doctors.where(verified == true).limit(40)] (56.7649ms)
+  ✔ 3. councilNumber lookup at 741cb46 [doctors.where(councilNumber == ...).limit(1) without verified filter] (68.8413ms)
+  ✔ 4. councilNumber lookup at HEAD [doctors.where(verified == true).where(councilNumber == ...).limit(1)] (63.8739ms)
+  ✔ 5. Doctor single doc get (verified doctor) (84.4045ms)
+  ✔ 6. Doctor single doc get (unverified doctor by stranger: denied) (86.9985ms)
+  ✔ 7. Doctor single doc get (unverified doctor by owner: allowed) (76.9058ms)
+  ✔ 8. Medical stores directory list (fetchVerifiedStores: verified == true, limit <= 100) (77.794ms)
+  ✔ 9. Medical stores unfiltered list (denied) (76.0051ms)
+  ✔ 10. Labs directory list (fetchVerifiedLabs: verified == true, limit <= 100) (77.9762ms)
+  ✔ 11. Labs unfiltered list (denied) (77.1875ms)
+  ✔ 12. Ambulance single doc get (registered ambulance) (64.6601ms)
+  ✔ 13. Ambulance collection query (client where/unfiltered list: denied by list rule evaluation) (90.8614ms)
+  ✔ 14. Users collection list query by normal user (741cb46 user_repository queries: denied) (124.2873ms)
+  ✔ 15. Users single doc get (own user doc: allowed; other user doc: denied) (139.3147ms)
+  ✔ 16. medical_directory read by doctor with doctorId filter (allowed); patient or unverified (denied) (170.8698ms)
+  ✔ 17. lab_catalog read / get (signed in: allowed) (78.528ms)
+  ✔ 18. community_* catalogs read / list (signed in: allowed) (155.9259ms)
+{"severity":"WARNING","message":"No value found for secret parameter \"REDIS_HOST\". A function can only access a secret if you include the secret in the function's dependency array."}
+{"severity":"WARNING","message":"No value found for secret parameter \"REDIS_PORT\". A function can only access a secret if you include the secret in the function's dependency array."}
+{"severity":"WARNING","message":"No value found for secret parameter \"REDIS_PASSWORD\". A function can only access a secret if you include the secret in the function's dependency array."}
+  ✔ 19. doctor_slots client read (denied) (94.1819ms)
+✔ Replay against HEAD Rules (1730.9722ms)
+[Redis Client Error] connect ECONNREFUSED 127.0.0.1:6379
+[Redis Client Error] connect ECONNREFUSED 127.0.0.1:6379
+{"error":"Reached the max retries per request limit (which is 1). Refer to \"maxRetriesPerRequest\" option for details.","severity":"WARNING","message":"[OTP] Redis session lookup error"}
+[completeAmbulanceMobileOtpLogin] Failed to set custom claims: The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.
+▶ completeAmbulanceMobileOtpLogin unit test with fake db
+  ✔ valid session: ambulances/{id}.authUid is set to auth.uid (1847.0696ms)
+[Redis Client Error] connect ECONNREFUSED 127.0.0.1:6379
+[Redis Client Error] connect ECONNREFUSED 127.0.0.1:6379
+{"error":"Reached the max retries per request limit (which is 1). Refer to \"maxRetriesPerRequest\" option for details.","severity":"WARNING","message":"[OTP] Redis session lookup error"}
+  ✔ invalid or mismatched session: sets nothing on ambulances/{id} (1014.3593ms)
+[Redis Client Error] connect ECONNREFUSED 127.0.0.1:6379
+{"error":"Redis OTP mirror operation timed out","severity":"WARNING","message":"[OTP] Redis session lookup error"}
+  ✔ non-existent or expired session: sets nothing on ambulances/{id} (1509.8398ms)
+✔ completeAmbulanceMobileOtpLogin unit test with fake db (4371.8157ms)
+[Redis Client Error] connect ECONNREFUSED 127.0.0.1:6379
+[Redis Client Error] connect ECONNREFUSED 127.0.0.1:6379
+[Redis Client Error] connect ECONNREFUSED 127.0.0.1:6379
+[Redis Client Error] connect ECONNREFUSED 127.0.0.1:6379
+[Redis Client Error] connect ECONNREFUSED 127.0.0.1:6379
+[Redis Client Error] connect ECONNREFUSED 127.0.0.1:6379
+✔ 10 parallel bookAppointment calls at one empty slot: exactly 3 succeed, 7 get resource-exhausted, activeAppointmentIds has 3 entries (10667.3661ms)
+✔ concurrent callables on different slots of one doctor-day get distinct tokens (4282.9461ms)
+✔ backfill: real Timestamp values in Firestore emulator verify active included, cancelled excluded, moved-slot excluded (709.0594ms)
+▶ directory list rules
+  ✔ unauthenticated doctors list with verified==true and limit 100 is allowed (195.6622ms)
+  ✔ unauthenticated doctors list without verified filter is denied (93.3147ms)
+  ✔ super admin can list unverified doctors (111.2998ms)
+  ✔ signed-in medical_stores and labs lists require verified==true (142.7336ms)
+  ✔ unauthenticated council-number lookup with verified filter and limit 1 is allowed (111.5053ms)
+  ✔ super admin can list unverified medical_stores and labs (110.8196ms)
+✔ directory list rules (2049.4379ms)
+[2026-10-29T11:36:30.401Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c167 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L1357:24 for 'create' @ L1357, false for 'create' @ L1427, evaluation error at L1369:24 for 'update' @ L1369, false for 'update' @ L1427, false for 'create' @ L1357, false for 'create' @ L1427
+▶ promotedAds provider role rules
+  ✔ doctor, medicalStore, lab, ambulance can create; patient cannot (235.794ms)
+  ✔ non-owner cannot read draft, pending_payment, or pending_approval ads (285.9141ms)
+  ✔ owner and super admin can read a pending ad; active ads are readable (252.1595ms)
+✔ promotedAds provider role rules (774.4257ms)
+[2026-10-29T11:36:31.030Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c176 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L555, false for 'create' @ L1427, evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'create' @ L555, false for 'create' @ L1427
+▶ patient appointment create
+  ✔ signed-in patient cannot create an appointment directly (90.1178ms)
+  ✔ verified doctor can still create a walk-in appointment (134.6905ms)
+[2026-10-29T11:36:31.264Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c17a error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L555, false for 'create' @ L1427, evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'create' @ L555, false for 'create' @ L1427
+  ✔ patient cannot create appointment for another patientId (99.2431ms)
+[2026-10-29T11:36:31.377Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c17c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L555:24 for 'create' @ L555, false for 'create' @ L1427, evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:31.400Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c17d error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L555, false for 'create' @ L1427, evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'create' @ L555, false for 'create' @ L1427
+  ✔ patient cancel and reschedule update the existing document and cannot create another (135.5415ms)
+[2026-10-29T11:36:31.502Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c17f error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L555, false for 'create' @ L1427, evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'create' @ L555, false for 'create' @ L1427
+  ✔ patient create without dateTime is denied (101.6605ms)
+✔ patient appointment create (561.8763ms)
+[2026-10-29T11:36:31.599Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c181 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:31.616Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c182 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+▶ appointment update key restrictions
+  ✔ patient cancel/reschedule/review keys are allowed (157.8221ms)
+[2026-10-29T11:36:31.769Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c186 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:31.789Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c187 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:31.799Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c188 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:31.820Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c189 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:31.835Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c18a error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+  ✔ patient cannot tamper with diagnosis, prescription flag, or ids (175.2481ms)
+  ✔ doctor accept/complete/notes/prescription keys are allowed (127.2777ms)
+[2026-10-29T11:36:32.074Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c18e error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:32.089Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c18f error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:32.099Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c190 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:32.109Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c191 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:32.123Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c192 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+  ✔ doctor cannot change patientId/doctorId, review fields, or fees (160.4857ms)
+[2026-10-29T11:36:32.209Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c194 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:32.232Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c195 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:32.248Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c196 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+  ✔ patient cannot change fee or status fields reserved for doctors (125.0206ms)
+✔ appointment update key restrictions (746.3665ms)
+[2026-10-29T11:36:32.343Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c198 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L555:24 for 'create' @ L555, false for 'create' @ L1427, evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'create' @ L555, false for 'create' @ L1427
+▶ tightened appointment rules
+  ✔ patient create is denied, including set(merge) on a missing document (95.1166ms)
+[2026-10-29T11:36:32.439Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c19a error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L555:24 for 'create' @ L555, false for 'create' @ L1427, evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'create' @ L555, false for 'create' @ L1427
+[2026-10-29T11:36:32.453Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c19b error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L555:24 for 'create' @ L555, false for 'create' @ L1427, evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'create' @ L555, false for 'create' @ L1427
+[2026-10-29T11:36:32.468Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c19c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L555, false for 'create' @ L1427, evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'create' @ L555, false for 'create' @ L1427
+  ✔ doctor walk-in create is allowed only for their profileId (when uid != profileId) and without createdVia (124.4126ms)
+[2026-10-29T11:36:32.545Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c19e error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:32.571Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c19f error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+  ✔ patient cancel, reschedule, and review are allowed (102.9377ms)
+[2026-10-29T11:36:32.666Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1a1 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:32.706Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1a3 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:32.719Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1a4 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+  ✔ patient review is allowed only after the appointment is completed (148.6042ms)
+[2026-10-29T11:36:32.811Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1a6 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:32.854Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1a8 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+  ✔ patient reschedule is denied and cancel depends on doctorStatus (161.7733ms)
+[2026-10-29T11:36:32.966Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1ac error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:32.989Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1ad error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+  ✔ invalid status and a doctor cancel with an extra key are denied (107.423ms)
+[2026-10-29T11:36:33.080Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1af error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:33.089Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1b0 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:33.100Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1b1 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+[2026-10-29T11:36:33.111Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1b2 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+  ✔ patient cannot change doctorId, createdVia, tokenNumber, or status to completed (121.8671ms)
+[2026-10-29T11:36:33.262Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1b4 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+  ✔ each doctor clinical update is allowed and patientId is not (150.8734ms)
+[2026-10-29T11:36:33.371Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1b7 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L558:24 for 'update' @ L558, false for 'update' @ L1427, false for 'update' @ L558, false for 'update' @ L1427
+  ✔ another signed-in user cannot read or update the appointment (109.3838ms)
+✔ tightened appointment rules (1123.1213ms)
+[2026-10-29T11:36:33.482Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1bb error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L678:24 for 'create' @ L678, false for 'create' @ L1427, evaluation error at L682:24 for 'update' @ L682, false for 'update' @ L1427, false for 'update' @ L682, false for 'update' @ L1427
+▶ prescription, delivery, and ambulance party rules
+  ✔ unrelated signed-in user cannot read or write a prescription (110.3474ms)
+[2026-10-29T11:36:33.636Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1bf error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L682:24 for 'update' @ L682, false for 'update' @ L1427, false for 'update' @ L682, false for 'update' @ L1427
+  ✔ patient can read their prescription and the doctor can update the title (195.5905ms)
+[2026-10-29T11:36:33.826Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1c4 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L1028:24 for 'update' @ L1028, false for 'update' @ L1427, false for 'update' @ L1028, false for 'update' @ L1427
+  ✔ unrelated signed-in user cannot read or write a pharmacy delivery (148.7916ms)
+  ✔ patient can read a delivery and the store can update its status (158.4245ms)
+[2026-10-29T11:36:34.115Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1cc error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L1028:24 for 'update' @ L1028, false for 'update' @ L1427, false for 'update' @ L1028, false for 'update' @ L1427
+[2026-10-29T11:36:34.124Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1cd error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L1028:24 for 'update' @ L1028, false for 'update' @ L1427, false for 'update' @ L1028, false for 'update' @ L1427
+  ✔ store can set dispensed status but cannot change patientName or prescriptionId (173.1912ms)
+[2026-10-29T11:36:34.331Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1d2 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L1219:24 for 'update' @ L1219, false for 'update' @ L1427, false for 'update' @ L1219, false for 'update' @ L1427
+  ✔ unrelated signed-in user cannot read or write an ambulance (172.9112ms)
+  ✔ the driver can read their ambulance and update availability (111.7533ms)
+[2026-10-29T11:36:34.529Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1d9 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L682:24 for 'update' @ L682, false for 'update' @ L1427, false for 'update' @ L682, false for 'update' @ L1427
+[2026-10-29T11:36:34.538Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1da error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L682:24 for 'update' @ L682, false for 'update' @ L1427, false for 'update' @ L682, false for 'update' @ L1427
+[2026-10-29T11:36:34.564Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1db error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L1028:24 for 'update' @ L1028, false for 'update' @ L1427, false for 'update' @ L1028, false for 'update' @ L1427
+[2026-10-29T11:36:34.571Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1dc error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L1028:24 for 'update' @ L1028, false for 'update' @ L1427, false for 'update' @ L1028, false for 'update' @ L1427
+[2026-10-29T11:36:34.584Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1dd error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L1028:24 for 'update' @ L1028, false for 'update' @ L1427, false for 'update' @ L1028, false for 'update' @ L1427
+[2026-10-29T11:36:34.616Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1de error. Code: 7 Message: 7 PERMISSION_DENIED: 
+evaluation error at L1219:24 for 'update' @ L1219, false for 'update' @ L1427, false for 'update' @ L1219, false for 'update' @ L1427
+  ✔ a client cannot change prescription, delivery, or ambulance party ids (172.5148ms)
+✔ prescription, delivery, and ambulance party rules (1244.3518ms)
+▶ community catalog create bounds
+  ✔ community_medicines normal create is allowed (80.6803ms)
+[2026-10-29T11:36:34.773Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1e2 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1053, false for 'create' @ L1427, false for 'update' @ L1066, false for 'update' @ L1427
+  ✔ community_medicines extra field is denied (76.6224ms)
+[2026-10-29T11:36:34.851Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1e4 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1053, false for 'create' @ L1427, false for 'update' @ L1066, false for 'update' @ L1427
+[2026-10-29T11:36:34.868Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1e5 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1053, false for 'create' @ L1427, false for 'update' @ L1066, false for 'update' @ L1427
+[2026-10-29T11:36:34.874Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1e6 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1053, false for 'create' @ L1427, false for 'update' @ L1066, false for 'update' @ L1427
+  ✔ community_medicines over-length name is denied (100.7273ms)
+  ✔ community_diagnoses normal create is allowed (92.3754ms)
+[2026-10-29T11:36:35.071Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1ea error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1075, false for 'create' @ L1427, false for 'update' @ L1084, false for 'update' @ L1427
+  ✔ community_diagnoses extra field is denied (104.9019ms)
+[2026-10-29T11:36:35.160Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1ec error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1075, false for 'create' @ L1427, false for 'update' @ L1084, false for 'update' @ L1427
+  ✔ community_diagnoses over-length text is denied (89.0129ms)
+  ✔ community_lab_tests normal create is allowed (89.9608ms)
+[2026-10-29T11:36:35.357Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1f0 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1093, false for 'create' @ L1427, false for 'update' @ L1104, false for 'update' @ L1427
+  ✔ community_lab_tests extra field is denied (106.5669ms)
+[2026-10-29T11:36:35.457Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1f2 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1093, false for 'create' @ L1427, false for 'update' @ L1104, false for 'update' @ L1427
+  ✔ community_lab_tests over-length group is denied (99.9204ms)
+  ✔ community_radiology normal create is allowed (80.2637ms)
+[2026-10-29T11:36:35.648Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1f6 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1112, false for 'create' @ L1427, false for 'update' @ L1123, false for 'update' @ L1427
+  ✔ community_radiology extra field is denied (110.0384ms)
+[2026-10-29T11:36:35.749Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1f8 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1112, false for 'create' @ L1427, false for 'update' @ L1123, false for 'update' @ L1427
+  ✔ community_radiology over-length name is denied (100.9725ms)
+  ✔ community_body_parts normal create is allowed (90.6302ms)
+[2026-10-29T11:36:35.927Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1fc error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1131, false for 'create' @ L1427, false for 'update' @ L1140, false for 'update' @ L1427
+  ✔ community_body_parts extra field is denied (87.1975ms)
+[2026-10-29T11:36:36.009Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x13a8c1fe error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1131, false for 'create' @ L1427, false for 'update' @ L1140, false for 'update' @ L1427
+  ✔ community_body_parts over-length name is denied (82.6299ms)
+✔ community catalog create bounds (1393.7283ms)
+✔ anonymous reader can read public review projection without patientId (1356.8074ms)
+✔ anonymous reader cannot read private reviews collection (93.1646ms)
+✔ super admin can read doctor KYC documents (2217.5434ms)
+✔ allowlisted admin email with email_verified=false cannot read doctor KYC documents (143.7686ms)
+✔ owner doctor can upload KYC but cannot read it back (147.4007ms)
+✔ unrelated signed-in user cannot read or write doctor KYC (151.9115ms)
+✔ patient owner can upload profile photo and any signed-in user can read it (1229.0059ms)
+✔ doctor owner can upload profile photo and any signed-in user can read it (196.4522ms)
+✔ patient owner can upload and read health records; unrelated user cannot (346.0834ms)
+✔ assigned lab can upload lab report and patient owner can read it (285.2928ms)
+✔ provider can upload banner image and any signed-in user can read it (117.9285ms)
+✔ super admin can read pharmacy KYC documents (1574.5249ms)
+✔ allowlisted admin email with email_verified=false cannot read pharmacy KYC documents (126.5673ms)
+✔ pharmacy owner can upload KYC but cannot read it back (145.3172ms)
+✔ unrelated signed-in user cannot read or write pharmacy KYC (146.4383ms)
+✔ super admin can read lab KYC documents (93.8669ms)
+✔ allowlisted admin email with email_verified=false cannot read lab KYC documents (92.5293ms)
+✔ lab owner can upload KYC but cannot read it back (126.7981ms)
+✔ unrelated signed-in user cannot read or write lab KYC (127.0514ms)
+✔ super admin can read ambulance KYC documents (76.7418ms)
+✔ allowlisted admin email with email_verified=false cannot read ambulance KYC documents (90.6305ms)
+✔ ambulance owner can upload KYC but cannot read it back (104.6714ms)
+✔ unrelated signed-in user cannot read or write ambulance KYC (135.9104ms)
+✔ syncDeadLetters Rules: Anonymous user denied read (2414.7411ms)
+✔ syncDeadLetters Rules: Patient denied read (92.4172ms)
+✔ syncDeadLetters Rules: Doctor denied read (77.3802ms)
+✔ syncDeadLetters Rules: Provider (Pharmacy/Lab/Ambulance) denied read (79.9806ms)
+✔ syncDeadLetters Rules: Super Admin read allowed (95.5907ms)
+[2026-10-29T11:36:49.682Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61e0 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1407, false for 'create' @ L1427, false for 'update' @ L1407, false for 'update' @ L1427
+[2026-10-29T11:36:49.727Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61e1 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1407, false for 'create' @ L1427, false for 'update' @ L1407, false for 'update' @ L1427
+[2026-10-29T11:36:49.770Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61e2 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1407, false for 'create' @ L1427, false for 'update' @ L1407, false for 'update' @ L1427
+[2026-10-29T11:36:49.811Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61e3 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1407, false for 'create' @ L1427, false for 'update' @ L1407, false for 'update' @ L1427
+[2026-10-29T11:36:49.852Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61e4 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L1407, false for 'create' @ L1427, false for 'update' @ L1407, false for 'update' @ L1427
+[2026-10-29T11:36:49.862Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61e5 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L1407, false for 'update' @ L1427
+[2026-10-29T11:36:49.872Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61e6 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L1407, false for 'update' @ L1427
+[2026-10-29T11:36:49.879Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61e7 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L1407, false for 'update' @ L1427
+[2026-10-29T11:36:49.886Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61e8 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L1407, false for 'update' @ L1427
+[2026-10-29T11:36:49.893Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61e9 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L1407, false for 'update' @ L1427
+[2026-10-29T11:36:49.959Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61ea error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'delete' @ L1407, false for 'delete' @ L1427
+[2026-10-29T11:36:50.031Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61eb error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'delete' @ L1407, false for 'delete' @ L1427
+[2026-10-29T11:36:50.068Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61ec error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'delete' @ L1407, false for 'delete' @ L1427
+[2026-10-29T11:36:50.078Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61ed error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'delete' @ L1407, false for 'delete' @ L1427
+[2026-10-29T11:36:50.092Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x586f61ee error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'delete' @ L1407, false for 'delete' @ L1427
+✔ syncDeadLetters Rules: All writes denied for all clients including Super Admin (464.8223ms)
+(node:13692) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/khije/Downloads/DoctorNect/doctor/backend/supabase/functions/sync-to-firestore/index.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\khije\Downloads\DoctorNect\doctor\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Real Firestore Emulator: PATCH of existing doc succeeds and updates fields with precondition (2212.0608ms)
+{"status":404,"code":"NOT_FOUND","appointmentIdHash":"96fc461b8ad53ce7"}
+✔ Real Firestore Emulator: PATCH of missing doc returns 404, triggers skip and creates no document (83.4109ms)
+{"status":409,"code":"TERMINAL_STATE","appointmentIdHash":"876060e920275e14"}
+✔ Real Firestore Emulator: Terminal document update is skipped and records syncDeadLetters dead letter (73.3987ms)
+✔ Real Firestore Emulator: INSERT creates appointment doc when absent and writes Step 0 fields (45.8954ms)
+✔ Real Firestore Emulator: INSERT returns 200 { ignored: "already_exists" } and does not overwrite existing doc (46.4405ms)
+ℹ tests 182
+ℹ suites 14
+ℹ pass 182
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 75539.1426
+[32m[1m+ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  storage:[22m[39m Stopping Storage Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator

@@ -1,0 +1,23 @@
+Target: postgresql://postgres.rnltknemwnjrjxthtull:****@aws-0-ap-south-1.pooler.supabase.com:6543/postgres
+--- START EMPIRICAL GUARD PROOF (TRANSACTION ISOLATED) ---
+
+Query Result inside SECURITY DEFINER under authenticated:
+┌─────────┬────────────────┬────────────────┬────────────────────────┬─────────────────┐
+│ (index) │ v_current_user │ v_session_user │ v_current_setting_role │ v_jwt_role      │
+├─────────┼────────────────┼────────────────┼────────────────────────┼─────────────────┤
+│ 0       │ 'postgres'     │ 'postgres'     │ 'authenticated'        │ 'authenticated' │
+└─────────┴────────────────┴────────────────┴────────────────────────┴─────────────────┘
+Empirical inspection:
+  current_user:               "postgres" (EXPECTED: postgres/supabase_admin because secdef switches to owner)
+  session_user:               "postgres" (Connection user)
+  current_setting('role'):    "authenticated" (Shows the SET LOCAL ROLE value!)
+  auth.jwt()->>'role':        "authenticated" (JWT claim role)
+
+Query Result outside SECURITY DEFINER under authenticated:
+┌─────────┬─────────────────┬──────────────┬─────────────────┬─────────────────┐
+│ (index) │ current_user    │ session_user │ current_setting │ text            │
+├─────────┼─────────────────┼──────────────┼─────────────────┼─────────────────┤
+│ 0       │ 'authenticated' │ 'postgres'   │ 'authenticated' │ 'authenticated' │
+└─────────┴─────────────────┴──────────────┴─────────────────┴─────────────────┘
+
+--- TRANSACTION ROLLED BACK CLEANLY ---

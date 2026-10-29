@@ -14,10 +14,16 @@ module.exports = {
   rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '300', 10), // 300 req/min
   failedServiceKeyMaxAttempts: parseInt(process.env.FAILED_SERVICE_KEY_MAX_ATTEMPTS || '5', 10), // 5 failed attempts
   failedServiceKeyWindowMs: parseInt(process.env.FAILED_SERVICE_KEY_WINDOW_MS || '900000', 10), // 15 mins
+  anonRateLimitMaxRequests: parseInt(process.env.ANON_RATE_LIMIT_MAX_REQUESTS || '60', 10), // 60 req/min for unauthenticated callers
+  anonRateLimitWindowMs: parseInt(process.env.ANON_RATE_LIMIT_WINDOW_MS || '60000', 10), // 1 min window
+  anonMaxRows: parseInt(process.env.ANON_MAX_ROWS || '100', 10), // Max query limit for anonymous queries
   // Public endpoints accessible without an authenticated user token
   anonPublicAllowlist: [
     '/rest/v1/doctor_directory',
     '/rest/v1/lab_catalog_tests',
+    '/rest/v1/system_config',
+    '/rest/v1/promoted_ads',
+    '/rest/v1/review_public',
     '/healthz',
   ],
   allowedMethods: [

@@ -72,6 +72,16 @@ function createGatewayServer(overrides = {}) {
     windowMs: cfg.failedServiceKeyWindowMs,
     maxRequests: cfg.failedServiceKeyMaxAttempts,
   });
+  const effectiveAnonLimit = overrides.anonRateLimitMaxRequests !== undefined
+    ? overrides.anonRateLimitMaxRequests
+    : (overrides.rateLimitMaxRequests !== undefined
+        ? overrides.rateLimitMaxRequests
+        : (cfg.anonRateLimitMaxRequests || 60));
+
+  const anonRateLimiter = new RateLimiter({
+    windowMs: cfg.anonRateLimitWindowMs || cfg.rateLimitWindowMs,
+    maxRequests: effectiveAnonLimit,
+  });
   const jwksClient = cfg.jwksClient || defaultJwksClient;
   const allowedMethodsSet = new Set((cfg.allowedMethods || []).map((m) => m.toUpperCase()));
   const clientDirectAllowedTablesSet = new Set((cfg.clientDirectAllowedTables || cfg.clientAllowedTables || []).map((t) => t.toLowerCase()));
@@ -283,21 +293,26 @@ function createGatewayServer(overrides = {}) {
         });
       }
     } else {
-      // 3. Unauthenticated / Anonymous Request: per-IP rate limiting
-      if (!rateLimiter.isAllowed(`ip:${clientIp}`)) {
-        return sendJson(429, {
-          error: 'Too Many Requests',
-          message: 'Rate limit exceeded. Please try again shortly.',
-        });
-      }
-
+      // 3. Unauthenticated / Anonymous Request
       const lowerCleanPath = cleanPath.toLowerCase();
       const isAllowlisted = cfg.anonPublicAllowlist.some((allowed) =>
         lowerCleanPath.startsWith(allowed.toLowerCase())
       );
       if (isAllowlisted) {
+        if (!anonRateLimiter.isAllowed(`anon:${clientIp}`)) {
+          return sendJson(429, {
+            error: 'Too Many Requests',
+            message: 'Rate limit exceeded. Please try again shortly.',
+          });
+        }
         clientRole = 'anon';
       } else {
+        if (!rateLimiter.isAllowed(`ip:${clientIp}`)) {
+          return sendJson(429, {
+            error: 'Too Many Requests',
+            message: 'Rate limit exceeded. Please try again shortly.',
+          });
+        }
         return sendJson(401, {
           error: 'Unauthorized',
           message: 'Authentication token required for this resource.',
@@ -386,6 +401,16 @@ function createGatewayServer(overrides = {}) {
       });
     }
 
+    if (clientRole === 'anon' && !subPath.startsWith('/rpc/')) {
+      const params = new URLSearchParams(queryString || '');
+      const currentLimit = parseInt(params.get('limit') || '0', 10);
+      const maxLimit = cfg.anonMaxRows || 100;
+      if (params.has('limit') && currentLimit > maxLimit) {
+        params.set('limit', String(maxLimit));
+        req.url = `${cleanPath}?${params.toString()}`;
+      }
+    }
+
     return proxyToPostgrest(req, res, {
       targetBaseUrl: cfg.postgrestUrl,
       postgrestJwt,
@@ -402,6 +427,7 @@ function createGatewayServer(overrides = {}) {
   return {
     server,
     rateLimiter,
+    anonRateLimiter,
   };
 }
 

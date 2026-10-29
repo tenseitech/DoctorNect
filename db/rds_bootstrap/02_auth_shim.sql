@@ -5,13 +5,17 @@
 
 CREATE SCHEMA IF NOT EXISTS auth;
 
--- auth.jwt() extracts request.jwt.claims set by PostgREST
+-- auth.jwt() extracts request.jwt.claims or request.jwt.claim set by PostgREST
 CREATE OR REPLACE FUNCTION auth.jwt()
 RETURNS jsonb
 LANGUAGE sql
 STABLE
 AS $$
-  SELECT COALESCE(NULLIF(current_setting('request.jwt.claims', true), ''), '{}')::jsonb;
+  SELECT COALESCE(
+    NULLIF(current_setting('request.jwt.claim', true), ''),
+    NULLIF(current_setting('request.jwt.claims', true), ''),
+    '{}'
+  )::jsonb;
 $$;
 
 -- auth.uid() returns the caller UID from JWT 'sub' claim as TEXT
@@ -21,7 +25,11 @@ RETURNS text
 LANGUAGE sql
 STABLE
 AS $$
-  SELECT NULLIF(auth.jwt() ->> 'sub', '');
+  SELECT COALESCE(
+    NULLIF(current_setting('request.jwt.claim.sub', true), ''),
+    (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'),
+    NULLIF(auth.jwt() ->> 'sub', '')
+  );
 $$;
 
 -- auth.role() returns the effective database role
@@ -31,6 +39,8 @@ LANGUAGE sql
 STABLE
 AS $$
   SELECT COALESCE(
+    NULLIF(current_setting('request.jwt.claim.role', true), ''),
+    (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'),
     NULLIF(auth.jwt() ->> 'role', ''),
     current_setting('role', true)
   );
@@ -52,6 +62,10 @@ DECLARE
 BEGIN
   -- Test 1: Empty setting returns empty jsonb and NULL uid
   PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claim', '', true);
+  PERFORM set_config('request.jwt.claim.sub', '', true);
+  PERFORM set_config('request.jwt.claim.role', '', true);
+
   v_jwt := auth.jwt();
   IF v_jwt IS NULL OR v_jwt != '{}'::jsonb THEN
     RAISE EXCEPTION 'auth.jwt() failed for empty claims: got %', v_jwt;
@@ -62,7 +76,7 @@ BEGIN
     RAISE EXCEPTION 'auth.uid() failed for empty claims: expected NULL, got %', v_uid;
   END IF;
 
-  -- Test 2: Valid claims return correct sub and role
+  -- Test 2: Valid plural claims return correct sub and role
   PERFORM set_config('request.jwt.claims', v_test_claims, true);
   v_uid := auth.uid();
   IF v_uid != 'usr_test_firebase_uid_123' THEN
@@ -76,6 +90,21 @@ BEGIN
 
   IF (auth.jwt() ->> 'app_role') != 'patient' THEN
     RAISE EXCEPTION 'auth.jwt()->>app_role failed';
+  END IF;
+
+  -- Test 3: Singular claim settings compatibility
+  PERFORM set_config('request.jwt.claims', '', true);
+  PERFORM set_config('request.jwt.claim.sub', 'usr_singular_sub_456', true);
+  PERFORM set_config('request.jwt.claim.role', 'service_role', true);
+
+  v_uid := auth.uid();
+  IF v_uid != 'usr_singular_sub_456' THEN
+    RAISE EXCEPTION 'auth.uid() singular failed: expected usr_singular_sub_456, got %', v_uid;
+  END IF;
+
+  v_role := auth.role();
+  IF v_role != 'service_role' THEN
+    RAISE EXCEPTION 'auth.role() singular failed: expected service_role, got %', v_role;
   END IF;
 
   RAISE NOTICE 'auth shim unit tests: ALL PASSED';

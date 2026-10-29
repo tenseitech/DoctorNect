@@ -129,9 +129,11 @@ class _AddFamilyMemberProfileScreenState
     setState(() => _saving = true);
 
     final isEditing = widget.existingMember != null;
+    final currentPatientId = PatientSession.loggedInPatientId;
+    final prefix = currentPatientId.isNotEmpty ? '${currentPatientId}_' : '';
     final memberId = isEditing
         ? widget.existingMember!.id
-        : 'fm${DateTime.now().millisecondsSinceEpoch}';
+        : '${prefix}fm${DateTime.now().millisecondsSinceEpoch}';
 
     final member = FamilyProfileMember(
       id: memberId,

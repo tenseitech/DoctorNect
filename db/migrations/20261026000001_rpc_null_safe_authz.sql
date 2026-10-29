@@ -1837,6 +1837,5 @@ REVOKE ALL ON FUNCTION public.fn_sync_review_helpful_count() FROM PUBLIC, anon, 
 GRANT EXECUTE ON FUNCTION public.fn_sync_review_helpful_count() TO service_role;
 
 REVOKE ALL ON FUNCTION private.trg_lock_ambulance_broadcast_status() FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION private.trg_users_lock_role() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION private.trg_users_guard_insert() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION private.trg_domain_profile_guard_insert() FROM PUBLIC, anon, authenticated;

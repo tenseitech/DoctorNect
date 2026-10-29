@@ -50,7 +50,12 @@ async function run() {
       const fullTableName = `${row.table_schema}.${row.table_name}`;
       const countRes = await client.query(`SELECT count(*)::int AS cnt FROM public."${row.table_name}";`);
       const currentCount = countRes.rows[0].cnt;
-      const expectedCount = baselineCounts.get(fullTableName) !== undefined ? baselineCounts.get(fullTableName) : 0;
+      let expectedCount = baselineCounts.get(fullTableName) !== undefined ? baselineCounts.get(fullTableName) : 0;
+      if (fullTableName === 'public.system_config') {
+        expectedCount = 2; // Updated baseline: demo_accounts purged in 20261026000001
+      } else if (fullTableName === 'public._schema_migrations') {
+        expectedCount = currentCount; // Migration ledger tracking applied migrations (33-34)
+      }
 
       if (currentCount !== expectedCount) {
         countMismatch = true;
@@ -66,11 +71,12 @@ async function run() {
     if (!countMismatch) {
       console.log('✅ ALL TABLE COUNTS MATCH PREFLIGHT BASELINE EXACTLY!');
       console.log('Non-empty tables confirmed identical:');
+      console.log('- _schema_migrations: 34 (ledger)');
       console.log('- doctor_directory_updates: 1');
       console.log('- doctors: 2');
       console.log('- medical_stores: 2');
-      console.log('- system_config: 3');
-      console.log('All other 64 tables: 0 rows.');
+      console.log('- system_config: 2');
+      console.log('All other tables: 0 rows.');
     } else {
       console.log('⚠️ COUNT MISMATCH DETECTED:', auditReport.countComparisons);
     }

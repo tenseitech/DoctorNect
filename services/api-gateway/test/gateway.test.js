@@ -162,6 +162,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
 
   after(async () => {
     gatewayInstance.rateLimiter.dispose();
+    if (gatewayInstance.anonRateLimiter) gatewayInstance.anonRateLimiter.dispose();
     await new Promise((resolve) => gatewayServer.close(resolve));
     await new Promise((resolve) => mockPostgrestServer.close(resolve));
   });
@@ -169,6 +170,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
   beforeEach(() => {
     receivedPostgrestRequests = [];
     gatewayInstance.rateLimiter.reset();
+    if (gatewayInstance.anonRateLimiter) gatewayInstance.anonRateLimiter.reset();
   });
 
   it('serves /healthz with 200 OK and healthy status', async () => {
@@ -1387,6 +1389,61 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         },
       });
       assert.strictEqual(innocentRes.statusCode, 200);
+    });
+
+    it('enforces anonymous rate limiting per IP and returns 429 when exceeded', async () => {
+      const anonIp = '203.0.113.88';
+      let limited = false;
+      for (let i = 0; i < 15; i++) {
+        const res = await makeRequest({
+          method: 'GET',
+          path: '/rest/v1/doctor_directory',
+          headers: { 'x-forwarded-for': anonIp },
+        });
+        if (res.statusCode === 429) {
+          limited = true;
+          assert.strictEqual(res.json.error, 'Too Many Requests');
+          assert.match(res.json.message, /Rate limit exceeded/);
+          break;
+        }
+      }
+      assert.strictEqual(limited, true, 'Expected anonymous requests to be rate-limited');
+    });
+
+    it('forces max limit for anonymous queries exceeding anonMaxRows', async () => {
+      const anonIp = '203.0.113.89';
+
+      // Case A: Query with limit=500 (exceeding 100) -> forced down to limit=100
+      receivedPostgrestRequests.length = 0;
+      const resA = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/doctor_directory?limit=500',
+        headers: { 'x-forwarded-for': anonIp },
+      });
+      assert.strictEqual(resA.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      assert.match(receivedPostgrestRequests[0].url, /limit=100/);
+
+      // Case B: Query with limit=25 (< 100) -> preserved as limit=25
+      receivedPostgrestRequests.length = 0;
+      const resB = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/doctor_directory?limit=25',
+        headers: { 'x-forwarded-for': anonIp },
+      });
+      assert.strictEqual(resB.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      assert.match(receivedPostgrestRequests[0].url, /limit=25/);
+    });
+
+    it('rejects anonymous access to medical_directory with 401 Unauthorized', async () => {
+      const res = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/medical_directory',
+      });
+      assert.strictEqual(res.statusCode, 401);
+      assert.strictEqual(res.json.error, 'Unauthorized');
+      assert.match(res.json.message, /Authentication token required/);
     });
   });
 });

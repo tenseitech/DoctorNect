@@ -42,3 +42,4 @@ The following 11 rules and emulator test suites execute against the local emulat
 12. `test/sync_to_firestore_emulator.test.js`
 
 When executed outside the emulator environment (e.g. basic `node --test`), these suites automatically detect missing emulator ports and gracefully mark cases as skipped to allow unit testing in non-Java environments.
+

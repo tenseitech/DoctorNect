@@ -4,11 +4,15 @@ const { getEnv, maskConnectionString } = require('./env_loader');
 
 function getHostFingerprint(uriOrHost) {
   if (!uriOrHost) return '';
+  const trimmed = uriOrHost.trim();
+  if (!trimmed.includes('://')) {
+    return trimmed.split(':')[0].trim().toLowerCase();
+  }
   try {
-    const parsed = new URL(uriOrHost);
+    const parsed = new URL(trimmed);
     return parsed.hostname.toLowerCase();
   } catch (_) {
-    return uriOrHost.split(':')[0].trim().toLowerCase();
+    return trimmed.split(':')[0].trim().toLowerCase();
   }
 }
 
@@ -21,7 +25,7 @@ function getHostFingerprint(uriOrHost) {
  * - Operations targeting production require --target=production and --confirm=<RDS host>.
  * - Fingerprint comparison ensures no cross-target confusion.
  */
-function assertDatabaseGuard({ targetKind, operationName = 'Database Operation', allowDestructive = false }) {
+function assertDatabaseGuard({ targetKind, operationName = 'Database Operation', allowDestructive = false, targetHost = null }) {
   const args = process.argv.slice(2);
   const stagingDbUrl = getEnv('STAGING_SUPABASE_DB_URL') || getEnv('PROD_SUPABASE_DB_URL');
   const prodRdsHost = getEnv('PROD_RDS_HOST');
@@ -43,6 +47,13 @@ function assertDatabaseGuard({ targetKind, operationName = 'Database Operation',
         console.error(`To proceed against staging, pass explicit flag: --confirm-staging\n`);
         process.exit(1);
       }
+    }
+
+    const customHostArg = args.find(a => a.startsWith('--host=') || a.startsWith('--db='));
+    const candidateHost = targetHost || (customHostArg ? customHostArg.split('=')[1] : null);
+    if (candidateHost && getHostFingerprint(candidateHost) !== stagingFingerprint) {
+      console.error(`\n[GUARD BLOCKED] ${operationName}: Host "${candidateHost}" does not match staging fingerprint "${stagingFingerprint}".`);
+      process.exit(1);
     }
 
     return {

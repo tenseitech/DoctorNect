@@ -1,0 +1,182 @@
+Target: postgresql://postgres.rnltknemwnjrjxthtull:****@aws-0-ap-south-1.pooler.supabase.com:6543/postgres
+
+======================================================
+1. DEPLOYED FUNCTION DEFINITION: private.trg_users_guard_insert()
+======================================================
+
+CREATE OR REPLACE FUNCTION private.trg_users_guard_insert()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE
+    v_caller_sub TEXT;
+BEGIN
+    -- Privileged session bypass: only service_role, super_admin, or direct backend/migration session
+    IF (auth.jwt() ->> 'role') = 'service_role'
+       OR COALESCE(private.is_super_admin(), FALSE)
+       OR (current_setting('role', true) NOT IN ('authenticated', 'anon')
+           AND (auth.jwt() ->> 'role') IS DISTINCT FROM 'authenticated') THEN
+        RETURN NEW;
+    END IF;
+
+    -- Non-admin inserting self cannot claim administrative roles
+    IF NEW.role IN ('super_admin', 'superAdmin', 'admin', 'hospital_admin') THEN
+        RAISE EXCEPTION 'FORBIDDEN: Cannot register with administrative role' USING ERRCODE = '42501';
+    END IF;
+
+    -- Only allowed client roles permitted for self-registration
+    IF NEW.role NOT IN ('patient', 'doctor', 'medicalStore', 'lab', 'ambulance') THEN
+        RAISE EXCEPTION 'FORBIDDEN: Invalid registration role "%"', NEW.role USING ERRCODE = '42501';
+    END IF;
+
+    v_caller_sub := NULLIF(COALESCE(
+        auth.jwt() ->> 'sub',
+        auth.jwt() ->> 'uid',
+        current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
+    ), '');
+
+    -- Ensure ID matches caller token
+    IF NEW.id IS DISTINCT FROM v_caller_sub THEN
+        RAISE EXCEPTION 'FORBIDDEN: User ID must match authenticated token subject' USING ERRCODE = '42501';
+    END IF;
+
+    -- Ensure firebase_uid matches caller token if provided
+    IF NEW.firebase_uid IS NOT NULL AND NEW.firebase_uid IS DISTINCT FROM v_caller_sub THEN
+        RAISE EXCEPTION 'FORBIDDEN: firebase_uid must match authenticated token subject' USING ERRCODE = '42501';
+    END IF;
+
+    -- Only patients may self-verify upon registration; domain roles require admin verification
+    IF NEW.role <> 'patient' AND NEW.verified IS TRUE THEN
+        RAISE EXCEPTION 'FORBIDDEN: Domain role accounts cannot self-verify' USING ERRCODE = '42501';
+    END IF;
+
+    -- Default profile_id to user id if omitted
+    IF NEW.profile_id IS NULL OR trim(NEW.profile_id) = '' THEN
+        NEW.profile_id := NEW.id;
+    END IF;
+
+    -- Cannot claim a profile_id already claimed by another user
+    IF EXISTS (
+        SELECT 1 FROM public.users u
+        WHERE u.profile_id = NEW.profile_id
+          AND u.id <> NEW.id
+    ) THEN
+        RAISE EXCEPTION 'FORBIDDEN: Profile ID is already in use by another user' USING ERRCODE = '42501';
+    END IF;
+
+    -- Cannot claim a profile_id that exists as primary key in domain tables owned by someone else
+    IF EXISTS (
+        SELECT 1 FROM (
+            SELECT patient_id AS pid, owner_uid AS owner FROM public.patients
+            UNION ALL
+            SELECT doctor_id AS pid, owner_uid AS owner FROM public.doctors
+            UNION ALL
+            SELECT store_id AS pid, owner_uid AS owner FROM public.medical_stores
+            UNION ALL
+            SELECT lab_id AS pid, owner_uid AS owner FROM public.labs
+            UNION ALL
+            SELECT ambulance_id AS pid, auth_uid AS owner FROM public.ambulances
+        ) domain_pks
+        WHERE domain_pks.pid = NEW.profile_id
+          AND domain_pks.owner IS DISTINCT FROM v_caller_sub
+    ) THEN
+        RAISE EXCEPTION 'FORBIDDEN: Profile ID is already claimed by another entity' USING ERRCODE = '42501';
+    END IF;
+
+    RETURN NEW;
+END;
+$function$
+
+
+======================================================
+2. DEPLOYED FUNCTION DEFINITION: private.trg_domain_profile_guard_insert()
+======================================================
+
+CREATE OR REPLACE FUNCTION private.trg_domain_profile_guard_insert()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE
+    v_data JSONB := to_jsonb(NEW);
+    v_caller_sub TEXT;
+    v_user_profile_id TEXT;
+    v_pk_val TEXT;
+    v_owner_val TEXT;
+BEGIN
+    -- Privileged session bypass: only service_role, super_admin, or direct backend/migration session
+    IF (auth.jwt() ->> 'role') = 'service_role'
+       OR COALESCE(private.is_super_admin(), FALSE)
+       OR (current_setting('role', true) NOT IN ('authenticated', 'anon')
+           AND (auth.jwt() ->> 'role') IS DISTINCT FROM 'authenticated') THEN
+        RETURN NEW;
+    END IF;
+
+    v_caller_sub := NULLIF(COALESCE(
+        auth.jwt() ->> 'sub',
+        auth.jwt() ->> 'uid',
+        current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
+    ), '');
+
+    IF TG_TABLE_NAME = 'patients' THEN
+        v_pk_val := v_data ->> 'patient_id';
+        v_owner_val := v_data ->> 'owner_uid';
+    ELSIF TG_TABLE_NAME = 'doctors' THEN
+        v_pk_val := v_data ->> 'doctor_id';
+        v_owner_val := v_data ->> 'owner_uid';
+    ELSIF TG_TABLE_NAME = 'medical_stores' THEN
+        v_pk_val := v_data ->> 'store_id';
+        v_owner_val := v_data ->> 'owner_uid';
+    ELSIF TG_TABLE_NAME = 'labs' THEN
+        v_pk_val := v_data ->> 'lab_id';
+        v_owner_val := v_data ->> 'owner_uid';
+    ELSIF TG_TABLE_NAME = 'ambulances' THEN
+        v_pk_val := v_data ->> 'ambulance_id';
+        v_owner_val := v_data ->> 'auth_uid';
+    ELSE
+        RETURN NEW;
+    END IF;
+
+    -- Owner must match caller token subject
+    IF v_owner_val IS DISTINCT FROM v_caller_sub THEN
+        RAISE EXCEPTION 'FORBIDDEN: Domain profile owner must match authenticated token subject'
+            USING ERRCODE = '42501';
+    END IF;
+
+    -- Caller must have an existing users row
+    SELECT u.profile_id INTO v_user_profile_id
+    FROM public.users u
+    WHERE u.id = v_caller_sub;
+
+    IF v_user_profile_id IS NULL THEN
+        RAISE EXCEPTION 'FORBIDDEN: User record must exist before inserting domain profile'
+            USING ERRCODE = '42501';
+    END IF;
+
+    IF TG_TABLE_NAME = 'patients' THEN
+        -- Allowed: either primary profile (v_pk_val = v_user_profile_id)
+        -- or secondary family member profile owned by the caller (v_owner_val = v_caller_sub, verified above)
+        NULL;
+    ELSE
+        IF v_pk_val IS DISTINCT FROM v_user_profile_id THEN
+            RAISE EXCEPTION 'FORBIDDEN: Domain profile ID must match user profile_id in public.users'
+                USING ERRCODE = '42501';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$function$
+
+
+======================================================
+3. SCAN OF ALL SECURITY DEFINER FUNCTIONS ON STAGING
+   Checking for: current_user, session_user, current_firebase_uid() IS NULL
+======================================================
+
+[HIT] private.test_sec_def():Line 7: RETURN current_user;
+
+Found 1 total occurrences.

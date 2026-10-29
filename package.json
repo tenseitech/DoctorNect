@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test:rules": "cd backend/functions && npx firebase-tools emulators:exec --only firestore,storage --project demo-doctornect-test \"node --test test/*.rules.test.js test/*_emulator.test.js\""
+    "test:rules": "npx firebase-tools emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node scripts/run_rules_tests.js\""
   },
   "devDependencies": {
     "libpg-query": "^18.2.1"
