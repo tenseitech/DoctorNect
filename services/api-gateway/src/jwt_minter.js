@@ -9,23 +9,21 @@ function base64UrlEncode(input) {
 }
 
 /**
- * Mints a short-lived (60s) HS256 JWT for PostgREST consumption.
+ * Builds the exact PostgREST claims payload.
  *
  * @param {Object} params
  * @param {'authenticated'|'service_role'|'anon'} params.role
  * @param {string} [params.sub]
  * @param {string} [params.appRole]
  * @param {boolean} [params.verified]
- * @param {string} [params.jwtSecret]
  * @param {string} [params.jwtAud]
- * @returns {string} Compact HS256 JWT
+ * @returns {Object} JSON-serializable claims payload
  */
-function mintPostgrestJwt({
+function buildPostgrestPayload({
   role,
   sub = null,
   appRole = null,
   verified = false,
-  jwtSecret = config.postgrestJwtSecret,
   jwtAud = config.postgrestJwtAud,
 }) {
   if (!['authenticated', 'service_role', 'anon'].includes(role)) {
@@ -33,11 +31,6 @@ function mintPostgrestJwt({
   }
 
   const nowSec = Math.floor(Date.now() / 1000);
-  const header = {
-    alg: 'HS256',
-    typ: 'JWT',
-  };
-
   const payload = {
     role,
     iss: 'doctornect-gateway',
@@ -69,6 +62,42 @@ function mintPostgrestJwt({
     payload.verified = false;
   }
 
+  return payload;
+}
+
+/**
+ * Mints a short-lived (60s) HS256 JWT for PostgREST consumption.
+ *
+ * @param {Object} params
+ * @param {'authenticated'|'service_role'|'anon'} params.role
+ * @param {string} [params.sub]
+ * @param {string} [params.appRole]
+ * @param {boolean} [params.verified]
+ * @param {string} [params.jwtSecret]
+ * @param {string} [params.jwtAud]
+ * @returns {string} Compact HS256 JWT
+ */
+function mintPostgrestJwt({
+  role,
+  sub = null,
+  appRole = null,
+  verified = false,
+  jwtSecret = config.postgrestJwtSecret,
+  jwtAud = config.postgrestJwtAud,
+}) {
+  const payload = buildPostgrestPayload({
+    role,
+    sub,
+    appRole,
+    verified,
+    jwtAud,
+  });
+
+  const header = {
+    alg: 'HS256',
+    typ: 'JWT',
+  };
+
   const headerB64 = base64UrlEncode(JSON.stringify(header));
   const payloadB64 = base64UrlEncode(JSON.stringify(payload));
   const signatureInput = `${headerB64}.${payloadB64}`;
@@ -83,6 +112,7 @@ function mintPostgrestJwt({
 }
 
 module.exports = {
+  buildPostgrestPayload,
   mintPostgrestJwt,
   base64UrlEncode,
 };

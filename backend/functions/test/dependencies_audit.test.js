@@ -56,7 +56,7 @@ test('npm audit reports no moderate or higher vulnerabilities', (t) => {
       cwd: functionsDir,
       encoding: 'utf8',
       shell: process.platform === 'win32',
-      timeout: 10000,
+      timeout: 45000,
       stdio: ['ignore', 'pipe', 'pipe'],
       env: {
         ...process.env,

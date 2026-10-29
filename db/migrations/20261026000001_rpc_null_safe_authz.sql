@@ -1622,19 +1622,46 @@ BEGIN
        OR COALESCE(private.is_super_admin(), FALSE) THEN
         RETURN NEW;
     END IF;
-        -- Non-admin inserting self cannot claim administrative roles
-        IF NEW.role IN ('super_admin', 'superAdmin', 'admin') THEN
-            RAISE EXCEPTION 'FORBIDDEN: Cannot register with administrative role' USING ERRCODE = '42501';
-        END IF;
-        -- Ensure ID matches caller token
-        IF NEW.id IS DISTINCT FROM (auth.jwt() ->> 'sub') THEN
-            RAISE EXCEPTION 'FORBIDDEN: User ID must match authenticated token subject' USING ERRCODE = '42501';
-        END IF;
-        -- Cannot specify arbitrary profile_id unless matching own id or created via profile table
-        IF NEW.profile_id IS NOT NULL AND NEW.profile_id IS DISTINCT FROM NEW.id THEN
-            RAISE EXCEPTION 'FORBIDDEN: Initial profile_id must match user id or be assigned by system' USING ERRCODE = '42501';
-        END IF;
+
+    -- Non-admin inserting self cannot claim administrative roles
+    IF NEW.role IN ('super_admin', 'superAdmin', 'admin', 'hospital_admin') THEN
+        RAISE EXCEPTION 'FORBIDDEN: Cannot register with administrative role' USING ERRCODE = '42501';
     END IF;
+
+    -- Only allowed client roles permitted for self-registration
+    IF NEW.role NOT IN ('patient', 'doctor', 'medicalStore', 'lab', 'ambulance') THEN
+        RAISE EXCEPTION 'FORBIDDEN: Invalid registration role "%"', NEW.role USING ERRCODE = '42501';
+    END IF;
+
+    -- Ensure ID matches caller token
+    IF NEW.id IS DISTINCT FROM (auth.jwt() ->> 'sub') THEN
+        RAISE EXCEPTION 'FORBIDDEN: User ID must match authenticated token subject' USING ERRCODE = '42501';
+    END IF;
+
+    -- Ensure firebase_uid matches caller token if provided
+    IF NEW.firebase_uid IS NOT NULL AND NEW.firebase_uid IS DISTINCT FROM (auth.jwt() ->> 'sub') THEN
+        RAISE EXCEPTION 'FORBIDDEN: firebase_uid must match authenticated token subject' USING ERRCODE = '42501';
+    END IF;
+
+    -- Only patients may self-verify upon registration; domain roles require admin verification
+    IF NEW.role <> 'patient' AND NEW.verified IS TRUE THEN
+        RAISE EXCEPTION 'FORBIDDEN: Domain role accounts cannot self-verify' USING ERRCODE = '42501';
+    END IF;
+
+    -- Default profile_id to user id if omitted
+    IF NEW.profile_id IS NULL OR trim(NEW.profile_id) = '' THEN
+        NEW.profile_id := NEW.id;
+    END IF;
+
+    -- Cannot claim a profile_id already claimed by another user
+    IF EXISTS (
+        SELECT 1 FROM public.users u
+        WHERE u.profile_id = NEW.profile_id
+          AND u.id <> NEW.id
+    ) THEN
+        RAISE EXCEPTION 'FORBIDDEN: Profile ID is already in use by another user' USING ERRCODE = '42501';
+    END IF;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';

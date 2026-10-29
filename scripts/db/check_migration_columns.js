@@ -132,10 +132,13 @@ function extractAllReferencedColumns(sql, tables) {
     'fm': 'family_members',
     'l': 'labs',
     'd': 'doctors',
-    'ms': 'medical_stores'
+    'ms': 'medical_stores',
+    'pdl': 'patient_doctor_links',
+    'ar': 'ambulance_requests',
+    'sc': 'system_config',
   };
 
-  const dotRegex = /\b(v_appt|v_appointment|v_broadcast|v_contact|v_contacts|v_driver|v_booking|v_order|v_delivery|v_doc|p|fm|l|d|ms)\.([a-zA-Z0-9_]+)\b/g;
+  const dotRegex = /\b(v_appt|v_appointment|v_broadcast|v_contact|v_contacts|v_driver|v_booking|v_order|v_delivery|v_doc|p|fm|l|d|ms|pdl|ar|sc)\.([a-zA-Z0-9_]+)\b/g;
   let m;
   while ((m = dotRegex.exec(sql)) !== null) {
     const targetTable = recordMap[m[1]];
@@ -231,6 +234,72 @@ function extractAllReferencedColumns(sql, tables) {
         if (lhs && /^[a-zA-Z0-9_]+$/.test(lhs)) {
           addRef(tbl, lhs);
         }
+      }
+    }
+  }
+
+  // 7. Statements with single table: WHERE, ORDER BY, SELECT list, ON CONFLICT, RETURNING
+  // SELECT ... FROM public.<table> [alias] [WHERE ...] [ORDER BY ...]
+  const selectStmtRegex = /SELECT\s+([^;]+?)\s+FROM\s+public\.([a-zA-Z0-9_]+)(?:\s+([a-zA-Z0-9_]+))?\s*(?:WHERE\s+([^;]+?))?(?:ORDER\s+BY\s+([^;]+?))?(?:LIMIT\s+[^;]+?)?;/gis;
+  while ((m = selectStmtRegex.exec(sql)) !== null) {
+    const tbl = m[2].toLowerCase();
+    const alias = m[3] ? m[3].toLowerCase() : null;
+    if (alias && !['where', 'left', 'right', 'inner', 'outer', 'join', 'on', 'limit', 'group', 'order'].includes(alias)) {
+      recordMap[alias] = tbl;
+    }
+    const colSet = tables.get(tbl);
+    if (colSet) {
+      const combinedClauses = `${m[1]} ${m[4] || ''} ${m[5] || ''}`;
+      const tokens = combinedClauses.match(/\b[a-zA-Z0-9_]+\b/g) || [];
+      for (const tok of tokens) {
+        if (colSet.has(tok.toLowerCase())) {
+          addRef(tbl, tok);
+        }
+      }
+    }
+  }
+
+  // UPDATE public.<table> SET ... WHERE ...
+  const updateWhereRegex = /UPDATE\s+public\.([a-zA-Z0-9_]+)\s+SET\s+([^;]+?)(?:\s+WHERE\s+([^;]+?))?(?:\s+RETURNING\s+([^;]+?))?;/gis;
+  while ((m = updateWhereRegex.exec(sql)) !== null) {
+    const tbl = m[1].toLowerCase();
+    const colSet = tables.get(tbl);
+    if (colSet) {
+      const combined = `${m[2]} ${m[3] || ''} ${m[4] || ''}`;
+      const tokens = combined.match(/\b[a-zA-Z0-9_]+\b/g) || [];
+      for (const tok of tokens) {
+        if (colSet.has(tok.toLowerCase())) {
+          addRef(tbl, tok);
+        }
+      }
+    }
+  }
+
+  // DELETE FROM public.<table> WHERE ...
+  const deleteWhereRegex = /DELETE\s+FROM\s+public\.([a-zA-Z0-9_]+)(?:\s+WHERE\s+([^;]+?))?;/gis;
+  while ((m = deleteWhereRegex.exec(sql)) !== null) {
+    const tbl = m[1].toLowerCase();
+    const colSet = tables.get(tbl);
+    if (colSet && m[2]) {
+      const tokens = m[2].match(/\b[a-zA-Z0-9_]+\b/g) || [];
+      for (const tok of tokens) {
+        if (colSet.has(tok.toLowerCase())) {
+          addRef(tbl, tok);
+        }
+      }
+    }
+  }
+
+  // ON CONFLICT (...) DO UPDATE ...
+  const onConflictRegex = /ON\s+CONFLICT\s*\(([^)]+)\)/gi;
+  while ((m = onConflictRegex.exec(sql)) !== null) {
+    const cols = m[1].split(',').map((c) => c.trim().toLowerCase());
+    const beforeText = sql.substring(Math.max(0, m.index - 300), m.index);
+    const tblMatch = beforeText.match(/INSERT\s+INTO\s+public\.([a-zA-Z0-9_]+)/i);
+    if (tblMatch) {
+      const tbl = tblMatch[1].toLowerCase();
+      for (const c of cols) {
+        addRef(tbl, c);
       }
     }
   }

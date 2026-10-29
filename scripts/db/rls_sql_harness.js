@@ -5,19 +5,22 @@ const path = require('path');
 const { Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard } = require('../lib/env_guard');
+const { buildPostgrestPayload } = require('../../services/api-gateway/src/jwt_minter');
 
-// Emits real claims matching backend registration logic
-function getTestJwtClaims(appRole, uid) {
+// Emits real claims matching backend registration and gateway logic
+function getTestJwtClaims(appRole, uid, verified = true) {
   let normalized = appRole;
   if (appRole === 'superAdmin' || appRole === 'super_admin') normalized = 'super_admin';
   else if (appRole === 'medicalStore' || appRole === 'medical') normalized = 'pharmacy';
 
-  return JSON.stringify({
-    sub: uid,
+  const payload = buildPostgrestPayload({
     role: 'authenticated',
-    app_role: normalized,
-    user_role: normalized,
+    sub: uid,
+    appRole: normalized,
+    verified: Boolean(verified),
   });
+
+  return JSON.stringify(payload);
 }
 
 async function runRlsSqlHarness() {
@@ -143,13 +146,22 @@ async function runRlsSqlHarness() {
         ('${reqPendingId}', '${bcPendingId}', '${ambA}', 'pending');
       INSERT INTO public.pharmacy_deliveries (delivery_id, store_id, patient_id, delivery_address, delivery_pincode, contact_phone, status) VALUES
         ('${delId}', '${storeA}', '${pA}', '123 Test St', '110001', '+919999900001', 'sent');
+      INSERT INTO public.pharmacy_delivery_medicines (delivery_id, medicine_entry_id, availability, substitute_name) VALUES
+        ('${delId}', 'med_1', 'pending', NULL)
+      ON CONFLICT DO NOTHING;
+      INSERT INTO public.ambulance_trip_contacts (broadcast_id, patient_phone, driver_phone) VALUES
+        ('${bcId}', '+919999900001', '+919999900009')
+      ON CONFLICT DO NOTHING;
+      INSERT INTO public.family_members (member_id, patient_id, name, relationship, age, gender) VALUES
+        ('test_fam_a1', '${pA}', 'Child A', 'Child', 8, 'Female')
+      ON CONFLICT DO NOTHING;
       INSERT INTO public.lab_bookings (booking_id, lab_id, patient_id, test_id, test_name, sample_type, booking_date, slot, status) VALUES
         ('${labBkId}', '${labA}', '${pA}', 't1', 'Blood Test', 'blood', CURRENT_DATE, '10:00 AM', 'confirmed');
       INSERT INTO public.lab_orders (order_id, lab_id, doctor_id, patient_id, test_name, status) VALUES
         ('${labOrdId}', '${labA}', '${docA}', '${pA}', 'Lipid Profile', 'ordered');
     `);
 
-    async function testCase({ name, table, role, claims, sql, expectedRows, expectedSqlState = '00000', allowZeroRows = false }) {
+    async function testCase({ name, table, role, claims, sql, expectedRows, expectedSqlState = '00000', allowZeroRows = false, assertResult = null }) {
       try {
         await client.query(`SAVEPOINT sp_case;`);
         await client.query(`SET LOCAL ROLE ${role};`);
@@ -168,6 +180,11 @@ async function runRlsSqlHarness() {
             pass = rowCount === expectedRows;
           } else if (allowZeroRows) {
             pass = rowCount === 0;
+          } else {
+            pass = true;
+          }
+          if (pass && typeof assertResult === 'function') {
+            pass = Boolean(assertResult(res));
           }
         }
 
@@ -226,6 +243,296 @@ async function runRlsSqlHarness() {
       role: 'authenticated',
       claims: getTestJwtClaims('patient', pA),
       sql: `SELECT * FROM public.health_records WHERE record_id = '${hrId}';`,
+      expectedRows: 1,
+    });
+
+    // --- HAPPY-PATH REALISTIC CLIENT WORKFLOWS ---
+    // 1. book_appointment_atomic (own + family)
+    await testCase({
+      name: 'Happy Path: Patient A books own appointment via book_appointment_atomic',
+      table: 'appointments',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.book_appointment_atomic('appt_happy_own', '${docA}', 'Dr. A', 'General', 'Patient A', 30, 'Male', (CURRENT_TIMESTAMP + interval '2 days'), '11:00 AM', 'newVisit', 1, 'Clinic A', 'Address A', 'patient_supabase', '${pA}');`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Patient A books family member appointment via book_appointment_atomic',
+      table: 'appointments',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.book_appointment_atomic('appt_happy_fam', '${docA}', 'Dr. A', 'General', 'Child A', 8, 'Female', (CURRENT_TIMESTAMP + interval '2 days'), '11:30 AM', 'newVisit', 2, 'Clinic A', 'Address A', 'patient_supabase', 'test_fam_a1');`,
+      expectedRows: 1,
+    });
+
+    // 2. reschedule_appointment_atomic (patient, doctor, family owner; assert return keys)
+    await testCase({
+      name: 'Happy Path: Patient A reschedules own appointment (assert return keys)',
+      table: 'appointments',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.reschedule_appointment_atomic('${apptId}', '${docA}', (CURRENT_DATE + interval '3 days')::date, '02:00 PM', 'patient', 'Travel reschedule');`,
+      expectedRows: 1,
+      assertResult: (res) => {
+        const val = res.rows[0].reschedule_appointment_atomic;
+        return val && val.ok === true && val.token_number !== undefined && val.date_time && val.slot_label === '02:00 PM';
+      },
+    });
+    await testCase({
+      name: 'Happy Path: Doctor A reschedules appointment (assert return keys)',
+      table: 'appointments',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', docA),
+      sql: `SELECT public.reschedule_appointment_atomic('${apptId}', '${docA}', (CURRENT_DATE + interval '4 days')::date, '03:00 PM', 'doctor', 'Surgeon delayed');`,
+      expectedRows: 1,
+      assertResult: (res) => {
+        const val = res.rows[0].reschedule_appointment_atomic;
+        return val && val.ok === true && val.token_number !== undefined && val.date_time && val.slot_label === '03:00 PM';
+      },
+    });
+    await testCase({
+      name: 'Happy Path: Family owner reschedules family appointment',
+      table: 'appointments',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.reschedule_appointment_atomic('appt_happy_fam', '${docA}', (CURRENT_DATE + interval '5 days')::date, '04:00 PM', 'patient', 'Child timing shift');`,
+      expectedRows: 1,
+    });
+
+    // 3. create_prescription_atomic (medicines + investigations + referrals)
+    await testCase({
+      name: 'Happy Path: Doctor A creates full atomic prescription',
+      table: 'prescriptions',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', docA),
+      sql: `SELECT public.create_prescription_atomic(jsonb_build_object(
+        'prescription_id', 'rx_happy_1',
+        'doctor_id', '${docA}',
+        'patient_id', '${pA}',
+        'appointment_id', '${apptId}',
+        'medicines', jsonb_build_array(jsonb_build_object('name', 'Amoxicillin', 'dosage', '500mg', 'duration', '5 days', 'frequency', '1-0-1')),
+        'investigations', jsonb_build_array(jsonb_build_object('name', 'Complete Blood Count', 'type', 'labReport', 'notes', 'Fasting')),
+        'referrals', jsonb_build_array(jsonb_build_object('to_doctor_id', '${docB}', 'doctor_name', 'Dr. B', 'specialization', 'Cardiology', 'reason', 'Cardiac evaluation'))
+      ));`,
+      expectedRows: 1,
+    });
+
+    // 4. Ambulance workflow (accept -> location -> trip_contact -> complete and cancel)
+    await testCase({
+      name: 'Happy Path: Driver accepts ambulance request',
+      table: 'ambulance_broadcasts',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambA),
+      sql: `SELECT public.accept_ambulance_request('${bcPendingId}');`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Driver updates ambulance location',
+      table: 'ambulance_locations',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambA),
+      sql: `SELECT public.update_ambulance_location('${bcId}', 28.6315, 77.2167, 40.0, 90.0);`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Driver views ambulance trip contact',
+      table: 'ambulance_trip_contacts',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambA),
+      sql: `SELECT * FROM public.get_ambulance_trip_contact('${bcId}');`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Driver completes ambulance trip',
+      table: 'ambulance_broadcasts',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambA),
+      sql: `SELECT public.complete_ambulance_trip('${bcId}');`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Patient cancels pending ambulance broadcast',
+      table: 'ambulance_broadcasts',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT public.cancel_ambulance_broadcast('${bcPendingId}', 'No longer needed');`,
+      expectedRows: 1,
+    });
+
+    // 5. Lab booking & order transitions
+    await testCase({
+      name: 'Happy Path: Lab updates lab booking status to sampleCollected',
+      table: 'lab_bookings',
+      role: 'authenticated',
+      claims: getTestJwtClaims('lab', labA),
+      sql: `SELECT public.update_lab_booking_status('${labBkId}', 'sampleCollected');`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Lab updates lab order status to inProgress',
+      table: 'lab_orders',
+      role: 'authenticated',
+      claims: getTestJwtClaims('lab', labA),
+      sql: `SELECT public.update_lab_order_status('${labOrdId}', 'inProgress');`,
+      expectedRows: 1,
+    });
+
+    // 6. Pharmacy delivery transitions incl. p_medicine_lines
+    await testCase({
+      name: 'Happy Path: Pharmacy marks delivery viewed',
+      table: 'pharmacy_deliveries',
+      role: 'authenticated',
+      claims: getTestJwtClaims('pharmacy', storeA),
+      sql: `SELECT public.update_pharmacy_delivery_status('${delId}', 'viewed', NULL, NULL);`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Pharmacy dispenses delivery with p_medicine_lines',
+      table: 'pharmacy_deliveries',
+      role: 'authenticated',
+      claims: getTestJwtClaims('pharmacy', storeA),
+      sql: `SELECT public.update_pharmacy_delivery_status('${delId}', 'dispensed', 'Dispensed full course', '[{"medicine_entry_id": "med_1", "availability": "dispensed", "substitute_name": null}]'::jsonb);`,
+      expectedRows: 1,
+    });
+
+    // 7. Users table insert + upsert + update across all 5 roles
+    // Patient
+    await testCase({
+      name: 'Happy Path: Patient user insert',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', 'new_usr_pat'),
+      sql: `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified) VALUES ('new_usr_pat', 'new_usr_pat', 'patient', 'new_usr_pat', 'New Patient', 'newpat@test.local', '+919999901111', true);`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Patient user upsert on conflict id',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', 'new_usr_pat'),
+      sql: `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified) VALUES ('new_usr_pat', 'new_usr_pat', 'patient', 'new_usr_pat', 'New Patient Upserted', 'newpat@test.local', '+919999901111', true) ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name;`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Patient user update display_name',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', 'new_usr_pat'),
+      sql: `UPDATE public.users SET display_name = 'New Patient V2' WHERE id = 'new_usr_pat';`,
+      expectedRows: 1,
+    });
+
+    // Doctor
+    await testCase({
+      name: 'Happy Path: Doctor user insert',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', 'new_usr_doc'),
+      sql: `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified) VALUES ('new_usr_doc', 'new_usr_doc', 'doctor', 'new_usr_doc', 'New Doctor', 'newdoc@test.local', '+919999902222', false);`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Doctor user upsert on conflict id',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', 'new_usr_doc'),
+      sql: `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified) VALUES ('new_usr_doc', 'new_usr_doc', 'doctor', 'new_usr_doc', 'New Doctor Upserted', 'newdoc@test.local', '+919999902222', false) ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name;`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Doctor user update display_name',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', 'new_usr_doc'),
+      sql: `UPDATE public.users SET display_name = 'New Doctor V2' WHERE id = 'new_usr_doc';`,
+      expectedRows: 1,
+    });
+
+    // Pharmacy / Medical Store
+    await testCase({
+      name: 'Happy Path: Medical Store user insert',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', 'new_usr_store'),
+      sql: `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified) VALUES ('new_usr_store', 'new_usr_store', 'medicalStore', 'new_usr_store', 'New Store', 'newstore@test.local', '+919999903333', false);`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Medical Store user upsert on conflict id',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', 'new_usr_store'),
+      sql: `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified) VALUES ('new_usr_store', 'new_usr_store', 'medicalStore', 'new_usr_store', 'New Store Upserted', 'newstore@test.local', '+919999903333', false) ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name;`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Medical Store user update display_name',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', 'new_usr_store'),
+      sql: `UPDATE public.users SET display_name = 'New Store V2' WHERE id = 'new_usr_store';`,
+      expectedRows: 1,
+    });
+
+    // Lab
+    await testCase({
+      name: 'Happy Path: Lab user insert',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('lab', 'new_usr_lab'),
+      sql: `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified) VALUES ('new_usr_lab', 'new_usr_lab', 'lab', 'new_usr_lab', 'New Lab', 'newlab@test.local', '+919999904444', false);`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Lab user upsert on conflict id',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('lab', 'new_usr_lab'),
+      sql: `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified) VALUES ('new_usr_lab', 'new_usr_lab', 'lab', 'new_usr_lab', 'New Lab Upserted', 'newlab@test.local', '+919999904444', false) ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name;`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Lab user update display_name',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('lab', 'new_usr_lab'),
+      sql: `UPDATE public.users SET display_name = 'New Lab V2' WHERE id = 'new_usr_lab';`,
+      expectedRows: 1,
+    });
+
+    // Ambulance
+    await testCase({
+      name: 'Happy Path: Ambulance user insert',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', 'new_usr_amb'),
+      sql: `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified) VALUES ('new_usr_amb', 'new_usr_amb', 'ambulance', 'new_usr_amb', 'New Amb', 'newamb@test.local', '+919999905555', false);`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Ambulance user upsert on conflict id',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', 'new_usr_amb'),
+      sql: `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified) VALUES ('new_usr_amb', 'new_usr_amb', 'ambulance', 'new_usr_amb', 'New Amb Upserted', 'newamb@test.local', '+919999905555', false) ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name;`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Happy Path: Ambulance user update display_name',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', 'new_usr_amb'),
+      sql: `UPDATE public.users SET display_name = 'New Amb V2' WHERE id = 'new_usr_amb';`,
+      expectedRows: 1,
+    });
+
+    // 8. user_devices upsert on_conflict (user_id, platform)
+    await testCase({
+      name: 'Happy Path: User devices upsert on conflict (user_id, platform)',
+      table: 'public.user_devices',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `INSERT INTO public.user_devices (user_id, platform, fcm_token) VALUES ('${pA}', 'android', 'fcm_tok_new_alpha') ON CONFLICT (user_id, platform) DO UPDATE SET fcm_token = EXCLUDED.fcm_token;`,
       expectedRows: 1,
     });
 
