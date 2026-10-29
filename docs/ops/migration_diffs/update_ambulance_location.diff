@@ -1,0 +1,45 @@
+--- 20261021000002_phase_d_pharmacy_lab_ambulance.sql	(update_ambulance_location)
++++ 20261026000001_rpc_null_safe_authz.sql	(update_ambulance_location)
+@@ -12,8 +12,14 @@
+ AS $$
+ DECLARE
+     v_caller_uid TEXT;
++    v_profile_id TEXT;
+     v_driver_id TEXT;
+     v_broadcast public.ambulance_broadcasts%ROWTYPE;
++    v_is_admin BOOLEAN;
+ BEGIN
++    v_caller_uid := NULLIF(COALESCE(
++        auth.jwt() ->> 'sub',
++        auth.jwt() ->> 'uid',
++        current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
++    ), '');
+-    v_caller_uid := auth.jwt() ->> 'sub';
+     IF v_caller_uid IS NULL THEN
+@@ -20,8 +26,12 @@
+         RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501';
+     END IF;
+ 
++    v_profile_id := private.current_profile_id();
++    v_is_admin := COALESCE(private.is_super_admin(), FALSE);
++
+     SELECT ambulance_id INTO v_driver_id
++    FROM public.ambulances
++    WHERE auth_uid = v_caller_uid OR (v_profile_id IS NOT NULL AND ambulance_id = v_profile_id);
+-    FROM public.ambulances WHERE auth_uid = v_caller_uid OR ambulance_id = private.current_profile_id();
+ 
++    IF v_driver_id IS NULL AND NOT v_is_admin THEN
+-    IF v_driver_id IS NULL THEN
+         RAISE EXCEPTION 'Ambulance driver profile not registered' USING ERRCODE = '42501';
+@@ -35,9 +45,9 @@
+         RAISE EXCEPTION 'Broadcast % not found', p_broadcast_id USING ERRCODE = 'P0002';
+     END IF;
+ 
++    IF (v_broadcast.accepted_driver_id IS DISTINCT FROM v_driver_id) AND NOT v_is_admin THEN
+-    IF v_broadcast.accepted_driver_id != v_driver_id AND NOT private.is_super_admin() THEN
+         RAISE EXCEPTION 'Only the assigned driver can transmit location' USING ERRCODE = '42501';
+     END IF;
+ 
++    IF v_broadcast.status IS DISTINCT FROM 'accepted' THEN
+-    IF v_broadcast.status != 'accepted' THEN
+         RAISE EXCEPTION 'Location updates allowed only during active accepted trip (status: %)', v_broadcast.status

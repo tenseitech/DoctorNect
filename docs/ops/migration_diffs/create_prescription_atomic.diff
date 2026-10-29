@@ -1,0 +1,98 @@
+--- 20261020000002_phase_c_doctor_patient_cutover.sql	(create_prescription_atomic)
++++ 20261026000001_rpc_null_safe_authz.sql	(create_prescription_atomic)
+@@ -8,4 +8,5 @@
+ AS $$
+ DECLARE
+     v_caller_uid TEXT;
++    v_profile_id TEXT;
+     v_doctor_id TEXT;
+@@ -23,4 +24,5 @@
+     -- 1. Derive & verify caller
+     v_caller_uid := NULLIF(COALESCE(
+         auth.jwt()->>'sub',
++        auth.jwt()->>'uid',
+         current_setting('request.jwt.claims', true)::jsonb->>'sub'
+@@ -31,11 +33,16 @@
+             USING ERRCODE = '42501';
+     END IF;
+ 
++    v_profile_id := private.current_profile_id();
+     v_is_admin := COALESCE(private.is_super_admin(), FALSE);
+ 
++    IF v_profile_id IS NULL AND NOT v_is_admin THEN
++        RAISE EXCEPTION 'FORBIDDEN: Caller has no registered profile.'
++            USING ERRCODE = '42501';
++    END IF;
++
+     -- Resolve doctor_id for caller
+     SELECT doctor_id INTO v_doctor_id 
+     FROM public.doctors 
++    WHERE owner_uid = v_caller_uid OR (v_profile_id IS NOT NULL AND doctor_id = v_profile_id);
+-    WHERE owner_uid = v_caller_uid OR doctor_id = v_caller_uid
+-    LIMIT 1;
+ 
+@@ -62,4 +69,23 @@
+             USING ERRCODE = '22004';
+     END IF;
+ 
++    -- Require relationship: for non-admin require an appointment or an active patient_doctor_links row for patient_id
++    IF NOT v_is_admin THEN
++        IF NOT (
++            EXISTS (
++                SELECT 1 FROM public.appointments a
++                WHERE a.doctor_id = v_doctor_id
++                  AND a.patient_id = v_patient_id
++            )
++            OR EXISTS (
++                SELECT 1 FROM public.patient_doctor_links pdl
++                WHERE pdl.doctor_id = v_doctor_id
++                  AND pdl.patient_id = v_patient_id
++            )
++        ) THEN
++            RAISE EXCEPTION 'FORBIDDEN: Doctor "%" does not have an active appointment or link for patient "%".', v_doctor_id, v_patient_id
++                USING ERRCODE = '42501';
++        END IF;
++    END IF;
++
+     -- 2. Verify prescription ownership if prescription already exists
+@@ -67,5 +93,5 @@
+     FROM public.prescriptions 
+     WHERE prescription_id = v_prescription_id;
+ 
++    IF v_existing_doc_id IS NOT NULL AND NOT v_is_admin AND (v_existing_doc_id IS DISTINCT FROM v_doctor_id) THEN
+-    IF v_existing_doc_id IS NOT NULL AND NOT v_is_admin AND v_existing_doc_id != v_doctor_id THEN
+         RAISE EXCEPTION 'FORBIDDEN: Cannot overwrite prescription belonging to another doctor.'
+@@ -83,5 +109,5 @@
+                 USING ERRCODE = '23503';
+         END IF;
+ 
++        IF NOT v_is_admin AND (v_appt_doctor_id IS DISTINCT FROM v_doctor_id) THEN
+-        IF NOT v_is_admin AND v_appt_doctor_id != v_doctor_id THEN
+             RAISE EXCEPTION 'FORBIDDEN: Doctor "%" does not own appointment "%".', v_doctor_id, v_appointment_id
+@@ -88,5 +114,5 @@
+                 USING ERRCODE = '42501';
+         END IF;
+ 
++        IF NOT v_is_admin AND (v_appt_patient_id IS DISTINCT FROM v_patient_id) THEN
+-        IF NOT v_is_admin AND v_appt_patient_id != v_patient_id THEN
+             RAISE EXCEPTION 'FORBIDDEN: Appointment "%" is for patient "%", not "%".', v_appointment_id, v_appt_patient_id, v_patient_id
+@@ -274,13 +300,13 @@
+             INSERT INTO public.prescription_referrals (
+                 prescription_id,
+                 to_doctor_id,
++                doctor_name,
++                specialization,
++                reason
+-                to_doctor_name,
+-                specialty,
+-                notes
+             ) VALUES (
+                 v_prescription_id,
+                 v_ref->>'to_doctor_id',
++                COALESCE(v_ref->>'doctor_name', v_ref->>'to_doctor_name', ''),
++                COALESCE(v_ref->>'specialization', v_ref->>'specialty', ''),
++                COALESCE(v_ref->>'reason', v_ref->>'notes')
+-                v_ref->>'to_doctor_name',
+-                v_ref->>'specialty',
+-                v_ref->>'notes'
+             );

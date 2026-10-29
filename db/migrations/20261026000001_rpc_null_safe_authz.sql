@@ -1445,15 +1445,15 @@ BEGIN
             INSERT INTO public.prescription_referrals (
                 prescription_id,
                 to_doctor_id,
-                to_doctor_name,
-                specialty,
-                notes
+                doctor_name,
+                specialization,
+                reason
             ) VALUES (
                 v_prescription_id,
                 v_ref->>'to_doctor_id',
-                v_ref->>'to_doctor_name',
-                v_ref->>'specialty',
-                v_ref->>'notes'
+                COALESCE(v_ref->>'doctor_name', v_ref->>'to_doctor_name', ''),
+                COALESCE(v_ref->>'specialization', v_ref->>'specialty', ''),
+                COALESCE(v_ref->>'reason', v_ref->>'notes')
             );
         END LOOP;
     END IF;

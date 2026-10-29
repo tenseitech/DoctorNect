@@ -1,0 +1,65 @@
+--- 20261022000001_phase_f_complete_cutover.sql	(reschedule_appointment_atomic)
++++ 20261026000001_rpc_null_safe_authz.sql	(reschedule_appointment_atomic)
+@@ -16,5 +16,26 @@
+     v_slot_count INT;
+     v_token INT;
+     v_new_timestamp TIMESTAMPTZ;
++    v_caller_uid TEXT;
++    v_profile_id TEXT;
++    v_is_admin BOOLEAN;
+ BEGIN
++    -- 0. Caller authentication and ownership validation
++    v_caller_uid := NULLIF(COALESCE(
++        auth.jwt() ->> 'sub',
++        auth.jwt() ->> 'uid',
++        current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
++    ), '');
++    IF v_caller_uid IS NULL THEN
++        RAISE EXCEPTION 'UNAUTHORIZED: Authentication required.' USING ERRCODE = '42501';
++    END IF;
++
++    v_profile_id := private.current_profile_id();
++    v_is_admin := COALESCE(private.is_super_admin(), FALSE);
++
++    -- Early raise when profile is null and caller is not admin
++    IF v_profile_id IS NULL AND NOT v_is_admin THEN
++        RAISE EXCEPTION 'FORBIDDEN: Caller has no registered profile.' USING ERRCODE = '42501';
++    END IF;
++
+     -- 1. Lock appointment row
+@@ -24,5 +45,16 @@
+     FOR UPDATE;
+ 
+     IF NOT FOUND THEN
++        RAISE EXCEPTION 'APPOINTMENT_NOT_FOUND' USING ERRCODE = 'P0002';
++    END IF;
++
++    -- Null-safe ownership validation: patient, doctor, family member owner, or super_admin
++    IF (v_appt.doctor_id IS DISTINCT FROM v_profile_id)
++       AND (v_appt.patient_id IS DISTINCT FROM v_profile_id)
++       AND NOT (
++           EXISTS (SELECT 1 FROM public.patients WHERE patient_id = v_appt.patient_id AND owner_uid = v_caller_uid)
++           OR EXISTS (SELECT 1 FROM public.family_members WHERE member_id = v_appt.patient_id AND patient_id = v_profile_id)
++       )
++       AND NOT v_is_admin THEN
++        RAISE EXCEPTION 'FORBIDDEN: You do not have permission to reschedule this appointment.' USING ERRCODE = '42501';
+-        RAISE EXCEPTION 'APPOINTMENT_NOT_FOUND';
+     END IF;
+@@ -38,5 +70,5 @@
+       AND doctor_status != 'cancelled';
+ 
+     IF v_slot_count >= 3 THEN
++        RAISE EXCEPTION 'SLOT_CAPACITY_REACHED' USING ERRCODE = '54000';
+-        RAISE EXCEPTION 'SLOT_CAPACITY_REACHED';
+     END IF;
+@@ -47,7 +79,8 @@
+     WHERE doctor_id = v_appt.doctor_id
+       AND date_time::date = p_new_date;
+ 
++    -- 4. Construct new target timestamp (+05:30)
++    v_new_timestamp := (p_new_date::text || ' 10:00:00+05:30')::TIMESTAMPTZ;
+-    v_new_timestamp := (p_new_date::text || ' 10:00:00+05:30')::timestamptz;
+ 
++    -- 5. Atomically update the appointment
+-    -- 4. Update appointment
+     UPDATE public.appointments

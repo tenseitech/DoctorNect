@@ -1,0 +1,43 @@
+--- 20261021000002_phase_d_pharmacy_lab_ambulance.sql	(cancel_ambulance_broadcast)
++++ 20261026000001_rpc_null_safe_authz.sql	(cancel_ambulance_broadcast)
+@@ -9,4 +9,5 @@
+ AS $$
+ DECLARE
+     v_caller_uid TEXT;
++    v_profile_id TEXT;
+     v_broadcast public.ambulance_broadcasts%ROWTYPE;
+@@ -13,5 +14,9 @@
+     v_is_patient BOOLEAN;
+     v_is_admin BOOLEAN;
+ BEGIN
++    v_caller_uid := NULLIF(COALESCE(
++        auth.jwt() ->> 'sub',
++        auth.jwt() ->> 'uid',
++        current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
++    ), '');
+-    v_caller_uid := auth.jwt() ->> 'sub';
+     IF v_caller_uid IS NULL THEN
+@@ -18,5 +23,10 @@
+         RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501';
+     END IF;
+ 
++    v_profile_id := private.current_profile_id();
++    v_is_admin := COALESCE(private.is_super_admin(), FALSE);
++
++    IF v_profile_id IS NULL AND NOT v_is_admin THEN
++        RAISE EXCEPTION 'FORBIDDEN: Caller has no registered profile.' USING ERRCODE = '42501';
++    END IF;
+-    v_is_admin := private.is_super_admin();
+ 
+@@ -28,9 +38,9 @@
+         RAISE EXCEPTION 'Broadcast % not found', p_broadcast_id USING ERRCODE = 'P0002';
+     END IF;
+ 
++    v_is_patient := (v_broadcast.patient_id IS NOT DISTINCT FROM v_profile_id) OR EXISTS (
+-    v_is_patient := (v_broadcast.patient_id = private.current_profile_id()) OR EXISTS (
+         SELECT 1 FROM public.patients p WHERE p.patient_id = v_broadcast.patient_id AND p.owner_uid = v_caller_uid
+     );
+ 
++    IF NOT (COALESCE(v_is_patient, FALSE) OR v_is_admin) THEN
+-    IF NOT (v_is_patient OR v_is_admin) THEN
+         RAISE EXCEPTION 'Unauthorized to cancel broadcast' USING ERRCODE = '42501';

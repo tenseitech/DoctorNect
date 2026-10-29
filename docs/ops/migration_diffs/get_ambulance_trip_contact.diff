@@ -1,0 +1,49 @@
+--- 20261021000002_phase_d_pharmacy_lab_ambulance.sql	(get_ambulance_trip_contact)
++++ 20261026000001_rpc_null_safe_authz.sql	(get_ambulance_trip_contact)
+@@ -15,5 +15,9 @@
+     v_is_driver BOOLEAN;
+     v_is_admin BOOLEAN;
+ BEGIN
++    v_caller_uid := NULLIF(COALESCE(
++        auth.jwt() ->> 'sub',
++        auth.jwt() ->> 'uid',
++        current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
++    ), '');
+-    v_caller_uid := auth.jwt() ->> 'sub';
+     IF v_caller_uid IS NULL THEN
+@@ -21,5 +25,9 @@
+     END IF;
+ 
+     v_profile_id := private.current_profile_id();
++    v_is_admin := COALESCE(private.is_super_admin(), FALSE);
++
++    IF v_profile_id IS NULL AND NOT v_is_admin THEN
++        RAISE EXCEPTION 'FORBIDDEN: Caller has no registered profile.' USING ERRCODE = '42501';
++    END IF;
+-    v_is_admin := private.is_super_admin();
+ 
+@@ -28,18 +36,18 @@
+         RAISE EXCEPTION 'Broadcast not found' USING ERRCODE = 'P0002';
+     END IF;
+ 
++    v_is_patient := (v_broadcast.patient_id IS NOT DISTINCT FROM v_profile_id) OR EXISTS (
+-    v_is_patient := (v_broadcast.patient_id = v_profile_id) OR EXISTS (
+         SELECT 1 FROM public.patients p WHERE p.patient_id = v_broadcast.patient_id AND p.owner_uid = v_caller_uid
+     );
++    v_is_driver := (v_broadcast.accepted_driver_id IS NOT DISTINCT FROM v_profile_id) OR EXISTS (
+-    v_is_driver := (v_broadcast.accepted_driver_id = v_profile_id) OR EXISTS (
+         SELECT 1 FROM public.ambulances a WHERE a.ambulance_id = v_broadcast.accepted_driver_id AND a.auth_uid = v_caller_uid
+     );
+ 
++    IF NOT (COALESCE(v_is_patient, FALSE) OR COALESCE(v_is_driver, FALSE) OR v_is_admin) THEN
+-    IF NOT (v_is_patient OR v_is_driver OR v_is_admin) THEN
+         RAISE EXCEPTION 'Unauthorized to view trip contact' USING ERRCODE = '42501';
+     END IF;
+ 
++    -- Visible to counterpart ONLY after acceptance and ONLY during active trip
++    IF v_broadcast.status IS DISTINCT FROM 'accepted' THEN
++        IF COALESCE(v_is_patient, FALSE) THEN
+-    -- Visible to the counterpart ONLY after acceptance and ONLY during active trip
+-    IF v_broadcast.status != 'accepted' THEN
+-        IF v_is_patient THEN
+             -- Patient can see own phone even when pending

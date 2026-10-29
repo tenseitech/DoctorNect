@@ -270,11 +270,20 @@
   - Rejects with `429 Too Many Requests` when limit is exceeded (5 failed attempts per IP within 15-minute sliding window).
   - Unit test in `services/api-gateway/test/gateway.test.js` passes.
 - **Deliverable 10: Verification Test Evidence Matrix (Artifacts Saved)**:
-  - `docs/ops/test_runs/gateway_test.txt`: **63 passed, 0 failed** across 3 test suites.
-  - `docs/ops/test_runs/backend_test.txt`: **477 passed, 0 failed, 22 skipped** across 17 test suites.
+  - `docs/ops/test_runs/gateway_test.txt`: **64 passed, 0 failed** across 3 test suites.
+  - `docs/ops/test_runs/backend_test.txt`: **477 passed, 0 failed, 23 skipped** across 18 test suites.
   - `docs/ops/test_runs/backend_audit.txt`: **0 vulnerabilities found** (`npm audit --omit=dev`).
-  - `docs/ops/test_runs/flutter_analyze.txt`: **No issues found!** (ran in 173.8s).
-  - `docs/ops/test_runs/flutter_test.txt`: **552 passed, 0 failed** (All tests passed).
+  - `docs/ops/test_runs/flutter_analyze.txt`: **No issues found!** (ran in 217.8s).
+  - `docs/ops/test_runs/flutter_test.txt`: **552 passed, 0 failed** (All tests passed, 2m46s).
+
+### Final Round Hardening & Parity Verification:
+- **Migration SQL AST & Balanced Dollars**: `scripts/db/validate_migration_sql.js` passed all 33 migrations (1,702 statements, 0 errors). Balanced `$$` audit confirmed exactly 28 `$$` tokens across 14 functions (2 per function).
+- **Migration Unified Diffs**: 14 `diff -u` files generated under `docs/ops/migration_diffs/` confirming zero non-authorization deviations. `book_appointment_atomic` early null profile raise, `IS NOT DISTINCT FROM` equality, and status codes (`pendingRequest`, `confirmed`, `P0001`) reconciled.
+- **Static Column Extraction**: Extended `scripts/db/check_migration_columns.js` extracted 151 distinct column/field references across 70 tables; confirmed 0 failures and 0 phantom columns.
+- **FCM Token Registration Reconciled**: Discovered client repository calls (`ambulance_repository.dart:156`, `doctor_profile_repository.dart:27`, `patient_profile_repository.dart:280`) interact with `user_devices` via PostgREST directly (not RPC). Moved `user_devices` from `serviceRoleOnlyTables` to `clientDirectAllowedTables`. Postgres RLS already enforces `user_id = (auth.jwt() ->> 'sub')`. Gateway unit test verified authenticated user upsert/delete, anonymous blocked with 401, service role allowed.
+- **Production Provisioning Integration Test**: Traced new user registration flow under `APP_ENV=production`. Added integration test `backend/functions/test/production_provisioning_gateway.test.js` against mock gateway created from `config.js`, proving zero denied requests (200/201 success) across all 5 roles (`patient`, `doctor`, `lab`, `medicalStore`, `ambulance`).
+- **Demo Account Cleanup Precision**: Cleanup instructions updated to use exact-match filtering on phone numbers (`+919999900001`..`5`, `+919999988888`), avoiding wildcard or prefix deletions.
+- **Work Inventory Status Harmonization**: Updated `docs/ops/REMAINING_WORK.md` to label items not exercised on a live running database as `CODE-DONE / DB-UNVERIFIED`.
 
 
 

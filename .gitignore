@@ -107,8 +107,7 @@ backend/supabase/.temp/
 **/supabase/.temp/
 supabase/.temp/
 
-# Debug and output files
-*.diff
+# Debug and output files!docs/ops/migration_diffs/*.diff
 *.out
 auth_otp.diff
 reset.out

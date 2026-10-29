@@ -104,6 +104,140 @@ async function buildSchemaCatalog(migrationsDir) {
   return tables;
 }
 
+function extractAllReferencedColumns(sql, tables) {
+  const refs = new Map(); // "table.column" -> { table, column }
+
+  function addRef(tbl, col) {
+    if (!tbl || !col) return;
+    const table = tbl.toLowerCase().trim();
+    const column = col.toLowerCase().trim();
+    if (!tables.has(table)) return;
+    const key = `${table}.${column}`;
+    refs.set(key, { table, column });
+  }
+
+  // 1. Record variable field references: <record_var>.<col>
+  const recordMap = {
+    'v_appt': 'appointments',
+    'v_appointment': 'appointments',
+    'v_broadcast': 'ambulance_broadcasts',
+    'v_contact': 'ambulance_trip_contacts',
+    'v_contacts': 'ambulance_trip_contacts',
+    'v_driver': 'ambulances',
+    'v_booking': 'lab_bookings',
+    'v_order': 'lab_orders',
+    'v_delivery': 'pharmacy_deliveries',
+    'v_doc': 'doctors',
+    'p': 'patients',
+    'fm': 'family_members',
+    'l': 'labs',
+    'd': 'doctors',
+    'ms': 'medical_stores'
+  };
+
+  const dotRegex = /\b(v_appt|v_appointment|v_broadcast|v_contact|v_contacts|v_driver|v_booking|v_order|v_delivery|v_doc|p|fm|l|d|ms)\.([a-zA-Z0-9_]+)\b/g;
+  let m;
+  while ((m = dotRegex.exec(sql)) !== null) {
+    const targetTable = recordMap[m[1]];
+    if (targetTable) {
+      addRef(targetTable, m[2]);
+    }
+  }
+
+  // 2. Query alias 'a':
+  // In ambulance queries: public.ambulances a -> a.ambulance_id, a.auth_uid
+  // In appointment queries: public.appointments a -> a.doctor_id, a.patient_id
+  const ambQueryRegex = /FROM\s+public\.ambulances\s+a\s+WHERE\s+([^;]+)/gi;
+  while ((m = ambQueryRegex.exec(sql)) !== null) {
+    const whereClause = m[1];
+    const aRegex = /\ba\.([a-zA-Z0-9_]+)\b/g;
+    let am;
+    while ((am = aRegex.exec(whereClause)) !== null) {
+      addRef('ambulances', am[1]);
+    }
+  }
+
+  const apptQueryRegex = /FROM\s+public\.appointments\s+a\s+WHERE\s+([^;]+)/gi;
+  while ((m = apptQueryRegex.exec(sql)) !== null) {
+    const whereClause = m[1];
+    const aRegex = /\ba\.([a-zA-Z0-9_]+)\b/g;
+    let am;
+    while ((am = aRegex.exec(whereClause)) !== null) {
+      addRef('appointments', am[1]);
+    }
+  }
+
+  // 3. Trigger references: OLD.<col> and NEW.<col>
+  // trg_lock_ambulance_broadcast_status -> operates on ambulance_broadcasts
+  const ambTrigIdx = sql.indexOf('private.trg_lock_ambulance_broadcast_status');
+  if (ambTrigIdx !== -1) {
+    const block = sql.substring(ambTrigIdx, sql.indexOf('CREATE TRIGGER trg_lock_ambulance_broadcast_status', ambTrigIdx));
+    const triggerDot = /\b(OLD|NEW)\.([a-zA-Z0-9_]+)\b/g;
+    let tm;
+    while ((tm = triggerDot.exec(block)) !== null) {
+      addRef('ambulance_broadcasts', tm[2]);
+    }
+  }
+
+  // trg_users_guard_insert -> operates on users
+  const usersTrigIdx = sql.indexOf('private.trg_users_guard_insert');
+  if (usersTrigIdx !== -1) {
+    const block = sql.substring(usersTrigIdx, sql.indexOf('CREATE TRIGGER trg_users_guard_insert', usersTrigIdx));
+    const triggerDot = /\b(OLD|NEW)\.([a-zA-Z0-9_]+)\b/g;
+    let tm;
+    while ((tm = triggerDot.exec(block)) !== null) {
+      addRef('users', tm[2]);
+    }
+  }
+
+  // trg_users_lock_role -> lock_columns('role', 'profile_id', 'firebase_uid', 'email', 'mobile')
+  const lockMatch = sql.match(/private\.lock_columns\(([^)]+)\)/);
+  if (lockMatch) {
+    const cols = lockMatch[1].split(',').map((c) => c.replace(/['"\s]/g, ''));
+    for (const c of cols) {
+      addRef('users', c);
+    }
+  }
+
+  // 4. Direct Table References: appointments.<col>, prescriptions.<col>, etc.
+  const tblDotRegex = /\b(appointments|prescriptions|prescription_medicines|prescription_investigations|prescription_referrals|pharmacy_deliveries|pharmacy_delivery_medicines|ambulance_broadcasts|ambulance_requests|ambulance_trip_contacts|ambulance_locations|ambulance_location_updates|lab_bookings|lab_orders|doctors|patients|users)\.([a-zA-Z0-9_]+)\b/g;
+  while ((m = tblDotRegex.exec(sql)) !== null) {
+    addRef(m[1], m[2]);
+  }
+
+  // 5. INSERT INTO public.<table> (col1, col2, ...)
+  const insertRegex = /INSERT\s+INTO\s+public\.([a-zA-Z0-9_]+)\s*\(([^)]+)\)/gi;
+  while ((m = insertRegex.exec(sql)) !== null) {
+    const tbl = m[1];
+    const colList = m[2].split(',').map((c) => c.trim());
+    for (const c of colList) {
+      if (c && /^[a-zA-Z0-9_]+$/.test(c)) {
+        addRef(tbl, c);
+      }
+    }
+  }
+
+  // 6. UPDATE public.<table> SET col1 = expr1, col2 = expr2 ...
+  const updateRegex = /UPDATE\s+public\.([a-zA-Z0-9_]+)\s+SET\s+([^;]+?)(?:WHERE|RETURNING|;)/gis;
+  while ((m = updateRegex.exec(sql)) !== null) {
+    const tbl = m[1];
+    const setBlock = m[2];
+    // Match line-level or comma-separated assignments: col = expr
+    const lines = setBlock.split(/\r?\n|,/);
+    for (const line of lines) {
+      const eqIdx = line.indexOf('=');
+      if (eqIdx !== -1) {
+        const lhs = line.substring(0, eqIdx).trim().split(/\s+/).pop();
+        if (lhs && /^[a-zA-Z0-9_]+$/.test(lhs)) {
+          addRef(tbl, lhs);
+        }
+      }
+    }
+  }
+
+  return Array.from(refs.values()).sort((a, b) => `${a.table}.${a.column}`.localeCompare(`${b.table}.${b.column}`));
+}
+
 async function main() {
   const migrationsDir = path.resolve(__dirname, '../../db/migrations');
   console.log(`Analyzing migrations in ${migrationsDir}...`);
@@ -111,53 +245,28 @@ async function main() {
 
   console.log(`\nCatalog collected ${tables.size} tables across all migrations.\n`);
 
-  // Verification checklist per Requirement 2:
-  // 1. Verify existence of valid schema columns referenced in the new definitions
-  const validChecks = [
-    { table: 'doctors', column: 'name' },
-    { table: 'appointments', column: 'cancellation_reason' },
-    { table: 'appointments', column: 'booked_by_uid' },
-    { table: 'ambulance_broadcasts', column: 'rating' },
-    { table: 'pharmacy_delivery_medicines', column: 'medicine_entry_id' },
-    { table: 'pharmacy_delivery_medicines', column: 'availability' },
-    { table: 'pharmacy_delivery_medicines', column: 'substitute_name' },
-    { table: 'prescriptions', column: 'prescription_id' },
-    { table: 'prescriptions', column: 'doctor_id' },
-    { table: 'prescriptions', column: 'patient_id' },
-    { table: 'prescriptions', column: 'appointment_id' },
-    { table: 'prescription_medicines', column: 'prescription_id' },
-    { table: 'prescription_medicines', column: 'name' },
-    { table: 'prescription_medicines', column: 'dosage' },
-    { table: 'prescription_investigations', column: 'prescription_id' },
-    { table: 'prescription_investigations', column: 'name' },
-    { table: 'prescription_referrals', column: 'prescription_id' },
-    { table: 'patient_doctor_links', tableOnly: true }
-  ];
+  const newSqlPath = path.join(migrationsDir, '20261026000001_rpc_null_safe_authz.sql');
+  const newSql = fs.readFileSync(newSqlPath, 'utf8');
 
-  console.log('=== VERIFYING REQUISITE SCHEMA COLUMNS & TABLES ===');
-  let validFailures = 0;
-  for (const c of validChecks) {
-    const tableExists = tables.has(c.table.toLowerCase());
-    if (!tableExists) {
-      console.log(`[FAIL] Table missing: ${c.table}`);
-      validFailures++;
-      continue;
-    }
-    if (c.tableOnly) {
-      console.log(`[PASS] Table exists: ${c.table} (${tables.get(c.table.toLowerCase()).size} columns)`);
-      continue;
-    }
-    const cols = tables.get(c.table.toLowerCase());
-    const hasCol = cols.has(c.column.toLowerCase());
-    if (hasCol) {
-      console.log(`[PASS] ${c.table}.${c.column}`);
+  console.log('=== AUTOMATIC EXTRACTION & VERIFICATION OF FUNCTION/TRIGGER COLUMN REFERENCES ===');
+  const extractedRefs = extractAllReferencedColumns(newSql, tables);
+  console.log(`Extracted ${extractedRefs.length} distinct column/field references from 20261026000001_rpc_null_safe_authz.sql:\n`);
+
+  let autoFailures = 0;
+  for (const ref of extractedRefs) {
+    const colSet = tables.get(ref.table);
+    if (!colSet) {
+      console.log(`[FAIL] Table missing from schema: ${ref.table}`);
+      autoFailures++;
+    } else if (colSet.has(ref.column)) {
+      console.log(`[PASS] ${ref.table}.${ref.column}`);
     } else {
-      console.log(`[FAIL] Column missing: ${c.table}.${c.column}`);
-      validFailures++;
+      console.log(`[FAIL] Column missing from schema: ${ref.table}.${ref.column}`);
+      autoFailures++;
     }
   }
 
-  // 2. Verify that non-existent/phantom columns were purged from 20261026000001
+  // Auditing Phantom Columns
   const purgedChecks = [
     { table: 'appointments', column: 'payment_status' },
     { table: 'appointments', column: 'consultation_fee' },
@@ -168,7 +277,6 @@ async function main() {
   ];
 
   console.log('\n=== AUDITING PHANTOM COLUMNS (MUST NOT EXIST IN FUNCTION BODIES) ===');
-  const newSql = fs.readFileSync(path.join(migrationsDir, '20261026000001_rpc_null_safe_authz.sql'), 'utf8');
   let phantomFailures = 0;
   for (const p of purgedChecks) {
     const inSchema = tables.get(p.table.toLowerCase())?.has(p.column.toLowerCase());
@@ -191,14 +299,15 @@ async function main() {
 
   console.log(`\n======================================================`);
   console.log(`Summary:`);
-  console.log(`  Requisite Schema Checks Failed: ${validFailures}`);
+  console.log(`  Total Extracted Column References: ${extractedRefs.length}`);
+  console.log(`  Reference Schema Verification Failures: ${autoFailures}`);
   console.log(`  Phantom Column References in New SQL: ${phantomFailures}`);
   console.log(`======================================================\n`);
 
-  if (validFailures > 0 || phantomFailures > 0) {
+  if (autoFailures > 0 || phantomFailures > 0) {
     process.exit(1);
   }
-  return { tables };
+  return { tables, extractedRefs };
 }
 
 if (require.main === module) {
@@ -208,4 +317,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { buildSchemaCatalog };
+module.exports = { buildSchemaCatalog, extractAllReferencedColumns };

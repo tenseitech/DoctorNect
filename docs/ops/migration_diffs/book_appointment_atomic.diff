@@ -1,0 +1,88 @@
+--- 20261020000002_phase_c_doctor_patient_cutover.sql	(book_appointment_atomic)
++++ 20261026000001_rpc_null_safe_authz.sql	(book_appointment_atomic)
+@@ -27,4 +27,7 @@
+     v_active_count INTEGER;
+     v_token_number INTEGER;
+     v_appointment RECORD;
++    v_doc RECORD;
++    v_doctor_name VARCHAR(255);
++    v_specialization VARCHAR(128);
+     v_lock_key1 INTEGER;
+@@ -34,4 +37,5 @@
+     -- 0. Strictly derive caller UID from auth.jwt()->>'sub'
+     v_caller_uid := NULLIF(COALESCE(
+         auth.jwt()->>'sub',
++        auth.jwt()->>'uid',
+         current_setting('request.jwt.claims', true)::jsonb->>'sub'
+@@ -50,4 +54,9 @@
+     WHERE id = v_caller_uid
+     LIMIT 1;
+ 
++    IF v_caller_patient_id IS NULL AND NOT v_is_admin THEN
++        RAISE EXCEPTION 'FORBIDDEN: Caller has no registered profile.'
++            USING ERRCODE = '42501';
++    END IF;
++
+     IF v_caller_patient_id IS NULL THEN
+@@ -57,5 +66,5 @@
+     -- Verify patient ownership: caller can only book for themselves or their owned family members
+     IF p_patient_id IS NOT NULL AND trim(p_patient_id) != '' THEN
+         v_patient_id := trim(p_patient_id);
++        IF NOT v_is_admin AND (v_patient_id IS DISTINCT FROM v_caller_patient_id) THEN
+-        IF NOT v_is_admin AND v_patient_id != v_caller_patient_id THEN
+             IF NOT EXISTS (
+@@ -77,9 +86,23 @@
+             USING ERRCODE = '22004';
+     END IF;
+ 
++    -- 1. Idempotency Check: If appointment_id already booked, return it only when existing.patient_id = v_patient_id, else raise
+-    -- 1. Idempotency Check: If appointment_id already booked, return it directly
+     SELECT * INTO v_appointment FROM public.appointments WHERE appointment_id = p_appointment_id;
+     IF FOUND THEN
++        IF v_appointment.patient_id IS NOT DISTINCT FROM v_patient_id OR v_is_admin THEN
++            RETURN to_jsonb(v_appointment);
++        ELSE
++            RAISE EXCEPTION 'FORBIDDEN: Appointment ID already exists for another patient.'
++                USING ERRCODE = '42501';
++        END IF;
++    END IF;
++
++    -- Validate p_doctor_id exists and take doctor_name/specialization from doctors, not client
++    SELECT * INTO v_doc FROM public.doctors WHERE doctor_id = p_doctor_id;
++    IF NOT FOUND THEN
++        RAISE EXCEPTION 'DOCTOR_NOT_FOUND: Doctor "%" does not exist.', p_doctor_id
++            USING ERRCODE = '23503';
+-        RETURN to_jsonb(v_appointment);
+     END IF;
++    v_doctor_name := COALESCE(v_doc.name, p_doctor_name, 'Doctor');
++    v_specialization := COALESCE(v_doc.specialization, p_specialization, 'General');
+ 
+@@ -141,8 +164,5 @@
+         clinic_address,
+         doctor_status,
+         patient_status,
+-        payment_status,
+-        consultation_fee,
+         sync_origin,
+-        booked_by_uid,
+         created_at,
+@@ -151,6 +171,6 @@
+         p_appointment_id,
+         p_doctor_id,
+         v_patient_id,
++        v_doctor_name,
++        v_specialization,
+-        p_doctor_name,
+-        p_specialization,
+         p_patient_name,
+@@ -163,9 +183,6 @@
+         p_clinic_name,
+         p_clinic_address,
+         'pendingRequest',
++        'confirmed',
+-        'pending',
+-        'pending',
+-        0.00,
+         COALESCE(p_sync_origin, 'patient_supabase'),
+-        v_caller_uid,
+         CURRENT_TIMESTAMP,

@@ -77,6 +77,7 @@ module.exports = {
     'support_tickets',
     'system_config',
     'users',
+    'user_devices',
   ],
   get clientAllowedTables() {
     return [...this.clientDirectAllowedTables, ...this.clientEmbedOnlyTables];
@@ -106,7 +107,6 @@ module.exports = {
     'storage_audit_logs',
     'super_admins',
     'sync_dead_letter_queue',
-    'user_devices',
   ],
   get serviceRoleAllowedTables() {
     return [...this.clientAllowedTables, ...this.serviceRoleOnlyTables];

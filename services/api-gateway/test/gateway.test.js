@@ -819,12 +819,12 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
       const validToken = createTestFirebaseToken({ sub: 'user_embed_7' });
       const res = await makeRequest({
         method: 'GET',
-        path: '/rest/v1/appointments?select=*,patients(*)&and=(status.eq.active,user_devices.device_id.eq.1)',
+        path: '/rest/v1/appointments?select=*,patients(*)&and=(status.eq.active,razorpay_orders.order_id.eq.1)',
         headers: { authorization: `Bearer ${validToken}` },
       });
 
       assert.strictEqual(res.statusCode, 404);
-      assert.match(res.json.message, /Embedded resource 'user_devices' is not allowed/);
+      assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
       assert.strictEqual(receivedPostgrestRequests.length, 0);
     });
 
@@ -879,7 +879,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
       assert.notStrictEqual(receivedPostgrestRequests[0].url, '/./doctors');
     });
 
-    it('strictly denies client access to serviceRoleOnlyTables (razorpay_*, mail_queue, user_devices, etc.)', async () => {
+    it('strictly denies client access to serviceRoleOnlyTables (razorpay_*, mail_queue, etc.)', async () => {
       const validToken = createTestFirebaseToken({ sub: 'user_service_tables' });
       const serviceRoleOnly = [
         'razorpay_orders',
@@ -888,7 +888,6 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         'mail_queue',
         'security_events',
         'storage_audit_logs',
-        'user_devices',
       ];
 
       for (const table of serviceRoleOnly) {
@@ -909,7 +908,6 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         'razorpay_payments',
         'mail_queue',
         'security_events',
-        'user_devices',
       ];
 
       for (const table of serviceRoleOnly) {
@@ -923,6 +921,72 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         assert.strictEqual(receivedPostgrestRequests.length, 1);
         assert.strictEqual(receivedPostgrestRequests[0].url, `/${table}`);
       }
+    });
+
+    it('allows authenticated client to access /rest/v1/user_devices for FCM device token registration and denies anonymous access with 401', async () => {
+      const validToken = createTestFirebaseToken({ sub: 'user_fcm_123' });
+
+      // 1. Authenticated client can upsert device token
+      receivedPostgrestRequests = [];
+      const postRes = await makeRequest({
+        method: 'POST',
+        path: '/rest/v1/user_devices?on_conflict=user_id,platform',
+        headers: {
+          authorization: `Bearer ${validToken}`,
+          'content-type': 'application/json',
+          prefer: 'resolution=merge-duplicates',
+        },
+        body: JSON.stringify({
+          user_id: 'user_fcm_123',
+          platform: 'android',
+          fcm_token: 'test_token_val_123',
+          updated_at: new Date().toISOString(),
+        }),
+      });
+      assert.strictEqual(postRes.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/user_devices?on_conflict=user_id,platform');
+      assert.strictEqual(receivedPostgrestRequests[0].method, 'POST');
+      const postToken = receivedPostgrestRequests[0].headers.authorization.slice(7);
+      const postPayload = JSON.parse(base64UrlDecode(postToken.split('.')[1]));
+      assert.strictEqual(postPayload.role, 'authenticated');
+      assert.strictEqual(postPayload.sub, 'user_fcm_123');
+
+      // 2. Authenticated client can delete device token
+      receivedPostgrestRequests = [];
+      const delRes = await makeRequest({
+        method: 'DELETE',
+        path: '/rest/v1/user_devices?user_id=eq.user_fcm_123&platform=eq.android',
+        headers: { authorization: `Bearer ${validToken}` },
+      });
+      assert.strictEqual(delRes.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      assert.strictEqual(receivedPostgrestRequests[0].url, '/user_devices?user_id=eq.user_fcm_123&platform=eq.android');
+      assert.strictEqual(receivedPostgrestRequests[0].method, 'DELETE');
+
+      // 3. Anonymous client is strictly blocked with 401 Unauthorized
+      receivedPostgrestRequests = [];
+      const anonRes = await makeRequest({
+        method: 'POST',
+        path: '/rest/v1/user_devices?on_conflict=user_id,platform',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ user_id: 'user_fcm_123', platform: 'android', fcm_token: 'test' }),
+      });
+      assert.strictEqual(anonRes.statusCode, 401);
+      assert.strictEqual(receivedPostgrestRequests.length, 0);
+
+      // 4. Service role caller can access user_devices
+      receivedPostgrestRequests = [];
+      const srvRes = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/user_devices?select=*',
+        headers: { apikey: testServiceRoleKey },
+      });
+      assert.strictEqual(srvRes.statusCode, 200);
+      assert.strictEqual(receivedPostgrestRequests.length, 1);
+      const srvToken = receivedPostgrestRequests[0].headers.authorization.slice(7);
+      const srvPayload = JSON.parse(base64UrlDecode(srvToken.split('.')[1]));
+      assert.strictEqual(srvPayload.role, 'service_role');
     });
 
     it('rejects requests with duplicate select params with 400 Bad Request', async () => {
