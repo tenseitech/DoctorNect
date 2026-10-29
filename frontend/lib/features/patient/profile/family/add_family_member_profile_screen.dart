@@ -2,9 +2,11 @@ import '../../../../core/notifications/app_toast.dart';
 
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/media/gallery_image_picker.dart';
+import '../../../../core/session/patient_session.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/validators/form_validators.dart';
@@ -19,6 +21,15 @@ class AddFamilyMemberProfileScreen extends StatefulWidget {
   const AddFamilyMemberProfileScreen({super.key, this.existingMember});
 
   final FamilyProfileMember? existingMember;
+
+  static String generateFamilyMemberId({
+    required String ownerUid,
+    int? timestamp,
+  }) {
+    final prefix = ownerUid.isNotEmpty ? '${ownerUid}_' : '';
+    final ts = timestamp ?? DateTime.now().millisecondsSinceEpoch;
+    return '${prefix}fm$ts';
+  }
 
   @override
   State<AddFamilyMemberProfileScreen> createState() =>
@@ -129,11 +140,11 @@ class _AddFamilyMemberProfileScreenState
     setState(() => _saving = true);
 
     final isEditing = widget.existingMember != null;
-    final currentPatientId = PatientSession.loggedInPatientId;
-    final prefix = currentPatientId.isNotEmpty ? '${currentPatientId}_' : '';
+    final ownerUid = FirebaseAuth.instance.currentUser?.uid ??
+        PatientSession.loggedInPatientId;
     final memberId = isEditing
         ? widget.existingMember!.id
-        : '${prefix}fm${DateTime.now().millisecondsSinceEpoch}';
+        : AddFamilyMemberProfileScreen.generateFamilyMemberId(ownerUid: ownerUid);
 
     final member = FamilyProfileMember(
       id: memberId,

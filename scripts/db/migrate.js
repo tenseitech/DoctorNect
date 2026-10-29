@@ -49,7 +49,8 @@ async function splitSqlStatements(sqlText) {
 }
 
 function computeChecksum(content) {
-  return crypto.createHash('sha256').update(content, 'utf8').digest('hex');
+  const normalized = typeof content === 'string' ? content.replace(/\r\n/g, '\n') : content;
+  return crypto.createHash('sha256').update(normalized, 'utf8').digest('hex');
 }
 
 async function runMigrations() {

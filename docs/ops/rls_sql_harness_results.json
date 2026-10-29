@@ -1502,6 +1502,46 @@
       "actualSqlState": "00000",
       "actualRows": 0,
       "verdict": "PASS"
+    },
+    {
+      "name": "Privileged Columns: Doctor owner cannot update own rating",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying privileged column \"rating\" on table \"doctors\" is not permitted"
+    },
+    {
+      "name": "Trusted Writers: Patient A submits review on Doctor A and aggregates update rating",
+      "table": "reviews",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Trusted Writers: Assigned driver completes ambulance trip via complete_ambulance_trip RPC",
+      "table": "ambulance_broadcasts",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Trusted Writers: Super admin verifies unverified doctor account",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
     }
   ],
   "zeroResidue": true

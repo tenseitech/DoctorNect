@@ -68,17 +68,23 @@ async function runRdsScratchReplay() {
   console.log('DoctorNect: AWS RDS Scratch Replay & Security Parity Verification');
   console.log('================================================================\n');
 
-  const rdsAdminUrl = getEnv('RDS_ADMIN_DB_URL') || getEnv('RDS_MASTER_URL');
+  const rdsAdminUrl = getEnv('REPLAY_DB_URL') || getEnv('RDS_ADMIN_DB_URL') || getEnv('RDS_MASTER_URL');
   if (!rdsAdminUrl) {
-    console.error('[ERROR] Missing RDS admin connection string (RDS_ADMIN_DB_URL or RDS_MASTER_URL).');
-    console.error('Provide connection string pointing to postgres/template1 on the RDS host.');
+    console.error('[ERROR] Missing replay admin connection string (REPLAY_DB_URL, RDS_ADMIN_DB_URL, or RDS_MASTER_URL).');
+    console.error('Provide connection string pointing to postgres/template1 on the target host (e.g. localhost or RDS).');
     process.exit(1);
   }
 
-  // Safety assertions: Verify host is valid RDS and not production Supabase
+  // Safety assertions: Verify host is valid replay host and not staging or production Supabase
   const stagingUrl = getEnv('STAGING_SUPABASE_DB_URL');
   if (stagingUrl && getHostFingerprint(rdsAdminUrl) === getHostFingerprint(stagingUrl)) {
-    console.error('[FATAL GUARD] RDS_ADMIN_DB_URL matches STAGING_SUPABASE_DB_URL! Replay refused.');
+    console.error('[FATAL GUARD] Target replay URL matches STAGING_SUPABASE_DB_URL! Replay refused.');
+    process.exit(1);
+  }
+
+  const prodUrl = getEnv('PROD_SUPABASE_DB_URL');
+  if (prodUrl && getHostFingerprint(rdsAdminUrl) === getHostFingerprint(prodUrl)) {
+    console.error('[FATAL GUARD] Target replay URL matches PROD_SUPABASE_DB_URL! Replay refused.');
     process.exit(1);
   }
 

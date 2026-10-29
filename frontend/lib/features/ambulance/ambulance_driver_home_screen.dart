@@ -840,21 +840,23 @@ class _RequestCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(
-                  Icons.phone_outlined,
-                  size: 14,
-                  color: AppColors.textSecondaryOf(context),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  booking.contactPhone,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: AppTypography.labelMedium,
+                if (!showAccept && booking.contactPhone.trim().isNotEmpty) ...[
+                  Icon(
+                    Icons.phone_outlined,
+                    size: 14,
                     color: AppColors.textSecondaryOf(context),
                   ),
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 4),
+                  Text(
+                    booking.contactPhone,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
                 Icon(
                   Icons.person_outline,
                   size: 14,

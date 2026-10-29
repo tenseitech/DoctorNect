@@ -1552,6 +1552,43 @@ async function runRlsSqlHarness() {
       expectedSqlState: '00000',
     });
 
+    // --- ROUND 4: TRUSTED WRITERS & DOMAIN GUARDS ---
+    await testCase({
+      name: 'Privileged Columns: Doctor owner cannot update own rating',
+      table: 'doctors',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', docA),
+      sql: `UPDATE public.doctors SET rating = 5.0 WHERE doctor_id = '${docA}';`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'Trusted Writers: Patient A submits review on Doctor A and aggregates update rating',
+      table: 'reviews',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `
+        INSERT INTO public.reviews (review_id, patient_id, doctor_id, patient_name, rating, comment)
+        VALUES ('test_rev_round4', '${pA}', '${docA}', 'Patient A', 5, 'Great consultation and care');
+      `,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Trusted Writers: Assigned driver completes ambulance trip via complete_ambulance_trip RPC',
+      table: 'ambulance_broadcasts',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambA),
+      sql: `SELECT public.complete_ambulance_trip('${bcId}');`,
+      expectedSqlState: '00000',
+    });
+    await testCase({
+      name: 'Trusted Writers: Super admin verifies unverified doctor account',
+      table: 'doctors',
+      role: 'authenticated',
+      claims: getTestJwtClaims('super_admin', 'super_admin_test_uid'),
+      sql: `UPDATE public.doctors SET verified = true WHERE doctor_id = 'test_usr_doc_unverified';`,
+      expectedRows: 1,
+    });
+
     // Always ROLLBACK everything
     await client.query('ROLLBACK');
     console.log('✔ Transaction ROLLED BACK successfully.');

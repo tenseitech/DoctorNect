@@ -123,3 +123,17 @@ test('migrate: applySingleMigration throws if ledger verification row is absent 
   );
 });
 
+test('migrate: computeChecksum normalizes CRLF and LF to identical SHA-256 digest', () => {
+  const { computeChecksum } = require('../db/migrate');
+  const lfContent = '-- migration\nSELECT 1;\nSELECT 2;\n';
+  const crlfContent = '-- migration\r\nSELECT 1;\r\nSELECT 2;\r\n';
+
+  const lfChecksum = computeChecksum(lfContent);
+  const crlfChecksum = computeChecksum(crlfContent);
+
+  assert.equal(typeof lfChecksum, 'string');
+  assert.equal(lfChecksum.length, 64);
+  assert.equal(crlfChecksum, lfChecksum, 'CRLF and LF must produce byte-identical SHA-256 hashes');
+});
+
+

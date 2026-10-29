@@ -1,0 +1,3 @@
+* text=auto
+db/migrations/*.sql text eol=lf
+db/rds_bootstrap/*.sql text eol=lf
