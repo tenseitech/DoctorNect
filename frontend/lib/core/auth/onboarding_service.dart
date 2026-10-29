@@ -44,7 +44,7 @@ class OnboardingService {
   static String roleString(UserType role) => switch (role) {
         UserType.doctor => 'doctor',
         UserType.patient => 'patient',
-        UserType.medical => 'medical',
+        UserType.medical => 'medicalStore',
         UserType.medicalStore => 'medicalStore',
         UserType.lab => 'lab',
         UserType.ambulance => 'ambulance',

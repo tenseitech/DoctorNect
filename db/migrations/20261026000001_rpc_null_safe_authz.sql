@@ -1662,6 +1662,25 @@ BEGIN
         RAISE EXCEPTION 'FORBIDDEN: Profile ID is already in use by another user' USING ERRCODE = '42501';
     END IF;
 
+    -- Cannot claim a profile_id that exists as primary key in domain tables owned by someone else
+    IF EXISTS (
+        SELECT 1 FROM (
+            SELECT patient_id AS pid, owner_uid AS owner FROM public.patients
+            UNION ALL
+            SELECT doctor_id AS pid, owner_uid AS owner FROM public.doctors
+            UNION ALL
+            SELECT store_id AS pid, owner_uid AS owner FROM public.medical_stores
+            UNION ALL
+            SELECT lab_id AS pid, owner_uid AS owner FROM public.labs
+            UNION ALL
+            SELECT ambulance_id AS pid, auth_uid AS owner FROM public.ambulances
+        ) domain_pks
+        WHERE domain_pks.pid = NEW.profile_id
+          AND domain_pks.owner IS DISTINCT FROM (auth.jwt() ->> 'sub')
+    ) THEN
+        RAISE EXCEPTION 'FORBIDDEN: Profile ID is already claimed by another entity' USING ERRCODE = '42501';
+    END IF;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
@@ -1671,6 +1690,98 @@ CREATE TRIGGER trg_users_guard_insert
     BEFORE INSERT ON public.users
     FOR EACH ROW
     EXECUTE FUNCTION private.trg_users_guard_insert();
+
+-- 15.1 Domain Profile Insert Guard (Enforces profile_id and owner_uid match authenticated caller users row)
+CREATE OR REPLACE FUNCTION private.trg_domain_profile_guard_insert()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_caller_sub TEXT;
+    v_user_profile_id TEXT;
+    v_pk_val TEXT;
+    v_owner_val TEXT;
+BEGIN
+    -- Service role / administrative / internal background bypass
+    IF current_user IN ('service_role', 'postgres')
+       OR (auth.jwt() ->> 'role') = 'service_role'
+       OR private.current_firebase_uid() IS NULL
+       OR COALESCE(private.is_super_admin(), FALSE) THEN
+        RETURN NEW;
+    END IF;
+
+    v_caller_sub := NULLIF(COALESCE(
+        auth.jwt() ->> 'sub',
+        auth.jwt() ->> 'uid',
+        current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
+    ), '');
+
+    IF TG_TABLE_NAME = 'patients' THEN
+        v_pk_val := NEW.patient_id;
+        v_owner_val := NEW.owner_uid;
+    ELSIF TG_TABLE_NAME = 'doctors' THEN
+        v_pk_val := NEW.doctor_id;
+        v_owner_val := NEW.owner_uid;
+    ELSIF TG_TABLE_NAME = 'medical_stores' THEN
+        v_pk_val := NEW.store_id;
+        v_owner_val := NEW.owner_uid;
+    ELSIF TG_TABLE_NAME = 'labs' THEN
+        v_pk_val := NEW.lab_id;
+        v_owner_val := NEW.owner_uid;
+    ELSIF TG_TABLE_NAME = 'ambulances' THEN
+        v_pk_val := NEW.ambulance_id;
+        v_owner_val := NEW.auth_uid;
+    ELSE
+        RETURN NEW;
+    END IF;
+
+    -- Owner must match caller sub
+    IF v_owner_val IS DISTINCT FROM v_caller_sub THEN
+        RAISE EXCEPTION 'FORBIDDEN: Domain profile owner must match authenticated token subject'
+            USING ERRCODE = '42501';
+    END IF;
+
+    -- Must have an existing users row with profile_id matching the PK
+    SELECT u.profile_id INTO v_user_profile_id
+    FROM public.users u
+    WHERE u.id = v_caller_sub;
+
+    IF v_user_profile_id IS NULL THEN
+        RAISE EXCEPTION 'FORBIDDEN: User record must exist before inserting domain profile'
+            USING ERRCODE = '42501';
+    END IF;
+
+    IF v_pk_val IS DISTINCT FROM v_user_profile_id THEN
+        RAISE EXCEPTION 'FORBIDDEN: Domain profile ID must match user profile_id in public.users'
+            USING ERRCODE = '42501';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+DROP TRIGGER IF EXISTS trg_patients_guard_insert ON public.patients;
+CREATE TRIGGER trg_patients_guard_insert
+    BEFORE INSERT ON public.patients
+    FOR EACH ROW EXECUTE FUNCTION private.trg_domain_profile_guard_insert();
+
+DROP TRIGGER IF EXISTS trg_doctors_guard_insert ON public.doctors;
+CREATE TRIGGER trg_doctors_guard_insert
+    BEFORE INSERT ON public.doctors
+    FOR EACH ROW EXECUTE FUNCTION private.trg_domain_profile_guard_insert();
+
+DROP TRIGGER IF EXISTS trg_medical_stores_guard_insert ON public.medical_stores;
+CREATE TRIGGER trg_medical_stores_guard_insert
+    BEFORE INSERT ON public.medical_stores
+    FOR EACH ROW EXECUTE FUNCTION private.trg_domain_profile_guard_insert();
+
+DROP TRIGGER IF EXISTS trg_labs_guard_insert ON public.labs;
+CREATE TRIGGER trg_labs_guard_insert
+    BEFORE INSERT ON public.labs
+    FOR EACH ROW EXECUTE FUNCTION private.trg_domain_profile_guard_insert();
+
+DROP TRIGGER IF EXISTS trg_ambulances_guard_insert ON public.ambulances;
+CREATE TRIGGER trg_ambulances_guard_insert
+    BEFORE INSERT ON public.ambulances
+    FOR EACH ROW EXECUTE FUNCTION private.trg_domain_profile_guard_insert();
 
 -- 16. Family-member Parity on Appointment Cancellation
 DROP POLICY IF EXISTS "appointments_update" ON public.appointments;
@@ -1728,3 +1839,4 @@ GRANT EXECUTE ON FUNCTION public.fn_sync_review_helpful_count() TO service_role;
 REVOKE ALL ON FUNCTION private.trg_lock_ambulance_broadcast_status() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION private.trg_users_lock_role() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION private.trg_users_guard_insert() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION private.trg_domain_profile_guard_insert() FROM PUBLIC, anon, authenticated;

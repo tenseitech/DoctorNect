@@ -11,7 +11,7 @@ const { buildPostgrestPayload } = require('../../services/api-gateway/src/jwt_mi
 function getTestJwtClaims(appRole, uid, verified = true) {
   let normalized = appRole;
   if (appRole === 'superAdmin' || appRole === 'super_admin') normalized = 'super_admin';
-  else if (appRole === 'medicalStore' || appRole === 'medical') normalized = 'pharmacy';
+  else if (appRole === 'medical' || appRole === 'pharmacy') normalized = 'medicalStore';
 
   const payload = buildPostgrestPayload({
     role: 'authenticated',
@@ -109,6 +109,7 @@ async function runRlsSqlHarness() {
         ('${pA}', '${pA}', 'Patient A', '+919999900001', true),
         ('${pB}', '${pB}', 'Patient B', '+919999900002', false);
       INSERT INTO public.doctors (doctor_id, owner_uid, name, email, mobile, specialization, qualification, verified, deactivated) VALUES
+        ('test_orphan_doc', 'test_orphan_owner_uid', 'Orphan Dr', 'orphan@test.local', '+919999900998', 'General', 'MBBS', true, false),
         ('${docA}', '${docA}', 'Dr. A', 'da@test.local', '+919999900003', 'General', 'MBBS', true, false),
         ('${docB}', '${docB}', 'Dr. B', 'db@test.local', '+919999900004', 'Cardiology', 'MD', true, false);
       INSERT INTO public.medical_stores (store_id, owner_uid, store_name, owner_name, drug_license_number, phone, email, verified) VALUES
@@ -172,7 +173,7 @@ async function runRlsSqlHarness() {
         }
 
         const res = await client.query(sql);
-        const rowCount = res.rowCount !== null ? res.rowCount : (res.rows ? res.rows.length : 0);
+        const rowCount = Array.isArray(res) ? res[res.length - 1].rowCount : (res.rowCount !== null ? res.rowCount : (res.rows ? res.rows.length : 0));
 
         let pass = false;
         if (expectedSqlState === '00000') {
@@ -1003,6 +1004,102 @@ async function runRlsSqlHarness() {
       claims: getTestJwtClaims('patient', pA),
       sql: `UPDATE public.patients SET owner_uid = '${pB}' WHERE patient_id = '${pA}';`,
       expectedSqlState: '42501',
+    });
+
+    // (e) Authenticated user inserts users row claiming orphan doctor profile_id -> Expect 42501
+    await testCase({
+      name: 'Account Provisioning Tampering: User B inserts users row claiming orphan doctor profile_id',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', 'test_usr_pat_b_atk'),
+      sql: `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified) VALUES ('test_usr_pat_b_atk', 'test_usr_pat_b_atk', 'patient', 'test_orphan_doc', 'Attacker', 'atk@test.local', '+919999900999', true);`,
+      expectedSqlState: '42501',
+    });
+
+    // (f) Authenticated user B inserts doctors row with mismatched doctor_id -> Expect 42501
+    await testCase({
+      name: 'Resource Ownership Hijack: User B inserts doctors row with mismatched doctor_id',
+      table: 'public.doctors',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', pB),
+      sql: `INSERT INTO public.doctors (doctor_id, owner_uid, name, specialization, qualification, verified) VALUES ('doc_arbitrary_123', '${pB}', 'Fake Dr', 'General', 'MBBS', false);`,
+      expectedSqlState: '42501',
+    });
+
+    // --- HAPPY-PATH REALISTIC CLIENT 2-STEP REGISTRATIONS (users upsert -> domain profile insert) ---
+    const regPat = 'reg_usr_pat_seq';
+    await testCase({
+      name: 'Happy Path Registration: 2-step registration for patient (users -> patients)',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', regPat),
+      sql: `
+        INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified)
+        VALUES ('${regPat}', '${regPat}', 'patient', '${regPat}', 'Reg Patient', 'regpat@test.local', '+919999980001', true);
+        INSERT INTO public.patients (patient_id, owner_uid, name, mobile)
+        VALUES ('${regPat}', '${regPat}', 'Reg Patient', '+919999980001');
+      `,
+      expectedRows: 1,
+    });
+
+    const regDoc = 'reg_usr_doc_seq';
+    await testCase({
+      name: 'Happy Path Registration: 2-step registration for doctor (users -> doctors)',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', regDoc, false),
+      sql: `
+        INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified)
+        VALUES ('${regDoc}', '${regDoc}', 'doctor', '${regDoc}', 'Reg Doctor', 'regdoc@test.local', '+919999980002', false);
+        INSERT INTO public.doctors (doctor_id, owner_uid, name, email, mobile, specialization, qualification, verified)
+        VALUES ('${regDoc}', '${regDoc}', 'Reg Doctor', 'regdoc@test.local', '+919999980002', 'General', 'MBBS', false);
+      `,
+      expectedRows: 1,
+    });
+
+    const regStore = 'reg_usr_store_seq';
+    await testCase({
+      name: 'Happy Path Registration: 2-step registration for medicalStore (users -> medical_stores)',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', regStore, false),
+      sql: `
+        INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified)
+        VALUES ('${regStore}', '${regStore}', 'medicalStore', '${regStore}', 'Reg Store', 'regstore@test.local', '+919999980003', false);
+        INSERT INTO public.medical_stores (store_id, owner_uid, store_name, owner_name, drug_license_number, phone, email, verified)
+        VALUES ('${regStore}', '${regStore}', 'Reg Store', 'Owner Reg', 'DL-REG-01', '+919999980003', 'regstore@test.local', false);
+      `,
+      expectedRows: 1,
+    });
+
+    const regLab = 'reg_usr_lab_seq';
+    await testCase({
+      name: 'Happy Path Registration: 2-step registration for lab (users -> labs)',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('lab', regLab, false),
+      sql: `
+        INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified)
+        VALUES ('${regLab}', '${regLab}', 'lab', '${regLab}', 'Reg Lab', 'reglab@test.local', '+919999980004', false);
+        INSERT INTO public.labs (lab_id, owner_uid, lab_name, license_number, phone, email, verified)
+        VALUES ('${regLab}', '${regLab}', 'Reg Lab', 'LIC-REG-01', '+919999980004', 'reglab@test.local', false);
+      `,
+      expectedRows: 1,
+    });
+
+    const regAmb = 'reg_usr_amb_seq';
+    await testCase({
+      name: 'Happy Path Registration: 2-step registration for ambulance (users -> ambulances)',
+      table: 'public.users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', regAmb, false),
+      sql: `
+        INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified)
+        VALUES ('${regAmb}', '${regAmb}', 'ambulance', '${regAmb}', 'Reg Ambulance', 'regamb@test.local', '+919999980005', false);
+        INSERT INTO public.ambulances (ambulance_id, auth_uid, service_name, driver_name, phone, vehicle_number, ambulance_type, city, verified)
+        VALUES ('${regAmb}', '${regAmb}', 'Reg Amb Service', 'Driver Reg', '+919999980005', 'DL-01-REG', 'bls', 'Delhi', false);
+      `,
+      expectedRows: 1,
     });
 
     // Always ROLLBACK everything
