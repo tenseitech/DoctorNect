@@ -138,6 +138,51 @@ async function runRdsScratchReplay() {
       await replayClient.query(bootstrap02);
       console.log('✔ Auth shim applied & SQL unit tests passed successfully.\n');
 
+      // Test-only pg_cron mock check for local/scratch environments lacking pg_cron
+      const hasCronExtRes = await replayClient.query(`
+        SELECT 1 FROM pg_available_extensions WHERE name = 'pg_cron';
+      `);
+      const lacksPgCron = hasCronExtRes.rowCount === 0;
+      if (lacksPgCron) {
+        console.log('[LOCAL REPLAY] Target server lacks pg_cron extension. Installing TEST-ONLY cron recorder schema...');
+        await replayClient.query(`
+          -- ============================================================================
+          -- TEST-ONLY CRON RECORDER (LOCAL SCRATCH REPLAY ONLY — NEVER IN RDS BOOTSTRAP)
+          -- ============================================================================
+          CREATE SCHEMA IF NOT EXISTS cron;
+          CREATE TABLE IF NOT EXISTS cron.job (
+              jobid serial PRIMARY KEY,
+              schedule text NOT NULL,
+              command text NOT NULL,
+              nodename text DEFAULT 'localhost',
+              nodeport integer DEFAULT 5432,
+              database text DEFAULT current_database(),
+              username text DEFAULT current_user,
+              active boolean DEFAULT true,
+              jobname text UNIQUE
+          );
+          CREATE OR REPLACE FUNCTION cron.schedule(job_name text, schedule text, command text)
+          RETURNS bigint LANGUAGE plpgsql AS $$
+          DECLARE v_id bigint;
+          BEGIN
+              INSERT INTO cron.job (jobname, schedule, command)
+              VALUES (job_name, schedule, command)
+              ON CONFLICT (jobname) DO UPDATE SET schedule = EXCLUDED.schedule, command = EXCLUDED.command
+              RETURNING jobid INTO v_id;
+              RETURN v_id;
+          END;
+          $$;
+          CREATE OR REPLACE FUNCTION cron.unschedule(job_name text)
+          RETURNS boolean LANGUAGE plpgsql AS $$
+          BEGIN
+              DELETE FROM cron.job WHERE jobname = job_name;
+              RETURN FOUND;
+          END;
+          $$;
+        `);
+        console.log('✔ TEST-ONLY cron recorder installed in replay_check.\n');
+      }
+
       // 2. Apply Migrations in chronological sequence
       const migrationsDir = path.resolve(__dirname, '../../db/migrations');
       const migrationFiles = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
@@ -145,7 +190,11 @@ async function runRdsScratchReplay() {
 
       for (const file of migrationFiles) {
         process.stdout.write(`  -> Applying ${file}... `);
-        const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+        let sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+        if (lacksPgCron && file === '20260923000003_doctornect_cron.sql') {
+          // If server lacks pg_cron, replace unguarded CREATE EXTENSION with no-op in replay
+          sql = sql.replace(/CREATE EXTENSION IF NOT EXISTS pg_cron;/g, '-- [REPLAY TEST-ONLY] Skipped pg_cron extension creation');
+        }
         const start = Date.now();
         await replayClient.query('BEGIN');
         await replayClient.query(sql);

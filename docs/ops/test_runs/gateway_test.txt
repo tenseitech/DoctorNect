@@ -91,130 +91,130 @@ Discovered 8 non-literal calls:
   [client.from()] backend/functions/registration_otp.js:716 -> tableConfig.table
   [client.from()] backend/functions/registration_otp.js:740 -> tableConfig.table
 ▶ Gateway Allowlist Completeness Scanner
-  ✔ scans frontend/lib and backend/functions for tables and RPCs and confirms 100% gateway allowlist coverage (1665.7825ms)
-✔ Gateway Allowlist Completeness Scanner (1667.4891ms)
-{"timestamp":"2026-10-29T12:34:39.904Z","event":"api_request","method":"GET","path":"/healthz","status":200,"latency_ms":2.4,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ scans frontend/lib and backend/functions for tables and RPCs and confirms 100% gateway allowlist coverage (2859.2257ms)
+✔ Gateway Allowlist Completeness Scanner (2860.0617ms)
+{"timestamp":"2026-10-30T06:23:30.483Z","event":"api_request","method":"GET","path":"/healthz","status":200,"latency_ms":0.9,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
 ▶ DoctorNect Auth Gateway & Token Security Suite
-  ✔ serves /healthz with 200 OK and healthy status (47.4753ms)
-  ✔ handles OPTIONS preflight with CORS headers (8.3373ms)
-{"timestamp":"2026-10-29T12:34:39.928Z","event":"api_request","method":"GET","path":"/some/other/api","status":404,"latency_ms":0.7,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ returns 404 for paths outside /rest/v1 (5.0287ms)
-  ✔ allows anonymous read for allowlisted public paths (29.5579ms)
-{"timestamp":"2026-10-29T12:34:39.962Z","event":"api_request","method":"GET","path":"/rest/v1/users","status":401,"latency_ms":0.3,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ denies anonymous access to protected paths with 401 (3.7378ms)
-  ✔ authenticates with service role key via apikey header (20.0393ms)
-  ✔ authenticates valid Firebase ID token and forwards claims to PostgREST (17.0329ms)
-{"timestamp":"2026-10-29T12:34:40.005Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":0.8,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ rejects expired Firebase token with 401 (5.9316ms)
-{"timestamp":"2026-10-29T12:34:40.012Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":0.7,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ rejects token with invalid issuer (5.7972ms)
-{"timestamp":"2026-10-29T12:34:40.016Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":0.4,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ rejects token with invalid audience (4.2297ms)
-{"timestamp":"2026-10-29T12:34:40.020Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":0.5,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ rejects token with alg: none (3.1408ms)
-{"timestamp":"2026-10-29T12:34:40.025Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":0.9,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ rejects tampered token signature (4.6169ms)
-{"timestamp":"2026-10-29T12:34:40.028Z","event":"api_request","method":"POST","path":"/rest/v1/doctor_directory","status":413,"latency_ms":0.2,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ enforces payload size limits with 413 Payload Too Large (4.6765ms)
-{"timestamp":"2026-10-29T12:34:40.067Z","event":"api_request","method":"GET","path":"/rest/v1/doctor_directory","status":429,"latency_ms":0.2,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ enforces rate limits with 429 Too Many Requests (36.9597ms)
-{"timestamp":"2026-10-29T12:34:40.096Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":0.5,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ rejects token signed by another key not registered in JWKS (29.3114ms)
-  ✔ sanitizes forged role headers and claims, enforcing authenticated role (3.3692ms)
-{"timestamp":"2026-10-29T12:34:40.412Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":237.1,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ supports JWKS key rotation dynamically (313.6054ms)
-  ✔ forwards only allowlisted headers and drops forbidden/untrusted headers (7.1967ms)
-{"timestamp":"2026-10-29T12:34:40.427Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":400,"latency_ms":0.2,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ rejects non-public Accept-Profile with 400 Bad Request (6.2809ms)
-{"timestamp":"2026-10-29T12:34:40.430Z","event":"api_request","method":"POST","path":"/rest/v1/appointments","status":400,"latency_ms":0.2,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ rejects non-public Content-Profile with 400 Bad Request (3.4884ms)
-  ✔ accepts explicit Accept-Profile: public and forwards it (4.8033ms)
-{"timestamp":"2026-10-29T12:34:40.439Z","event":"api_request","method":"TRACE","path":"/rest/v1/doctor_directory","status":405,"latency_ms":0,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-  ✔ rejects disallowed HTTP methods with 405 Method Not Allowed (3.273ms)
-{"timestamp":"2026-10-29T12:34:40.442Z","event":"api_request","method":"GET","path":"/rest/v1/unauthorized_table_xyz","status":404,"latency_ms":0.4,"role":"authenticated","uid_hash":"d32b9b11c59229b0","ip":"127.0.0.1"}
-  ✔ rejects access to unallowlisted table with 404 Not Found (3.3091ms)
-  ✔ allows access to allowlisted table with 200 OK (4.8838ms)
-{"timestamp":"2026-10-29T12:34:40.452Z","event":"api_request","method":"POST","path":"/rest/v1/rpc/drop_all_tables","status":404,"latency_ms":0.6,"role":"authenticated","uid_hash":"20dd9088f61deac5","ip":"127.0.0.1"}
-  ✔ rejects access to unallowlisted RPC with 404 Not Found (4.3892ms)
-  ✔ allows access to allowlisted RPC with 200 OK (6.535ms)
+  ✔ serves /healthz with 200 OK and healthy status (16.5869ms)
+  ✔ handles OPTIONS preflight with CORS headers (2.1486ms)
+{"timestamp":"2026-10-30T06:23:30.490Z","event":"api_request","method":"GET","path":"/some/other/api","status":404,"latency_ms":0.3,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ returns 404 for paths outside /rest/v1 (1.9138ms)
+  ✔ allows anonymous read for allowlisted public paths (7.8504ms)
+{"timestamp":"2026-10-30T06:23:30.500Z","event":"api_request","method":"GET","path":"/rest/v1/users","status":401,"latency_ms":0.1,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ denies anonymous access to protected paths with 401 (1.7187ms)
+  ✔ authenticates with service role key via apikey header (2.9651ms)
+  ✔ authenticates valid Firebase ID token and forwards claims to PostgREST (6.7631ms)
+{"timestamp":"2026-10-30T06:23:30.512Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":0.3,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ rejects expired Firebase token with 401 (2.2281ms)
+{"timestamp":"2026-10-30T06:23:30.515Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":0.3,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ rejects token with invalid issuer (2.3052ms)
+{"timestamp":"2026-10-30T06:23:30.517Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":0.2,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ rejects token with invalid audience (2.0164ms)
+{"timestamp":"2026-10-30T06:23:30.519Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":0.2,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ rejects token with alg: none (1.2181ms)
+{"timestamp":"2026-10-30T06:23:30.520Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":0.3,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ rejects tampered token signature (1.9076ms)
+{"timestamp":"2026-10-30T06:23:30.522Z","event":"api_request","method":"POST","path":"/rest/v1/doctor_directory","status":413,"latency_ms":0.1,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ enforces payload size limits with 413 Payload Too Large (1.9116ms)
+{"timestamp":"2026-10-30T06:23:30.533Z","event":"api_request","method":"GET","path":"/rest/v1/doctor_directory","status":429,"latency_ms":0.1,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ enforces rate limits with 429 Too Many Requests (10.0213ms)
+{"timestamp":"2026-10-30T06:23:30.548Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":0.3,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ rejects token signed by another key not registered in JWKS (15.8114ms)
+  ✔ sanitizes forged role headers and claims, enforcing authenticated role (2.0976ms)
+{"timestamp":"2026-10-30T06:23:30.785Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":401,"latency_ms":151.4,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ supports JWKS key rotation dynamically (235.5837ms)
+  ✔ forwards only allowlisted headers and drops forbidden/untrusted headers (2.8522ms)
+{"timestamp":"2026-10-30T06:23:30.792Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":400,"latency_ms":0.2,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ rejects non-public Accept-Profile with 400 Bad Request (3.0974ms)
+{"timestamp":"2026-10-30T06:23:30.794Z","event":"api_request","method":"POST","path":"/rest/v1/appointments","status":400,"latency_ms":0.1,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ rejects non-public Content-Profile with 400 Bad Request (1.9838ms)
+  ✔ accepts explicit Accept-Profile: public and forwards it (2.9203ms)
+{"timestamp":"2026-10-30T06:23:30.799Z","event":"api_request","method":"TRACE","path":"/rest/v1/doctor_directory","status":405,"latency_ms":0,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  ✔ rejects disallowed HTTP methods with 405 Method Not Allowed (1.0152ms)
+{"timestamp":"2026-10-30T06:23:30.800Z","event":"api_request","method":"GET","path":"/rest/v1/unauthorized_table_xyz","status":404,"latency_ms":0.2,"role":"authenticated","uid_hash":"d32b9b11c59229b0","ip":"127.0.0.1"}
+  ✔ rejects access to unallowlisted table with 404 Not Found (1.5662ms)
+  ✔ allows access to allowlisted table with 200 OK (2.0099ms)
+{"timestamp":"2026-10-30T06:23:30.805Z","event":"api_request","method":"POST","path":"/rest/v1/rpc/drop_all_tables","status":404,"latency_ms":0.3,"role":"authenticated","uid_hash":"20dd9088f61deac5","ip":"127.0.0.1"}
+  ✔ rejects access to unallowlisted RPC with 404 Not Found (2.3937ms)
+  ✔ allows access to allowlisted RPC with 200 OK (3.3192ms)
   ▶ Path Normalization and Resource Embedding
-    ✔ normalizes multiple/double slashes (//rest//v1//doctors) (8.0475ms)
-    ✔ normalizes dot segments (/rest/v1/./doctors) (5.6928ms)
-    ✔ normalizes URL-encoded characters in table name (/rest/v1/%64octors) (4.0922ms)
-    ✔ normalizes trailing slashes (/rest/v1/doctors/) (3.7791ms)
-    ✔ normalizes uppercase table names to lowercase (/rest/v1/DOCTORS) (12.4637ms)
-    ✔ permits resource embedding queries via an allowlisted table (/rest/v1/appointments?select=*,patients(*)) (5.1693ms)
-{"timestamp":"2026-10-29T12:34:40.504Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":1,"role":"authenticated","uid_hash":"4ff785f1c1461941","ip":"127.0.0.1"}
-    ✔ rejects client embedding of service_role-only relation (/appointments?select=*,razorpay_orders(*)) with 404 (5.7914ms)
-    ✔ allows service_role to embed service_role-only tables (/appointments?select=*,razorpay_orders(*)) (4.6542ms)
-{"timestamp":"2026-10-29T12:34:40.513Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.5,"role":"authenticated","uid_hash":"13f6fe8999c993b4","ip":"127.0.0.1"}
-    ✔ rejects nested unallowlisted embed (/appointments?select=*,doctors(*,doctor_facilities(*))) for client (3.6174ms)
-    ✔ allows nested allowlisted embed (/appointments?select=*,doctors(*,reviews(*))) for client (12.3761ms)
-{"timestamp":"2026-10-29T12:34:40.530Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.4,"role":"authenticated","uid_hash":"e02092410b615a99","ip":"127.0.0.1"}
-    ✔ rejects aliased embed pointing to unallowlisted table (/appointments?select=*,payment:razorpay_orders(*)) (3.9713ms)
-    ✔ allows aliased embed pointing to allowlisted table (/appointments?select=*,my_doctor:doctors(*)) (4.7545ms)
-{"timestamp":"2026-10-29T12:34:40.540Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":1.5,"role":"authenticated","uid_hash":"b96fd025b1a5489b","ip":"127.0.0.1"}
-    ✔ rejects unallowlisted embedded table referenced in or= filter (5.9705ms)
-{"timestamp":"2026-10-29T12:34:40.545Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.5,"role":"authenticated","uid_hash":"be4ebc33299d2a93","ip":"127.0.0.1"}
-    ✔ rejects service_role-only embedded table referenced in and= filter (4.7545ms)
-    ✔ allows allowlisted embedded table referenced in or= filter (4.0543ms)
-    ✔ asserts upstream forwarded path strictly equals normalized path and not raw path (8.5145ms)
-{"timestamp":"2026-10-29T12:34:40.562Z","event":"api_request","method":"GET","path":"/rest/v1/razorpay_orders","status":404,"latency_ms":0.3,"role":"authenticated","uid_hash":"762290d7b25516f6","ip":"127.0.0.1"}
-{"timestamp":"2026-10-29T12:34:40.564Z","event":"api_request","method":"GET","path":"/rest/v1/razorpay_payments","status":404,"latency_ms":0.6,"role":"authenticated","uid_hash":"762290d7b25516f6","ip":"127.0.0.1"}
-{"timestamp":"2026-10-29T12:34:40.566Z","event":"api_request","method":"GET","path":"/rest/v1/razorpay_webhook_events","status":404,"latency_ms":0.4,"role":"authenticated","uid_hash":"762290d7b25516f6","ip":"127.0.0.1"}
-{"timestamp":"2026-10-29T12:34:40.567Z","event":"api_request","method":"GET","path":"/rest/v1/mail_queue","status":404,"latency_ms":0.3,"role":"authenticated","uid_hash":"762290d7b25516f6","ip":"127.0.0.1"}
-{"timestamp":"2026-10-29T12:34:40.569Z","event":"api_request","method":"GET","path":"/rest/v1/security_events","status":404,"latency_ms":0.8,"role":"authenticated","uid_hash":"762290d7b25516f6","ip":"127.0.0.1"}
-{"timestamp":"2026-10-29T12:34:40.570Z","event":"api_request","method":"GET","path":"/rest/v1/storage_audit_logs","status":404,"latency_ms":0.4,"role":"authenticated","uid_hash":"762290d7b25516f6","ip":"127.0.0.1"}
-    ✔ strictly denies client access to serviceRoleOnlyTables (razorpay_*, mail_queue, etc.) (11.8641ms)
-    ✔ allows service_role access to serviceRoleOnlyTables (10.5801ms)
-{"timestamp":"2026-10-29T12:34:40.589Z","event":"api_request","method":"POST","path":"/rest/v1/user_devices","status":401,"latency_ms":0.2,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-    ✔ allows authenticated client to access /rest/v1/user_devices for FCM device token registration and denies anonymous access with 401 (11.0938ms)
-{"timestamp":"2026-10-29T12:34:40.597Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":400,"latency_ms":0.6,"role":"authenticated","uid_hash":"1d12f5f7cd1b2940","ip":"127.0.0.1"}
-    ✔ rejects requests with duplicate select params with 400 Bad Request (4.6924ms)
-{"timestamp":"2026-10-29T12:34:40.601Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.5,"role":"authenticated","uid_hash":"f9207788d729b3ab","ip":"127.0.0.1"}
-    ✔ rejects double-quoted unallowlisted embedded identifiers ("razorpay_orders"(*)) (3.24ms)
-    ✔ allows double-quoted allowlisted embedded identifiers ("doctors"(*)) (4.099ms)
-{"timestamp":"2026-10-29T12:34:40.609Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.5,"role":"authenticated","uid_hash":"4f1b9ac7d72d71b4","ip":"127.0.0.1"}
-    ✔ rejects spread unallowlisted embed (...razorpay_orders(*)) (4.1062ms)
-    ✔ allows spread allowlisted embed (...doctors(*)) (4.9468ms)
-{"timestamp":"2026-10-29T12:34:40.620Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.8,"role":"authenticated","uid_hash":"4afd2f1077e2f5bf","ip":"127.0.0.1"}
-    ✔ rejects unallowlisted embedded relation in order= query (order=razorpay_orders(created_at.desc)) (5.945ms)
-    ✔ allows allowlisted embedded relation in order= query (order=doctors(rating.desc)) (5.4498ms)
-{"timestamp":"2026-10-29T12:34:40.629Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.4,"role":"authenticated","uid_hash":"13f8c0011fa3c730","ip":"127.0.0.1"}
-    ✔ rejects unallowlisted embedded relation with !hint!inner combo (!fk!inner) (3.2853ms)
-    ✔ allows allowlisted embedded relation with !hint!inner combo (!fk!inner) (4.0064ms)
-{"timestamp":"2026-10-29T12:34:40.638Z","event":"api_request","method":"GET","path":"/rest/v1/prescription_medicines","status":404,"latency_ms":0.4,"role":"authenticated","uid_hash":"ed3c20fddad635b3","ip":"127.0.0.1"}
-{"timestamp":"2026-10-29T12:34:40.639Z","event":"api_request","method":"GET","path":"/rest/v1/prescription_investigations","status":404,"latency_ms":0.4,"role":"authenticated","uid_hash":"ed3c20fddad635b3","ip":"127.0.0.1"}
-{"timestamp":"2026-10-29T12:34:40.641Z","event":"api_request","method":"GET","path":"/rest/v1/prescription_referrals","status":404,"latency_ms":0.4,"role":"authenticated","uid_hash":"ed3c20fddad635b3","ip":"127.0.0.1"}
-{"timestamp":"2026-10-29T12:34:40.644Z","event":"api_request","method":"GET","path":"/rest/v1/pharmacy_delivery_medicines","status":404,"latency_ms":0.5,"role":"authenticated","uid_hash":"ed3c20fddad635b3","ip":"127.0.0.1"}
-    ✔ rejects direct top-level access to embed-only child tables with 404 Not Found (10.4639ms)
-    ✔ allows embedded queries on embed-only child tables via parent table with 200 OK (3.5314ms)
-{"timestamp":"2026-10-29T12:34:40.651Z","event":"api_request","method":"POST","path":"/rest/v1/rpc/cancel_ambulance_trip","status":404,"latency_ms":0.3,"role":"authenticated","uid_hash":"49d0eb8cfaae87cd","ip":"127.0.0.1"}
-{"timestamp":"2026-10-29T12:34:40.652Z","event":"api_request","method":"POST","path":"/rest/v1/rpc/increment_review_helpful_count","status":404,"latency_ms":0.3,"role":"authenticated","uid_hash":"49d0eb8cfaae87cd","ip":"127.0.0.1"}
-{"timestamp":"2026-10-29T12:34:40.653Z","event":"api_request","method":"POST","path":"/rest/v1/rpc/decrement_review_helpful_count","status":404,"latency_ms":0.3,"role":"authenticated","uid_hash":"49d0eb8cfaae87cd","ip":"127.0.0.1"}
-    ✔ rejects access to removed RPCs (cancel_ambulance_trip, helpful counts) with 404 (5.3682ms)
-{"timestamp":"2026-10-29T12:34:40.657Z","event":"api_request","method":"GET","path":"/rest/v1/pharmacies","status":404,"latency_ms":0.4,"role":"authenticated","uid_hash":"058f1409b15b89c9","ip":"127.0.0.1"}
-    ✔ rejects removed pharmacies table alias with 404 Not Found (4.9028ms)
-{"timestamp":"2026-10-29T12:34:40.688Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":429,"latency_ms":0.5,"role":"authenticated","uid_hash":"dc8fa449b8eab4b6","ip":"192.168.1.99"}
-    ✔ enforces UID-based rate limiting across requests for authenticated user (31.4912ms)
-    ✔ fails if any table referenced by delete_my_account.js is missing from serviceRoleAllowedTables (4.5378ms)
-{"timestamp":"2026-10-29T12:34:40.722Z","event":"api_request","method":"GET","path":"/rest/v1/doctor_directory","status":429,"latency_ms":0.2,"role":"anon","uid_hash":null,"ip":"203.0.113.195"}
-    ✔ enforces rate limiting using rightmost trusted XFF hop and defeats spoofed client IPs (30.0195ms)
-    ✔ service_role traffic is exempt from rate limiting and succeeds for 500 requests in a minute (672.1235ms)
-{"timestamp":"2026-10-29T12:34:41.399Z","event":"api_request","method":"GET","path":"/rest/v1/doctors","status":401,"latency_ms":0.2,"role":"anon","uid_hash":null,"ip":"198.51.100.111"}
-{"timestamp":"2026-10-29T12:34:41.399Z","event":"api_request","method":"GET","path":"/rest/v1/doctors","status":401,"latency_ms":0.1,"role":"anon","uid_hash":null,"ip":"198.51.100.111"}
-{"timestamp":"2026-10-29T12:34:41.400Z","event":"api_request","method":"GET","path":"/rest/v1/doctors","status":401,"latency_ms":0.1,"role":"anon","uid_hash":null,"ip":"198.51.100.111"}
-{"timestamp":"2026-10-29T12:34:41.400Z","event":"api_request","method":"GET","path":"/rest/v1/doctors","status":401,"latency_ms":0,"role":"anon","uid_hash":null,"ip":"198.51.100.111"}
-{"timestamp":"2026-10-29T12:34:41.401Z","event":"api_request","method":"GET","path":"/rest/v1/doctors","status":429,"latency_ms":0.1,"role":"anon","uid_hash":null,"ip":"198.51.100.111"}
-{"timestamp":"2026-10-29T12:34:41.401Z","event":"api_request","method":"GET","path":"/rest/v1/doctors","status":429,"latency_ms":0,"role":"anon","uid_hash":null,"ip":"198.51.100.111"}
-    ✔ rate-limits failed service-key attempts per IP after exceeding limit (4.6379ms)
-{"timestamp":"2026-10-29T12:34:41.410Z","event":"api_request","method":"GET","path":"/rest/v1/doctor_directory","status":429,"latency_ms":0,"role":"anon","uid_hash":null,"ip":"203.0.113.88"}
-    ✔ enforces anonymous rate limiting per IP and returns 429 when exceeded (8.0398ms)
-    ✔ forces max limit for anonymous queries exceeding anonMaxRows (2.4053ms)
-{"timestamp":"2026-10-29T12:34:41.413Z","event":"api_request","method":"GET","path":"/rest/v1/medical_directory","status":401,"latency_ms":0.1,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
-    ✔ rejects anonymous access to medical_directory with 401 Unauthorized (1.0606ms)
-  ✔ Path Normalization and Resource Embedding (954.8537ms)
-✔ DoctorNect Auth Gateway & Token Security Suite (1723.3548ms)
+    ✔ normalizes multiple/double slashes (//rest//v1//doctors) (5.7093ms)
+    ✔ normalizes dot segments (/rest/v1/./doctors) (3.4515ms)
+    ✔ normalizes URL-encoded characters in table name (/rest/v1/%64octors) (2.272ms)
+    ✔ normalizes trailing slashes (/rest/v1/doctors/) (2.2095ms)
+    ✔ normalizes uppercase table names to lowercase (/rest/v1/DOCTORS) (2.3616ms)
+    ✔ permits resource embedding queries via an allowlisted table (/rest/v1/appointments?select=*,patients(*)) (2.4247ms)
+{"timestamp":"2026-10-30T06:23:30.829Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.3,"role":"authenticated","uid_hash":"4ff785f1c1461941","ip":"127.0.0.1"}
+    ✔ rejects client embedding of service_role-only relation (/appointments?select=*,razorpay_orders(*)) with 404 (2.0359ms)
+    ✔ allows service_role to embed service_role-only tables (/appointments?select=*,razorpay_orders(*)) (2.1316ms)
+{"timestamp":"2026-10-30T06:23:30.833Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.3,"role":"authenticated","uid_hash":"13f6fe8999c993b4","ip":"127.0.0.1"}
+    ✔ rejects nested unallowlisted embed (/appointments?select=*,doctors(*,doctor_facilities(*))) for client (1.9086ms)
+    ✔ allows nested allowlisted embed (/appointments?select=*,doctors(*,reviews(*))) for client (4.3299ms)
+{"timestamp":"2026-10-30T06:23:30.840Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.3,"role":"authenticated","uid_hash":"e02092410b615a99","ip":"127.0.0.1"}
+    ✔ rejects aliased embed pointing to unallowlisted table (/appointments?select=*,payment:razorpay_orders(*)) (2.3043ms)
+    ✔ allows aliased embed pointing to allowlisted table (/appointments?select=*,my_doctor:doctors(*)) (2.3258ms)
+{"timestamp":"2026-10-30T06:23:30.845Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.5,"role":"authenticated","uid_hash":"b96fd025b1a5489b","ip":"127.0.0.1"}
+    ✔ rejects unallowlisted embedded table referenced in or= filter (2.6589ms)
+{"timestamp":"2026-10-30T06:23:30.847Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.2,"role":"authenticated","uid_hash":"be4ebc33299d2a93","ip":"127.0.0.1"}
+    ✔ rejects service_role-only embedded table referenced in and= filter (1.8905ms)
+    ✔ allows allowlisted embedded table referenced in or= filter (1.9101ms)
+    ✔ asserts upstream forwarded path strictly equals normalized path and not raw path (3.6629ms)
+{"timestamp":"2026-10-30T06:23:30.855Z","event":"api_request","method":"GET","path":"/rest/v1/razorpay_orders","status":404,"latency_ms":0.2,"role":"authenticated","uid_hash":"762290d7b25516f6","ip":"127.0.0.1"}
+{"timestamp":"2026-10-30T06:23:30.856Z","event":"api_request","method":"GET","path":"/rest/v1/razorpay_payments","status":404,"latency_ms":0.1,"role":"authenticated","uid_hash":"762290d7b25516f6","ip":"127.0.0.1"}
+{"timestamp":"2026-10-30T06:23:30.856Z","event":"api_request","method":"GET","path":"/rest/v1/razorpay_webhook_events","status":404,"latency_ms":0.1,"role":"authenticated","uid_hash":"762290d7b25516f6","ip":"127.0.0.1"}
+{"timestamp":"2026-10-30T06:23:30.857Z","event":"api_request","method":"GET","path":"/rest/v1/mail_queue","status":404,"latency_ms":0.1,"role":"authenticated","uid_hash":"762290d7b25516f6","ip":"127.0.0.1"}
+{"timestamp":"2026-10-30T06:23:30.857Z","event":"api_request","method":"GET","path":"/rest/v1/security_events","status":404,"latency_ms":0.2,"role":"authenticated","uid_hash":"762290d7b25516f6","ip":"127.0.0.1"}
+{"timestamp":"2026-10-30T06:23:30.858Z","event":"api_request","method":"GET","path":"/rest/v1/storage_audit_logs","status":404,"latency_ms":0.1,"role":"authenticated","uid_hash":"762290d7b25516f6","ip":"127.0.0.1"}
+    ✔ strictly denies client access to serviceRoleOnlyTables (razorpay_*, mail_queue, etc.) (4.7432ms)
+    ✔ allows service_role access to serviceRoleOnlyTables (3.9942ms)
+{"timestamp":"2026-10-30T06:23:30.865Z","event":"api_request","method":"POST","path":"/rest/v1/user_devices","status":401,"latency_ms":0.1,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+    ✔ allows authenticated client to access /rest/v1/user_devices for FCM device token registration and denies anonymous access with 401 (4.6872ms)
+{"timestamp":"2026-10-30T06:23:30.868Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":400,"latency_ms":0.2,"role":"authenticated","uid_hash":"1d12f5f7cd1b2940","ip":"127.0.0.1"}
+    ✔ rejects requests with duplicate select params with 400 Bad Request (1.9693ms)
+{"timestamp":"2026-10-30T06:23:30.870Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.2,"role":"authenticated","uid_hash":"f9207788d729b3ab","ip":"127.0.0.1"}
+    ✔ rejects double-quoted unallowlisted embedded identifiers ("razorpay_orders"(*)) (1.6908ms)
+    ✔ allows double-quoted allowlisted embedded identifiers ("doctors"(*)) (2.2581ms)
+{"timestamp":"2026-10-30T06:23:30.874Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.2,"role":"authenticated","uid_hash":"4f1b9ac7d72d71b4","ip":"127.0.0.1"}
+    ✔ rejects spread unallowlisted embed (...razorpay_orders(*)) (1.461ms)
+    ✔ allows spread allowlisted embed (...doctors(*)) (2.1066ms)
+{"timestamp":"2026-10-30T06:23:30.879Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.5,"role":"authenticated","uid_hash":"4afd2f1077e2f5bf","ip":"127.0.0.1"}
+    ✔ rejects unallowlisted embedded relation in order= query (order=razorpay_orders(created_at.desc)) (2.9521ms)
+    ✔ allows allowlisted embedded relation in order= query (order=doctors(rating.desc)) (2.0971ms)
+{"timestamp":"2026-10-30T06:23:30.883Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":404,"latency_ms":0.2,"role":"authenticated","uid_hash":"13f8c0011fa3c730","ip":"127.0.0.1"}
+    ✔ rejects unallowlisted embedded relation with !hint!inner combo (!fk!inner) (1.7212ms)
+    ✔ allows allowlisted embedded relation with !hint!inner combo (!fk!inner) (1.9083ms)
+{"timestamp":"2026-10-30T06:23:30.887Z","event":"api_request","method":"GET","path":"/rest/v1/prescription_medicines","status":404,"latency_ms":0.2,"role":"authenticated","uid_hash":"ed3c20fddad635b3","ip":"127.0.0.1"}
+{"timestamp":"2026-10-30T06:23:30.888Z","event":"api_request","method":"GET","path":"/rest/v1/prescription_investigations","status":404,"latency_ms":0.2,"role":"authenticated","uid_hash":"ed3c20fddad635b3","ip":"127.0.0.1"}
+{"timestamp":"2026-10-30T06:23:30.888Z","event":"api_request","method":"GET","path":"/rest/v1/prescription_referrals","status":404,"latency_ms":0.2,"role":"authenticated","uid_hash":"ed3c20fddad635b3","ip":"127.0.0.1"}
+{"timestamp":"2026-10-30T06:23:30.889Z","event":"api_request","method":"GET","path":"/rest/v1/pharmacy_delivery_medicines","status":404,"latency_ms":0.1,"role":"authenticated","uid_hash":"ed3c20fddad635b3","ip":"127.0.0.1"}
+    ✔ rejects direct top-level access to embed-only child tables with 404 Not Found (3.4967ms)
+    ✔ allows embedded queries on embed-only child tables via parent table with 200 OK (2.1042ms)
+{"timestamp":"2026-10-30T06:23:30.893Z","event":"api_request","method":"POST","path":"/rest/v1/rpc/cancel_ambulance_trip","status":404,"latency_ms":0.2,"role":"authenticated","uid_hash":"49d0eb8cfaae87cd","ip":"127.0.0.1"}
+{"timestamp":"2026-10-30T06:23:30.893Z","event":"api_request","method":"POST","path":"/rest/v1/rpc/increment_review_helpful_count","status":404,"latency_ms":0.2,"role":"authenticated","uid_hash":"49d0eb8cfaae87cd","ip":"127.0.0.1"}
+{"timestamp":"2026-10-30T06:23:30.894Z","event":"api_request","method":"POST","path":"/rest/v1/rpc/decrement_review_helpful_count","status":404,"latency_ms":0.1,"role":"authenticated","uid_hash":"49d0eb8cfaae87cd","ip":"127.0.0.1"}
+    ✔ rejects access to removed RPCs (cancel_ambulance_trip, helpful counts) with 404 (2.6943ms)
+{"timestamp":"2026-10-30T06:23:30.895Z","event":"api_request","method":"GET","path":"/rest/v1/pharmacies","status":404,"latency_ms":0.2,"role":"authenticated","uid_hash":"058f1409b15b89c9","ip":"127.0.0.1"}
+    ✔ rejects removed pharmacies table alias with 404 Not Found (1.4604ms)
+{"timestamp":"2026-10-30T06:23:30.905Z","event":"api_request","method":"GET","path":"/rest/v1/appointments","status":429,"latency_ms":0.2,"role":"authenticated","uid_hash":"dc8fa449b8eab4b6","ip":"192.168.1.99"}
+    ✔ enforces UID-based rate limiting across requests for authenticated user (9.7059ms)
+    ✔ fails if any table referenced by delete_my_account.js is missing from serviceRoleAllowedTables (1.7936ms)
+{"timestamp":"2026-10-30T06:23:30.920Z","event":"api_request","method":"GET","path":"/rest/v1/doctor_directory","status":429,"latency_ms":0.1,"role":"anon","uid_hash":null,"ip":"203.0.113.195"}
+    ✔ enforces rate limiting using rightmost trusted XFF hop and defeats spoofed client IPs (13.3813ms)
+    ✔ service_role traffic is exempt from rate limiting and succeeds for 500 requests in a minute (243.6994ms)
+{"timestamp":"2026-10-30T06:23:31.165Z","event":"api_request","method":"GET","path":"/rest/v1/doctors","status":401,"latency_ms":0.2,"role":"anon","uid_hash":null,"ip":"198.51.100.111"}
+{"timestamp":"2026-10-30T06:23:31.166Z","event":"api_request","method":"GET","path":"/rest/v1/doctors","status":401,"latency_ms":0.1,"role":"anon","uid_hash":null,"ip":"198.51.100.111"}
+{"timestamp":"2026-10-30T06:23:31.166Z","event":"api_request","method":"GET","path":"/rest/v1/doctors","status":401,"latency_ms":0,"role":"anon","uid_hash":null,"ip":"198.51.100.111"}
+{"timestamp":"2026-10-30T06:23:31.166Z","event":"api_request","method":"GET","path":"/rest/v1/doctors","status":401,"latency_ms":0,"role":"anon","uid_hash":null,"ip":"198.51.100.111"}
+{"timestamp":"2026-10-30T06:23:31.166Z","event":"api_request","method":"GET","path":"/rest/v1/doctors","status":429,"latency_ms":0,"role":"anon","uid_hash":null,"ip":"198.51.100.111"}
+{"timestamp":"2026-10-30T06:23:31.167Z","event":"api_request","method":"GET","path":"/rest/v1/doctors","status":429,"latency_ms":0,"role":"anon","uid_hash":null,"ip":"198.51.100.111"}
+    ✔ rate-limits failed service-key attempts per IP after exceeding limit (3.2064ms)
+{"timestamp":"2026-10-30T06:23:31.173Z","event":"api_request","method":"GET","path":"/rest/v1/doctor_directory","status":429,"latency_ms":0.1,"role":"anon","uid_hash":null,"ip":"203.0.113.88"}
+    ✔ enforces anonymous rate limiting per IP and returns 429 when exceeded (6.2728ms)
+    ✔ forces max limit for anonymous queries exceeding anonMaxRows (1.8395ms)
+{"timestamp":"2026-10-30T06:23:31.176Z","event":"api_request","method":"GET","path":"/rest/v1/medical_directory","status":401,"latency_ms":0,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+    ✔ rejects anonymous access to medical_directory with 401 Unauthorized (0.813ms)
+  ✔ Path Normalization and Resource Embedding (368.275ms)
+✔ DoctorNect Auth Gateway & Token Security Suite (753.314ms)
 ℹ tests 67
 ℹ suites 3
 ℹ pass 67
@@ -222,4 +222,4 @@ Discovered 8 non-literal calls:
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 1926.9456
+ℹ duration_ms 2983.969

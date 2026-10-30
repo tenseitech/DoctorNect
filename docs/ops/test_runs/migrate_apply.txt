@@ -3,11 +3,11 @@
 DoctorNect Migration Runner (Target: STAGING)
 ======================================================
 Target Connection: postgresql://postgres.rnltknemwnjrjxthtull:****@aws-0-ap-south-1.pooler.supabase.com:6543/postgres
-Existing Applied Migrations in Ledger: 35
+Existing Applied Migrations in Ledger: 36
 
-[Pending Migration] -> 20261031000001_trusted_writers_and_domain_fixes.sql (checksum: 16a121f1...) 
-Applying 20261031000001_trusted_writers_and_domain_fixes.sql...
-✔ Successfully applied 20261031000001_trusted_writers_and_domain_fixes.sql
+[Pending Migration] -> 20261101000001_domain_allowlist_and_reviews_guard.sql (checksum: f6651256...) 
+Applying 20261101000001_domain_allowlist_and_reviews_guard.sql...
+✔ Successfully applied 20261101000001_domain_allowlist_and_reviews_guard.sql
 ✔ Sent NOTIFY pgrst, 'reload schema'
 
 Migration run completed. Total pending applied: 1

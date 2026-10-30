@@ -1,0 +1,164 @@
+=== Table: ambulances (31 columns) ===
+  ambulance_id                 | character varying | nullable: NO | default: 
+  auth_uid                     | text             | nullable: YES | default: 
+  service_name                 | character varying | nullable: NO | default: 
+  owner_name                   | character varying | nullable: YES | default: 
+  driver_name                  | character varying | nullable: NO | default: 
+  phone                        | character varying | nullable: NO | default: 
+  vehicle_number               | character varying | nullable: NO | default: 
+  ambulance_type               | character varying | nullable: NO | default: 
+  username                     | character varying | nullable: YES | default: 
+  city                         | character varying | nullable: NO | default: 
+  base_address                 | text             | nullable: YES | default: 
+  license_number               | character varying | nullable: YES | default: 
+  insurance_number             | character varying | nullable: YES | default: 
+  has_oxygen                   | boolean          | nullable: NO | default: false
+  has_ventilator               | boolean          | nullable: NO | default: false
+  has_stretcher                | boolean          | nullable: NO | default: true
+  is_24x7                      | boolean          | nullable: NO | default: false
+  rate_per_km                  | numeric          | nullable: YES | default: 
+  total_rating                 | numeric          | nullable: NO | default: 0.00
+  rating_count                 | integer          | nullable: NO | default: 0
+  is_available                 | boolean          | nullable: NO | default: true
+  profile_completed            | boolean          | nullable: NO | default: false
+  verified                     | boolean          | nullable: NO | default: false
+  address_line1                | text             | nullable: YES | default: 
+  address_line2                | text             | nullable: YES | default: 
+  state                        | character varying | nullable: YES | default: 
+  country                      | character varying | nullable: YES | default: 'India'::character varying
+  pincode                      | character varying | nullable: YES | default: 
+  service_areas                | ARRAY            | nullable: YES | default: ARRAY[]::text[]
+  created_at                   | timestamp with time zone | nullable: NO | default: CURRENT_TIMESTAMP
+  updated_at                   | timestamp with time zone | nullable: NO | default: CURRENT_TIMESTAMP
+=== Table: doctors (50 columns) ===
+  doctor_id                    | character varying | nullable: NO | default: 
+  owner_uid                    | text             | nullable: YES | default: 
+  name                         | character varying | nullable: NO | default: 
+  email                        | character varying | nullable: NO | default: 
+  mobile                       | character varying | nullable: NO | default: 
+  specialization               | character varying | nullable: NO | default: 
+  super_specialization         | text             | nullable: YES | default: 
+  qualification                | character varying | nullable: NO | default: 
+  experience_years             | integer          | nullable: NO | default: 1
+  consultation_fee             | numeric          | nullable: YES | default: 0.00
+  clinic_name                  | character varying | nullable: YES | default: 
+  primary_facility_id          | character varying | nullable: YES | default: 
+  area                         | character varying | nullable: YES | default: 
+  city                         | character varying | nullable: YES | default: 
+  state                        | character varying | nullable: YES | default: 
+  country                      | character varying | nullable: YES | default: 'India'::character varying
+  pincode                      | character varying | nullable: YES | default: 
+  address_line1                | text             | nullable: YES | default: 
+  address_line2                | text             | nullable: YES | default: 
+  state_council                | character varying | nullable: YES | default: 
+  council_number               | character varying | nullable: YES | default: 
+  certifications               | ARRAY            | nullable: YES | default: ARRAY[]::text[]
+  past_workplaces              | ARRAY            | nullable: YES | default: ARRAY[]::text[]
+  memberships                  | ARRAY            | nullable: YES | default: ARRAY[]::text[]
+  awards                       | ARRAY            | nullable: YES | default: ARRAY[]::text[]
+  publications                 | ARRAY            | nullable: YES | default: ARRAY[]::text[]
+  about                        | text             | nullable: YES | default: 
+  languages                    | ARRAY            | nullable: YES | default: ARRAY['English'::text, 'Hindi'::text]
+  photo_url                    | text             | nullable: YES | default: 
+  maps_link                    | text             | nullable: YES | default: 
+  landmark                     | character varying | nullable: YES | default: 
+  rating                       | numeric          | nullable: NO | default: 0.00
+  review_count                 | integer          | nullable: NO | default: 0
+  profile_completed            | boolean          | nullable: NO | default: false
+  verified                     | boolean          | nullable: NO | default: false
+  verified_at                  | timestamp with time zone | nullable: YES | default: 
+  deactivated                  | boolean          | nullable: NO | default: false
+  deactivated_at               | timestamp with time zone | nullable: YES | default: 
+  reactivate_before            | timestamp with time zone | nullable: YES | default: 
+  reactivated_at               | timestamp with time zone | nullable: YES | default: 
+  fcm_token                    | text             | nullable: YES | default: 
+  fcm_token_updated_at         | timestamp with time zone | nullable: YES | default: 
+  created_at                   | timestamp with time zone | nullable: NO | default: CURRENT_TIMESTAMP
+  updated_at                   | timestamp with time zone | nullable: NO | default: CURRENT_TIMESTAMP
+  photo_key                    | text             | nullable: YES | default: 
+  photo_storage                | character varying | nullable: YES | default: 'legacy'::character varying
+  photo_s3_key                 | text             | nullable: YES | default: 
+  photo_s3_bucket              | text             | nullable: YES | default: 
+  photo_storage_provider       | character varying | nullable: YES | default: 's3'::character varying
+  photo_updated_at             | timestamp with time zone | nullable: YES | default: 
+=== Table: labs (21 columns) ===
+  lab_id                       | character varying | nullable: NO | default: 
+  owner_uid                    | text             | nullable: YES | default: 
+  lab_name                     | character varying | nullable: NO | default: 
+  license_number               | character varying | nullable: NO | default: 
+  phone                        | character varying | nullable: NO | default: 
+  email                        | character varying | nullable: NO | default: 
+  gst_number                   | character varying | nullable: YES | default: 
+  rating                       | numeric          | nullable: NO | default: 0.00
+  area                         | character varying | nullable: YES | default: 
+  city                         | character varying | nullable: YES | default: 
+  state                        | character varying | nullable: YES | default: 
+  country                      | character varying | nullable: YES | default: 'India'::character varying
+  pincode                      | character varying | nullable: YES | default: 
+  address_line1                | text             | nullable: YES | default: 
+  address_line2                | text             | nullable: YES | default: 
+  profile_completed            | boolean          | nullable: NO | default: false
+  verified                     | boolean          | nullable: NO | default: false
+  verified_at                  | timestamp with time zone | nullable: YES | default: 
+  deactivated                  | boolean          | nullable: NO | default: false
+  created_at                   | timestamp with time zone | nullable: NO | default: CURRENT_TIMESTAMP
+  updated_at                   | timestamp with time zone | nullable: NO | default: CURRENT_TIMESTAMP
+=== Table: medical_stores (20 columns) ===
+  store_id                     | character varying | nullable: NO | default: 
+  owner_uid                    | text             | nullable: YES | default: 
+  store_name                   | character varying | nullable: NO | default: 
+  owner_name                   | character varying | nullable: NO | default: 
+  drug_license_number          | character varying | nullable: NO | default: 
+  phone                        | character varying | nullable: NO | default: 
+  email                        | character varying | nullable: NO | default: 
+  gst_number                   | character varying | nullable: YES | default: 
+  address_line1                | text             | nullable: YES | default: 
+  address_line2                | text             | nullable: YES | default: 
+  city                         | character varying | nullable: YES | default: 
+  state                        | character varying | nullable: YES | default: 
+  country                      | character varying | nullable: YES | default: 'India'::character varying
+  pincode                      | character varying | nullable: YES | default: 
+  profile_completed            | boolean          | nullable: NO | default: false
+  verified                     | boolean          | nullable: NO | default: false
+  verified_at                  | timestamp with time zone | nullable: YES | default: 
+  deactivated                  | boolean          | nullable: NO | default: false
+  created_at                   | timestamp with time zone | nullable: NO | default: CURRENT_TIMESTAMP
+  updated_at                   | timestamp with time zone | nullable: NO | default: CURRENT_TIMESTAMP
+=== Table: patients (37 columns) ===
+  patient_id                   | character varying | nullable: NO | default: 
+  owner_uid                    | text             | nullable: YES | default: 
+  name                         | character varying | nullable: NO | default: 
+  email                        | character varying | nullable: YES | default: 
+  mobile                       | character varying | nullable: NO | default: 
+  age                          | integer          | nullable: YES | default: 
+  gender                       | character varying | nullable: YES | default: 
+  blood_group                  | character varying | nullable: YES | default: 
+  height                       | character varying | nullable: YES | default: 
+  weight                       | character varying | nullable: YES | default: 
+  address                      | text             | nullable: YES | default: 
+  photo_url                    | text             | nullable: YES | default: 
+  share_records_with_doctors   | boolean          | nullable: NO | default: true
+  primary_doctor_id            | character varying | nullable: YES | default: 
+  invited_doctor_id            | character varying | nullable: YES | default: 
+  care_team_doctor_ids         | ARRAY            | nullable: YES | default: ARRAY[]::text[]
+  profile_completed            | boolean          | nullable: NO | default: true
+  verified                     | boolean          | nullable: NO | default: true
+  fcm_token                    | text             | nullable: YES | default: 
+  fcm_token_updated_at         | timestamp with time zone | nullable: YES | default: 
+  created_at                   | timestamp with time zone | nullable: NO | default: CURRENT_TIMESTAMP
+  updated_at                   | timestamp with time zone | nullable: NO | default: CURRENT_TIMESTAMP
+  sync_origin                  | character varying | nullable: YES | default: 'patient_supabase'::character varying
+  synced_by                    | character varying | nullable: YES | default: 
+  city                         | character varying | nullable: YES | default: 
+  state                        | character varying | nullable: YES | default: 
+  pincode                      | character varying | nullable: YES | default: 
+  country                      | character varying | nullable: YES | default: 'India'::character varying
+  conditions                   | ARRAY            | nullable: YES | default: ARRAY[]::text[]
+  allergies                    | ARRAY            | nullable: YES | default: ARRAY[]::text[]
+  metadata                     | jsonb            | nullable: YES | default: '{}'::jsonb
+  photo_key                    | text             | nullable: YES | default: 
+  photo_storage                | character varying | nullable: YES | default: 'legacy'::character varying
+  photo_s3_key                 | text             | nullable: YES | default: 
+  photo_s3_bucket              | text             | nullable: YES | default: 
+  photo_storage_provider       | character varying | nullable: YES | default: 's3'::character varying
+  photo_updated_at             | timestamp with time zone | nullable: YES | default: 

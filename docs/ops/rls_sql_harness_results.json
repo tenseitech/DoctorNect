@@ -1044,7 +1044,7 @@
       "expectedRows": 0,
       "actualRows": 0,
       "verdict": "PASS",
-      "error": "FORBIDDEN: Modifying privileged column \"owner_uid\" on table \"patients\" is not permitted"
+      "error": "FORBIDDEN: Modifying column \"owner_uid\" on table \"patients\" is not permitted (not client-editable)"
     },
     {
       "name": "Account Provisioning Tampering: User B inserts users row claiming orphan doctor profile_id",
@@ -1238,7 +1238,7 @@
       "expectedRows": 0,
       "actualRows": 0,
       "verdict": "PASS",
-      "error": "FORBIDDEN: Modifying privileged column \"verified\" on table \"doctors\" is not permitted"
+      "error": "FORBIDDEN: Modifying column \"verified\" on table \"doctors\" is not permitted (not client-editable)"
     },
     {
       "name": "Privileged Columns: Doctor owner cannot update deactivated flag",
@@ -1249,7 +1249,7 @@
       "expectedRows": 0,
       "actualRows": 0,
       "verdict": "PASS",
-      "error": "FORBIDDEN: Modifying privileged column \"deactivated\" on table \"doctors\" is not permitted"
+      "error": "FORBIDDEN: Modifying column \"deactivated\" on table \"doctors\" is not permitted (not client-editable)"
     },
     {
       "name": "Privileged Columns: Doctor owner cannot change owner_uid",
@@ -1260,7 +1260,7 @@
       "expectedRows": 0,
       "actualRows": 0,
       "verdict": "PASS",
-      "error": "FORBIDDEN: Modifying privileged column \"owner_uid\" on table \"doctors\" is not permitted"
+      "error": "FORBIDDEN: Modifying column \"owner_uid\" on table \"doctors\" is not permitted (not client-editable)"
     },
     {
       "name": "Privileged Columns: Normal profile edit allowed for doctor owner",
@@ -1292,7 +1292,7 @@
       "expectedRows": 0,
       "actualRows": 0,
       "verdict": "PASS",
-      "error": "FORBIDDEN: Modifying privileged column \"verified\" on table \"labs\" is not permitted"
+      "error": "FORBIDDEN: Modifying column \"verified\" on table \"labs\" is not permitted (not client-editable)"
     },
     {
       "name": "Privileged Columns: Lab owner cannot change owner_uid",
@@ -1303,7 +1303,7 @@
       "expectedRows": 0,
       "actualRows": 0,
       "verdict": "PASS",
-      "error": "FORBIDDEN: Modifying privileged column \"owner_uid\" on table \"labs\" is not permitted"
+      "error": "FORBIDDEN: Modifying column \"owner_uid\" on table \"labs\" is not permitted (not client-editable)"
     },
     {
       "name": "Privileged Columns: Normal profile edit allowed for lab owner",
@@ -1335,7 +1335,7 @@
       "expectedRows": 0,
       "actualRows": 0,
       "verdict": "PASS",
-      "error": "FORBIDDEN: Modifying privileged column \"verified\" on table \"medical_stores\" is not permitted"
+      "error": "FORBIDDEN: Modifying column \"verified\" on table \"medical_stores\" is not permitted (not client-editable)"
     },
     {
       "name": "Privileged Columns: Normal profile edit allowed for store owner",
@@ -1367,7 +1367,7 @@
       "expectedRows": 0,
       "actualRows": 0,
       "verdict": "PASS",
-      "error": "FORBIDDEN: Modifying privileged column \"verified\" on table \"ambulances\" is not permitted"
+      "error": "FORBIDDEN: Modifying column \"verified\" on table \"ambulances\" is not permitted (not client-editable)"
     },
     {
       "name": "Privileged Columns: Ambulance owner cannot change auth_uid",
@@ -1378,7 +1378,7 @@
       "expectedRows": 0,
       "actualRows": 0,
       "verdict": "PASS",
-      "error": "FORBIDDEN: Modifying privileged column \"auth_uid\" on table \"ambulances\" is not permitted"
+      "error": "FORBIDDEN: Modifying column \"auth_uid\" on table \"ambulances\" is not permitted (not client-editable)"
     },
     {
       "name": "Privileged Columns: Normal profile edit allowed for ambulance owner",
@@ -1512,7 +1512,7 @@
       "expectedRows": 0,
       "actualRows": 0,
       "verdict": "PASS",
-      "error": "FORBIDDEN: Modifying privileged column \"rating\" on table \"doctors\" is not permitted"
+      "error": "FORBIDDEN: Modifying column \"rating\" on table \"doctors\" is not permitted (not client-editable)"
     },
     {
       "name": "Trusted Writers: Patient A submits review on Doctor A and aggregates update rating",
@@ -1536,6 +1536,202 @@
     {
       "name": "Trusted Writers: Super admin verifies unverified doctor account",
       "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Admin Forgery Denied: Authenticated token with forged user_role claim in request headers/body denied admin RPC",
+      "table": "ambulance_broadcasts",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "permission denied for function get_ambulance_trip_contact"
+    },
+    {
+      "name": "Privileged Columns: Unverified doctor owner cannot self-verify by updating verified=true",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying column \"verified\" on table \"doctors\" is not permitted (not client-editable)"
+    },
+    {
+      "name": "Privileged Columns: Doctor owner cannot update owner_uid",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying column \"owner_uid\" on table \"doctors\" is not permitted (not client-editable)"
+    },
+    {
+      "name": "Privileged Columns: Lab owner cannot update rating",
+      "table": "labs",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying column \"rating\" on table \"labs\" is not permitted (not client-editable)"
+    },
+    {
+      "name": "Privileged Columns: Unverified lab owner cannot self-verify by updating verified=true",
+      "table": "labs",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying column \"verified\" on table \"labs\" is not permitted (not client-editable)"
+    },
+    {
+      "name": "Privileged Columns: Lab owner cannot update owner_uid",
+      "table": "labs",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying column \"owner_uid\" on table \"labs\" is not permitted (not client-editable)"
+    },
+    {
+      "name": "Privileged Columns: Unverified medical store owner cannot self-verify by updating verified=true",
+      "table": "medical_stores",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying column \"verified\" on table \"medical_stores\" is not permitted (not client-editable)"
+    },
+    {
+      "name": "Privileged Columns: Medical store owner cannot update owner_uid",
+      "table": "medical_stores",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying column \"owner_uid\" on table \"medical_stores\" is not permitted (not client-editable)"
+    },
+    {
+      "name": "Privileged Columns: Medical store owner cannot update unallowlisted column (deactivated)",
+      "table": "medical_stores",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying column \"deactivated\" on table \"medical_stores\" is not permitted (not client-editable)"
+    },
+    {
+      "name": "Privileged Columns: Ambulance owner cannot update total_rating",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying column \"total_rating\" on table \"ambulances\" is not permitted (not client-editable)"
+    },
+    {
+      "name": "Privileged Columns: Unverified ambulance owner cannot self-verify by updating verified=true",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying column \"verified\" on table \"ambulances\" is not permitted (not client-editable)"
+    },
+    {
+      "name": "Privileged Columns: Ambulance owner cannot update auth_uid (via UPDATE guard)",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying column \"auth_uid\" on table \"ambulances\" is not permitted (not client-editable)"
+    },
+    {
+      "name": "Privileged Columns: Patient owner cannot update verified flag",
+      "table": "patients",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying column \"verified\" on table \"patients\" is not permitted (not client-editable)"
+    },
+    {
+      "name": "Privileged Columns: Patient owner cannot update owner_uid",
+      "table": "patients",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Modifying column \"owner_uid\" on table \"patients\" is not permitted (not client-editable)"
+    },
+    {
+      "name": "Reviews Guard: Patient B denied review without completed appointment",
+      "table": "reviews",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "new row violates row-level security policy for table \"reviews\""
+    },
+    {
+      "name": "Reviews Guard: Doctor A denied self-reviewing own profile",
+      "table": "reviews",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "new row violates row-level security policy for table \"reviews\""
+    },
+    {
+      "name": "Ambulance Phone: Driver reads accepted broadcast through exact PostgREST query with unmasked contact_phone",
+      "table": "ambulance_broadcasts",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Ambulance Phone: Patient reads accepted broadcast through exact PostgREST query with accepted_driver_phone",
+      "table": "ambulance_broadcasts",
       "role": "authenticated",
       "expectedSqlState": "00000",
       "actualSqlState": "00000",
