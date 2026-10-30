@@ -100,6 +100,7 @@ async function verifyFirebaseIdToken(token, options = {}) {
   return {
     uid: payload.sub,
     email: payload.email || null,
+    phoneNumber: payload.phone_number || null,
     // Extract verified role strictly from token payload (never trust caller headers)
     appRole: payload.app_role || payload.user_role || payload.role || 'patient',
     verified: Boolean(payload.verified),

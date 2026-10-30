@@ -113,6 +113,7 @@ supabase/.temp/
 # Debug and output files!docs/ops/migration_diffs/*.diff
 *.out
 docs/ops/test_runs/rds_scratch_replay.txt
+docs/ops/test_runs/git_sync_*.txt
 auth_otp.diff
 reset.out
 verify.out

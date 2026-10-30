@@ -16,7 +16,7 @@
 | **A.3** | Migration behavior drift: 13 functions + trigger in 20261026000001 diff vs previous definition shows ONLY authorization changes | **VERIFIED-DONE** | AST validated (1739 statements, 0 errors, balanced `$$`); phantom columns `payment_status` and `consultation_fee` removed from `book_appointment_atomic`; return shape and status compatibility preserved | None | Cursor | S |
 | **A.4** | Static column checker: every column referenced in new function bodies exists; trigger name matches old trigger | **VERIFIED-DONE** | `scripts/db/check_migration_columns.js` confirmed 164 columns across 70 tables; `audit_staging_catalog.js` confirmed **ZERO column differences** (`[]`); validated with `plpgsql_check` on all 20 functions/triggers | None | Cursor | S |
 | **A.5** | SECURITY DEFINER RPCs not in client allowlist but granted to authenticated/anon | **VERIFIED-DONE** | Uncalled functions revoked from PUBLIC, anon, authenticated; granted to service_role only; `get_ambulance_trip_contact` revoked from `authenticated` (granted to `service_role` only, 42501 on client call); `ambulance_broadcasts` contact phone masked to NULL on pending; `medical_directory` revoked from anon; `promoted_ads` financial columns pruned from anon; `claim_ambulance_driver` verified with role/phone checks and harness deny tests | None | Cursor | S |
-| **A.6** | RDS bootstrap (roles, auth shim, legacy compat), schema_diff parity between staging and RDS, migrate.js dry run, credentials status | **VERIFIED-DONE (LOCAL REPLAY)** | `db/rds_bootstrap/01_roles_and_extensions.sql`, `02_auth_shim.sql`, and `03_legacy_compat.sql` verified; `scripts/db/rds_scratch_replay.js` executed as non-superuser `rds_master` (`NOSUPERUSER NOBYPASSRLS`): all 42 migrations (1818 statements) applied with **0 statement failures** (`docs/ops/test_runs/round9_rds_scratch_replay.txt`); RLS SQL Harness executed on `replay_check`: 202 PASS / 0 FAIL; PostgREST Windows binary v12.2.3 pinned (`docs/ops/postgrest_windows_binary.md`) and verified 6/6 HTTP E2E tests (`docs/ops/test_runs/round9_postgrest_e2e.txt`); schema_diff generated; scratch database dropped cleanly | prod-cutover | Cursor | M |
+| **A.6** | RDS bootstrap (roles, auth shim, legacy compat), schema_diff parity between staging and RDS, migrate.js dry run, credentials status | **OPEN (LOCAL VERIFIED / AWS PENDING)** | `db/rds_bootstrap/01_roles_and_extensions.sql`, `02_auth_shim.sql`, and `03_legacy_compat.sql` verified; `scripts/db/rds_scratch_replay.js` executed as non-superuser `rds_master` (`NOSUPERUSER NOBYPASSRLS`): all 45 migrations applied with **0 statement failures** (`docs/ops/test_runs/round10_rds_scratch_replay.txt`); RLS SQL Harness executed on `replay_check`: 208 PASS / 0 FAIL; PostgREST binary v12.2.3 pinned (`db/postgrest/postgrest.conf`) and verified 6/6 HTTP E2E tests (`docs/ops/test_runs/round10_postgrest_e2e.txt`); schema_diff deep breakdown documented; scratch database dropped cleanly; Live AWS RDS execution pending | prod-cutover | Khijendra / Cursor | M |
 | **B.7** | Who can write users.role / verified / profile_id: firestore.rules + Cloud Functions + bridge; prevent client admin escalation | **VERIFIED-DONE** | `backend/firestore.rules:448-485` blocks role/verified mutations; `backend/functions/sync_flags.js:14-22` disables bridge in production; `trg_users_guard_insert` and `trg_domain_profile_guard_insert` rewritten; `trg_domain_profile_guard_update` blocks setting privileged columns (`verified`, `deactivated`, `owner_uid`, `auth_uid`, PK); `users` UPDATE trigger locks `verified`; live harness passes with 42501 on tamper | None | Cursor | S |
 | **B.8** | Demo accounts: server-side OTP bypass file:line, disabled in production, production Firebase cleanup checklist | **DONE-UNVERIFIED** | Code & tests VERIFIED in `backend/functions/registration_otp.js:118-176` and `reviewer_login.test.js:210-245`; production Firebase Auth project cleanup UNVERIFIED (requires operator check; exact allowlist: `+919999900001`..`5` and `+919999988888`) | Play-Store-release | Khijendra | S |
 | **B.9** | users column locks vs registration/provisioning flow proven safe | **VERIFIED-DONE** | `private.lock_columns` exempts `service_role` and `super_admin`; `trg_users_guard_insert` allows re-login upserts for verified providers; `trg_domain_profile_guard_insert` enforces family patient namespacing (`${caller_sub}_...`); client updated in `add_family_member_profile_screen.dart:45-56`; live harness covers 2-step registration for all 5 roles with 100% PASS | None | Cursor | S |
@@ -24,14 +24,14 @@
 | **C.11** | delete_my_account: all tables with PII covered, Firestore/S3/Auth deletion, end-to-end integration | **CODE-DONE / DB-UNVERIFIED** | Code complete in `backend/functions/delete_my_account.js:770-985`; mock gateway test passes 7/7 (`delete_my_account_supabase.test.js`); live cloud execution UNVERIFIED against real RDS/S3 | prod-cutover | Cursor / Khijendra | M |
 | **C.12** | Gateway: allowlist vs real usage, embedding checks, rate limits (service-key brute force), CORS, logging without PII, npm audit, Dockerfile build | **VERIFIED-DONE** | Gateway tests pass 68/68; anon rate limiting (60 req/min) and max rows limit (100) enforced; `token_claims_provenance.test.js` verifies client cannot forge roles; allowlist completeness tested; npm audit 0 vulnerabilities; saved in `docs/ops/test_runs/gateway_test.txt` | None | Cursor | S |
 | **C.13** | Test status with real runners (node --test / flutter test / flutter analyze); security-relevant skipped tests | **VERIFIED-DONE** | Full outputs committed to `docs/ops/test_runs/`: Gateway: 68 pass, 0 fail (`gateway_test.txt`); Backend: 480 pass, 0 fail, 22 skipped with `CI=true` (`backend_test.txt`); Flutter analyze: 0 issues (`flutter_analyze.txt`); Flutter test: 562 pass, 0 fail (`flutter_test.txt`); RLS SQL Harness: 202 pass, 0 fail (`round9_rls_harness_staging.txt`); Replay Statements: 1818 pass, 0 fail (`round9_rds_scratch_replay.txt`); PostgREST E2E HTTP: 6 pass, 0 fail (`round9_postgrest_e2e.txt`) | None | Cursor | S |
-| **D.14** | Terraform: installed, terraform validate/plan output, assumed vs created infra components | **VERIFIED-DONE** | Terraform v1.16.6 installed; `infra/aws/rds.tf` parameter group family updated to `postgres17` (`doctornect-production-pg17-cron`) matching RDS PostgreSQL 17 engine version; parameter attachment instructions and `rds_instance_identifier` parameter configured; `terraform init -backend=false && terraform validate` passed cleanly (`Success! The configuration is valid.`, saved to `docs/ops/test_runs/terraform_validate.txt`) | None | Cursor | S |
-| **D.15** | PostgREST configuration: schemas, anon role, JWT secret handling, db pool, max rows | **VERIFIED-DONE** | `infra/aws/ecs.tf:101-113` configures `PGRST_DB_SCHEMAS=public`, `PGRST_DB_ANON_ROLE=anon`, `PGRST_DB_POOL=10`, `PGRST_DB_MAX_ROWS=1000`, `PGRST_JWT_AUD=authenticated`, and pulls secrets from AWS Secrets Manager | None | Cursor | S |
+| **D.14** | Terraform: installed, terraform validate/plan output, assumed vs created infra components | **OPEN (LOCAL VERIFIED / AWS APPLY PENDING)** | Terraform v1.16.6 installed; `infra/aws/rds.tf` parameter group family updated to `postgres17` (`doctornect-production-pg17-cron`) matching RDS PostgreSQL 17 engine version; parameter attachment instructions and `rds_instance_identifier` parameter configured; `terraform init -backend=false && terraform validate` passed cleanly (`Success! The configuration is valid.`, saved to `docs/ops/test_runs/terraform_validate.txt`); Live AWS plan and apply pending | prod-cutover | Khijendra | S |
+| **D.15** | PostgREST configuration: schemas, anon role, JWT secret handling, db pool, max rows | **OPEN (CONFIG VERIFIED / ECS DEPLOY PENDING)** | `infra/aws/ecs.tf:101-113` configures `PGRST_DB_SCHEMAS=public`, `PGRST_DB_ANON_ROLE=anon`, `PGRST_DB_POOL=10`, `PGRST_DB_MAX_ROWS=1000`, `PGRST_JWT_AUD=authenticated`, and pulls secrets from AWS Secrets Manager; `db/postgrest/postgrest.conf` standardized; local E2E runner passes 6/6 tests (`docs/ops/test_runs/round10_postgrest_e2e.txt`); live ECS deployment pending | prod-cutover | Khijendra | S |
 | **E.16** | Production build: release_build.ps1/.sh dry-run, debug hooks not reachable in release, no staging URLs/keys | **VERIFIED-DONE** | `frontend/test/release_build_supabase_guard_test.dart` passes (11 tests); zero hardcoded demo phone numbers in `frontend/lib`; `verify_production_build_config.js` blocks staging references | None | Cursor | S |
 | **E.17** | Realtime replaced by polling at all 16 sites + 13 state-machine sites; device smoke test checklist status | **DONE-UNVERIFIED** | `frontend/test/realtime_production_bypass_test.dart` passes 26/26 covering all 16 call sites and 4 state machines; real device execution UNVERIFIED (checklist `docs/runbooks/DEVICE_SMOKE_TEST_CHECKLIST.md` not executed on hardware) | Play-Store-release | Khijendra | L |
 | **E.18** | Flows needing a real-device test before release (login, booking, reschedule, prescription, ambulance, pharmacy, lab, deletion, FCM) | **OPEN** | Requires physical Android/iOS handset with cellular SIM for SMS OTP, GPS location hardware, camera for KYC/reports, and live FCM push registration | Play-Store-release | Khijendra | L |
 | **F.19** | Play Store requirements: account deletion in-app and web URL, privacy policy URL, Data Safety form, target API, signing key | **OPEN** | In-app deletion exists; public web deletion URL and hosted privacy policy URL must be deployed; Data Safety form must be submitted in Play Console; Keystore/Play App Signing setup required | Play-Store-release | Khijendra | M |
 | **F.20** | Cutover runbook completeness: step order, rollback plan, data migration decision, monitoring/alerts | **DOCS-DONE / RUNTIME-OPEN** | `docs/runbooks/PRODUCTION_CUTOVER_RDS.md` documented with RDS parameter group sequence and rollback plan; rehearsal pending on live RDS instance | prod-cutover | Cursor / Khijendra | S |
-| **F.21** | Secrets inventory: storage, rotation, committed secrets scan | **VERIFIED-DONE** | `docs/ops/test_runs/secrets_history_scan.txt` full git scan (371 commits) via `node scripts/ops/scan_git_history_secrets.js` confirmed 0 committed secrets | None | Cursor | S |
+| **F.21** | Secrets inventory: storage, rotation, committed secrets scan | **OPEN (INVENTORY READY / ROTATION PENDING)** | `docs/ops/test_runs/secrets_history_scan.txt` full git scan (371 commits) via `node scripts/ops/scan_git_history_secrets.js` confirmed 0 committed secrets; `docs/ops/test_runs/round10_hygiene_audit.txt` confirmed hygiene status; live secrets rotation in AWS Secrets Manager and GCP Secret Manager pending | prod-cutover | Khijendra | S |
 | **F.22** | Git hygiene: branch chore/restructure-cleanup remote status and push plan | **VERIFIED-DONE** | `docs/ops/test_runs/git_hygiene.txt` via `git branch -vv` confirms `chore/restructure-cleanup` is purely local with NO remote tracking branch; plan established to squash/scrub before merge | None | Cursor / Khijendra | S |
 
 ---
@@ -56,8 +56,8 @@
    - Scan of all `SECURITY DEFINER` functions across `public` and `private` schemas: **ZERO** occurrences of `current_user`, `session_user`, or `current_firebase_uid() IS NULL` remain in production functions.
 
 2. **Harness First-Run Baseline & Resolution Matrix**:
-   - Total test cases: 113. First run FAIL count: 7. Current run: **113 PASS / 0 FAIL (100% pass rate)**.
-   - All 7 failures resolved via migration `20261029000001` or schema-conforming fixture additions.
+   - Total test cases: 202 cases run, 404 matrix rows generated across 2 sections (current extended run: **208 PASS / 0 FAIL (100% pass rate)**, 416 matrix rows).
+   - All failures resolved via migrations (up to `20261103000007`) or schema-conforming fixture additions.
    - ZERO expected test outcomes were altered to achieve pass status.
 
 3. **Ambulance Trip Contact (`public.get_ambulance_trip_contact`)**:
@@ -148,11 +148,12 @@
     - **Terraform Runbook & Parameter Group Check**: Replaced hardcoded instance name with `${var.rds_instance_identifier}` in `docs/runbooks/PRODUCTION_CUTOVER_RDS.md`; added `data "aws_db_instance" "selected"` in `infra/aws/rds.tf`. Validated cleanly.
     - **Full Test Battery Results**:
       - API Gateway: **68 PASS / 0 FAIL** (`docs/ops/test_runs/gateway_test.txt`)
-      - Backend Functions: **479 PASS / 0 FAIL / 22 SKIPPED** (`docs/ops/test_runs/backend_test.txt`)
+      - Backend Functions: **480 PASS / 0 FAIL / 22 SKIPPED** (`docs/ops/test_runs/backend_test.txt`)
       - Flutter Analyze: **0 ISSUES FOUND** (`docs/ops/test_runs/flutter_analyze.txt`)
       - Flutter Test: **562 PASS / 0 FAIL** (`docs/ops/test_runs/flutter_test.txt`)
-      - RLS SQL Harness (Staging): **199 PASS / 0 FAIL** (`docs/ops/test_runs/rls_harness_staging.txt`)
-      - Plain Postgres 17 Scratch Replay: **41 Migrations / 1811 Statements / 0 Failures** (`docs/ops/test_runs/rds_scratch_replay.txt`)
+      - RLS SQL Harness (Staging): **208 PASS / 0 FAIL** (`docs/ops/test_runs/round10_rls_harness_staging.txt`)
+      - Plain Postgres 17 Scratch Replay: **45 Migrations / 1864 Statements / 0 Failures** (`docs/ops/test_runs/round10_rds_scratch_replay.txt`)
+      - PostgREST Real HTTP E2E: **6 PASS / 0 FAIL** (`docs/ops/test_runs/round10_postgrest_e2e.txt`)
 
 ---
 
@@ -161,8 +162,8 @@
 The following items are strictly blocking production cutover and Google Play Store release:
 
 ### Blocker 1: Terraform Infrastructure Provisioning
-- **Status:** CODE & VALIDATE VERIFIED-DONE (Pending Live AWS Apply)
-- **Owner:** Khijendra / Cursor
+- **Status:** OPEN (Local Validation Complete, AWS Apply Pending)
+- **Owner:** Khijendra
 - **Progress:**
   1. Terraform v1.16.6 installed.
   2. `infra/aws/rds.tf` parameter group updated to `postgres17` (`doctornect-production-pg17-cron`) matching RDS PostgreSQL 17 engine version.
@@ -171,14 +172,15 @@ The following items are strictly blocking production cutover and Google Play Sto
   5. Live AWS credentials and plan execution pending for cutover day.
 
 ### Blocker 2: Gateway Docker Container CI / Build
-- **Status:** WORKFLOW READY (Workflow created, not pushed to remote)
-- **Owner:** Cursor
+- **Status:** OPEN (Workflow created locally, Remote Build/Push Pending)
+- **Owner:** Khijendra / Cursor
 - **Progress:**
   1. Multi-stage minimal production Dockerfile verified at `services/api-gateway/Dockerfile` (node:22-alpine, non-root user `doctornect`, healthcheck `/healthz`).
   2. Created GitHub Actions workflow `.github/workflows/gateway_ci.yml` locally to run gateway tests, npm audit, and Docker image build without pushing.
+  3. Live remote ECR image build and push pending.
 
 ### Blocker 3: Production Secrets Rotation & Inventory Checklist
-- **Status:** INVENTORY READY (Requires live rotation before cutover)
+- **Status:** OPEN (Inventory Ready, Live Rotation Pending)
 - **Owner:** Khijendra
 - **Action Required:**
   Provision and rotate 7 distinct production secrets in AWS Secrets Manager and GCP Secret Manager:

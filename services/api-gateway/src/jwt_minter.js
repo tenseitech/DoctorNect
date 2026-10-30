@@ -24,6 +24,7 @@ function buildPostgrestPayload({
   sub = null,
   appRole = null,
   verified = false,
+  phoneNumber = null,
   jwtAud = config.postgrestJwtAud,
 }) {
   if (!['authenticated', 'service_role', 'anon'].includes(role)) {
@@ -50,6 +51,9 @@ function buildPostgrestPayload({
       payload.user_role = appRole;
     }
     payload.verified = Boolean(verified);
+    if (phoneNumber) {
+      payload.phone_number = phoneNumber;
+    }
   } else if (role === 'service_role') {
     payload.sub = 'service_role_internal';
     payload.app_role = 'admin';
@@ -82,6 +86,7 @@ function mintPostgrestJwt({
   sub = null,
   appRole = null,
   verified = false,
+  phoneNumber = null,
   jwtSecret = config.postgrestJwtSecret,
   jwtAud = config.postgrestJwtAud,
 }) {
@@ -90,6 +95,7 @@ function mintPostgrestJwt({
     sub,
     appRole,
     verified,
+    phoneNumber,
     jwtAud,
   });
 

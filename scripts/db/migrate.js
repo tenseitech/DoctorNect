@@ -72,6 +72,22 @@ async function runMigrations() {
     const targetHost = getHostFingerprint(dbUrl);
     assertDatabaseGuard({ targetKind: 'staging', operationName: 'Run Migrations', allowDestructive: !isDryRun && !isDryRunAll, targetHost });
     poolConfig = { connectionString: dbUrl };
+  } else if (target === 'replay' || target === 'replay_check') {
+    const rawReplayUrl = getEnv('REPLAY_DB_URL');
+    if (!rawReplayUrl) {
+      console.error('\n[GUARD ABORT] REPLAY_DB_URL is not configured.');
+      process.exit(1);
+    }
+    const parsed = new URL(rawReplayUrl);
+    parsed.pathname = '/replay_check';
+    const replayUser = getEnv('REPLAY_USER') || 'rds_master';
+    if (replayUser) {
+      parsed.username = replayUser;
+    }
+    dbUrl = parsed.toString();
+    const targetHost = getHostFingerprint(dbUrl);
+    assertDatabaseGuard({ targetKind: 'replay', operationName: `Run Migrations on ${target}`, allowDestructive: true, targetHost });
+    poolConfig = { connectionString: dbUrl };
   } else if (target === 'rehearsal' || target === 'production') {
     const host = getEnv('PROD_RDS_HOST');
     assertDatabaseGuard({ targetKind: 'production', operationName: `Run Migrations on ${target}`, allowDestructive: false, targetHost: host });
@@ -145,6 +161,12 @@ async function runMigrations() {
     const overridesDir = path.resolve('db/rds_overrides');
     const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
 
+    // Check if pg_cron extension is available on this PostgreSQL instance
+    const hasCronExtRes = await client.query(`
+      SELECT 1 FROM pg_available_extensions WHERE name = 'pg_cron';
+    `);
+    const lacksPgCron = hasCronExtRes.rows.length === 0;
+
     let pendingCount = 0;
 
     if (isDryRunAll) {
@@ -159,9 +181,12 @@ async function runMigrations() {
       for (const file of pendingFiles) {
         const baseSqlPath = path.join(migrationsDir, file);
         const overrideSqlPath = path.join(overridesDir, file);
-        const useOverride = (target === 'production' || target === 'rehearsal') && fs.existsSync(overrideSqlPath);
+        const useOverride = (target === 'production' || target === 'rehearsal' || target === 'replay' || target === 'replay_check') && fs.existsSync(overrideSqlPath);
         const activeFilePath = useOverride ? overrideSqlPath : baseSqlPath;
-        const sqlContent = fs.readFileSync(activeFilePath, 'utf8');
+        let sqlContent = fs.readFileSync(activeFilePath, 'utf8');
+        if (lacksPgCron && file === '20260923000003_doctornect_cron.sql') {
+          sqlContent = sqlContent.replace(/CREATE EXTENSION IF NOT EXISTS pg_cron;/g, '-- [NO PG_CRON AVAILABLE] skipped extension creation');
+        }
 
         console.log(`\nParsing & testing statements in ${file}...`);
         const stmts = await splitSqlStatements(sqlContent);
@@ -214,7 +239,7 @@ async function runMigrations() {
       const overrideSqlPath = path.join(overridesDir, file);
 
       // In RDS targets, use override file if present
-      const useOverride = (target === 'production' || target === 'rehearsal') && fs.existsSync(overrideSqlPath);
+      const useOverride = (target === 'production' || target === 'rehearsal' || target === 'replay' || target === 'replay_check') && fs.existsSync(overrideSqlPath);
       const activeFilePath = useOverride ? overrideSqlPath : baseSqlPath;
       const sqlContent = fs.readFileSync(activeFilePath, 'utf8');
       const checksum = computeChecksum(sqlContent);
@@ -241,7 +266,7 @@ async function runMigrations() {
 
       // Execute in a transaction
       console.log(`Applying ${file}...`);
-      await applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists });
+      await applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists, lacksPgCron });
     }
 
     if (!isDryRun) {
@@ -260,10 +285,19 @@ async function runMigrations() {
   }
 }
 
-async function applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists = false }) {
+async function applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists = false, lacksPgCron = false }) {
   await client.query('BEGIN');
   try {
-    await client.query(sqlContent);
+    let sqlToExecute = sqlContent;
+    if (lacksPgCron && file === '20260923000003_doctornect_cron.sql') {
+      sqlToExecute = sqlToExecute.replace(/CREATE EXTENSION IF NOT EXISTS pg_cron;/g, () => `
+        CREATE SCHEMA IF NOT EXISTS cron;
+        CREATE TABLE IF NOT EXISTS cron.job (jobid bigint, schedule text, command text, nodename text, nodeport integer, database text, username text, active boolean, jobname text);
+        CREATE OR REPLACE FUNCTION cron.schedule(text, text, text) RETURNS bigint LANGUAGE sql AS $$ SELECT 1::bigint; $$;
+        CREATE OR REPLACE FUNCTION cron.schedule(text, text) RETURNS bigint LANGUAGE sql AS $$ SELECT 1::bigint; $$;
+      `);
+    }
+    await client.query(sqlToExecute);
     await client.query(
       `INSERT INTO public._schema_migrations (version, name, checksum) VALUES ($1, $2, $3);`,
       [version, file, checksum]

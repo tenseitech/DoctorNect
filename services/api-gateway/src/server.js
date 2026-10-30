@@ -390,6 +390,7 @@ function createGatewayServer(overrides = {}) {
         sub: authenticatedPayload.uid,
         appRole: authenticatedPayload.appRole,
         verified: authenticatedPayload.verified,
+        phoneNumber: authenticatedPayload.phoneNumber,
         jwtSecret: cfg.postgrestJwtSecret,
         jwtAud: cfg.postgrestJwtAud,
       });

@@ -27,6 +27,16 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'app_migrator') THEN
     CREATE ROLE app_migrator LOGIN CREATEROLE;
   END IF;
+
+  -- RDS master stand-in role (for local testing/parity with AWS RDS master)
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'rds_superuser') THEN
+    CREATE ROLE rds_superuser NOLOGIN;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'rds_master') THEN
+    CREATE ROLE rds_master LOGIN CREATEROLE CREATEDB;
+    GRANT rds_superuser TO rds_master;
+  END IF;
 END $$;
 
 -- Grant role memberships to authenticator so it can switch roles on requests

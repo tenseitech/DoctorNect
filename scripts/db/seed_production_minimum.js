@@ -93,6 +93,29 @@ async function main() {
       });
     }
     poolConfig = { connectionString: dbUrl };
+  } else if (target === 'replay' || target === 'replay_check') {
+    const rawReplayUrl = getEnv('REPLAY_DB_URL');
+    if (!rawReplayUrl) {
+      console.error('\n[GUARD ABORT] REPLAY_DB_URL is not configured.');
+      process.exit(1);
+    }
+    const parsed = new URL(rawReplayUrl);
+    parsed.pathname = '/replay_check';
+    const replayUser = getEnv('REPLAY_USER') || 'rds_master';
+    if (replayUser) {
+      parsed.username = replayUser;
+    }
+    dbUrl = parsed.toString();
+    const targetHost = getHostFingerprint(dbUrl);
+    if (!isDryRun) {
+      assertDatabaseGuard({
+        targetKind: 'replay',
+        operationName: 'Seed Production Minimum on Replay',
+        allowDestructive: true,
+        targetHost,
+      });
+    }
+    poolConfig = { connectionString: dbUrl };
   } else {
     console.error(`Invalid target: ${target}. Must be staging, rehearsal, or production.`);
     process.exit(1);
@@ -136,6 +159,9 @@ async function main() {
     console.log('\n--- Applying Seeds in Single Transaction ---');
     await client.query('BEGIN');
 
+    // Documented table owner path: temporarily relax FORCE RLS for bootstrap seeding
+    await client.query('ALTER TABLE public.system_config NO FORCE ROW LEVEL SECURITY;');
+
     // 1. Seed system_config
     for (const seed of SYSTEM_CONFIG_SEEDS) {
       await client.query(
@@ -148,14 +174,28 @@ async function main() {
       console.log(`✔ Seeded system_config: ${seed.key}`);
     }
 
+    // Re-enable FORCE ROW LEVEL SECURITY
+    await client.query('ALTER TABLE public.system_config FORCE ROW LEVEL SECURITY;');
+
     // 2. Bootstrap first admin if provided
     if (adminUid) {
+      await client.query('ALTER TABLE public.users NO FORCE ROW LEVEL SECURITY;');
+      await client.query(
+        `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified)
+         VALUES ($1::text, $2::text, 'super_admin', $3::text, 'Super Admin Bootstrap', 'admin@doctornect.com', '+919999999999', true)
+         ON CONFLICT (id) DO NOTHING;`,
+        [adminUid, adminUid, adminUid]
+      );
+      await client.query('ALTER TABLE public.users FORCE ROW LEVEL SECURITY;');
+
+      await client.query('ALTER TABLE private.admin_users NO FORCE ROW LEVEL SECURITY;');
       await client.query(
         `INSERT INTO private.admin_users (user_id, granted_by, granted_at)
-         VALUES ($1, 'production_bootstrap', NOW())
+         VALUES ($1, NULL, NOW())
          ON CONFLICT (user_id) DO NOTHING;`,
         [adminUid]
       );
+      await client.query('ALTER TABLE private.admin_users FORCE ROW LEVEL SECURITY;');
       console.log(`✔ Bootstrapped initial admin in private.admin_users: ${adminUid}`);
     }
 

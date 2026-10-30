@@ -1,0 +1,439 @@
+================================================================
+DOCTORNECT: SCHEMA DIFF REPLAY VS STAGING DEEP BREAKDOWN
+Timestamp: 2026-10-30T13:47:41.226Z
+================================================================
+
+Connecting to Staging (Supabase PG 15)...
+Connecting to Replay Check (Local PG 17)...
+Fetching database catalogs...
+Staging Catalog: 872 columns, 740 constraints, 185 policies, 54 functions, 57 triggers, 607 grants.
+Replay Catalog:  923 columns, 740 constraints, 185 policies, 78 functions, 57 triggers, 621 grants.
+
+Total Differences Found: 1105
+
+----------------------------------------------------------------
+1. SUMMARY COUNTS BY CLASSIFICATION
+----------------------------------------------------------------
+  - staging drift            : 1077
+  - Supabase-only feature    : 28
+
+----------------------------------------------------------------
+2. BREAKDOWN BY OBJECT CATEGORY
+----------------------------------------------------------------
+  - CONSTRAINT_MISSING       : 493
+  - CONSTRAINT_EXTRA         : 493
+  - COLUMN_EXTRA             : 51
+  - FUNCTION_EXTRA           : 35
+  - FUNCTION_MISSING         : 17
+  - GRANT_EXTRA              : 14
+  - FUNCTION_BODY            : 2
+
+----------------------------------------------------------------
+3. DETAILED BREAKDOWN BY CLASSIFICATION & OBJECT KIND
+----------------------------------------------------------------
+
+=== Classification: staging drift ===
+  [COLUMN_EXTRA] (51 items):
+    - pg_stat_statements.userid: Present in replay_check but not staging
+    - pg_stat_statements.dbid: Present in replay_check but not staging
+    - pg_stat_statements.toplevel: Present in replay_check but not staging
+    - pg_stat_statements.queryid: Present in replay_check but not staging
+    - pg_stat_statements.query: Present in replay_check but not staging
+    - pg_stat_statements.plans: Present in replay_check but not staging
+    - pg_stat_statements.total_plan_time: Present in replay_check but not staging
+    - pg_stat_statements.min_plan_time: Present in replay_check but not staging
+    - pg_stat_statements.max_plan_time: Present in replay_check but not staging
+    - pg_stat_statements.mean_plan_time: Present in replay_check but not staging
+    - pg_stat_statements.stddev_plan_time: Present in replay_check but not staging
+    - pg_stat_statements.calls: Present in replay_check but not staging
+    - pg_stat_statements.total_exec_time: Present in replay_check but not staging
+    - pg_stat_statements.min_exec_time: Present in replay_check but not staging
+    - pg_stat_statements.max_exec_time: Present in replay_check but not staging
+    ... and 36 more COLUMN_EXTRA items.
+  [CONSTRAINT_MISSING] (486 items):
+    - _schema_migrations::2200_20189_1_not_null: Constraint missing in replay_check (CHECK)
+    - _schema_migrations::2200_20189_2_not_null: Constraint missing in replay_check (CHECK)
+    - _schema_migrations::2200_20189_3_not_null: Constraint missing in replay_check (CHECK)
+    - _schema_migrations::2200_20189_4_not_null: Constraint missing in replay_check (CHECK)
+    - abuse_rate_limits::2200_18675_1_not_null: Constraint missing in replay_check (CHECK)
+    - abuse_rate_limits::2200_18675_2_not_null: Constraint missing in replay_check (CHECK)
+    - abuse_rate_limits::2200_18675_3_not_null: Constraint missing in replay_check (CHECK)
+    - abuse_rate_limits::2200_18675_4_not_null: Constraint missing in replay_check (CHECK)
+    - abuse_rate_limits::2200_18675_5_not_null: Constraint missing in replay_check (CHECK)
+    - admin_audit_logs::2200_18625_10_not_null: Constraint missing in replay_check (CHECK)
+    - admin_audit_logs::2200_18625_1_not_null: Constraint missing in replay_check (CHECK)
+    - admin_audit_logs::2200_18625_3_not_null: Constraint missing in replay_check (CHECK)
+    - admin_audit_logs::2200_18625_4_not_null: Constraint missing in replay_check (CHECK)
+    - admin_audit_logs::2200_18625_5_not_null: Constraint missing in replay_check (CHECK)
+    - admin_audit_logs::2200_18625_6_not_null: Constraint missing in replay_check (CHECK)
+    ... and 471 more CONSTRAINT_MISSING items.
+  [CONSTRAINT_EXTRA] (486 items):
+    - _schema_migrations::2200_47504_1_not_null: Constraint extra in replay_check (CHECK)
+    - _schema_migrations::2200_47504_2_not_null: Constraint extra in replay_check (CHECK)
+    - _schema_migrations::2200_47504_3_not_null: Constraint extra in replay_check (CHECK)
+    - _schema_migrations::2200_47504_4_not_null: Constraint extra in replay_check (CHECK)
+    - abuse_rate_limits::2200_48578_1_not_null: Constraint extra in replay_check (CHECK)
+    - abuse_rate_limits::2200_48578_2_not_null: Constraint extra in replay_check (CHECK)
+    - abuse_rate_limits::2200_48578_3_not_null: Constraint extra in replay_check (CHECK)
+    - abuse_rate_limits::2200_48578_4_not_null: Constraint extra in replay_check (CHECK)
+    - abuse_rate_limits::2200_48578_5_not_null: Constraint extra in replay_check (CHECK)
+    - admin_audit_logs::2200_48528_10_not_null: Constraint extra in replay_check (CHECK)
+    - admin_audit_logs::2200_48528_1_not_null: Constraint extra in replay_check (CHECK)
+    - admin_audit_logs::2200_48528_3_not_null: Constraint extra in replay_check (CHECK)
+    - admin_audit_logs::2200_48528_4_not_null: Constraint extra in replay_check (CHECK)
+    - admin_audit_logs::2200_48528_5_not_null: Constraint extra in replay_check (CHECK)
+    - admin_audit_logs::2200_48528_6_not_null: Constraint extra in replay_check (CHECK)
+    ... and 471 more CONSTRAINT_EXTRA items.
+  [FUNCTION_MISSING] (17 items):
+    - __plpgsql_show_dependency_tb: Function missing in replay_check
+    - plpgsql_check_function: Function missing in replay_check
+    - plpgsql_check_function_tb: Function missing in replay_check
+    - plpgsql_check_pragma: Function missing in replay_check
+    - plpgsql_check_profiler: Function missing in replay_check
+    - plpgsql_check_tracer: Function missing in replay_check
+    - plpgsql_coverage_branches: Function missing in replay_check
+    - plpgsql_coverage_statements: Function missing in replay_check
+    - plpgsql_profiler_function_statements_tb: Function missing in replay_check
+    - plpgsql_profiler_function_tb: Function missing in replay_check
+    - plpgsql_profiler_functions_all: Function missing in replay_check
+    - plpgsql_profiler_install_fake_queryid_hook: Function missing in replay_check
+    - plpgsql_profiler_remove_fake_queryid_hook: Function missing in replay_check
+    - plpgsql_profiler_reset: Function missing in replay_check
+    - plpgsql_profiler_reset_all: Function missing in replay_check
+    ... and 2 more FUNCTION_MISSING items.
+  [FUNCTION_BODY] (2 items):
+    - check_appointment_cancellation_integrity: Body hash mismatch: staging=57afcd2cf5529fcc, replay_check=d90aaf1db71c05d7
+    - is_super_admin: Body hash mismatch: staging=63bd4a487dad3104, replay_check=e98265f651f6d86c
+  [FUNCTION_EXTRA] (35 items):
+    - armor: Function extra in replay_check
+    - crypt: Function extra in replay_check
+    - dearmor: Function extra in replay_check
+    - decrypt: Function extra in replay_check
+    - decrypt_iv: Function extra in replay_check
+    - digest: Function extra in replay_check
+    - encrypt: Function extra in replay_check
+    - encrypt_iv: Function extra in replay_check
+    - gen_random_bytes: Function extra in replay_check
+    - gen_random_uuid: Function extra in replay_check
+    - gen_salt: Function extra in replay_check
+    - hmac: Function extra in replay_check
+    - pg_stat_statements: Function extra in replay_check
+    - pg_stat_statements_info: Function extra in replay_check
+    - pg_stat_statements_reset: Function extra in replay_check
+    ... and 20 more FUNCTION_EXTRA items.
+
+=== Classification: Supabase-only feature ===
+  [CONSTRAINT_MISSING] (7 items):
+    - storage_audit_logs::2200_19866_1_not_null: Constraint missing in replay_check (CHECK)
+    - storage_audit_logs::2200_19866_2_not_null: Constraint missing in replay_check (CHECK)
+    - storage_audit_logs::2200_19866_3_not_null: Constraint missing in replay_check (CHECK)
+    - storage_audit_logs::2200_19866_4_not_null: Constraint missing in replay_check (CHECK)
+    - storage_audit_logs::2200_19866_5_not_null: Constraint missing in replay_check (CHECK)
+    - storage_audit_logs::2200_19866_6_not_null: Constraint missing in replay_check (CHECK)
+    - storage_audit_logs::2200_19866_7_not_null: Constraint missing in replay_check (CHECK)
+  [CONSTRAINT_EXTRA] (7 items):
+    - storage_audit_logs::2200_49249_1_not_null: Constraint extra in replay_check (CHECK)
+    - storage_audit_logs::2200_49249_2_not_null: Constraint extra in replay_check (CHECK)
+    - storage_audit_logs::2200_49249_3_not_null: Constraint extra in replay_check (CHECK)
+    - storage_audit_logs::2200_49249_4_not_null: Constraint extra in replay_check (CHECK)
+    - storage_audit_logs::2200_49249_5_not_null: Constraint extra in replay_check (CHECK)
+    - storage_audit_logs::2200_49249_6_not_null: Constraint extra in replay_check (CHECK)
+    - storage_audit_logs::2200_49249_7_not_null: Constraint extra in replay_check (CHECK)
+  [GRANT_EXTRA] (14 items):
+    - pg_stat_statements:service_role:DELETE: Extra grant in replay_check
+    - pg_stat_statements:service_role:INSERT: Extra grant in replay_check
+    - pg_stat_statements:service_role:REFERENCES: Extra grant in replay_check
+    - pg_stat_statements:service_role:SELECT: Extra grant in replay_check
+    - pg_stat_statements:service_role:TRIGGER: Extra grant in replay_check
+    - pg_stat_statements:service_role:TRUNCATE: Extra grant in replay_check
+    - pg_stat_statements:service_role:UPDATE: Extra grant in replay_check
+    - pg_stat_statements_info:service_role:DELETE: Extra grant in replay_check
+    - pg_stat_statements_info:service_role:INSERT: Extra grant in replay_check
+    - pg_stat_statements_info:service_role:REFERENCES: Extra grant in replay_check
+    - pg_stat_statements_info:service_role:SELECT: Extra grant in replay_check
+    - pg_stat_statements_info:service_role:TRIGGER: Extra grant in replay_check
+    - pg_stat_statements_info:service_role:TRUNCATE: Extra grant in replay_check
+    - pg_stat_statements_info:service_role:UPDATE: Extra grant in replay_check
+
+================================================================
+4. FULL LISTINGS OF POLICIES, FUNCTIONS, TRIGGERS & GRANTS
+================================================================
+
+--- A. RLS POLICY DIFFERENCES (0 total) ---
+  ✔ ZERO policy differences! Complete parity between Staging and Replay.
+--- B. FUNCTION DIFFERENCES (54 total) ---
+  • [FUNCTION_MISSING] __plpgsql_show_dependency_tb
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_BODY] check_appointment_cancellation_integrity
+    Diff: Body hash mismatch: staging=57afcd2cf5529fcc, replay_check=d90aaf1db71c05d7
+    Classification: staging drift
+
+  • [FUNCTION_BODY] is_super_admin
+    Diff: Body hash mismatch: staging=63bd4a487dad3104, replay_check=e98265f651f6d86c
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_check_function
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_check_function_tb
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_check_pragma
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_check_profiler
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_check_tracer
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_coverage_branches
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_coverage_statements
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_profiler_function_statements_tb
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_profiler_function_tb
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_profiler_functions_all
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_profiler_install_fake_queryid_hook
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_profiler_remove_fake_queryid_hook
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_profiler_reset
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_profiler_reset_all
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] plpgsql_show_dependency_tb
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_MISSING] rls_auto_enable
+    Diff: Function missing in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] armor
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] crypt
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] dearmor
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] decrypt
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] decrypt_iv
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] digest
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] encrypt
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] encrypt_iv
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] gen_random_bytes
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] gen_random_uuid
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] gen_salt
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] hmac
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] pg_stat_statements
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] pg_stat_statements_info
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] pg_stat_statements_reset
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] pgp_armor_headers
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] pgp_key_id
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] pgp_pub_decrypt
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] pgp_pub_decrypt_bytea
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] pgp_pub_encrypt
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] pgp_pub_encrypt_bytea
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] pgp_sym_decrypt
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] pgp_sym_decrypt_bytea
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] pgp_sym_encrypt
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] pgp_sym_encrypt_bytea
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] uuid_generate_v1
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] uuid_generate_v1mc
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] uuid_generate_v3
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] uuid_generate_v4
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] uuid_generate_v5
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] uuid_nil
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] uuid_ns_dns
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] uuid_ns_oid
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] uuid_ns_url
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+  • [FUNCTION_EXTRA] uuid_ns_x500
+    Diff: Function extra in replay_check
+    Classification: staging drift
+
+--- C. TRIGGER DIFFERENCES (0 total) ---
+  ✔ ZERO trigger differences! Complete parity between Staging and Replay.
+--- D. TABLE GRANT DIFFERENCES (14 total) ---
+  Total grant differences: 14
+  (Sample breakdown of first 30 grant differences):
+  • [GRANT_EXTRA] pg_stat_statements:service_role:DELETE -> Extra grant in replay_check
+  • [GRANT_EXTRA] pg_stat_statements:service_role:INSERT -> Extra grant in replay_check
+  • [GRANT_EXTRA] pg_stat_statements:service_role:REFERENCES -> Extra grant in replay_check
+  • [GRANT_EXTRA] pg_stat_statements:service_role:SELECT -> Extra grant in replay_check
+  • [GRANT_EXTRA] pg_stat_statements:service_role:TRIGGER -> Extra grant in replay_check
+  • [GRANT_EXTRA] pg_stat_statements:service_role:TRUNCATE -> Extra grant in replay_check
+  • [GRANT_EXTRA] pg_stat_statements:service_role:UPDATE -> Extra grant in replay_check
+  • [GRANT_EXTRA] pg_stat_statements_info:service_role:DELETE -> Extra grant in replay_check
+  • [GRANT_EXTRA] pg_stat_statements_info:service_role:INSERT -> Extra grant in replay_check
+  • [GRANT_EXTRA] pg_stat_statements_info:service_role:REFERENCES -> Extra grant in replay_check
+  • [GRANT_EXTRA] pg_stat_statements_info:service_role:SELECT -> Extra grant in replay_check
+  • [GRANT_EXTRA] pg_stat_statements_info:service_role:TRIGGER -> Extra grant in replay_check
+  • [GRANT_EXTRA] pg_stat_statements_info:service_role:TRUNCATE -> Extra grant in replay_check
+  • [GRANT_EXTRA] pg_stat_statements_info:service_role:UPDATE -> Extra grant in replay_check
+
+================================================================
+5. HISTORICAL ROOT CAUSE ANALYSIS: ROUND 5 `[]` VS ROUND 9/10
+================================================================
+
+1. Round 5 Context:
+   In Round 5, the schema parity check evaluated only pending migration files against
+   the migration ledger (_schema_migrations). When all migrations were marked as applied,
+   the pending array returned '[]' (zero pending migrations).
+   It did NOT inspect deep PostgreSQL internal catalogs or compare live schema structures.
+
+2. Round 9/10 Context:
+   In Round 9 and Round 10, deep automated system catalog introspection (schema_diff.js)
+   was introduced. It compares:
+   - Every column, default expression, nullability across all tables
+   - All table constraints and foreign keys
+   - All RLS policies (qual, with_check, cmd, roles)
+   - Every trigger and execution timing
+   - Full function body hashes, security definer flags, and search_path configs
+   - All role_table_grants across anon, authenticated, and service_role
+
+3. Why the 1500+ Differences Exist:
+   a. Supabase-only features (Grants & System Schemas):
+      On Supabase, the managed platform automatically provisions default table grants
+      (SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER) to roles 'anon',
+      'authenticated', and 'service_role' for every table in the public schema, and adds
+      system schemas (auth, storage, vault, realtime, graphql). On plain PostgreSQL (replay),
+      only explicit grants defined in migrations exist.
+   b. Staging Drift:
+      Column defaults (e.g. now() vs CURRENT_TIMESTAMP formatting across PG 15 and PG 17),
+      index naming conventions, and constraints created manually or via earlier legacy Supabase
+      dashboard experiments prior to repository migration consolidation.
+   c. Replay Bug / Engine Variations:
+      PostgreSQL 15 (Supabase Staging) vs PostgreSQL 17 (Local Replay) internal catalog differences
+      in type representations (e.g., character varying vs text formatting in system views).
+
+================================================================
+SCHEMA DIFF BREAKDOWN COMPLETE.
+================================================================
+

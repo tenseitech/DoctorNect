@@ -1,0 +1,13 @@
+
+======================================================
+DoctorNect Migration Runner (Target: STAGING)
+======================================================
+Target Connection: postgresql://postgres.rnltknemwnjrjxthtull:****@aws-0-ap-south-1.pooler.supabase.com:6543/postgres
+Existing Applied Migrations in Ledger: 44
+
+[Pending Migration] -> 20261103000007_relax_users_and_admin_users_force_rls.sql (checksum: 3fd15e1c...) 
+Applying 20261103000007_relax_users_and_admin_users_force_rls.sql...
+✔ Successfully applied 20261103000007_relax_users_and_admin_users_force_rls.sql
+✔ Sent NOTIFY pgrst, 'reload schema'
+
+Migration run completed. Total pending applied: 1

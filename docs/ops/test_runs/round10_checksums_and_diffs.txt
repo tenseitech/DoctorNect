@@ -1,0 +1,66 @@
+=== 1. GIT STATUS ===
+## chore/restructure-cleanup
+?? docs/ops/test_runs/round10_checksums_and_diffs.txt
+
+=== 2. FULL 64-CHAR LEDGER VS DISK CHECKSUMS (20261103000001..4) ===
+Migration: 20261103000001_relogin_upsert_invariant_and_ambulance_link.sql
+  Version:     20261103000001
+  Disk (LF):   cd2c364993aaeac543194aae04d0841720e1cd6587807c161e9f28aa3792266a
+  Ledger:      cd2c364993aaeac543194aae04d0841720e1cd6587807c161e9f28aa3792266a
+  Status:      MATCH (100% BIT-FOR-BIT)
+
+Migration: 20261103000002_fix_claim_ambulance_driver_bypass.sql
+  Version:     20261103000002
+  Disk (LF):   f039d0e2db10fcf9ef1b16fceb6643a65b76af3122fea9a76a5ecf608b0c1cf1
+  Ledger:      f039d0e2db10fcf9ef1b16fceb6643a65b76af3122fea9a76a5ecf608b0c1cf1
+  Status:      MATCH (100% BIT-FOR-BIT)
+
+Migration: 20261103000003_relogin_upsert_invariant_refinement.sql
+  Version:     20261103000003
+  Disk (LF):   661dd74494f25b54412ba054a5f411d5c0c6477e2d6032303cafcd29b64cbe6b
+  Ledger:      661dd74494f25b54412ba054a5f411d5c0c6477e2d6032303cafcd29b64cbe6b
+  Status:      MATCH (100% BIT-FOR-BIT)
+
+Migration: 20261103000004_fix_claim_ambulance_driver_and_users_verified_guard.sql
+  Version:     20261103000004
+  Disk (LF):   8059a78927891030228da4e7757a1c99b109dae9b601e0b4c8b57bf2c78e9e1d
+  Ledger:      8059a78927891030228da4e7757a1c99b109dae9b601e0b4c8b57bf2c78e9e1d
+  Status:      MATCH (100% BIT-FOR-BIT)
+
+=== 3. EXPLANATION: 20261103000001 CHECKSUM COMPARISON ===
+The staging ledger checksum for 20261103000001 is cd2c364993aaeac543194aae04d0841720e1cd6587807c161e9f28aa3792266a.
+In Round 8 / Git Sync check, the working tree had an uncommitted trailing newline appended by an external editor/formatter, giving a raw hash of 040e68b06c66f407d49848e05239762fd20d09151d447fbb6460a6857cab8bef.
+When normalized for LF line endings (or after git checkout -- restored committed HEAD), on-disk LF checksum is cd2c364993aaeac543194aae04d0841720e1cd6587807c161e9f28aa3792266a, matching the ledger exactly.
+
+=== 4. EXPLANATION: ROUND 9 DISCARDED LIST VS ROUND 8 MODIFIED LIST ===
+In Round 8, services/api-gateway/src/config.js was modified and then COMMITTED in commit 603de00:
+  Commit 603de00: "fix(security): Round 8 credentials hygiene, plain Postgres 17 replay with 0 failures..."
+  Diff committed in services/api-gateway/src/config.js:
+commit 603de00283d5f21e96287e61a314a264970434d5
+Author: tenseitech <developer@tenseitech.com>
+Date:   Fri Oct 30 16:48:36 2026 +0530
+
+    fix(security): Round 8 credentials hygiene, plain Postgres 17 replay with 0 failures, provider upsert invariant, ambulance link RPC, and full test suite verification
+
+diff --git a/services/api-gateway/src/config.js b/services/api-gateway/src/config.js
+index 42382e5..3ba0e86 100644
+--- a/services/api-gateway/src/config.js
++++ b/services/api-gateway/src/config.js
+@@ -126,6 +126,7 @@ module.exports = {
+     'accept_ambulance_request',
+     'book_appointment_atomic',
+     'cancel_ambulance_broadcast',
++    'claim_ambulance_driver',
+     'complete_ambulance_trip',
+     'create_prescription_atomic',
+     'deactivate_provider_profile',
+
+Because services/api-gateway/src/config.js was committed in Round 8 (commit 603de00), it was no longer an uncommitted modification.
+The 7 files discarded in Round 9 were strictly the 7 files with uncommitted trailing whitespace/newline changes:
+  1. db/migrations/20261103000001_relogin_upsert_invariant_and_ambulance_link.sql
+  2. db/migrations/20261103000002_fix_claim_ambulance_driver_bypass.sql
+  3. db/migrations/20261103000003_relogin_upsert_invariant_refinement.sql
+  4. scripts/db/audit_secrets_rotation.js
+  5. scripts/db/inspect_users_triggers.js
+  6. scripts/db/verify_seed_provenance.js
+  7. scripts/test/env_loader.test.js

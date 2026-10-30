@@ -2063,6 +2063,49 @@
       "verdict": "PASS"
     },
     {
+      "name": "Ambulance Driver Link RPC: Driver with other phone is denied with 42501",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Caller verified phone does not match ambulance contact phone"
+    },
+    {
+      "name": "Ambulance Driver Link RPC: Token without phone claim is denied with 42501",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Caller token does not contain a verified phone number"
+    },
+    {
+      "name": "Ambulance Driver Link RPC: Forged client mobile with mismatched verified token phone is denied with 42501",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Caller verified phone does not match ambulance contact phone"
+    },
+    {
+      "name": "Ambulance Registration Flow: Unclaimed ambulance registration path (users upsert then claim)",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
       "name": "Ambulance Driver Link RPC: Non-owner driver link is denied with 42501",
       "table": "ambulances",
       "role": "authenticated",
@@ -2105,6 +2148,28 @@
       "actualRows": 0,
       "verdict": "PASS",
       "error": "FORBIDDEN: Only registered ambulance drivers can claim an ambulance profile"
+    },
+    {
+      "name": "System Config: Authenticated client cannot execute upsert_system_config (denied 42501)",
+      "table": "system_config",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "permission denied for function upsert_system_config"
+    },
+    {
+      "name": "System Config: Authenticated client direct INSERT is denied by FORCE RLS (42501)",
+      "table": "system_config",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "permission denied for table system_config"
     },
     {
       "name": "Users Guard: Unverified domain user upserting verified=true is denied with 42501",

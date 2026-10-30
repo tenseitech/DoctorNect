@@ -27,6 +27,7 @@ const TARGET_FUNCTION_NAMES = [
   'deactivate_provider_profile',
   'reactivate_provider_profile',
   'claim_ambulance_driver',
+  'upsert_system_config',
 ];
 
 async function runPlpgsqlCheck() {

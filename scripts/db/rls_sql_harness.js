@@ -8,7 +8,7 @@ const { assertDatabaseGuard } = require('../lib/env_guard');
 const { buildPostgrestPayload } = require('../../services/api-gateway/src/jwt_minter');
 
 // Emits real claims matching backend registration and gateway logic
-function getTestJwtClaims(appRole, uid, verified = true) {
+function getTestJwtClaims(appRole, uid, verified = true, phoneNumber = null) {
   let normalized = appRole;
   if (appRole === 'superAdmin' || appRole === 'super_admin' || appRole === 'service_role') normalized = 'super_admin';
   else if (appRole === 'medical' || appRole === 'pharmacy') normalized = 'medicalStore';
@@ -20,6 +20,7 @@ function getTestJwtClaims(appRole, uid, verified = true) {
     sub: uid,
     appRole: normalized,
     verified: Boolean(verified),
+    phoneNumber,
   });
 
   return JSON.stringify(payload);
@@ -137,7 +138,8 @@ async function runRlsSqlHarness(options = {}) {
         ('${ambA}', '${ambA}', 'Amb Service A', 'Driver A', '+919999900009', 'DL-01-A-1000', 'bls', 'Delhi', true),
         ('${ambB}', '${ambB}', 'Amb Service B', 'Driver B', '+919999900010', 'DL-01-B-2000', 'icu', 'Delhi', true),
         ('test_usr_amb_unverified', 'test_usr_amb_unverified', 'Unverified Amb', 'Driver U', '+919999900096', 'DL-01-U-9999', 'bls', 'Delhi', false),
-        ('test_amb_unclaimed', NULL, 'Unclaimed Amb', 'Driver Unclaimed', '+919999900095', 'DL-01-U-0000', 'bls', 'Delhi', false);
+        ('test_amb_unclaimed', NULL, 'Unclaimed Amb', 'Driver Unclaimed', '+919999900095', 'DL-01-U-0000', 'bls', 'Delhi', false),
+        ('test_amb_unclaimed_flow', NULL, 'Flow Amb', 'Driver Flow', '+919999900055', 'DL-01-U-5555', 'bls', 'Delhi', false);
     `);
 
     const apptId = 'test_appt_alpha';
@@ -2171,7 +2173,7 @@ async function runRlsSqlHarness(options = {}) {
       name: 'Ambulance Driver Link RPC: Driver links unclaimed ambulance profile (claim_ambulance_driver)',
       table: 'ambulances',
       role: 'authenticated',
-      claims: getTestJwtClaims('ambulance', 'test_usr_amb_unclaimed'),
+      claims: getTestJwtClaims('ambulance', 'test_usr_amb_unclaimed', true, '+919999900095'),
       sql: `SELECT public.claim_ambulance_driver('test_amb_unclaimed') AS success;`,
       expectedRows: 1,
       expectedSqlState: '00000',
@@ -2179,10 +2181,55 @@ async function runRlsSqlHarness(options = {}) {
     });
 
     await testCase({
+      name: 'Ambulance Driver Link RPC: Driver with other phone is denied with 42501',
+      table: 'ambulances',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', 'test_usr_amb_unclaimed', true, '+919999900011'),
+      sql: `SELECT public.claim_ambulance_driver('test_amb_unclaimed');`,
+      expectedSqlState: '42501',
+    });
+
+    await testCase({
+      name: 'Ambulance Driver Link RPC: Token without phone claim is denied with 42501',
+      table: 'ambulances',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', 'test_usr_amb_unclaimed', true, null),
+      sql: `SELECT public.claim_ambulance_driver('test_amb_unclaimed');`,
+      expectedSqlState: '42501',
+    });
+
+    await testCase({
+      name: 'Ambulance Driver Link RPC: Forged client mobile with mismatched verified token phone is denied with 42501',
+      table: 'ambulances',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', 'test_usr_amb_unclaimed', true, '+919888877777'),
+      sql: `SELECT public.claim_ambulance_driver('test_amb_unclaimed');`,
+      expectedSqlState: '42501',
+    });
+
+    await testCase({
+      name: 'Ambulance Registration Flow: Unclaimed ambulance registration path (users upsert then claim)',
+      table: 'ambulances',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', 'test_flow_driver_uid', false, '+919999900055'),
+      sql: `
+        INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified)
+        VALUES ('test_flow_driver_uid', 'test_flow_driver_uid', 'ambulance', 'test_amb_unclaimed_flow', 'Flow Driver', 'flow@test.local', '+919999900055', false);
+        SELECT public.claim_ambulance_driver('test_amb_unclaimed_flow') AS success;
+      `,
+      expectedRows: 1,
+      expectedSqlState: '00000',
+      assertResult: res => {
+        const lastRes = Array.isArray(res) ? res[res.length - 1] : res;
+        return lastRes.rows[0].success === true;
+      },
+    });
+
+    await testCase({
       name: 'Ambulance Driver Link RPC: Non-owner driver link is denied with 42501',
       table: 'ambulances',
       role: 'authenticated',
-      claims: getTestJwtClaims('ambulance', ambB),
+      claims: getTestJwtClaims('ambulance', ambB, true, '+919999900010'),
       sql: `SELECT public.claim_ambulance_driver('test_amb_unclaimed');`,
       expectedSqlState: '42501',
     });
@@ -2200,7 +2247,7 @@ async function runRlsSqlHarness(options = {}) {
       name: 'Ambulance Driver Link RPC: Driver claims already-claimed row is denied with 42501',
       table: 'ambulances',
       role: 'authenticated',
-      claims: getTestJwtClaims('ambulance', ambB),
+      claims: getTestJwtClaims('ambulance', ambB, true, '+919999900010'),
       sql: `SELECT public.claim_ambulance_driver('${ambA}');`,
       expectedSqlState: '42501',
     });
@@ -2209,8 +2256,26 @@ async function runRlsSqlHarness(options = {}) {
       name: 'Ambulance Driver Link RPC: Non-ambulance role (doctor) is denied claim with 42501',
       table: 'ambulances',
       role: 'authenticated',
-      claims: getTestJwtClaims('doctor', docA),
+      claims: getTestJwtClaims('doctor', docA, true, '+919999900003'),
       sql: `SELECT public.claim_ambulance_driver('test_amb_unclaimed');`,
+      expectedSqlState: '42501',
+    });
+
+    await testCase({
+      name: 'System Config: Authenticated client cannot execute upsert_system_config (denied 42501)',
+      table: 'system_config',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `SELECT private.upsert_system_config('test_key', '{"status":"hacked"}'::jsonb);`,
+      expectedSqlState: '42501',
+    });
+
+    await testCase({
+      name: 'System Config: Authenticated client direct INSERT is denied by FORCE RLS (42501)',
+      table: 'system_config',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `INSERT INTO public.system_config (config_key, config_value) VALUES ('hack_key', '{"tamper":true}'::jsonb);`,
       expectedSqlState: '42501',
     });
 

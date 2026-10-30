@@ -1,0 +1,11 @@
+
+======================================================
+DoctorNect Migration Runner (Target: REPLAY)
+======================================================
+Target Connection: postgresql://rds_master:****@localhost:5432/replay_check
+Existing Applied Migrations in Ledger: 44
+
+[FATAL CHECKSUM MISMATCH] Migration 20261103000006_harden_users_guard_orphan_and_unclaimed.sql (version 20261103000006) has been altered!
+Recorded checksum: 8ab1894647243430e9d5469c254345ad604bae50c2d3e14173c8814e75d6e7f0
+Current checksum:  d871005cbd7c2f177890ebecfd80e8385602c1566f08a6c9568f6ace61ef35df
+Altering already applied migrations violates database integrity.
