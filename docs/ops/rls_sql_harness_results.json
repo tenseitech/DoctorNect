@@ -1834,6 +1834,46 @@
       "verdict": "PASS"
     },
     {
+      "name": "Client Compatibility: Patient owner updates profile with exact frontend payload",
+      "table": "patients",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Client Compatibility: Lab owner updates profile with exact frontend payload",
+      "table": "labs",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Client Compatibility: Medical store owner updates profile with exact frontend payload",
+      "table": "medical_stores",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Client Compatibility: Ambulance driver updates profile with exact frontend payload",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
       "name": "Provider Lifecycle: Doctor owner deactivates profile via owner-bound RPC",
       "table": "doctors",
       "role": "authenticated",

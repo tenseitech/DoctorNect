@@ -25,15 +25,19 @@ function getTestJwtClaims(appRole, uid, verified = true) {
   return JSON.stringify(payload);
 }
 
-async function runRlsSqlHarness() {
+async function runRlsSqlHarness(options = {}) {
   const args = process.argv.slice(2);
   const targetArg = args.find(a => a.startsWith('--target='));
-  const target = targetArg ? targetArg.split('=')[1].toLowerCase() : 'staging';
+  const target = options.targetOverride || (targetArg ? targetArg.split('=')[1].toLowerCase() : 'staging');
 
   let poolConfig;
   let dbUrl;
 
-  if (target === 'staging') {
+  if (target === 'replay_check' || target === 'replay') {
+    assertDatabaseGuard({ targetKind: 'replay', operationName: 'RLS SQL Harness on Replay', allowDestructive: false });
+    dbUrl = options.connectionString || getEnv('REPLAY_DB_URL');
+    poolConfig = { connectionString: dbUrl };
+  } else if (target === 'staging') {
     assertDatabaseGuard({ targetKind: 'staging', operationName: 'RLS SQL Harness', allowDestructive: false });
     dbUrl = getEnv('STAGING_SUPABASE_DB_URL') || getEnv('PROD_SUPABASE_DB_URL');
     poolConfig = { connectionString: dbUrl };
@@ -1835,13 +1839,45 @@ async function runRlsSqlHarness() {
       expectedRows: 1,
     });
 
-    // Item 3: Client write compatibility & Provider lifecycle RPCs
+    // Item 3 & 4: Client write compatibility with exact frontend payloads & Provider lifecycle RPCs
     await testCase({
       name: 'Client Compatibility: Doctor owner updates profile with exact frontend payload',
       table: 'doctors',
       role: 'authenticated',
       claims: getTestJwtClaims('doctor', docA),
-      sql: `UPDATE public.doctors SET qualification = 'MBBS, MD', about = 'Dedicated physician' WHERE doctor_id = '${docA}';`,
+      sql: `UPDATE public.doctors SET qualification = 'MBBS, MD', about = 'Dedicated physician', clinic_name = 'Care Clinic', city = 'Delhi', consultation_fee = 750.00, specialization = 'Cardiologist', experience_years = 12 WHERE doctor_id = '${docA}';`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Client Compatibility: Patient owner updates profile with exact frontend payload',
+      table: 'patients',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `UPDATE public.patients SET name = 'Patient A Updated', email = 'pa_updated@test.local', share_records_with_doctors = true, profile_completed = true WHERE patient_id = '${pA}';`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Client Compatibility: Lab owner updates profile with exact frontend payload',
+      table: 'labs',
+      role: 'authenticated',
+      claims: getTestJwtClaims('lab', labA),
+      sql: `UPDATE public.labs SET lab_name = 'Central Diagnostic Lab', phone = '+919999900003', email = 'lab_updated@test.local', area = 'Rohini Sector 7', city = 'Delhi', state = 'Delhi', country = 'India', pincode = '110085', address_line1 = '123 Health Ave', profile_completed = true WHERE lab_id = '${labA}';`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Client Compatibility: Medical store owner updates profile with exact frontend payload',
+      table: 'medical_stores',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', storeA),
+      sql: `UPDATE public.medical_stores SET store_name = 'City Care Pharmacy', owner_name = 'Owner A Updated', phone = '+919999900005', email = 'pharmacy_updated@test.local', address_line1 = '456 Market St', city = 'Delhi', state = 'Delhi', pincode = '110001', profile_completed = true WHERE store_id = '${storeA}';`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Client Compatibility: Ambulance driver updates profile with exact frontend payload',
+      table: 'ambulances',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambA),
+      sql: `UPDATE public.ambulances SET service_name = 'Express Ambulance Network', driver_name = 'Driver A Senior', phone = '+919999900009', ambulance_type = 'als', city = 'Delhi', base_address = 'Connaught Place Base', has_oxygen = true, has_ventilator = true, is_24x7 = true, rate_per_km = 35.00, is_available = true, profile_completed = true WHERE ambulance_id = '${ambA}';`,
       expectedRows: 1,
     });
     await testCase({

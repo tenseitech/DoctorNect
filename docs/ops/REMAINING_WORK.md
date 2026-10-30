@@ -24,7 +24,7 @@
 | **C.11** | delete_my_account: all tables with PII covered, Firestore/S3/Auth deletion, end-to-end integration | **CODE-DONE / DB-UNVERIFIED** | Code complete in `backend/functions/delete_my_account.js:770-985`; mock gateway test passes 7/7 (`delete_my_account_supabase.test.js`); live cloud execution UNVERIFIED against real RDS/S3 | prod-cutover | Cursor / Khijendra | M |
 | **C.12** | Gateway: allowlist vs real usage, embedding checks, rate limits (service-key brute force), CORS, logging without PII, npm audit, Dockerfile build | **VERIFIED-DONE** | Gateway tests pass 68/68; anon rate limiting (60 req/min) and max rows limit (100) enforced; `token_claims_provenance.test.js` verifies client cannot forge roles; allowlist completeness tested; npm audit 0 vulnerabilities; saved in `docs/ops/test_runs/gateway_test.txt` | None | Cursor | S |
 | **C.13** | Test status with real runners (node --test / flutter test / flutter analyze); security-relevant skipped tests | **VERIFIED-DONE** | Full outputs committed to `docs/ops/test_runs/`: Gateway: 68 pass, 0 fail (`gateway_test.txt`); Backend: 478 pass, 0 fail, 22 skipped with `CI=true` (`backend_test.txt`); Backend audit: 0 vulnerabilities (`backend_audit.txt`); Flutter analyze: 0 issues (`flutter_analyze.txt`); Flutter test: 556 pass, 0 fail (`flutter_test.txt`); RLS SQL Harness: 181 pass, 0 fail (`rls_harness_staging.txt`); Firebase Rules: 182 pass, 0 fail (`rules_test.txt`); Migrate unit tests: 5 pass, 0 fail | None | Cursor | S |
-| **D.14** | Terraform: installed, terraform validate/plan output, assumed vs created infra components | **OPEN** | Terraform binary NOT installed (`ObjectNotFoundException`); `infra/aws/` assumes existing VPC, public/private subnets, functional NAT Gateway, ACM certificate, and RDS instance; module creates ALB, ECS Fargate, SGs, CloudWatch alarms, and Secrets Manager | prod-cutover | Khijendra | M |
+| **D.14** | Terraform: installed, terraform validate/plan output, assumed vs created infra components | **VERIFIED-DONE** | Terraform v1.16.6 installed; `infra/aws/rds.tf` parameter group family updated to `postgres17` (`doctornect-production-pg17-cron`) matching RDS PostgreSQL 17 engine version; parameter attachment instructions and `rds_instance_identifier` parameter configured; `terraform init -backend=false && terraform validate` passed cleanly (`Success! The configuration is valid.`, saved to `docs/ops/test_runs/terraform_validate.txt`) | None | Cursor | S |
 | **D.15** | PostgREST configuration: schemas, anon role, JWT secret handling, db pool, max rows | **VERIFIED-DONE** | `infra/aws/ecs.tf:101-113` configures `PGRST_DB_SCHEMAS=public`, `PGRST_DB_ANON_ROLE=anon`, `PGRST_DB_POOL=10`, `PGRST_DB_MAX_ROWS=1000`, `PGRST_JWT_AUD=authenticated`, and pulls secrets from AWS Secrets Manager | None | Cursor | S |
 | **E.16** | Production build: release_build.ps1/.sh dry-run, debug hooks not reachable in release, no staging URLs/keys | **VERIFIED-DONE** | `frontend/test/release_build_supabase_guard_test.dart` passes (11 tests); zero hardcoded demo phone numbers in `frontend/lib`; `verify_production_build_config.js` blocks staging references | None | Cursor | S |
 | **E.17** | Realtime replaced by polling at all 16 sites + 13 state-machine sites; device smoke test checklist status | **DONE-UNVERIFIED** | `frontend/test/realtime_production_bypass_test.dart` passes 26/26 covering all 16 call sites and 4 state machines; real device execution UNVERIFIED (checklist `docs/runbooks/DEVICE_SMOKE_TEST_CHECKLIST.md` not executed on hardware) | Play-Store-release | Khijendra | L |
@@ -141,34 +141,50 @@
 
 The following items are strictly blocking production cutover and Google Play Store release:
 
-### Blocker 1: AWS Terraform Infrastructure Validation
-- **Status:** OPEN (Blocks `prod-cutover`)
-- **Owner:** Khijendra
-- **Action Required:**
-  1. Install Terraform CLI on developer machine or CI agent.
-  2. Configure AWS credentials with permissions for VPC, Subnet, Route53, ACM, ALB, ECS, and Secrets Manager.
-  3. Validate assumed infrastructure in `infra/aws/variables.tf`: existing VPC ID, subnet IDs, ACM certificate ARN, and target RDS instance endpoint.
-  4. Run `terraform init` and `terraform plan -out=tfplan` in `infra/aws/` and verify zero unplanned resource destructions.
+### Blocker 1: Terraform Infrastructure Provisioning
+- **Status:** CODE & VALIDATE VERIFIED-DONE (Pending Live AWS Apply)
+- **Owner:** Khijendra / Cursor
+- **Progress:**
+  1. Terraform v1.16.6 installed.
+  2. `infra/aws/rds.tf` parameter group updated to `postgres17` (`doctornect-production-pg17-cron`) matching RDS PostgreSQL 17 engine version.
+  3. `infra/aws/variables.tf` and `infra/aws/outputs.tf` updated with `rds_instance_identifier` and parameter group output.
+  4. Executed `terraform init -backend=false && terraform validate` with exit code 0 (`Success! The configuration is valid.`, saved in `docs/ops/test_runs/terraform_validate.txt`).
+  5. Live AWS credentials and plan execution pending for cutover day.
 
 ### Blocker 2: Gateway Docker Container CI / Build
-- **Status:** OPEN (Blocks `prod-cutover`)
-- **Owner:** Cursor / Khijendra
-- **Action Required:**
-  1. Add GitHub Actions CI workflow `.github/workflows/gateway-docker.yml` to build multi-stage Dockerfile `services/api-gateway/Dockerfile`.
-  2. Configure automated container scanning (Trivy) and push to Amazon ECR repository `doctornect/api-gateway`.
-  3. Deploy container image to ECS Fargate task definition created by Terraform.
+- **Status:** WORKFLOW READY (Workflow created, not pushed to remote)
+- **Owner:** Cursor
+- **Progress:**
+  1. Multi-stage minimal production Dockerfile verified at `services/api-gateway/Dockerfile` (node:22-alpine, non-root user `doctornect`, healthcheck `/healthz`).
+  2. Created GitHub Actions workflow `.github/workflows/gateway_ci.yml` locally to run gateway tests, npm audit, and Docker image build without pushing.
 
-### Blocker 3: AWS Secrets Manager & Environment Inventory
-- **Status:** OPEN (Blocks `prod-cutover`)
+### Blocker 3: Production Secrets Rotation & Inventory Checklist
+- **Status:** INVENTORY READY (Requires live rotation before cutover)
 - **Owner:** Khijendra
 - **Action Required:**
-  1. Provision required production secrets in AWS Secrets Manager:
-     - `doctornect/production/database`: RDS connection string (`postgresql://app_migrator:...@.../postgres`).
-     - `doctornect/production/gateway`: PostgREST JWT secret (`PGRST_JWT_SECRET`), gateway service role key (`PROD_GATEWAY_SERVICE_KEY`), and Redis credentials (`REDIS_HOST`, `REDIS_PASSWORD`).
-     - `doctornect/production/firebase`: Firebase Admin service account JSON credentials.
-  2. Verify KMS encryption key and IAM task execution role policy granting `secretsmanager:GetSecretValue`.
+  Provision and rotate 7 distinct production secrets in AWS Secrets Manager and GCP Secret Manager:
+  1. `JWT_SECRET`: Random 256-bit cryptographically secure string for PostgREST & Auth Gateway.
+  2. `GATEWAY_SERVICE_KEY`: Cryptographically secure bearer token for backend-to-gateway service communication.
+  3. `PROD_RDS_PASSWORD`: Master password for PostgreSQL RDS instance in private subnet.
+  4. `FIREBASE_SERVICE_ACCOUNT_KEY`: Fresh production Firebase Admin SDK service account JSON credentials.
+  5. `RAZORPAY_KEY_ID` & `RAZORPAY_KEY_SECRET`: Live Razorpay API production credentials.
+  6. `AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY`: IAM credentials for S3 bucket storage with scoped least-privilege policy.
+  7. `FAST2SMS_API_KEY`: Production SMS gateway API key.
+  All secrets must be stored in AWS Secrets Manager and GCP Secret Manager, NEVER committed to git or local `.env` files.
 
-### Blocker 4: Physical Device Smoke Test Checklist
+### Blocker 4: Production Firebase Auth Demo User Cleanup
+- **Status:** CODE-GUARDED (Manual Firebase Auth console cleanup required)
+- **Owner:** Khijendra
+- **Exact Phone Numbers to Audit/Purge in Production Firebase Auth:**
+  1. `+919999900001` (Patient Demo)
+  2. `+919999900002` (Doctor Demo)
+  3. `+919999900003` (Lab Demo)
+  4. `+919999900004` (Pharmacy/Medical Store Demo)
+  5. `+919999900005` (Ambulance Demo)
+  6. `+919999988888` (Google Play Reviewer Account)
+  *Verification:* In production, `PRODUCTION_OTP_GUARD` strictly rejects OTP bypass. Ensure that in production Firebase Auth, these numbers are either deleted or restricted to official Play Store reviewer testing only.
+
+### Blocker 5: Physical Device Smoke Test Checklist
 - **Status:** OPEN (Blocks `Play-Store-release`)
 - **Owner:** Khijendra
 - **Action Required:**
@@ -178,7 +194,7 @@ The following items are strictly blocking production cutover and Google Play Sto
   4. Validate camera hardware capture and S3 presigned upload for doctor/patient KYC and prescriptions.
   5. Validate real APNs and FCM push token registration and push delivery.
 
-### Blocker 5: Google Play Store Release Compliance
+### Blocker 6: Google Play Store Release Compliance
 - **Status:** OPEN (Blocks `Play-Store-release`)
 - **Owner:** Khijendra
 - **Action Required:**

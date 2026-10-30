@@ -1,10 +1,24 @@
-# AWS RDS Parameter Group for DoctorNect PostgreSQL 15+
+# AWS RDS Parameter Group for DoctorNect PostgreSQL 17+
 # Enables native pg_cron background worker and performance monitoring.
+#
+# Attachment to Existing RDS Instance:
+# Option A (CLI / Manual Cutover):
+#   1. Associate parameter group:
+#      aws rds modify-db-instance \
+#        --db-instance-identifier ${var.rds_instance_identifier} \
+#        --db-parameter-group-name ${aws_db_parameter_group.doctornect_pg17.name} \
+#        --apply-immediately
+#   2. Reboot instance to load shared_preload_libraries (pending-reboot):
+#      aws rds reboot-db-instance \
+#        --db-instance-identifier ${var.rds_instance_identifier}
+#
+# Option B (Terraform-managed DB Instance):
+#   Set `parameter_group_name = aws_db_parameter_group.doctornect_pg17.name` on the `aws_db_instance` resource.
 
-resource "aws_db_parameter_group" "doctornect_pg15" {
-  name        = "${var.project_name}-${var.environment}-pg15-cron"
-  family      = "postgres15"
-  description = "Custom RDS parameter group enabling pg_cron and pg_stat_statements"
+resource "aws_db_parameter_group" "doctornect_pg17" {
+  name        = "${var.project_name}-${var.environment}-pg17-cron"
+  family      = "postgres17"
+  description = "Custom RDS parameter group enabling pg_cron and pg_stat_statements for PostgreSQL 17"
 
   # 1. Mandatory shared preload libraries (requires RDS reboot)
   parameter {
@@ -39,4 +53,3 @@ resource "aws_db_parameter_group" "doctornect_pg15" {
     Project     = var.project_name
   }
 }
-

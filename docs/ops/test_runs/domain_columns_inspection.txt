@@ -1,0 +1,279 @@
+┌─────────┬──────────────────┬──────────────────────────────┬────────────────────────────┬─────────────────────────────────────────┬─────────────┐
+│ (index) │ table_name       │ column_name                  │ data_type                  │ column_default                          │ is_nullable │
+├─────────┼──────────────────┼──────────────────────────────┼────────────────────────────┼─────────────────────────────────────────┼─────────────┤
+│ 0       │ 'ambulances'     │ 'ambulance_id'               │ 'character varying'        │ null                                    │ 'NO'        │
+│ 1       │ 'ambulances'     │ 'auth_uid'                   │ 'text'                     │ null                                    │ 'YES'       │
+│ 2       │ 'ambulances'     │ 'service_name'               │ 'character varying'        │ null                                    │ 'NO'        │
+│ 3       │ 'ambulances'     │ 'owner_name'                 │ 'character varying'        │ null                                    │ 'YES'       │
+│ 4       │ 'ambulances'     │ 'driver_name'                │ 'character varying'        │ null                                    │ 'NO'        │
+│ 5       │ 'ambulances'     │ 'phone'                      │ 'character varying'        │ null                                    │ 'NO'        │
+│ 6       │ 'ambulances'     │ 'vehicle_number'             │ 'character varying'        │ null                                    │ 'NO'        │
+│ 7       │ 'ambulances'     │ 'ambulance_type'             │ 'character varying'        │ null                                    │ 'NO'        │
+│ 8       │ 'ambulances'     │ 'username'                   │ 'character varying'        │ null                                    │ 'YES'       │
+│ 9       │ 'ambulances'     │ 'city'                       │ 'character varying'        │ null                                    │ 'NO'        │
+│ 10      │ 'ambulances'     │ 'base_address'               │ 'text'                     │ null                                    │ 'YES'       │
+│ 11      │ 'ambulances'     │ 'license_number'             │ 'character varying'        │ null                                    │ 'YES'       │
+│ 12      │ 'ambulances'     │ 'insurance_number'           │ 'character varying'        │ null                                    │ 'YES'       │
+│ 13      │ 'ambulances'     │ 'has_oxygen'                 │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 14      │ 'ambulances'     │ 'has_ventilator'             │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 15      │ 'ambulances'     │ 'has_stretcher'              │ 'boolean'                  │ 'true'                                  │ 'NO'        │
+│ 16      │ 'ambulances'     │ 'is_24x7'                    │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 17      │ 'ambulances'     │ 'rate_per_km'                │ 'numeric'                  │ null                                    │ 'YES'       │
+│ 18      │ 'ambulances'     │ 'total_rating'               │ 'numeric'                  │ '0.00'                                  │ 'NO'        │
+│ 19      │ 'ambulances'     │ 'rating_count'               │ 'integer'                  │ '0'                                     │ 'NO'        │
+│ 20      │ 'ambulances'     │ 'is_available'               │ 'boolean'                  │ 'true'                                  │ 'NO'        │
+│ 21      │ 'ambulances'     │ 'profile_completed'          │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 22      │ 'ambulances'     │ 'verified'                   │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 23      │ 'ambulances'     │ 'address_line1'              │ 'text'                     │ null                                    │ 'YES'       │
+│ 24      │ 'ambulances'     │ 'address_line2'              │ 'text'                     │ null                                    │ 'YES'       │
+│ 25      │ 'ambulances'     │ 'state'                      │ 'character varying'        │ null                                    │ 'YES'       │
+│ 26      │ 'ambulances'     │ 'country'                    │ 'character varying'        │ "'India'::character varying"            │ 'YES'       │
+│ 27      │ 'ambulances'     │ 'pincode'                    │ 'character varying'        │ null                                    │ 'YES'       │
+│ 28      │ 'ambulances'     │ 'service_areas'              │ 'ARRAY'                    │ 'ARRAY[]::text[]'                       │ 'YES'       │
+│ 29      │ 'ambulances'     │ 'created_at'                 │ 'timestamp with time zone' │ 'CURRENT_TIMESTAMP'                     │ 'NO'        │
+│ 30      │ 'ambulances'     │ 'updated_at'                 │ 'timestamp with time zone' │ 'CURRENT_TIMESTAMP'                     │ 'NO'        │
+│ 31      │ 'doctors'        │ 'doctor_id'                  │ 'character varying'        │ null                                    │ 'NO'        │
+│ 32      │ 'doctors'        │ 'owner_uid'                  │ 'text'                     │ null                                    │ 'YES'       │
+│ 33      │ 'doctors'        │ 'name'                       │ 'character varying'        │ null                                    │ 'NO'        │
+│ 34      │ 'doctors'        │ 'email'                      │ 'character varying'        │ null                                    │ 'NO'        │
+│ 35      │ 'doctors'        │ 'mobile'                     │ 'character varying'        │ null                                    │ 'NO'        │
+│ 36      │ 'doctors'        │ 'specialization'             │ 'character varying'        │ null                                    │ 'NO'        │
+│ 37      │ 'doctors'        │ 'super_specialization'       │ 'text'                     │ null                                    │ 'YES'       │
+│ 38      │ 'doctors'        │ 'qualification'              │ 'character varying'        │ null                                    │ 'NO'        │
+│ 39      │ 'doctors'        │ 'experience_years'           │ 'integer'                  │ '1'                                     │ 'NO'        │
+│ 40      │ 'doctors'        │ 'consultation_fee'           │ 'numeric'                  │ '0.00'                                  │ 'YES'       │
+│ 41      │ 'doctors'        │ 'clinic_name'                │ 'character varying'        │ null                                    │ 'YES'       │
+│ 42      │ 'doctors'        │ 'primary_facility_id'        │ 'character varying'        │ null                                    │ 'YES'       │
+│ 43      │ 'doctors'        │ 'area'                       │ 'character varying'        │ null                                    │ 'YES'       │
+│ 44      │ 'doctors'        │ 'city'                       │ 'character varying'        │ null                                    │ 'YES'       │
+│ 45      │ 'doctors'        │ 'state'                      │ 'character varying'        │ null                                    │ 'YES'       │
+│ 46      │ 'doctors'        │ 'country'                    │ 'character varying'        │ "'India'::character varying"            │ 'YES'       │
+│ 47      │ 'doctors'        │ 'pincode'                    │ 'character varying'        │ null                                    │ 'YES'       │
+│ 48      │ 'doctors'        │ 'address_line1'              │ 'text'                     │ null                                    │ 'YES'       │
+│ 49      │ 'doctors'        │ 'address_line2'              │ 'text'                     │ null                                    │ 'YES'       │
+│ 50      │ 'doctors'        │ 'state_council'              │ 'character varying'        │ null                                    │ 'YES'       │
+│ 51      │ 'doctors'        │ 'council_number'             │ 'character varying'        │ null                                    │ 'YES'       │
+│ 52      │ 'doctors'        │ 'certifications'             │ 'ARRAY'                    │ 'ARRAY[]::text[]'                       │ 'YES'       │
+│ 53      │ 'doctors'        │ 'past_workplaces'            │ 'ARRAY'                    │ 'ARRAY[]::text[]'                       │ 'YES'       │
+│ 54      │ 'doctors'        │ 'memberships'                │ 'ARRAY'                    │ 'ARRAY[]::text[]'                       │ 'YES'       │
+│ 55      │ 'doctors'        │ 'awards'                     │ 'ARRAY'                    │ 'ARRAY[]::text[]'                       │ 'YES'       │
+│ 56      │ 'doctors'        │ 'publications'               │ 'ARRAY'                    │ 'ARRAY[]::text[]'                       │ 'YES'       │
+│ 57      │ 'doctors'        │ 'about'                      │ 'text'                     │ null                                    │ 'YES'       │
+│ 58      │ 'doctors'        │ 'languages'                  │ 'ARRAY'                    │ "ARRAY['English'::text, 'Hindi'::text]" │ 'YES'       │
+│ 59      │ 'doctors'        │ 'photo_url'                  │ 'text'                     │ null                                    │ 'YES'       │
+│ 60      │ 'doctors'        │ 'maps_link'                  │ 'text'                     │ null                                    │ 'YES'       │
+│ 61      │ 'doctors'        │ 'landmark'                   │ 'character varying'        │ null                                    │ 'YES'       │
+│ 62      │ 'doctors'        │ 'rating'                     │ 'numeric'                  │ '0.00'                                  │ 'NO'        │
+│ 63      │ 'doctors'        │ 'review_count'               │ 'integer'                  │ '0'                                     │ 'NO'        │
+│ 64      │ 'doctors'        │ 'profile_completed'          │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 65      │ 'doctors'        │ 'verified'                   │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 66      │ 'doctors'        │ 'verified_at'                │ 'timestamp with time zone' │ null                                    │ 'YES'       │
+│ 67      │ 'doctors'        │ 'deactivated'                │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 68      │ 'doctors'        │ 'deactivated_at'             │ 'timestamp with time zone' │ null                                    │ 'YES'       │
+│ 69      │ 'doctors'        │ 'reactivate_before'          │ 'timestamp with time zone' │ null                                    │ 'YES'       │
+│ 70      │ 'doctors'        │ 'reactivated_at'             │ 'timestamp with time zone' │ null                                    │ 'YES'       │
+│ 71      │ 'doctors'        │ 'fcm_token'                  │ 'text'                     │ null                                    │ 'YES'       │
+│ 72      │ 'doctors'        │ 'fcm_token_updated_at'       │ 'timestamp with time zone' │ null                                    │ 'YES'       │
+│ 73      │ 'doctors'        │ 'created_at'                 │ 'timestamp with time zone' │ 'CURRENT_TIMESTAMP'                     │ 'NO'        │
+│ 74      │ 'doctors'        │ 'updated_at'                 │ 'timestamp with time zone' │ 'CURRENT_TIMESTAMP'                     │ 'NO'        │
+│ 75      │ 'doctors'        │ 'photo_key'                  │ 'text'                     │ null                                    │ 'YES'       │
+│ 76      │ 'doctors'        │ 'photo_storage'              │ 'character varying'        │ "'legacy'::character varying"           │ 'YES'       │
+│ 77      │ 'doctors'        │ 'photo_s3_key'               │ 'text'                     │ null                                    │ 'YES'       │
+│ 78      │ 'doctors'        │ 'photo_s3_bucket'            │ 'text'                     │ null                                    │ 'YES'       │
+│ 79      │ 'doctors'        │ 'photo_storage_provider'     │ 'character varying'        │ "'s3'::character varying"               │ 'YES'       │
+│ 80      │ 'doctors'        │ 'photo_updated_at'           │ 'timestamp with time zone' │ null                                    │ 'YES'       │
+│ 81      │ 'labs'           │ 'lab_id'                     │ 'character varying'        │ null                                    │ 'NO'        │
+│ 82      │ 'labs'           │ 'owner_uid'                  │ 'text'                     │ null                                    │ 'YES'       │
+│ 83      │ 'labs'           │ 'lab_name'                   │ 'character varying'        │ null                                    │ 'NO'        │
+│ 84      │ 'labs'           │ 'license_number'             │ 'character varying'        │ null                                    │ 'NO'        │
+│ 85      │ 'labs'           │ 'phone'                      │ 'character varying'        │ null                                    │ 'NO'        │
+│ 86      │ 'labs'           │ 'email'                      │ 'character varying'        │ null                                    │ 'NO'        │
+│ 87      │ 'labs'           │ 'gst_number'                 │ 'character varying'        │ null                                    │ 'YES'       │
+│ 88      │ 'labs'           │ 'rating'                     │ 'numeric'                  │ '0.00'                                  │ 'NO'        │
+│ 89      │ 'labs'           │ 'area'                       │ 'character varying'        │ null                                    │ 'YES'       │
+│ 90      │ 'labs'           │ 'city'                       │ 'character varying'        │ null                                    │ 'YES'       │
+│ 91      │ 'labs'           │ 'state'                      │ 'character varying'        │ null                                    │ 'YES'       │
+│ 92      │ 'labs'           │ 'country'                    │ 'character varying'        │ "'India'::character varying"            │ 'YES'       │
+│ 93      │ 'labs'           │ 'pincode'                    │ 'character varying'        │ null                                    │ 'YES'       │
+│ 94      │ 'labs'           │ 'address_line1'              │ 'text'                     │ null                                    │ 'YES'       │
+│ 95      │ 'labs'           │ 'address_line2'              │ 'text'                     │ null                                    │ 'YES'       │
+│ 96      │ 'labs'           │ 'profile_completed'          │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 97      │ 'labs'           │ 'verified'                   │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 98      │ 'labs'           │ 'verified_at'                │ 'timestamp with time zone' │ null                                    │ 'YES'       │
+│ 99      │ 'labs'           │ 'deactivated'                │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 100     │ 'labs'           │ 'created_at'                 │ 'timestamp with time zone' │ 'CURRENT_TIMESTAMP'                     │ 'NO'        │
+│ 101     │ 'labs'           │ 'updated_at'                 │ 'timestamp with time zone' │ 'CURRENT_TIMESTAMP'                     │ 'NO'        │
+│ 102     │ 'medical_stores' │ 'store_id'                   │ 'character varying'        │ null                                    │ 'NO'        │
+│ 103     │ 'medical_stores' │ 'owner_uid'                  │ 'text'                     │ null                                    │ 'YES'       │
+│ 104     │ 'medical_stores' │ 'store_name'                 │ 'character varying'        │ null                                    │ 'NO'        │
+│ 105     │ 'medical_stores' │ 'owner_name'                 │ 'character varying'        │ null                                    │ 'NO'        │
+│ 106     │ 'medical_stores' │ 'drug_license_number'        │ 'character varying'        │ null                                    │ 'NO'        │
+│ 107     │ 'medical_stores' │ 'phone'                      │ 'character varying'        │ null                                    │ 'NO'        │
+│ 108     │ 'medical_stores' │ 'email'                      │ 'character varying'        │ null                                    │ 'NO'        │
+│ 109     │ 'medical_stores' │ 'gst_number'                 │ 'character varying'        │ null                                    │ 'YES'       │
+│ 110     │ 'medical_stores' │ 'address_line1'              │ 'text'                     │ null                                    │ 'YES'       │
+│ 111     │ 'medical_stores' │ 'address_line2'              │ 'text'                     │ null                                    │ 'YES'       │
+│ 112     │ 'medical_stores' │ 'city'                       │ 'character varying'        │ null                                    │ 'YES'       │
+│ 113     │ 'medical_stores' │ 'state'                      │ 'character varying'        │ null                                    │ 'YES'       │
+│ 114     │ 'medical_stores' │ 'country'                    │ 'character varying'        │ "'India'::character varying"            │ 'YES'       │
+│ 115     │ 'medical_stores' │ 'pincode'                    │ 'character varying'        │ null                                    │ 'YES'       │
+│ 116     │ 'medical_stores' │ 'profile_completed'          │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 117     │ 'medical_stores' │ 'verified'                   │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 118     │ 'medical_stores' │ 'verified_at'                │ 'timestamp with time zone' │ null                                    │ 'YES'       │
+│ 119     │ 'medical_stores' │ 'deactivated'                │ 'boolean'                  │ 'false'                                 │ 'NO'        │
+│ 120     │ 'medical_stores' │ 'created_at'                 │ 'timestamp with time zone' │ 'CURRENT_TIMESTAMP'                     │ 'NO'        │
+│ 121     │ 'medical_stores' │ 'updated_at'                 │ 'timestamp with time zone' │ 'CURRENT_TIMESTAMP'                     │ 'NO'        │
+│ 122     │ 'patients'       │ 'patient_id'                 │ 'character varying'        │ null                                    │ 'NO'        │
+│ 123     │ 'patients'       │ 'owner_uid'                  │ 'text'                     │ null                                    │ 'YES'       │
+│ 124     │ 'patients'       │ 'name'                       │ 'character varying'        │ null                                    │ 'NO'        │
+│ 125     │ 'patients'       │ 'email'                      │ 'character varying'        │ null                                    │ 'YES'       │
+│ 126     │ 'patients'       │ 'mobile'                     │ 'character varying'        │ null                                    │ 'NO'        │
+│ 127     │ 'patients'       │ 'age'                        │ 'integer'                  │ null                                    │ 'YES'       │
+│ 128     │ 'patients'       │ 'gender'                     │ 'character varying'        │ null                                    │ 'YES'       │
+│ 129     │ 'patients'       │ 'blood_group'                │ 'character varying'        │ null                                    │ 'YES'       │
+│ 130     │ 'patients'       │ 'height'                     │ 'character varying'        │ null                                    │ 'YES'       │
+│ 131     │ 'patients'       │ 'weight'                     │ 'character varying'        │ null                                    │ 'YES'       │
+│ 132     │ 'patients'       │ 'address'                    │ 'text'                     │ null                                    │ 'YES'       │
+│ 133     │ 'patients'       │ 'photo_url'                  │ 'text'                     │ null                                    │ 'YES'       │
+│ 134     │ 'patients'       │ 'share_records_with_doctors' │ 'boolean'                  │ 'true'                                  │ 'NO'        │
+│ 135     │ 'patients'       │ 'primary_doctor_id'          │ 'character varying'        │ null                                    │ 'YES'       │
+│ 136     │ 'patients'       │ 'invited_doctor_id'          │ 'character varying'        │ null                                    │ 'YES'       │
+│ 137     │ 'patients'       │ 'care_team_doctor_ids'       │ 'ARRAY'                    │ 'ARRAY[]::text[]'                       │ 'YES'       │
+│ 138     │ 'patients'       │ 'profile_completed'          │ 'boolean'                  │ 'true'                                  │ 'NO'        │
+│ 139     │ 'patients'       │ 'verified'                   │ 'boolean'                  │ 'true'                                  │ 'NO'        │
+│ 140     │ 'patients'       │ 'fcm_token'                  │ 'text'                     │ null                                    │ 'YES'       │
+│ 141     │ 'patients'       │ 'fcm_token_updated_at'       │ 'timestamp with time zone' │ null                                    │ 'YES'       │
+│ 142     │ 'patients'       │ 'created_at'                 │ 'timestamp with time zone' │ 'CURRENT_TIMESTAMP'                     │ 'NO'        │
+│ 143     │ 'patients'       │ 'updated_at'                 │ 'timestamp with time zone' │ 'CURRENT_TIMESTAMP'                     │ 'NO'        │
+│ 144     │ 'patients'       │ 'sync_origin'                │ 'character varying'        │ "'patient_supabase'::character varying" │ 'YES'       │
+│ 145     │ 'patients'       │ 'synced_by'                  │ 'character varying'        │ null                                    │ 'YES'       │
+│ 146     │ 'patients'       │ 'city'                       │ 'character varying'        │ null                                    │ 'YES'       │
+│ 147     │ 'patients'       │ 'state'                      │ 'character varying'        │ null                                    │ 'YES'       │
+│ 148     │ 'patients'       │ 'pincode'                    │ 'character varying'        │ null                                    │ 'YES'       │
+│ 149     │ 'patients'       │ 'country'                    │ 'character varying'        │ "'India'::character varying"            │ 'YES'       │
+│ 150     │ 'patients'       │ 'conditions'                 │ 'ARRAY'                    │ 'ARRAY[]::text[]'                       │ 'YES'       │
+│ 151     │ 'patients'       │ 'allergies'                  │ 'ARRAY'                    │ 'ARRAY[]::text[]'                       │ 'YES'       │
+│ 152     │ 'patients'       │ 'metadata'                   │ 'jsonb'                    │ "'{}'::jsonb"                           │ 'YES'       │
+│ 153     │ 'patients'       │ 'photo_key'                  │ 'text'                     │ null                                    │ 'YES'       │
+│ 154     │ 'patients'       │ 'photo_storage'              │ 'character varying'        │ "'legacy'::character varying"           │ 'YES'       │
+│ 155     │ 'patients'       │ 'photo_s3_key'               │ 'text'                     │ null                                    │ 'YES'       │
+│ 156     │ 'patients'       │ 'photo_s3_bucket'            │ 'text'                     │ null                                    │ 'YES'       │
+│ 157     │ 'patients'       │ 'photo_storage_provider'     │ 'character varying'        │ "'s3'::character varying"               │ 'YES'       │
+│ 158     │ 'patients'       │ 'photo_updated_at'           │ 'timestamp with time zone' │ null                                    │ 'YES'       │
+└─────────┴──────────────────┴──────────────────────────────┴────────────────────────────┴─────────────────────────────────────────┴─────────────┘
+
+=== COLUMN LISTS BY TABLE ===
+
+Table ambulances (31 cols):
+ambulance_id, auth_uid, service_name, owner_name, driver_name, phone, vehicle_number, ambulance_type, username, city, base_address, license_number, insurance_number, has_oxygen, has_ventilator, has_stretcher, is_24x7, rate_per_km, total_rating, rating_count, is_available, profile_completed, verified, address_line1, address_line2, state, country, pincode, service_areas, created_at, updated_at
+
+Table doctors (50 cols):
+doctor_id, owner_uid, name, email, mobile, specialization, super_specialization, qualification, experience_years, consultation_fee, clinic_name, primary_facility_id, area, city, state, country, pincode, address_line1, address_line2, state_council, council_number, certifications, past_workplaces, memberships, awards, publications, about, languages, photo_url, maps_link, landmark, rating, review_count, profile_completed, verified, verified_at, deactivated, deactivated_at, reactivate_before, reactivated_at, fcm_token, fcm_token_updated_at, created_at, updated_at, photo_key, photo_storage, photo_s3_key, photo_s3_bucket, photo_storage_provider, photo_updated_at
+
+Table labs (21 cols):
+lab_id, owner_uid, lab_name, license_number, phone, email, gst_number, rating, area, city, state, country, pincode, address_line1, address_line2, profile_completed, verified, verified_at, deactivated, created_at, updated_at
+
+Table medical_stores (20 cols):
+store_id, owner_uid, store_name, owner_name, drug_license_number, phone, email, gst_number, address_line1, address_line2, city, state, country, pincode, profile_completed, verified, verified_at, deactivated, created_at, updated_at
+
+Table patients (37 cols):
+patient_id, owner_uid, name, email, mobile, age, gender, blood_group, height, weight, address, photo_url, share_records_with_doctors, primary_doctor_id, invited_doctor_id, care_team_doctor_ids, profile_completed, verified, fcm_token, fcm_token_updated_at, created_at, updated_at, sync_origin, synced_by, city, state, pincode, country, conditions, allergies, metadata, photo_key, photo_storage, photo_s3_key, photo_s3_bucket, photo_storage_provider, photo_updated_at
+
+=== CURRENT RLS POLICIES ===
+Table: ambulances | Cmd: DELETE | Policy: ambulances_delete | Roles: {authenticated}
+  QUAL: is_super_admin()
+  WITH CHECK: null
+Table: ambulances | Cmd: INSERT | Policy: ambulances_insert | Roles: {authenticated}
+  QUAL: null
+  WITH CHECK: (((auth_uid = (auth.jwt() ->> 'sub'::text)) AND (((auth.jwt() ->> 'app_role'::text) = 'ambulance'::text) OR ((auth.jwt() ->> 'user_role'::text) = 'ambulance'::text))) OR private.is_super_admin())
+Table: ambulances | Cmd: SELECT | Policy: ambulances_select | Roles: {authenticated}
+  QUAL: ((verified = true) OR (auth_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())
+  WITH CHECK: null
+Table: ambulances | Cmd: UPDATE | Policy: ambulances_update | Roles: {authenticated}
+  QUAL: true
+  WITH CHECK: ((auth_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())
+Table: doctors | Cmd: DELETE | Policy: doctors_delete | Roles: {authenticated}
+  QUAL: is_super_admin()
+  WITH CHECK: null
+Table: doctors | Cmd: DELETE | Policy: doctors_delete_admin | Roles: {authenticated}
+  QUAL: private.is_super_admin()
+  WITH CHECK: null
+Table: doctors | Cmd: INSERT | Policy: doctors_insert | Roles: {authenticated}
+  QUAL: null
+  WITH CHECK: (((owner_uid = (auth.jwt() ->> 'sub'::text)) AND (verified = false) AND (((auth.jwt() ->> 'app_role'::text) = 'doctor'::text) OR ((auth.jwt() ->> 'user_role'::text) = 'doctor'::text))) OR private.is_super_admin())
+Table: doctors | Cmd: SELECT | Policy: doctors_select | Roles: {authenticated}
+  QUAL: true
+  WITH CHECK: null
+Table: doctors | Cmd: UPDATE | Policy: doctors_update | Roles: {authenticated}
+  QUAL: true
+  WITH CHECK: ((owner_uid = (auth.jwt() ->> 'sub'::text)) OR ((doctor_id)::text = private.current_profile_id()) OR private.is_super_admin())
+Table: labs | Cmd: DELETE | Policy: labs_delete | Roles: {authenticated}
+  QUAL: is_super_admin()
+  WITH CHECK: null
+Table: labs | Cmd: DELETE | Policy: labs_delete_admin | Roles: {authenticated}
+  QUAL: private.is_super_admin()
+  WITH CHECK: null
+Table: labs | Cmd: INSERT | Policy: labs_insert | Roles: {authenticated}
+  QUAL: null
+  WITH CHECK: (((owner_uid = (auth.jwt() ->> 'sub'::text)) AND (((auth.jwt() ->> 'app_role'::text) = 'lab'::text) OR ((auth.jwt() ->> 'user_role'::text) = 'lab'::text))) OR private.is_super_admin())
+Table: labs | Cmd: SELECT | Policy: labs_select | Roles: {authenticated}
+  QUAL: ((verified = true) OR (owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())
+  WITH CHECK: null
+Table: labs | Cmd: UPDATE | Policy: labs_update | Roles: {authenticated}
+  QUAL: true
+  WITH CHECK: ((owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())
+Table: medical_stores | Cmd: DELETE | Policy: medical_stores_delete | Roles: {authenticated}
+  QUAL: is_super_admin()
+  WITH CHECK: null
+Table: medical_stores | Cmd: DELETE | Policy: medical_stores_delete_admin | Roles: {authenticated}
+  QUAL: private.is_super_admin()
+  WITH CHECK: null
+Table: medical_stores | Cmd: INSERT | Policy: medical_stores_insert | Roles: {authenticated}
+  QUAL: null
+  WITH CHECK: (((owner_uid = (auth.jwt() ->> 'sub'::text)) AND (((auth.jwt() ->> 'app_role'::text) = ANY (ARRAY['pharmacy'::text, 'medicalStore'::text])) OR ((auth.jwt() ->> 'user_role'::text) = ANY (ARRAY['pharmacy'::text, 'medicalStore'::text])))) OR private.is_super_admin())
+Table: medical_stores | Cmd: SELECT | Policy: medical_stores_select | Roles: {authenticated}
+  QUAL: ((verified = true) OR (owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())
+  WITH CHECK: null
+Table: medical_stores | Cmd: UPDATE | Policy: medical_stores_update | Roles: {authenticated}
+  QUAL: true
+  WITH CHECK: ((owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())
+Table: patients | Cmd: DELETE | Policy: patients_delete | Roles: {authenticated}
+  QUAL: false
+  WITH CHECK: null
+Table: patients | Cmd: DELETE | Policy: patients_delete_admin | Roles: {authenticated}
+  QUAL: private.is_super_admin()
+  WITH CHECK: null
+Table: patients | Cmd: INSERT | Policy: patients_insert | Roles: {authenticated}
+  QUAL: null
+  WITH CHECK: ((owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())
+Table: patients | Cmd: SELECT | Policy: patients_select | Roles: {authenticated}
+  QUAL: ((owner_uid = (auth.jwt() ->> 'sub'::text)) OR ((patient_id)::text = private.current_profile_id()) OR private.is_super_admin() OR private.doctor_can_access_patient((patient_id)::text))
+  WITH CHECK: null
+Table: patients | Cmd: UPDATE | Policy: patients_update | Roles: {authenticated}
+  QUAL: true
+  WITH CHECK: ((owner_uid = (auth.jwt() ->> 'sub'::text)) OR private.is_super_admin())
+
+=== CURRENT TRIGGERS ===
+┌─────────┬────────────────────┬───────────────────────────────────┬────────────────────┬──────────────────────────────────────────────────────────────────┬───────────────┐
+│ (index) │ event_object_table │ trigger_name                      │ event_manipulation │ action_statement                                                 │ action_timing │
+├─────────┼────────────────────┼───────────────────────────────────┼────────────────────┼──────────────────────────────────────────────────────────────────┼───────────────┤
+│ 0       │ 'ambulances'       │ 'set_ambulances_timestamp'        │ 'UPDATE'           │ 'EXECUTE FUNCTION trigger_set_timestamp()'                       │ 'BEFORE'      │
+│ 1       │ 'ambulances'       │ 'trg_ambulances_guard_insert'     │ 'INSERT'           │ 'EXECUTE FUNCTION private.trg_domain_profile_guard_insert()'     │ 'BEFORE'      │
+│ 2       │ 'ambulances'       │ 'trg_ambulances_guard_update'     │ 'UPDATE'           │ 'EXECUTE FUNCTION private.trg_domain_profile_guard_update()'     │ 'BEFORE'      │
+│ 3       │ 'doctors'          │ 'set_doctors_timestamp'           │ 'UPDATE'           │ 'EXECUTE FUNCTION trigger_set_timestamp()'                       │ 'BEFORE'      │
+│ 4       │ 'doctors'          │ 'trg_doctors_guard_insert'        │ 'INSERT'           │ 'EXECUTE FUNCTION private.trg_domain_profile_guard_insert()'     │ 'BEFORE'      │
+│ 5       │ 'doctors'          │ 'trg_doctors_guard_update'        │ 'UPDATE'           │ 'EXECUTE FUNCTION private.trg_domain_profile_guard_update()'     │ 'BEFORE'      │
+│ 6       │ 'doctors'          │ 'trg_touch_doctor_directory'      │ 'INSERT'           │ 'EXECUTE FUNCTION fn_touch_doctor_directory()'                   │ 'AFTER'       │
+│ 7       │ 'doctors'          │ 'trg_touch_doctor_directory'      │ 'DELETE'           │ 'EXECUTE FUNCTION fn_touch_doctor_directory()'                   │ 'AFTER'       │
+│ 8       │ 'doctors'          │ 'trg_touch_doctor_directory'      │ 'UPDATE'           │ 'EXECUTE FUNCTION fn_touch_doctor_directory()'                   │ 'AFTER'       │
+│ 9       │ 'labs'             │ 'set_labs_timestamp'              │ 'UPDATE'           │ 'EXECUTE FUNCTION trigger_set_timestamp()'                       │ 'BEFORE'      │
+│ 10      │ 'labs'             │ 'trg_labs_guard_insert'           │ 'INSERT'           │ 'EXECUTE FUNCTION private.trg_domain_profile_guard_insert()'     │ 'BEFORE'      │
+│ 11      │ 'labs'             │ 'trg_labs_guard_update'           │ 'UPDATE'           │ 'EXECUTE FUNCTION private.trg_domain_profile_guard_update()'     │ 'BEFORE'      │
+│ 12      │ 'medical_stores'   │ 'set_medical_stores_timestamp'    │ 'UPDATE'           │ 'EXECUTE FUNCTION trigger_set_timestamp()'                       │ 'BEFORE'      │
+│ 13      │ 'medical_stores'   │ 'trg_medical_stores_guard_insert' │ 'INSERT'           │ 'EXECUTE FUNCTION private.trg_domain_profile_guard_insert()'     │ 'BEFORE'      │
+│ 14      │ 'medical_stores'   │ 'trg_medical_stores_guard_update' │ 'UPDATE'           │ 'EXECUTE FUNCTION private.trg_domain_profile_guard_update()'     │ 'BEFORE'      │
+│ 15      │ 'patients'         │ 'set_patients_timestamp'          │ 'UPDATE'           │ 'EXECUTE FUNCTION trigger_set_timestamp()'                       │ 'BEFORE'      │
+│ 16      │ 'patients'         │ 'trg_patients_guard_insert'       │ 'INSERT'           │ 'EXECUTE FUNCTION private.trg_domain_profile_guard_insert()'     │ 'BEFORE'      │
+│ 17      │ 'patients'         │ 'trg_patients_guard_update'       │ 'UPDATE'           │ 'EXECUTE FUNCTION private.trg_domain_profile_guard_update()'     │ 'BEFORE'      │
+│ 18      │ 'patients'         │ 'trg_patients_lock_verification'  │ 'UPDATE'           │ "EXECUTE FUNCTION private.lock_columns('owner_uid', 'verified')" │ 'BEFORE'      │
+└─────────┴────────────────────┴───────────────────────────────────┴────────────────────┴──────────────────────────────────────────────────────────────────┴───────────────┘

@@ -75,9 +75,20 @@ Populate the secrets generated in Step 1:
    ```bash
    node scripts/db/migrate.js --target=production --confirm=<YOUR_RDS_HOST>
    ```
-6. **Seed ONLY approved reference and app config tables** (zero test/user data):
+6. **Seed ONLY approved minimal system config and bootstrap first admin** (ZERO user/domain data):
+   > [!IMPORTANT]
+   > Production starts with exactly ZERO application data: no mock or test users, patients, doctors, appointments, prescriptions, or orders.
+   > The only seeded records are operational `system_config` rows (`patient_module_status`, `promoted_ads`) and the initial super-admin UID in `private.admin_users`.
+   > The admin UID must be passed via CLI argument and NEVER committed to disk or repository.
+
+   First perform a dry-run (default):
    ```bash
-   node scripts/db/seed_reference_data.js --target=production --confirm=<YOUR_RDS_HOST>
+   node scripts/db/seed_production_minimum.js --target=production --admin-uid=<FIRST_SUPER_ADMIN_FIREBASE_UID>
+   ```
+
+   Once verified, execute live write:
+   ```bash
+   node scripts/db/seed_production_minimum.js --target=production --confirm=<YOUR_RDS_HOST> --admin-uid=<FIRST_SUPER_ADMIN_FIREBASE_UID> --execute
    ```
 7. **Verify schema parity against staging**:
    ```bash

@@ -136,7 +136,7 @@ class SupabaseUserRepository {
           'mobile': normalizedMobile ?? '',
           'specialization': roleData['specialization'] ?? 'General Physician',
           'qualification': roleData['qualification'] ?? 'MBBS',
-          'verified': !requiresVerification,
+          'verified': false,
           'profile_completed': isDemoDoctor ? true : false,
           'created_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),

@@ -123,3 +123,7 @@ secrets*.txt
 # Migration backups and scratch artifacts
 backups/
 .artifacts/
+
+# Terraform local directory
+.terraform/
+infra/aws/.terraform/

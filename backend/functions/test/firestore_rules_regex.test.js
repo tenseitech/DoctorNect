@@ -273,3 +273,24 @@ test('firestore.rules isAccountAdmin requires request.auth.token.email_verified 
   // Unauthenticated -> FAIL
   assert.equal(evalIsAccountAdmin(null), false);
 });
+
+test('firestore.rules users/{uid} create disallows role=admin and role=super_admin', () => {
+  const rulesContent = fs.readFileSync(path.join(__dirname, '../../firestore.rules'), 'utf8');
+
+  // Verify the exact role whitelist on users/{uid} create
+  assert.ok(
+    rulesContent.includes("request.resource.data.role in ['doctor', 'patient', 'medicalStore', 'medical', 'lab', 'ambulance']"),
+    'firestore.rules must strictly limit user creation roles to allowed non-admin roles',
+  );
+
+  const allowedRoles = ['doctor', 'patient', 'medicalStore', 'medical', 'lab', 'ambulance'];
+  function isAllowedUserCreateRole(role) {
+    return allowedRoles.includes(role);
+  }
+
+  assert.equal(isAllowedUserCreateRole('admin'), false, 'role=admin must be denied on users create');
+  assert.equal(isAllowedUserCreateRole('super_admin'), false, 'role=super_admin must be denied on users create');
+  assert.equal(isAllowedUserCreateRole('superAdmin'), false, 'role=superAdmin must be denied on users create');
+  assert.equal(isAllowedUserCreateRole('doctor'), true, 'role=doctor must be allowed');
+  assert.equal(isAllowedUserCreateRole('patient'), true, 'role=patient must be allowed');
+});

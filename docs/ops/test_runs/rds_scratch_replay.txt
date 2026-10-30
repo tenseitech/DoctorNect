@@ -1,0 +1,47 @@
+================================================================
+DoctorNect: AWS RDS Scratch Replay & Security Parity Verification
+================================================================
+
+Connecting to RDS Administrative Endpoint: postgresql://postgres:****@localhost:5432/postgres
+--- PRE-FLIGHT CHECKS ON RDS INSTANCE ---
+RDS Engine Version: PostgreSQL 17.11 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit
+✔ PostgreSQL major version 17 satisfies minimum requirement (15+).
+
+Available Extensions on RDS:
+┌─────────┬──────────────────────┬─────────────────┬───────────────────┬──────────────────────────────────────────────────────────────────────────┐
+│ (index) │ name                 │ default_version │ installed_version │ comment                                                                  │
+├─────────┼──────────────────────┼─────────────────┼───────────────────┼──────────────────────────────────────────────────────────────────────────┤
+│ 0       │ 'pg_stat_statements' │ '1.11'          │ null              │ 'track planning and execution statistics of all SQL statements executed' │
+│ 1       │ 'pgcrypto'           │ '1.3'           │ null              │ 'cryptographic functions'                                                │
+│ 2       │ 'uuid-ossp'          │ '1.1'           │ null              │ 'generate universally unique identifiers (UUIDs)'                        │
+└─────────┴──────────────────────┴─────────────────┴───────────────────┴──────────────────────────────────────────────────────────────────────────┘
+✔ All mandatory extensions are available on RDS instance.
+
+Preparing isolated database "replay_check"...
+✔ Dropped existing "replay_check" (if present).
+✔ Created fresh scratch database "replay_check".
+
+Connecting to scratch database: postgresql://postgres:****@localhost:5432/replay_check
+Applying Bootstrap 01: db/rds_bootstrap/01_roles_and_extensions.sql...
+✔ Roles & extensions bootstrap applied successfully.
+Applying Bootstrap 02: db/rds_bootstrap/02_auth_shim.sql...
+✔ Auth shim applied & SQL unit tests passed successfully.
+
+[TEST-ONLY SCRATCH REPLAY] Non-RDS target lacks pg_cron extension. Installing TEST-ONLY cron mock recorder schema...
+✔ TEST-ONLY cron recorder installed in replay_check.
+
+Applying 38 migrations in chronological sequence...
+  -> Applying 20260923000001_doctornect_schema.sql... ❌ FAILED
+
+[FATAL MIGRATION REPLAY FAILURE] Migration 20260923000001_doctornect_schema.sql failed on plain PostgreSQL!
+┌─────────┬────────────────────────────────────────┬──────┬──────────┬────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────┐
+│ (index) │ file                                   │ line │ sqlstate │ message                                │ sql                                                                           │
+├─────────┼────────────────────────────────────────┼──────┼──────────┼────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────┤
+│ 0       │ '20260923000001_doctornect_schema.sql' │ 61   │ '42P01'  │ 'relation "auth.users" does not exist' │ 'CREATE TABLE IF NOT EXISTS users ( id UUID PRIMARY KEY REFERENCES auth.user' │
+└─────────┴────────────────────────────────────────┴──────┴──────────┴────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────┘
+Teardown: Dropping scratch database "replay_check"...
+✔ Scratch database "replay_check" successfully dropped.
+
+[FATAL ERROR IN RDS SCRATCH REPLAY]: Error: Migration 20260923000001_doctornect_schema.sql cannot run on plain PostgreSQL. Stopping replay.
+    at runRdsScratchReplay (C:\Users\khije\Downloads\DoctorNect\doctor\scripts\db\rds_scratch_replay.js:300:17)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)

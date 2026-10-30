@@ -34,7 +34,12 @@ output "secrets_manager_service_key_arn" {
 }
 
 output "rds_parameter_group_id" {
-  value       = aws_db_parameter_group.doctornect_pg15.id
+  value       = aws_db_parameter_group.doctornect_pg17.id
   description = "RDS DB Parameter Group ID configuring pg_cron"
+}
+
+output "rds_parameter_group_name" {
+  value       = aws_db_parameter_group.doctornect_pg17.name
+  description = "RDS DB Parameter Group Name configuring pg_cron"
 }
 

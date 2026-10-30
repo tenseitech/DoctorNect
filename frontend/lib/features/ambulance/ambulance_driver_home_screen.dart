@@ -68,7 +68,7 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
       try {
         await SupabaseBootstrap.client
             .from('ambulances')
-            .update({'auth_uid': uid})
+            .update({'is_available': true})
             .eq('ambulance_id', driverId);
       } catch (_) {}
     }

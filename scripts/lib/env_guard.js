@@ -33,6 +33,13 @@ function assertDatabaseGuard({ targetKind, operationName = 'Database Operation',
   const stagingFingerprint = getHostFingerprint(stagingDbUrl);
   const prodFingerprint = getHostFingerprint(prodRdsHost);
 
+  if (targetKind === 'replay' || targetKind === 'replay_check') {
+    return {
+      targetKind: 'replay',
+      host: 'replay_check',
+    };
+  }
+
   if (targetKind === 'staging') {
     if (!stagingDbUrl) {
       console.error(`\n[GUARD ABORT] ${operationName}: STAGING_SUPABASE_DB_URL is not configured.`);

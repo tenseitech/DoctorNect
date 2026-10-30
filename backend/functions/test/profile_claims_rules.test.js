@@ -1346,3 +1346,26 @@ test('(18) ambulances update: client attempting to self-approve status or verifi
 
 
 
+
+test('users doc created with role=admin is denied', async () => {
+  const uid = 'uid_forged_admin_user';
+  const profileId = 'p_forged_admin_999';
+
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  const batch = db.batch();
+  batch.set(db.collection('profile_claims').doc(profileId), {
+    uid,
+    role: 'patient',
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('users').doc(uid), {
+    role: 'admin',
+    profileId,
+    displayName: 'Forged Admin',
+    createdAt: new Date(),
+  });
+
+  await assertFails(batch.commit());
+});

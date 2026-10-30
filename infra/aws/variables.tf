@@ -80,3 +80,9 @@ variable "firebase_project_id" {
   description = "Firebase Project ID for token verification"
   default     = "medibond-45fad"
 }
+
+variable "rds_instance_identifier" {
+  type        = string
+  description = "AWS RDS DB instance identifier for parameter group attachment"
+  default     = "doctornect-production-rds"
+}

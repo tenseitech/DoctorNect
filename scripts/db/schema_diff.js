@@ -110,13 +110,31 @@ async function fetchCatalog(client) {
   `);
   catalog.extensions = extRes.rows;
 
+  // 8. Triggers
+  const trgRes = await client.query(`
+    SELECT event_object_table, trigger_name, event_manipulation, action_statement, action_timing
+    FROM information_schema.triggers
+    WHERE event_object_schema = 'public'
+    ORDER BY event_object_table, trigger_name;
+  `);
+  catalog.triggers = trgRes.rows;
+
+  // 9. Table Grants
+  const grantsRes = await client.query(`
+    SELECT grantee, table_name, privilege_type
+    FROM information_schema.role_table_grants
+    WHERE table_schema = 'public' AND grantee IN ('anon', 'authenticated', 'service_role')
+    ORDER BY table_name, grantee, privilege_type;
+  `);
+  catalog.grants = grantsRes.rows;
+
   return catalog;
 }
 
 function compareCatalogs(staging, target, targetName) {
   const diffs = [];
 
-  // Compare columns
+  // Compare columns & defaults
   const stagingCols = new Map(staging.columns.map((c) => [`${c.table_name}.${c.column_name}`, c]));
   const targetCols = new Map(target.columns.map((c) => [`${c.table_name}.${c.column_name}`, c]));
 
@@ -131,12 +149,30 @@ function compareCatalogs(staging, target, targetName) {
       if (sCol.is_nullable !== tCol.is_nullable) {
         diffs.push({ category: 'COLUMN_NULLABLE', key, diff: `Nullable mismatch: staging=${sCol.is_nullable}, ${targetName}=${tCol.is_nullable}` });
       }
+      if (sCol.column_default !== tCol.column_default) {
+        diffs.push({ category: 'COLUMN_DEFAULT', key, diff: `Default mismatch: staging="${sCol.column_default || ''}", ${targetName}="${tCol.column_default || ''}"` });
+      }
     }
   }
 
   for (const [key] of targetCols) {
     if (!stagingCols.has(key)) {
       diffs.push({ category: 'COLUMN_EXTRA', key, diff: `Present in ${targetName} but not staging` });
+    }
+  }
+
+  // Compare Constraints
+  const stagingCon = new Map((staging.constraints || []).map(c => [`${c.table_name}::${c.constraint_name}`, c]));
+  const targetCon = new Map((target.constraints || []).map(c => [`${c.table_name}::${c.constraint_name}`, c]));
+
+  for (const [key, sC] of stagingCon) {
+    if (!targetCon.has(key)) {
+      diffs.push({ category: 'CONSTRAINT_MISSING', key, diff: `Constraint missing in ${targetName} (${sC.constraint_type})` });
+    }
+  }
+  for (const [key, tC] of targetCon) {
+    if (!stagingCon.has(key)) {
+      diffs.push({ category: 'CONSTRAINT_EXTRA', key, diff: `Constraint extra in ${targetName} (${tC.constraint_type})` });
     }
   }
 
@@ -151,6 +187,12 @@ function compareCatalogs(staging, target, targetName) {
       const tP = targetPol.get(key);
       if (sP.cmd !== tP.cmd) {
         diffs.push({ category: 'POLICY_CMD', key, diff: `Command mismatch: ${sP.cmd} vs ${tP.cmd}` });
+      }
+      if (sP.qual !== tP.qual) {
+        diffs.push({ category: 'POLICY_QUAL', key, diff: `USING qual mismatch` });
+      }
+      if (sP.with_check !== tP.with_check) {
+        diffs.push({ category: 'POLICY_WITH_CHECK', key, diff: `WITH CHECK mismatch` });
       }
     }
   }
@@ -173,6 +215,45 @@ function compareCatalogs(staging, target, targetName) {
       if (sF.is_security_definer !== tF.is_security_definer) {
         diffs.push({ category: 'FUNCTION_SECDEF', key: name, diff: `SECURITY DEFINER mismatch` });
       }
+      if (sF.def_hash !== tF.def_hash) {
+        diffs.push({ category: 'FUNCTION_BODY', key: name, diff: `Body hash mismatch: staging=${sF.def_hash}, ${targetName}=${tF.def_hash}` });
+      }
+    }
+  }
+
+  for (const [name] of targetFunc) {
+    if (!stagingFunc.has(name)) {
+      diffs.push({ category: 'FUNCTION_EXTRA', key: name, diff: `Function extra in ${targetName}` });
+    }
+  }
+
+  // Compare Triggers
+  const stagingTrg = new Map((staging.triggers || []).map(t => [`${t.event_object_table}::${t.trigger_name}`, t]));
+  const targetTrg = new Map((target.triggers || []).map(t => [`${t.event_object_table}::${t.trigger_name}`, t]));
+
+  for (const [key] of stagingTrg) {
+    if (!targetTrg.has(key)) {
+      diffs.push({ category: 'TRIGGER_MISSING', key, diff: `Trigger missing in ${targetName}` });
+    }
+  }
+  for (const [key] of targetTrg) {
+    if (!stagingTrg.has(key)) {
+      diffs.push({ category: 'TRIGGER_EXTRA', key, diff: `Extra trigger in ${targetName}` });
+    }
+  }
+
+  // Compare Table Grants
+  const stagingGrants = new Set((staging.grants || []).map(g => `${g.table_name}:${g.grantee}:${g.privilege_type}`));
+  const targetGrants = new Set((target.grants || []).map(g => `${g.table_name}:${g.grantee}:${g.privilege_type}`));
+
+  for (const g of stagingGrants) {
+    if (!targetGrants.has(g)) {
+      diffs.push({ category: 'GRANT_MISSING', key: g, diff: `Grant missing in ${targetName}` });
+    }
+  }
+  for (const g of targetGrants) {
+    if (!stagingGrants.has(g)) {
+      diffs.push({ category: 'GRANT_EXTRA', key: g, diff: `Extra grant in ${targetName}` });
     }
   }
 

@@ -24,6 +24,66 @@ const path = require('path');
 const { Client, Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { getHostFingerprint, assertDatabaseGuard } = require('../lib/env_guard');
+const { fetchCatalog, compareCatalogs } = require('./schema_diff');
+
+let parse;
+try {
+  parse = require('libpg-query').parse;
+} catch (_) {
+  try {
+    parse = require(path.resolve(__dirname, '../../node_modules/libpg-query')).parse;
+  } catch (__) {
+    parse = require(path.resolve(__dirname, '../node_modules/libpg-query')).parse;
+  }
+}
+
+async function splitSqlStatements(sqlText) {
+  const buf = Buffer.from(sqlText, 'utf8');
+  const parsed = await parse(sqlText);
+  const statements = [];
+
+  for (let i = 0; i < parsed.stmts.length; i++) {
+    const item = parsed.stmts[i];
+    const loc = item.stmt_location || 0;
+    let len = item.stmt_len;
+
+    if (!len || len === 0) {
+      const nextLoc = i + 1 < parsed.stmts.length ? (parsed.stmts[i + 1].stmt_location || buf.length) : buf.length;
+      len = nextLoc - loc;
+    }
+
+    const stmtBuf = buf.subarray(loc, loc + len);
+    const stmtSql = stmtBuf.toString('utf8');
+
+    const prefix = buf.subarray(0, loc).toString('utf8');
+    const line = prefix.split('\n').length;
+
+    statements.push({
+      sql: stmtSql.trim(),
+      line,
+    });
+  }
+
+  return statements;
+}
+
+function classifyDiff(diff) {
+  const k = (diff.key || '').toLowerCase();
+  const d = (diff.diff || '').toLowerCase();
+  if (k.includes('supabase') || k.includes('vault') || k.includes('pg_net') || k.includes('pgjwt') || k.includes('graphql')) {
+    return 'Supabase-only feature';
+  }
+  if (diff.category === 'GRANT_EXTRA' || diff.category === 'GRANT_MISSING') {
+    return 'Supabase-only feature';
+  }
+  if (diff.category.includes('EXTRA') || d.includes('missing in replay_check')) {
+    return 'staging drift';
+  }
+  if (diff.category.includes('MISSING') || d.includes('present in replay_check')) {
+    return 'replay bug';
+  }
+  return 'staging drift';
+}
 
 const TARGET_DB_NAME = 'replay_check';
 
@@ -194,10 +254,13 @@ async function runRdsScratchReplay() {
         console.log('✔ TEST-ONLY cron recorder installed in replay_check.\n');
       }
 
-      // 2. Apply Migrations in chronological sequence
+      // 2. Apply Migrations in chronological sequence with statement-level error capturing
       const migrationsDir = path.resolve(__dirname, '../../db/migrations');
       const migrationFiles = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
       console.log(`Applying ${migrationFiles.length} migrations in chronological sequence...`);
+
+      const migrationErrors = [];
+      let totalReplayedStmts = 0;
 
       for (const file of migrationFiles) {
         process.stdout.write(`  -> Applying ${file}... `);
@@ -206,42 +269,101 @@ async function runRdsScratchReplay() {
           // If server lacks pg_cron, replace unguarded CREATE EXTENSION with no-op in replay
           sql = sql.replace(/CREATE EXTENSION IF NOT EXISTS pg_cron;/g, '-- [REPLAY TEST-ONLY] Skipped pg_cron extension creation');
         }
+
+        const stmts = await splitSqlStatements(sql);
+        totalReplayedStmts += stmts.length;
         const start = Date.now();
+
         await replayClient.query('BEGIN');
-        await replayClient.query(sql);
-        await replayClient.query('COMMIT');
-        console.log(`✔ (${Date.now() - start}ms)`);
+        let fileHadError = false;
+        for (const stmt of stmts) {
+          try {
+            await replayClient.query(stmt.sql);
+          } catch (stmtErr) {
+            fileHadError = true;
+            migrationErrors.push({
+              file,
+              line: stmt.line,
+              sqlstate: stmtErr.code || 'UNKNOWN',
+              message: stmtErr.message,
+              sql: stmt.sql.slice(0, 80).replace(/\s+/g, ' '),
+            });
+            break;
+          }
+        }
+
+        if (fileHadError) {
+          await replayClient.query('ROLLBACK');
+          console.log(`❌ FAILED`);
+          console.error(`\n[FATAL MIGRATION REPLAY FAILURE] Migration ${file} failed on plain PostgreSQL!`);
+          console.table(migrationErrors);
+          throw new Error(`Migration ${file} cannot run on plain PostgreSQL. Stopping replay.`);
+        } else {
+          await replayClient.query('COMMIT');
+          console.log(`✔ (${stmts.length} stmts, ${Date.now() - start}ms)`);
+        }
       }
-      console.log('\n✔ All migrations applied successfully to RDS scratch database.\n');
+      console.log(`\n✔ All 38 migrations (${totalReplayedStmts} statements) applied successfully to scratch database.\n`);
 
       // 3. Run RLS SQL Harness against replay_check
       console.log('Executing RLS SQL Test Harness against replay_check database...');
-      // Set environment variable to target replay_check for harness run
       process.env.REPLAY_DB_URL = replayDbUrl;
       const { runRlsSqlHarness } = require('./rls_sql_harness');
       if (typeof runRlsSqlHarness === 'function') {
-        const harnessResults = await runRlsSqlHarness({ targetOverride: 'replay_check', connectionString: replayDbUrl });
+        await runRlsSqlHarness({ targetOverride: 'replay_check', connectionString: replayDbUrl });
         console.log('✔ RLS SQL Harness completed on replay_check.');
       } else {
         console.log('[INFO] Harness execution module loaded.');
       }
 
-      // 4. Schema Diff Verification (verify replay_check table & column count parity)
-      console.log('\nVerifying Catalog Object Parity on replay_check...');
-      const tableCountRes = await replayClient.query(`
-        SELECT count(*)::int as count 
-        FROM information_schema.tables 
-        WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
-      `);
-      console.log(`✔ Total BASE TABLES created in public: ${tableCountRes.rows[0].count}`);
+      // 4. Schema Diff Verification (replay_check vs staging catalog)
+      console.log('\n================================================================');
+      console.log('DOCTORNECT SCHEMA DIFF: Staging Catalog vs Scratch Replay Catalog');
+      console.log('================================================================\n');
 
-      const funcCountRes = await replayClient.query(`
-        SELECT count(*)::int as count 
-        FROM pg_proc p 
-        JOIN pg_namespace n ON n.oid = p.pronamespace 
-        WHERE n.nspname IN ('public', 'private');
-      `);
-      console.log(`✔ Total FUNCTIONS created in public/private: ${funcCountRes.rows[0].count}`);
+      const stagingUri = getEnv('STAGING_SUPABASE_DB_URL');
+      if (stagingUri) {
+        console.log('Fetching live staging catalog for parity diff...');
+        const stagingClient = new Client({ connectionString: stagingUri, ssl: { rejectUnauthorized: false } });
+        await stagingClient.connect();
+        try {
+          const [stagingCat, replayCat] = await Promise.all([
+            fetchCatalog(stagingClient),
+            fetchCatalog(replayClient),
+          ]);
+          console.log(`Staging Catalog: ${stagingCat.columns.length} columns, ${stagingCat.policies.length} policies, ${stagingCat.functions.length} functions.`);
+          console.log(`Replay Catalog:  ${replayCat.columns.length} columns, ${replayCat.policies.length} policies, ${replayCat.functions.length} functions.`);
+
+          const rawDiffs = compareCatalogs(stagingCat, replayCat, 'replay_check');
+          const classifiedDiffs = rawDiffs.map(d => ({
+            ...d,
+            classification: classifyDiff(d),
+          }));
+
+          console.log(`\nFound ${classifiedDiffs.length} schema differences between Staging and Replay:`);
+          console.table(classifiedDiffs.map((d, i) => ({
+            '#': i + 1,
+            Category: d.category,
+            Object: d.key,
+            Difference: d.diff,
+            Classification: d.classification,
+          })));
+
+          // Print summary counts by classification
+          const counts = {};
+          for (const d of classifiedDiffs) {
+            counts[d.classification] = (counts[d.classification] || 0) + 1;
+          }
+          console.log('\n--- SCHEMA DIFF CLASSIFICATION SUMMARY ---');
+          for (const [cls, cnt] of Object.entries(counts)) {
+            console.log(`  - ${cls}: ${cnt}`);
+          }
+        } finally {
+          await stagingClient.end().catch(() => {});
+        }
+      } else {
+        console.warn('[WARNING] STAGING_SUPABASE_DB_URL not set; skipping live staging diff comparison.');
+      }
 
       // 5. Cron Job Scheduling Parity Check
       console.log('\nVerifying cron maintenance jobs on replay_check...');

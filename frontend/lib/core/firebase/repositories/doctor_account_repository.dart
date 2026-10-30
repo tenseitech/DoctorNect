@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../auth/demo_auth_config.dart';
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/supabase_bootstrap.dart';
 import '../firebase_bootstrap.dart';
 import '../firestore_paths.dart';
 import '../firestore_read_helper.dart';
@@ -38,6 +40,30 @@ class DoctorAccountRepository {
     String doctorId, {
     bool preferCache = false,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      try {
+        final res = await SupabaseBootstrap.client
+            .from('doctors')
+            .select('deactivated, reactivate_before, verified')
+            .eq('doctor_id', doctorId)
+            .maybeSingle();
+        if (res != null) {
+          final deactivated = _isTruthy(res['deactivated']);
+          final reactivateBefore = res['reactivate_before'] != null
+              ? DateTime.tryParse(res['reactivate_before'] as String)
+              : null;
+          final canReactivate = deactivated &&
+              reactivateBefore != null &&
+              DateTime.now().isBefore(reactivateBefore);
+          return DoctorDeactivationStatus(
+            deactivated: deactivated,
+            canReactivate: canReactivate,
+            reactivateBefore: reactivateBefore,
+          );
+        }
+      } catch (_) {}
+    }
+
     if (!FirebaseBootstrap.isReady) {
       return const DoctorDeactivationStatus(
         deactivated: false,
@@ -110,6 +136,20 @@ class DoctorAccountRepository {
         DemoAuthConfig.isDemoDoctorId(doctorId)) {
       return true;
     }
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      try {
+        final res = await SupabaseBootstrap.client
+            .from('doctors')
+            .select('verified, deactivated')
+            .eq('doctor_id', doctorId)
+            .maybeSingle();
+        if (res != null) {
+          final verified = _isTruthy(res['verified']);
+          final deactivated = _isTruthy(res['deactivated']);
+          return verified && !deactivated;
+        }
+      } catch (_) {}
+    }
     if (!FirebaseBootstrap.isReady) return false;
     try {
       final snap = await FirestoreReadHelper.getDocument(
@@ -134,68 +174,76 @@ class DoctorAccountRepository {
     required String doctorId,
     required String ownerUid,
   }) async {
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError('Firebase is not available.');
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      await SupabaseBootstrap.client.rpc('deactivate_provider_profile');
     }
 
-    final reactivateBefore = DateTime.now().add(const Duration(days: 30));
-    final batch = FirebaseFirestore.instance.batch();
-    final doctorRef = FirebaseFirestore.instance
-        .collection(FirestorePaths.doctors)
-        .doc(doctorId);
-    final userRef = FirebaseFirestore.instance
-        .collection(FirestorePaths.users)
-        .doc(ownerUid);
+    if (FirebaseBootstrap.isReady) {
+      final reactivateBefore = DateTime.now().add(const Duration(days: 30));
+      final batch = FirebaseFirestore.instance.batch();
+      final doctorRef = FirebaseFirestore.instance
+          .collection(FirestorePaths.doctors)
+          .doc(doctorId);
+      final userRef = FirebaseFirestore.instance
+          .collection(FirestorePaths.users)
+          .doc(ownerUid);
 
-    batch.update(doctorRef, {
-      'deactivated': true,
-      'verified': false,
-      'deactivatedAt': FieldValue.serverTimestamp(),
-      'reactivateBefore': Timestamp.fromDate(reactivateBefore),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-    batch.update(userRef, {
-      'deactivated': true,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+      batch.update(doctorRef, {
+        'deactivated': true,
+        'verified': false,
+        'deactivatedAt': FieldValue.serverTimestamp(),
+        'reactivateBefore': Timestamp.fromDate(reactivateBefore),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      batch.update(userRef, {
+        'deactivated': true,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
 
-    await batch.commit();
+      await batch.commit();
+    } else if (!SupabaseBootstrap.isReady) {
+      throw StateError('Neither Firebase nor Supabase is available.');
+    }
   }
 
   Future<void> reactivate({
     required String doctorId,
     required String ownerUid,
   }) async {
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError('Firebase is not available.');
-    }
-
     final status = await fetchDeactivationStatus(doctorId);
     if (!status.deactivated) return;
     if (!status.canReactivate) {
       throw StateError('Reactivation window has expired.');
     }
 
-    final batch = FirebaseFirestore.instance.batch();
-    final doctorRef = FirebaseFirestore.instance
-        .collection(FirestorePaths.doctors)
-        .doc(doctorId);
-    final userRef = FirebaseFirestore.instance
-        .collection(FirestorePaths.users)
-        .doc(ownerUid);
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      await SupabaseBootstrap.client.rpc('reactivate_provider_profile');
+    }
 
-    batch.update(doctorRef, {
-      'deactivated': false,
-      'verified':
-          false, // FIXED: reactivation must go through admin re-approval, like registration
-      'reactivatedAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-    batch.update(userRef, {
-      'deactivated': false,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    if (FirebaseBootstrap.isReady) {
+      final batch = FirebaseFirestore.instance.batch();
+      final doctorRef = FirebaseFirestore.instance
+          .collection(FirestorePaths.doctors)
+          .doc(doctorId);
+      final userRef = FirebaseFirestore.instance
+          .collection(FirestorePaths.users)
+          .doc(ownerUid);
 
-    await batch.commit();
+      batch.update(doctorRef, {
+        'deactivated': false,
+        'verified':
+            false, // FIXED: reactivation must go through admin re-approval, like registration
+        'reactivatedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      batch.update(userRef, {
+        'deactivated': false,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      await batch.commit();
+    } else if (!SupabaseBootstrap.isReady) {
+      throw StateError('Neither Firebase nor Supabase is available.');
+    }
   }
 }
