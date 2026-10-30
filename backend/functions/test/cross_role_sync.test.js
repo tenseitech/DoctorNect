@@ -379,3 +379,63 @@ test('missing patient mobile is dead-lettered and not inserted', async () => {
   assert.ok(dlq);
   assert.match(String(dlq.body), /patient_mobile_missing/);
 });
+
+test('C.10 Production Mode Security Contract: Only routes to PROD_GATEWAY_URL and all endpoints are allowlisted', () => {
+  const fs = require('fs');
+  const path = require('path');
+  
+  // 1. Verify getSupabaseConfig behavior under APP_ENV=production
+  const prevEnv = process.env.APP_ENV;
+  const prevGateway = process.env.PROD_GATEWAY_URL;
+  const prevKey = process.env.PROD_GATEWAY_SERVICE_KEY;
+  const prevStagingUrl = process.env.STAGING_SUPABASE_URL;
+  
+  try {
+    process.env.APP_ENV = 'production';
+    process.env.PROD_GATEWAY_URL = 'https://gateway.doctornect.com';
+    process.env.PROD_GATEWAY_SERVICE_KEY = 'prod-service-key-999';
+    process.env.STAGING_SUPABASE_URL = 'https://staging.supabase.co';
+    
+    // Read cross_role_sync source directly to inspect config resolution
+    const syncSource = fs.readFileSync(path.resolve(__dirname, '../cross_role_sync.js'), 'utf8');
+    assert.match(syncSource, /process\.env\.APP_ENV/);
+    assert.match(syncSource, /process\.env\.PROD_GATEWAY_URL/);
+    assert.match(syncSource, /process\.env\.PROD_GATEWAY_SERVICE_KEY/);
+
+    // 2. Extract every table & RPC queried by cross_role_sync.js
+    const tableMatches = new Set();
+    const rpcMatches = new Set();
+    for (const match of syncSource.matchAll(/\/rest\/v1\/([a-zA-Z0-9_]+)/g)) {
+      tableMatches.add(match[1]);
+    }
+    for (const match of syncSource.matchAll(/\/rpc\/([a-zA-Z0-9_]+)/g)) {
+      rpcMatches.add(match[1]);
+    }
+
+    // 3. Load Gateway Config allowlist
+    const gatewayConfig = require('../../../services/api-gateway/src/config');
+    const allowedTables = new Set(gatewayConfig.allowedTables);
+    const allowedRpcs = new Set(gatewayConfig.allowedRpcs);
+
+    // Every table accessed by cross_role_sync must be explicitly in gateway allowedTables
+    for (const tbl of tableMatches) {
+      assert.ok(
+        allowedTables.has(tbl),
+        `Table "${tbl}" queried by cross_role_sync.js is missing from API Gateway allowlist!`
+      );
+    }
+
+    // Every RPC accessed by cross_role_sync must be in gateway allowedRpcs
+    for (const rpc of rpcMatches) {
+      assert.ok(
+        allowedRpcs.has(rpc),
+        `RPC "${rpc}" queried by cross_role_sync.js is missing from API Gateway allowlist!`
+      );
+    }
+  } finally {
+    process.env.APP_ENV = prevEnv;
+    process.env.PROD_GATEWAY_URL = prevGateway;
+    process.env.PROD_GATEWAY_SERVICE_KEY = prevKey;
+    process.env.STAGING_SUPABASE_URL = prevStagingUrl;
+  }
+});

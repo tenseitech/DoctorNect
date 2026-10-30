@@ -1,0 +1,18 @@
+Staging Ledger rows found: 3
+Version: 20261103000001
+  File:        20261103000001_relogin_upsert_invariant_and_ambulance_link.sql
+  Ledger Hash: cd2c364993aaeac543194aae04d0841720e1cd6587807c161e9f28aa3792266a
+  OnDisk Hash: cd2c364993aaeac543194aae04d0841720e1cd6587807c161e9f28aa3792266a
+  Match:       VERIFIED MATCH
+Version: 20261103000002
+  File:        20261103000002_fix_claim_ambulance_driver_bypass.sql
+  Ledger Hash: f039d0e2db10fcf9ef1b16fceb6643a65b76af3122fea9a76a5ecf608b0c1cf1
+  OnDisk Hash: f039d0e2db10fcf9ef1b16fceb6643a65b76af3122fea9a76a5ecf608b0c1cf1
+  Match:       VERIFIED MATCH
+Version: 20261103000003
+  File:        20261103000003_relogin_upsert_invariant_refinement.sql
+  Ledger Hash: 661dd74494f25b54412ba054a5f411d5c0c6477e2d6032303cafcd29b64cbe6b
+  OnDisk Hash: 661dd74494f25b54412ba054a5f411d5c0c6477e2d6032303cafcd29b64cbe6b
+  Match:       VERIFIED MATCH
+
+ALL 3 MIGRATIONS (20261103000001, 20261103000002, 20261103000003) ON-DISK MATCH STAGING LEDGER 100% BIT-FOR-BIT.

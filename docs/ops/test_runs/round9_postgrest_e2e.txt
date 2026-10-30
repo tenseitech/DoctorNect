@@ -1,0 +1,77 @@
+================================================================
+ROUND 9 - ITEM 4: POSTGREST E2E REAL HTTP VERIFICATION
+Timestamp: 2026-10-30T12:17:04.611Z
+================================================================
+
+1. PostgREST Windows Binary Specifications:
+   Pinned Version   : PostgREST 12.2.3 (519615d)
+   Zip Archive SHA256: a850cd1cf5b208972f4db2803656c645436ad333882480685e052d45706c1966
+   postgrest.exe SHA256: 01ee186e6e9904a1fb8183a51b5b6d2b6695720c29f65325f6fc678708360bb8
+   Executable Path  : C:\Users\khije\Downloads\DoctorNect\doctor\.bin\postgrest.exe
+   Runtime DLL Link : C:\Program Files\PostgreSQL\17\bin\libpq.dll
+
+2. Setting up database replay_check and seeding fixtures...
+✔ Fixtures seeded in replay_check successfully.
+
+3. Created PostgREST configuration: C:\Users\khije\Downloads\DoctorNect\doctor\.bin\postgrest.conf
+
+4. Spawning postgrest.exe process...
+✔ PostgREST running and responsive at http://127.0.0.1:3001
+
+5. Starting API Gateway with Mock Firebase JWKS Stub...
+✔ API Gateway listening at http://127.0.0.1:3000
+
+--- 6. EXECUTING REAL HTTP END-TO-END TESTS ---
+
+Test 1: Anonymous read of /rest/v1/doctor_directory:
+  HTTP Status: 200
+  Body length: 468 bytes
+  Doctors retrieved: 1
+  ✔ Test 1 PASS (Anonymous doctor directory read successful)
+
+Test 2: Authenticated patient booking via /rest/v1/rpc/book_appointment_atomic:
+  HTTP Status: 200
+  Full Request Body: {
+  "p_appointment_id": "test_apt_e2e_1793362625939",
+  "p_doctor_id": "test_usr_doc_a",
+  "p_doctor_name": "Dr. Alpha E2E",
+  "p_specialization": "Cardiology",
+  "p_patient_name": "Patient Alpha",
+  "p_patient_age": 30,
+  "p_patient_gender": "male",
+  "p_date_time": "2026-11-06T10:00:00Z",
+  "p_slot_label": "10:00 AM",
+  "p_patient_id": "test_usr_pat_a"
+}
+  Full Response Body: {"source": "app", "maps_url": null, "symptoms": [], "date_time": "2026-11-06T15:30:00+05:30", "diagnosis": null, "doctor_id": "test_usr_doc_a", "review_id": null, "synced_by": null, "created_at": "2026-10-30T17:47:05.944167+05:30", "has_report": false, "has_review": false, "patient_id": "test_usr_pat_a", "slot_label": "10:00 AM", "updated_at": "2026-10-30T17:47:05.944167+05:30", "visit_type": "newVisit", "clinic_name": null, "doctor_name": "Dr. Alpha E2E", "facility_id": null, "lab_reports": [], "patient_age": 30, "sync_origin": "patient_supabase", "admission_id": null, "observations": [], "patient_name": "Patient Alpha", "token_number": 1, "booked_by_uid": null, "doctor_status": "pendingRequest", "review_rating": null, "appointment_id": "test_apt_e2e_1793362625939", "booked_by_name": null, "clinic_address": null, "clinical_notes": null, "contact_number": null, "encounter_type": "opd", "patient_gender": "male", "patient_status": "confirmed", "specialization": "Cardiology", "was_rescheduled": false, "chief_complaints": [], "has_prescription": false, "patient_relation": null, "review_created_at": null, "slot_share_reason": null, "cancellation_reason": null}
+  ✔ Test 2 PASS (Authenticated atomic appointment booking successful)
+
+Test 3: Forbidden RPC /rest/v1/rpc/delete_my_account called by client:
+{"timestamp":"2026-10-30T12:17:06.007Z","event":"api_request","method":"POST","path":"/rest/v1/rpc/delete_my_account","status":404,"latency_ms":0.8,"role":"authenticated","uid_hash":"8e26514d47646b43","ip":"127.0.0.1"}
+  HTTP Status: 404
+  Response: {"error":"Not Found","message":"RPC function 'delete_my_account' is not allowed or not found."}
+  ✔ Test 3 PASS (Forbidden RPC properly rejected by Gateway allowlist)
+
+Test 4: Service key authorized request to /rest/v1/sync_dead_letter_queue:
+  HTTP Status: 200
+  Response: []
+  ✔ Test 4 PASS (Service key successfully authenticated and proxies to PostgREST)
+
+Test 5: Rate limit enforcement on anonymous queries:
+{"timestamp":"2026-10-30T12:17:06.236Z","event":"api_request","method":"GET","path":"/rest/v1/doctor_directory","status":429,"latency_ms":0.2,"role":"anon","uid_hash":null,"ip":"127.0.0.1"}
+  Encountered HTTP 429 after request #60
+  Retry-After header: undefined
+  ✔ Test 5 PASS (Rate limiter blocked abusive/flooding requests with 429)
+
+Test 6: Request with forged x-user-role / x-app-role header:
+  HTTP Status: 200
+  Full Request Headers: Authorization: Bearer <patientToken>, x-user-role: super_admin, x-app-role: super_admin
+  Full Response Body: [{"id":"test_usr_pat_a","firebase_uid":"test_usr_pat_a","role":"patient","profile_id":"test_usr_pat_a","display_name":"Patient Alpha","email":"pa@e2e.test","mobile":"+919999900001","profile_completed":false,"verified":true,"verified_at":null,"deactivated":false,"status":"approved","photo_url":null,"created_at":"2026-10-30T17:45:05.28862+05:30","updated_at":"2026-10-30T17:47:04.883739+05:30","photo_key":null,"photo_storage":"legacy","photo_s3_key":null,"photo_s3_bucket":null,"photo_storage_provider":"s3"}]
+  Total users returned: 1
+  Can see other users? NO (RLS strictly enforced, forged header dropped)
+  ✔ Test 6 PASS (Forged client role header stripped/ignored; PostgREST JWT minted only from verified token)
+
+ALL 6 POSTGREST E2E REAL HTTP TESTS PASSED WITH 100% SUCCESS.
+
+Cleaning up processes...
+Processes terminated cleanly.

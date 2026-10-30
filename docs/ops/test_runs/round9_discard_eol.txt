@@ -1,0 +1,67 @@
+warning: in the working copy of 'scripts/db/audit_secrets_rotation.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/db/inspect_users_triggers.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/db/verify_seed_provenance.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/test/env_loader.test.js', LF will be replaced by CRLF the next time Git touches it
+diff --git a/db/migrations/20261103000001_relogin_upsert_invariant_and_ambulance_link.sql b/db/migrations/20261103000001_relogin_upsert_invariant_and_ambulance_link.sql
+index cc2f29a..7885b70 100644
+--- a/db/migrations/20261103000001_relogin_upsert_invariant_and_ambulance_link.sql
++++ b/db/migrations/20261103000001_relogin_upsert_invariant_and_ambulance_link.sql
+@@ -241,3 +241,4 @@ $$;
+ 
+ REVOKE ALL ON FUNCTION public.claim_ambulance_driver(TEXT) FROM PUBLIC;
+ GRANT EXECUTE ON FUNCTION public.claim_ambulance_driver(TEXT) TO authenticated, service_role;
++
+diff --git a/db/migrations/20261103000002_fix_claim_ambulance_driver_bypass.sql b/db/migrations/20261103000002_fix_claim_ambulance_driver_bypass.sql
+index c81316e..71e034b 100644
+--- a/db/migrations/20261103000002_fix_claim_ambulance_driver_bypass.sql
++++ b/db/migrations/20261103000002_fix_claim_ambulance_driver_bypass.sql
+@@ -243,3 +243,4 @@ BEGIN
+     RETURN NEW;
+ END;
+ $$;
++
+diff --git a/db/migrations/20261103000003_relogin_upsert_invariant_refinement.sql b/db/migrations/20261103000003_relogin_upsert_invariant_refinement.sql
+index 900c084..f6e2f48 100644
+--- a/db/migrations/20261103000003_relogin_upsert_invariant_refinement.sql
++++ b/db/migrations/20261103000003_relogin_upsert_invariant_refinement.sql
+@@ -200,3 +200,4 @@ BEGIN
+     RETURN NEW;
+ END;
+ $$;
++
+diff --git a/scripts/db/audit_secrets_rotation.js b/scripts/db/audit_secrets_rotation.js
+index c2cb67a..88fb4d9 100644
+--- a/scripts/db/audit_secrets_rotation.js
++++ b/scripts/db/audit_secrets_rotation.js
+@@ -130,3 +130,4 @@ const rotationList = [
+ ];
+ 
+ console.table(rotationList);
++
+diff --git a/scripts/db/inspect_users_triggers.js b/scripts/db/inspect_users_triggers.js
+index 1f90409..079bfde 100644
+--- a/scripts/db/inspect_users_triggers.js
++++ b/scripts/db/inspect_users_triggers.js
+@@ -19,3 +19,4 @@ async function main() {
+ }
+ 
+ main().catch(console.error);
++
+diff --git a/scripts/db/verify_seed_provenance.js b/scripts/db/verify_seed_provenance.js
+index 39e5e77..e6cfde4 100644
+--- a/scripts/db/verify_seed_provenance.js
++++ b/scripts/db/verify_seed_provenance.js
+@@ -42,3 +42,4 @@ main().catch(err => {
+   console.error(err);
+   process.exit(1);
+ });
++
+diff --git a/scripts/test/env_loader.test.js b/scripts/test/env_loader.test.js
+index 05f06e8..09f28ac 100644
+--- a/scripts/test/env_loader.test.js
++++ b/scripts/test/env_loader.test.js
+@@ -40,3 +40,4 @@ test('env_loader: hasEnv and getEnv contract', () => {
+   assert.equal(getEnv('NON_EXISTENT_VARIABLE_999'), '');
+   assert.equal(hasEnv('NON_EXISTENT_VARIABLE_999'), false);
+ });
++

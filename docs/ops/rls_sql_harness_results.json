@@ -2083,6 +2083,39 @@
       "actualRows": 0,
       "verdict": "PASS",
       "error": "permission denied for function claim_ambulance_driver"
+    },
+    {
+      "name": "Ambulance Driver Link RPC: Driver claims already-claimed row is denied with 42501",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Caller is not registered as owner of ambulance test_usr_amb_a"
+    },
+    {
+      "name": "Ambulance Driver Link RPC: Non-ambulance role (doctor) is denied claim with 42501",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Only registered ambulance drivers can claim an ambulance profile"
+    },
+    {
+      "name": "Users Guard: Unverified domain user upserting verified=true is denied with 42501",
+      "table": "users",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Domain role accounts cannot self-verify"
     }
   ],
   "zeroResidue": true

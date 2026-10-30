@@ -1,0 +1,19 @@
+
+======================================================
+DoctorNect Migration Runner (Target: STAGING)
+======================================================
+Target Connection: postgresql://postgres.rnltknemwnjrjxthtull:****@aws-0-ap-south-1.pooler.supabase.com:6543/postgres
+Existing Applied Migrations in Ledger: 41
+
+--- EXECUTING --dry-run-all (Statement-level testing inside single rollback transaction) ---
+Found 1 pending migration files: 20261103000004_fix_claim_ambulance_driver_and_users_verified_guard.sql
+
+Parsing & testing statements in 20261103000004_fix_claim_ambulance_driver_and_users_verified_guard.sql...
+  Extracted 7 top-level AST statements.
+
+✔ Transaction ROLLED BACK. Nothing applied to database.
+
+=== DRY-RUN-ALL SUMMARY ===
+Files tested: 1 | Statements tested: 7 | Errors found: 0
+
+✔ ZERO ERRORS DETECTED across all pending migration statements.

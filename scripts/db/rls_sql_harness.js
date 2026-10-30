@@ -2196,6 +2196,37 @@ async function runRlsSqlHarness(options = {}) {
       expectedSqlState: '42501',
     });
 
+    await testCase({
+      name: 'Ambulance Driver Link RPC: Driver claims already-claimed row is denied with 42501',
+      table: 'ambulances',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambB),
+      sql: `SELECT public.claim_ambulance_driver('${ambA}');`,
+      expectedSqlState: '42501',
+    });
+
+    await testCase({
+      name: 'Ambulance Driver Link RPC: Non-ambulance role (doctor) is denied claim with 42501',
+      table: 'ambulances',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', docA),
+      sql: `SELECT public.claim_ambulance_driver('test_amb_unclaimed');`,
+      expectedSqlState: '42501',
+    });
+
+    await testCase({
+      name: 'Users Guard: Unverified domain user upserting verified=true is denied with 42501',
+      table: 'users',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', 'test_usr_doc_unverified', false),
+      sql: `
+        INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified)
+        VALUES ('test_usr_doc_unverified', 'test_usr_doc_unverified', 'doctor', 'test_usr_doc_unverified', 'Dr. Unverified', 'unverified@test.local', '+919999900099', true)
+        ON CONFLICT (id) DO UPDATE SET verified = true;
+      `,
+      expectedSqlState: '42501',
+    });
+
     // Always ROLLBACK everything
     await client.query('ROLLBACK');
     console.log('✔ Transaction ROLLED BACK successfully.');

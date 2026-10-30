@@ -103,12 +103,16 @@ android/key.properties
 
 # Temporary and scratch folders
 scratch/
+.bin/
+*.exe
+*.zip
 backend/supabase/.temp/
 **/supabase/.temp/
 supabase/.temp/
 
 # Debug and output files!docs/ops/migration_diffs/*.diff
 *.out
+docs/ops/test_runs/rds_scratch_replay.txt
 auth_otp.diff
 reset.out
 verify.out

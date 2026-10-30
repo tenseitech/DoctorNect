@@ -37,7 +37,12 @@ GRANT service_role TO authenticator;
 -- Create extensions in public schema
 CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA public;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
-CREATE EXTENSION IF NOT EXISTS "pg_stat_statements";
+DO $$
+BEGIN
+  CREATE EXTENSION IF NOT EXISTS "pg_stat_statements";
+EXCEPTION WHEN insufficient_privilege THEN
+  NULL;
+END $$;
 
 -- Create publication for realtime compatibility if missing
 DO $$

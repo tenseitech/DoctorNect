@@ -1,0 +1,5 @@
+# RDS Scratch Replay Summary
+
+- Full execution log previously generated in round 7/8 (~800KB) untracked to keep git history lightweight.
+- Status: Replay tested against local Postgres 17.
+- Detailed reports maintained in docs/ops/test_runs/.
