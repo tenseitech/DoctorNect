@@ -10,6 +10,7 @@ const testFiles = [
   'test/client_read_replay.rules.test.js',
   'test/firestore_directory_and_appointments.rules.test.js',
   'test/firestore_reviews.rules.test.js',
+  'test/profile_claims_rules.test.js',
   'test/storage_doctor_kyc.rules.test.js',
   'test/storage_live_app_paths.rules.test.js',
   'test/storage_provider_kyc.rules.test.js',

@@ -66,6 +66,10 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid != null && uid.isNotEmpty && SupabaseBootstrap.isReady) {
       try {
+        await SupabaseBootstrap.client.rpc(
+          'claim_ambulance_driver',
+          params: {'p_ambulance_id': driverId},
+        );
         await SupabaseBootstrap.client
             .from('ambulances')
             .update({'is_available': true})

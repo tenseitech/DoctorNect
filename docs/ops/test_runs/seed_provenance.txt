@@ -1,0 +1,20 @@
+================================================================
+DOCTORNECT: PRODUCTION MINIMUM SEED PROVENANCE VERIFICATION
+================================================================
+
+Live Staging Rows in public.system_config: 2
+
+Key: "patient_module_status"
+  Staging Value: {"status":"active","message":"Normal operational state","allow_writes":true}
+  Staging Updated At: Sat Oct 03 2026 01:25:07 GMT+0530 (India Standard Time)
+  Provenance: Staging row, originally defined in migration 20261020000001_consolidated_firebase_schema_and_rls.sql.
+  Status: VERIFIED REAL (Not invented).
+
+Key: "promoted_ads"
+  Staging Value: {"enabled":true,"price_per_day":300,"pricing_tiers":{"24":300,"72":750,"168":1500,"720":5000},"max_active_banners":10}
+  Staging Updated At: Sat Oct 03 2026 01:25:06 GMT+0530 (India Standard Time)
+  Provenance: Staging row, originally defined in migration 20261021000005_phase_e3_razorpay_and_promoted_ads.sql.
+  Status: VERIFIED REAL (Not invented).
+
+Summary: Both seeds in scripts/db/seed_production_minimum.js originate directly from real staging database rows.
+Zero values were invented; all match deployed migration defaults.

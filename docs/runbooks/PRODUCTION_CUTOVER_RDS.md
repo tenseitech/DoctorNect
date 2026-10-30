@@ -47,35 +47,48 @@ Populate the secrets generated in Step 1:
 - `gateway_service_key`: Random 64-character token used by Cloud Functions.
 
 ### Step 4: Bootstrap & Migrate Production RDS Database
-1. **Apply RDS Parameter Group for `pg_cron`**:
-   Ensure the RDS PostgreSQL instance is associated with `aws_db_parameter_group.doctornect_pg15` (configuring `shared_preload_libraries = "pg_stat_statements,pg_cron"` and `cron.database_name = "postgres"`).
+1. **Pre-Flight Inspection: Verify Actual RDS Engine Version & Parameter Group**:
+   Run AWS CLI check to confirm the RDS instance identifier (`var.rds_instance_identifier`), engine version (PostgreSQL 17+), and parameter group status:
+   ```bash
+   aws rds describe-db-instances \
+     --db-instance-identifier ${var.rds_instance_identifier} \
+     --query "DBInstances[0].{Identifier:DBInstanceIdentifier,Engine:Engine,EngineVersion:EngineVersion,ParameterGroup:DBParameterGroups[0].DBParameterGroupName,Status:DBInstanceStatus}" \
+     --output table
+   ```
+   *Verification criteria:*
+   - `Engine`: `postgres`
+   - `EngineVersion`: `17.*` (or major version >= 15)
+   - `Status`: `available`
+
+2. **Apply RDS Parameter Group for `pg_cron`**:
+   Ensure the RDS PostgreSQL instance is associated with `aws_db_parameter_group.doctornect_pg17` (`doctornect-production-pg17-cron` configuring `shared_preload_libraries = "pg_stat_statements,pg_cron"` and `cron.database_name = "postgres"`).
    ```bash
    aws rds modify-db-instance \
-     --db-instance-identifier <YOUR_RDS_INSTANCE_ID> \
-     --db-parameter-group-name doctornect-production-pg15-cron \
+     --db-instance-identifier ${var.rds_instance_identifier} \
+     --db-parameter-group-name doctornect-production-pg17-cron \
      --apply-immediately
    ```
-2. **Reboot RDS Instance**:
+3. **Reboot RDS Instance**:
    `shared_preload_libraries` changes require an explicit database restart to load background worker processes.
    ```bash
    aws rds reboot-db-instance \
-     --db-instance-identifier <YOUR_RDS_INSTANCE_ID>
+     --db-instance-identifier ${var.rds_instance_identifier}
    ```
    Wait for the instance to transition back to the `available` state before proceeding.
-3. **Verify pg_cron Extension Availability**:
+4. **Verify pg_cron Extension Availability**:
    Connect as administrative user (`postgres` or `rds_superuser`) and confirm extension availability:
    ```sql
    SELECT name, default_version, installed_version FROM pg_available_extensions WHERE name = 'pg_cron';
    ```
-4. **Run preflight guard** to confirm RDS instance is empty of application tables:
+5. **Run preflight guard** to confirm RDS instance is empty of application tables:
    ```bash
    node scripts/db/phase1_rds_preflight.js
    ```
-5. **Run database migration pipeline**:
+6. **Run database migration pipeline**:
    ```bash
    node scripts/db/migrate.js --target=production --confirm=<YOUR_RDS_HOST>
    ```
-6. **Seed ONLY approved minimal system config and bootstrap first admin** (ZERO user/domain data):
+7. **Seed ONLY approved minimal system config and bootstrap first admin** (ZERO user/domain data):
    > [!IMPORTANT]
    > Production starts with exactly ZERO application data: no mock or test users, patients, doctors, appointments, prescriptions, or orders.
    > The only seeded records are operational `system_config` rows (`patient_module_status`, `promoted_ads`) and the initial super-admin UID in `private.admin_users`.
@@ -90,7 +103,7 @@ Populate the secrets generated in Step 1:
    ```bash
    node scripts/db/seed_production_minimum.js --target=production --confirm=<YOUR_RDS_HOST> --admin-uid=<FIRST_SUPER_ADMIN_FIREBASE_UID> --execute
    ```
-7. **Verify schema parity against staging**:
+8. **Verify schema parity against staging**:
    ```bash
    node scripts/db/schema_diff.js --target=production
    ```
@@ -99,7 +112,7 @@ Populate the secrets generated in Step 1:
 Capture an immutable snapshot of the clean, zero-user production database:
 ```bash
 aws rds create-db-snapshot \
-  --db-instance-identifier <YOUR_RDS_INSTANCE_ID> \
+  --db-instance-identifier ${var.rds_instance_identifier} \
   --db-snapshot-identifier doctornect-prod-clean-baseline-$(date +%Y%m%d)
 ```
 

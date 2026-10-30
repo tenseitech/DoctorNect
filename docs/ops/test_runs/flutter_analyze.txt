@@ -113,4 +113,4 @@ Got dependencies!
 109 packages have newer versions incompatible with dependency constraints.
 Try `flutter pub outdated` for more information.
 Analyzing frontend...                                           
-No issues found! (ran in 9.7s)
+No issues found! (ran in 107.5s)

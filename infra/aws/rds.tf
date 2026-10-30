@@ -53,3 +53,9 @@ resource "aws_db_parameter_group" "doctornect_pg17" {
     Project     = var.project_name
   }
 }
+
+# Optional Data Source: Queries existing RDS instance to verify engine version and parameter group family.
+data "aws_db_instance" "selected" {
+  count                  = var.rds_instance_identifier != "" ? 1 : 0
+  db_instance_identifier = var.rds_instance_identifier
+}

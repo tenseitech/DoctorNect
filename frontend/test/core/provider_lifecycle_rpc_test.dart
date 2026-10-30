@@ -1,9 +1,53 @@
+import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/core/enums/user_type.dart';
 import 'package:medibond/core/firebase/firebase_bootstrap.dart';
 import 'package:medibond/core/firebase/repositories/doctor_account_repository.dart';
 import 'package:medibond/core/firebase/repositories/role_account_repository.dart';
 import 'package:medibond/core/supabase/supabase_bootstrap.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class FakePostgrestFilterBuilder<T> extends Fake implements PostgrestFilterBuilder<T> {
+  @override
+  Future<R> then<R>(FutureOr<R> Function(T value) onValue, {Function? onError}) {
+    return Future<T>.value(null as T).then(onValue, onError: onError);
+  }
+
+  @override
+  Future<T> catchError(Function onError, {bool Function(Object error)? test}) {
+    return Future<T>.value(null as T).catchError(onError, test: test);
+  }
+
+  @override
+  Future<T> whenComplete(FutureOr<void> Function() action) {
+    return Future<T>.value(null as T).whenComplete(action);
+  }
+
+  @override
+  Stream<T> asStream() {
+    return Stream<T>.value(null as T);
+  }
+
+  @override
+  Future<T> timeout(Duration timeLimit, {FutureOr<T> Function()? onTimeout}) {
+    return Future<T>.value(null as T).timeout(timeLimit, onTimeout: onTimeout);
+  }
+}
+
+class FakeSupabaseClient extends Fake implements SupabaseClient {
+  final List<String> invokedRpcs = [];
+
+  @override
+  PostgrestFilterBuilder<T> rpc<T>(
+    String fn, {
+    Map? params,
+    dynamic body,
+    dynamic get,
+  }) {
+    invokedRpcs.add(fn);
+    return FakePostgrestFilterBuilder<T>();
+  }
+}
 
 void main() {
   setUp(() {
@@ -46,14 +90,72 @@ void main() {
         ),
         throwsA(isA<StateError>()),
       );
+    });
 
-      expect(
-        () => DoctorAccountRepository.instance.reactivate(
-          doctorId: 'doc_123',
-          ownerUid: 'uid_123',
-        ),
-        returnsNormally, // fetchDeactivationStatus returns deactivated=false so early returns
+    test('DoctorAccountRepository.deactivate invokes deactivate_provider_profile RPC via Supabase client', () async {
+      final fakeClient = FakeSupabaseClient();
+      SupabaseBootstrap.debugClientOverride = fakeClient;
+      SupabaseBootstrap.isReady = true;
+
+      await DoctorAccountRepository.instance.deactivate(
+        doctorId: 'doc_123',
+        ownerUid: 'uid_123',
       );
+
+      expect(fakeClient.invokedRpcs, contains('deactivate_provider_profile'));
+    });
+
+    test('RoleAccountRepository invokes deactivate_provider_profile and reactivate_provider_profile RPCs', () async {
+      final fakeClient = FakeSupabaseClient();
+      SupabaseBootstrap.debugClientOverride = fakeClient;
+      SupabaseBootstrap.isReady = true;
+
+      // 1. Test lab provider deactivation and reactivation
+      await RoleAccountRepository.instance.deactivateProvider(
+        role: UserType.lab,
+        profileId: 'lab_123',
+        ownerUid: 'uid_lab',
+      );
+      expect(fakeClient.invokedRpcs, contains('deactivate_provider_profile'));
+
+      await RoleAccountRepository.instance.reactivateProvider(
+        role: UserType.lab,
+        profileId: 'lab_123',
+        ownerUid: 'uid_lab',
+      );
+      expect(fakeClient.invokedRpcs, contains('reactivate_provider_profile'));
+
+      // 2. Test ambulance provider lifecycle
+      fakeClient.invokedRpcs.clear();
+      await RoleAccountRepository.instance.deactivateProvider(
+        role: UserType.ambulance,
+        profileId: 'amb_123',
+        ownerUid: 'uid_amb',
+      );
+      expect(fakeClient.invokedRpcs, contains('deactivate_provider_profile'));
+
+      await RoleAccountRepository.instance.reactivateProvider(
+        role: UserType.ambulance,
+        profileId: 'amb_123',
+        ownerUid: 'uid_amb',
+      );
+      expect(fakeClient.invokedRpcs, contains('reactivate_provider_profile'));
+
+      // 3. Test medical store provider lifecycle
+      fakeClient.invokedRpcs.clear();
+      await RoleAccountRepository.instance.deactivateProvider(
+        role: UserType.medicalStore,
+        profileId: 'store_123',
+        ownerUid: 'uid_store',
+      );
+      expect(fakeClient.invokedRpcs, contains('deactivate_provider_profile'));
+
+      await RoleAccountRepository.instance.reactivateProvider(
+        role: UserType.medicalStore,
+        profileId: 'store_123',
+        ownerUid: 'uid_store',
+      );
+      expect(fakeClient.invokedRpcs, contains('reactivate_provider_profile'));
     });
 
     test('RoleAccountRepository role verification gates', () async {

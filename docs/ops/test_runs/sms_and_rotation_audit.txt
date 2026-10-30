@@ -1,0 +1,29 @@
+================================================================
+DOCTORNECT: SECRETS AUDIT & REBUILT ROTATION LIST
+================================================================
+
+1. SMS PROVIDER AUDIT:
+   - Provider in use: MSG91 (12 integration files, 0 references to Fast2SMS in backend/functions).
+   - Fast2SMS: Deprecated / Not in use.
+
+2. ACTUAL ENVIRONMENT VARIABLE USAGE:
+   backend/functions env vars: 52
+   services/api-gateway env vars: 16
+   infra/aws variables: 14
+
+3. MASTER SECRETS ROTATION SCHEDULE & LOCATIONS:
+┌─────────┬──────────────────────────────────────────────────────┬─────────────────────────────────────┬───────────────────────────────────────────────────────────────┬───────────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ (index) │ secret                                               │ category                            │ usedIn                                                        │ storageLocation                                       │ rotationAction                                                                                             │
+├─────────┼──────────────────────────────────────────────────────┼─────────────────────────────────────┼───────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 0       │ 'MSG91_AUTH_KEY / MSG91_AUTHKEY'                     │ 'SMS Gateway'                       │ 'backend/functions (registration_otp.js, etc.)'               │ 'GCP Secret Manager (MSG91_AUTH_KEY)'                 │ 'Generate new API key in MSG91 console, update GCP Secret Manager, trigger function re-deployment.'        │
+│ 1       │ 'RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET'              │ 'Payment Gateway'                   │ 'backend/functions (razorpay.js, promoted_ads.js)'            │ 'GCP Secret Manager (RAZORPAY_KEY_SECRET)'            │ 'Generate new key pair in Razorpay Dashboard, update GCP Secret Manager, update frontend compile defines.' │
+│ 2       │ 'RAZORPAY_WEBHOOK_SECRET'                            │ 'Payment Webhook'                   │ 'backend/functions (razorpay_webhook.js)'                     │ 'GCP Secret Manager (RAZORPAY_WEBHOOK_SECRET)'        │ 'Configure new webhook secret in Razorpay dashboard, update Secret Manager.'                               │
+│ 3       │ 'AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY'          │ 'AWS S3 Cloud Storage'              │ 'backend/functions (s3_storage.js)'                           │ 'GCP Secret Manager / IAM Service User'               │ 'Rotate IAM access key in AWS IAM console, update GCP Secret Manager.'                                     │
+│ 4       │ 'REDIS_PASSWORD'                                     │ 'Redis / Upstash Cache'             │ 'backend/functions (redis.js), services/api-gateway'          │ 'GCP Secret Manager / Upstash console'                │ 'Rotate password in Upstash or Redis console, update Secret Manager / Gateway ECS task definition.'        │
+│ 5       │ 'PROD_RDS_PASSWORD (db_password)'                    │ 'Production PostgreSQL Database'    │ 'infra/aws (rds.tf), services/api-gateway, backend/functions' │ 'AWS Secrets Manager (db_password) / parameter store' │ 'Alter postgres user password via RDS Modify, update AWS Secrets Manager, restart API gateway task.'       │
+│ 6       │ 'GATEWAY_INTERNAL_SECRET / PROXY_SECRET'             │ 'Internal Gateway-to-Backend Token' │ 'services/api-gateway, backend/functions'                     │ 'ECS Secrets / GCP Secret Manager'                    │ 'Generate 256-bit random hex string, update in ECS and GCP Secret Manager.'                                │
+│ 7       │ 'STAGING_SUPABASE_SERVICE_ROLE_KEY'                  │ 'Supabase Staging Admin Access'     │ 'scripts/db (migration scripts, tests, sync functions)'       │ 'Supabase Dashboard Project Settings -> API'          │ 'Rotate JWT secret in Supabase dashboard, update .env.migration.'                                          │
+│ 8       │ 'STAGING_SUPABASE_ANON_KEY'                          │ 'Supabase Staging Client Access'    │ 'frontend compile defines, scripts/db'                        │ 'Supabase Dashboard Project Settings -> API'          │ 'Regenerated automatically when JWT secret is rotated in Supabase.'                                        │
+│ 9       │ 'FIREBASE_SERVICE_ACCOUNT_KEY'                       │ 'Firebase Admin SDK Credentials'    │ 'backend/functions, services/api-gateway'                     │ 'GCP IAM Service Accounts'                            │ 'Create new key for Firebase Admin service account in GCP IAM console, delete old key.'                    │
+│ 10      │ 'FIREBASE_APPCHECK_DEBUG_TOKEN / RECAPTCHA_SITE_KEY' │ 'Anti-Abuse / App Check'            │ 'frontend, backend/functions'                                 │ 'Firebase Console -> App Check'                       │ 'Generate new debug token or reCAPTCHA v3 key in Google reCAPTCHA console.'                                │
+└─────────┴──────────────────────────────────────────────────────┴─────────────────────────────────────┴───────────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────┘

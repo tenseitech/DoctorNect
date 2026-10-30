@@ -110,7 +110,8 @@ async function runRlsSqlHarness(options = {}) {
         ('test_usr_doc_unverified', 'test_usr_doc_unverified', 'doctor', 'test_usr_doc_unverified', 'Dr. Unverified', 'unverified@test.local', '+919999900099', false),
         ('test_usr_lab_unverified', 'test_usr_lab_unverified', 'lab', 'test_usr_lab_unverified', 'Lab Unverified', 'unverified_lab@test.local', '+919999900098', false),
         ('test_usr_store_unverified', 'test_usr_store_unverified', 'medicalStore', 'test_usr_store_unverified', 'Store Unverified', 'unverified_store@test.local', '+919999900097', false),
-        ('test_usr_amb_unverified', 'test_usr_amb_unverified', 'ambulance', 'test_usr_amb_unverified', 'Amb Unverified', 'unverified_amb@test.local', '+919999900096', false)
+        ('test_usr_amb_unverified', 'test_usr_amb_unverified', 'ambulance', 'test_usr_amb_unverified', 'Amb Unverified', 'unverified_amb@test.local', '+919999900096', false),
+        ('test_usr_amb_unclaimed', 'test_usr_amb_unclaimed', 'ambulance', 'test_amb_unclaimed', 'Driver Unclaimed', 'unclaimed_amb@test.local', '+919999900095', true)
       ON CONFLICT (id) DO NOTHING;
     `);
 
@@ -135,7 +136,8 @@ async function runRlsSqlHarness(options = {}) {
       INSERT INTO public.ambulances (ambulance_id, auth_uid, service_name, driver_name, phone, vehicle_number, ambulance_type, city, verified) VALUES
         ('${ambA}', '${ambA}', 'Amb Service A', 'Driver A', '+919999900009', 'DL-01-A-1000', 'bls', 'Delhi', true),
         ('${ambB}', '${ambB}', 'Amb Service B', 'Driver B', '+919999900010', 'DL-01-B-2000', 'icu', 'Delhi', true),
-        ('test_usr_amb_unverified', 'test_usr_amb_unverified', 'Unverified Amb', 'Driver U', '+919999900096', 'DL-01-U-9999', 'bls', 'Delhi', false);
+        ('test_usr_amb_unverified', 'test_usr_amb_unverified', 'Unverified Amb', 'Driver U', '+919999900096', 'DL-01-U-9999', 'bls', 'Delhi', false),
+        ('test_amb_unclaimed', NULL, 'Unclaimed Amb', 'Driver Unclaimed', '+919999900095', 'DL-01-U-0000', 'bls', 'Delhi', false);
     `);
 
     const apptId = 'test_appt_alpha';
@@ -1943,6 +1945,255 @@ async function runRlsSqlHarness(options = {}) {
       claims: { role: 'anon' },
       sql: `SELECT config_key, config_value FROM public.system_config WHERE config_key = 'internal_secrets';`,
       expectedRows: 0,
+    });
+
+    // --- ROUND 8 REGRESSION & INVARIANT TESTS ---
+    // Invariant: Existing verified doctor/lab/store/ambulance re-login upsert with verified:false succeeds and stays verified:true
+    await testCase({
+      name: 'Doctor re-login upsert with verified:false succeeds and stays verified:true',
+      table: 'doctors',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', docA),
+      sql: `
+        UPDATE public.doctors
+        SET verified = false,
+            name = 'Dr. A Re-login',
+            specialization = 'General',
+            qualification = 'MBBS'
+        WHERE doctor_id = '${docA}'
+        RETURNING verified;
+      `,
+      expectedRows: 1,
+      expectedSqlState: '00000',
+      assertResult: res => res.rows[0].verified === true,
+    });
+
+    await testCase({
+      name: 'Lab re-login upsert with verified:false succeeds and stays verified:true',
+      table: 'labs',
+      role: 'authenticated',
+      claims: getTestJwtClaims('lab', labA),
+      sql: `
+        UPDATE public.labs
+        SET verified = false,
+            lab_name = 'Lab A Re-login',
+            phone = '+919999900007'
+        WHERE lab_id = '${labA}'
+        RETURNING verified;
+      `,
+      expectedRows: 1,
+      expectedSqlState: '00000',
+      assertResult: res => res.rows[0].verified === true,
+    });
+
+    await testCase({
+      name: 'Medical store re-login upsert with verified:false succeeds and stays verified:true',
+      table: 'medical_stores',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', storeA),
+      sql: `
+        UPDATE public.medical_stores
+        SET verified = false,
+            store_name = 'Store A Re-login',
+            phone = '+919999900005'
+        WHERE store_id = '${storeA}'
+        RETURNING verified;
+      `,
+      expectedRows: 1,
+      expectedSqlState: '00000',
+      assertResult: res => res.rows[0].verified === true,
+    });
+
+    await testCase({
+      name: 'Ambulance re-login upsert with verified:false succeeds and stays verified:true',
+      table: 'ambulances',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambA),
+      sql: `
+        UPDATE public.ambulances
+        SET verified = false,
+            driver_name = 'Driver A Re-login',
+            phone = '+919999900009',
+            is_available = true
+        WHERE ambulance_id = '${ambA}'
+        RETURNING verified;
+      `,
+      expectedRows: 1,
+      expectedSqlState: '00000',
+      assertResult: res => res.rows[0].verified === true,
+    });
+
+    // Photo Upload Tests using exact keys from profile_photo_uploader.dart
+    await testCase({
+      name: 'Photo Upload: Doctor A updates photo keys via exact client payload (profile_photo_uploader.dart:227)',
+      table: 'doctors',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', docA),
+      sql: `
+        UPDATE public.doctors
+        SET photo_key = 'doctor_profile/${docA}/avatar.jpg',
+            photo_storage = 's3',
+            photo_s3_key = 'doctor_profile/${docA}/avatar.jpg',
+            photo_storage_provider = 's3',
+            photo_updated_at = now()
+        WHERE doctor_id = '${docA}';
+      `,
+      expectedRows: 1,
+      expectedSqlState: '00000',
+    });
+
+    await testCase({
+      name: 'Photo Upload: Doctor A clears photo keys via exact client payload (profile_photo_uploader.dart:381)',
+      table: 'doctors',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', docA),
+      sql: `
+        UPDATE public.doctors
+        SET photo_key = NULL,
+            photo_storage = NULL,
+            photo_s3_key = NULL,
+            photo_url = NULL,
+            photo_updated_at = now()
+        WHERE doctor_id = '${docA}';
+      `,
+      expectedRows: 1,
+      expectedSqlState: '00000',
+    });
+
+    await testCase({
+      name: 'Photo Upload: Patient A updates photo keys via exact client payload (profile_photo_uploader.dart:99)',
+      table: 'patients',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `
+        UPDATE public.patients
+        SET photo_key = 'patient_profile/${pA}/avatar.jpg',
+            photo_storage = 's3',
+            photo_s3_key = 'patient_profile/${pA}/avatar.jpg',
+            photo_storage_provider = 's3',
+            photo_updated_at = now()
+        WHERE patient_id = '${pA}';
+      `,
+      expectedRows: 1,
+      expectedSqlState: '00000',
+    });
+
+    await testCase({
+      name: 'Photo Upload: Patient A clears photo keys via exact client payload (profile_photo_uploader.dart:331)',
+      table: 'patients',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `
+        UPDATE public.patients
+        SET photo_key = NULL,
+            photo_storage = NULL,
+            photo_s3_key = NULL,
+            photo_url = NULL,
+            photo_updated_at = now()
+        WHERE patient_id = '${pA}';
+      `,
+      expectedRows: 1,
+      expectedSqlState: '00000',
+    });
+
+    // Domain Profile Edit Tests using exact extracted Dart payloads
+    await testCase({
+      name: 'Domain Profile Edit: Lab A updates profile using exact Dart payload (lab_repository.dart:210)',
+      table: 'labs',
+      role: 'authenticated',
+      claims: getTestJwtClaims('lab', labA),
+      sql: `
+        UPDATE public.labs
+        SET lab_name = 'Metro Diagnostic Centre',
+            phone = '+919876543210',
+            email = 'metro_lab@test.local',
+            address_line1 = '123 Health Ave',
+            address_line2 = 'Suite 4',
+            city = 'Delhi',
+            state = 'Delhi',
+            country = 'India',
+            pincode = '110001'
+        WHERE lab_id = '${labA}';
+      `,
+      expectedRows: 1,
+      expectedSqlState: '00000',
+    });
+
+    await testCase({
+      name: 'Domain Profile Edit: Medical store A updates profile using exact Dart payload (medical_store_repository.dart:150)',
+      table: 'medical_stores',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', storeA),
+      sql: `
+        UPDATE public.medical_stores
+        SET store_name = 'Metro Pharmacy',
+            owner_name = 'Owner Alpha',
+            phone = '+919876543211',
+            email = 'metro_pharmacy@test.local',
+            address_line1 = '456 Pharma Lane',
+            address_line2 = 'Shop 2',
+            city = 'Delhi',
+            state = 'Delhi',
+            country = 'India',
+            pincode = '110002'
+        WHERE store_id = '${storeA}';
+      `,
+      expectedRows: 1,
+      expectedSqlState: '00000',
+    });
+
+    await testCase({
+      name: 'Domain Profile Edit: Ambulance A updates profile using exact Dart payload (ambulance_models.dart:191)',
+      table: 'ambulances',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambA),
+      sql: `
+        UPDATE public.ambulances
+        SET service_name = 'Fast Ambulance Co',
+            driver_name = 'Driver Alpha',
+            phone = '+919876543212',
+            city = 'Delhi',
+            base_address = 'Depot 5 Central',
+            has_oxygen = true,
+            has_ventilator = true,
+            has_stretcher = true,
+            is_24x7 = true,
+            rate_per_km = 30.50,
+            is_available = true
+        WHERE ambulance_id = '${ambA}';
+      `,
+      expectedRows: 1,
+      expectedSqlState: '00000',
+    });
+
+    // Ambulance Driver Link RPC Tests (claim_ambulance_driver)
+    await testCase({
+      name: 'Ambulance Driver Link RPC: Driver links unclaimed ambulance profile (claim_ambulance_driver)',
+      table: 'ambulances',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', 'test_usr_amb_unclaimed'),
+      sql: `SELECT public.claim_ambulance_driver('test_amb_unclaimed') AS success;`,
+      expectedRows: 1,
+      expectedSqlState: '00000',
+      assertResult: res => res.rows[0].success === true,
+    });
+
+    await testCase({
+      name: 'Ambulance Driver Link RPC: Non-owner driver link is denied with 42501',
+      table: 'ambulances',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambB),
+      sql: `SELECT public.claim_ambulance_driver('test_amb_unclaimed');`,
+      expectedSqlState: '42501',
+    });
+
+    await testCase({
+      name: 'Ambulance Driver Link RPC: Anon driver link is denied with 42501',
+      table: 'ambulances',
+      role: 'anon',
+      claims: { role: 'anon' },
+      sql: `SELECT public.claim_ambulance_driver('test_amb_unclaimed');`,
+      expectedSqlState: '42501',
     });
 
     // Always ROLLBACK everything

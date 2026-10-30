@@ -26,6 +26,7 @@ const TARGET_FUNCTION_NAMES = [
   'trg_ambulance_broadcast_contact_guard',
   'deactivate_provider_profile',
   'reactivate_provider_profile',
+  'claim_ambulance_driver',
 ];
 
 async function runPlpgsqlCheck() {

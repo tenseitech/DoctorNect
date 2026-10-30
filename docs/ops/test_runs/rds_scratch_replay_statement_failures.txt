@@ -1,0 +1,6 @@
+RDS SCRATCH REPLAY STATEMENT FAILURES REPORT
+Total migrations: 41
+Total statements executed: 1811
+Total statement failures: 0
+
+ALL STATEMENTS APPLIED WITH 0 FAILURES.

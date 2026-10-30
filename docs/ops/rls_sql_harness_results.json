@@ -1,5 +1,5 @@
 {
-  "target": "staging",
+  "target": "replay_check",
   "results": [
     {
       "name": "Positive Control: Patient A read own profile",
@@ -1941,6 +1941,148 @@
       "expectedRows": 0,
       "actualRows": 0,
       "verdict": "PASS"
+    },
+    {
+      "name": "Doctor re-login upsert with verified:false succeeds and stays verified:true",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Lab re-login upsert with verified:false succeeds and stays verified:true",
+      "table": "labs",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Medical store re-login upsert with verified:false succeeds and stays verified:true",
+      "table": "medical_stores",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Ambulance re-login upsert with verified:false succeeds and stays verified:true",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Photo Upload: Doctor A updates photo keys via exact client payload (profile_photo_uploader.dart:227)",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Photo Upload: Doctor A clears photo keys via exact client payload (profile_photo_uploader.dart:381)",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Photo Upload: Patient A updates photo keys via exact client payload (profile_photo_uploader.dart:99)",
+      "table": "patients",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Photo Upload: Patient A clears photo keys via exact client payload (profile_photo_uploader.dart:331)",
+      "table": "patients",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Domain Profile Edit: Lab A updates profile using exact Dart payload (lab_repository.dart:210)",
+      "table": "labs",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Domain Profile Edit: Medical store A updates profile using exact Dart payload (medical_store_repository.dart:150)",
+      "table": "medical_stores",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Domain Profile Edit: Ambulance A updates profile using exact Dart payload (ambulance_models.dart:191)",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Ambulance Driver Link RPC: Driver links unclaimed ambulance profile (claim_ambulance_driver)",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Ambulance Driver Link RPC: Non-owner driver link is denied with 42501",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: Caller is not registered as owner of ambulance test_amb_unclaimed"
+    },
+    {
+      "name": "Ambulance Driver Link RPC: Anon driver link is denied with 42501",
+      "table": "ambulances",
+      "role": "anon",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "permission denied for function claim_ambulance_driver"
     }
   ],
   "zeroResidue": true

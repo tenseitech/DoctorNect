@@ -18,18 +18,16 @@ AS $$
   )::jsonb;
 $$;
 
--- auth.uid() returns the caller UID from JWT 'sub' claim as TEXT
--- (Note: Firebase Auth UIDs are alphanumeric strings, NOT UUIDs)
+-- auth.uid() returns the caller UID from JWT 'sub' claim as UUID (Supabase parity)
 CREATE OR REPLACE FUNCTION auth.uid()
-RETURNS text
+RETURNS uuid
 LANGUAGE sql
 STABLE
 AS $$
   SELECT COALESCE(
     NULLIF(current_setting('request.jwt.claim.sub', true), ''),
-    (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'),
-    NULLIF(auth.jwt() ->> 'sub', '')
-  );
+    (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')
+  )::uuid;
 $$;
 
 -- auth.role() returns the effective database role
@@ -55,8 +53,8 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA auth TO PUBLIC, anon, authenticated, se
 -- -----------------------------------------------------------------------------
 DO $$
 DECLARE
-  v_test_claims text := '{"sub":"usr_test_firebase_uid_123","role":"authenticated","app_role":"patient","user_role":"patient"}';
-  v_uid text;
+  v_test_claims text := '{"sub":"a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11","role":"authenticated","app_role":"patient","user_role":"patient"}';
+  v_uid uuid;
   v_role text;
   v_jwt jsonb;
 BEGIN
@@ -79,8 +77,8 @@ BEGIN
   -- Test 2: Valid plural claims return correct sub and role
   PERFORM set_config('request.jwt.claims', v_test_claims, true);
   v_uid := auth.uid();
-  IF v_uid != 'usr_test_firebase_uid_123' THEN
-    RAISE EXCEPTION 'auth.uid() failed: expected usr_test_firebase_uid_123, got %', v_uid;
+  IF v_uid != 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::uuid THEN
+    RAISE EXCEPTION 'auth.uid() failed: expected a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11, got %', v_uid;
   END IF;
 
   v_role := auth.role();
@@ -94,12 +92,12 @@ BEGIN
 
   -- Test 3: Singular claim settings compatibility
   PERFORM set_config('request.jwt.claims', '', true);
-  PERFORM set_config('request.jwt.claim.sub', 'usr_singular_sub_456', true);
+  PERFORM set_config('request.jwt.claim.sub', 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', true);
   PERFORM set_config('request.jwt.claim.role', 'service_role', true);
 
   v_uid := auth.uid();
-  IF v_uid != 'usr_singular_sub_456' THEN
-    RAISE EXCEPTION 'auth.uid() singular failed: expected usr_singular_sub_456, got %', v_uid;
+  IF v_uid != 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22'::uuid THEN
+    RAISE EXCEPTION 'auth.uid() singular failed: expected b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22, got %', v_uid;
   END IF;
 
   v_role := auth.role();

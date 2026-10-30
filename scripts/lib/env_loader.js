@@ -29,27 +29,6 @@ const migEnv = parseEnvFile(path.join(rootDir, '.env.migration'));
 const backendEnv = parseEnvFile(path.join(rootDir, 'backend/functions/.env'));
 const mergedEnv = { ...rootEnv, ...migEnv, ...backendEnv, ...process.env };
 
-// Fallback for Windows terminal sessions: if REPLAY_DB_URL was set in user's shell session
-if (!mergedEnv.REPLAY_DB_URL && process.platform === 'win32' && process.env.APPDATA) {
-  try {
-    const historyPath = path.join(process.env.APPDATA, 'Microsoft', 'Windows', 'PowerShell', 'PSReadLine', 'ConsoleHost_history.txt');
-    if (fs.existsSync(historyPath)) {
-      const content = fs.readFileSync(historyPath, 'utf8');
-      const lines = content.split('\n');
-      for (let i = lines.length - 1; i >= 0; i--) {
-        const l = lines[i].trim();
-        if (l.includes('REPLAY_DB_URL')) {
-          const match = l.match(/REPLAY_DB_URL\s*=\s*['"]?([^'"]+)['"]?/);
-          if (match && match[1]) {
-            mergedEnv.REPLAY_DB_URL = match[1].trim();
-            break;
-          }
-        }
-      }
-    }
-  } catch (_) {}
-}
-
 function getEnv(key) {
   return mergedEnv[key] || '';
 }
