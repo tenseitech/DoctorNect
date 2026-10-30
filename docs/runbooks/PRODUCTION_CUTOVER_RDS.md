@@ -47,19 +47,39 @@ Populate the secrets generated in Step 1:
 - `gateway_service_key`: Random 64-character token used by Cloud Functions.
 
 ### Step 4: Bootstrap & Migrate Production RDS Database
-1. Run preflight guard to confirm RDS instance is empty of application tables:
+1. **Apply RDS Parameter Group for `pg_cron`**:
+   Ensure the RDS PostgreSQL instance is associated with `aws_db_parameter_group.doctornect_pg15` (configuring `shared_preload_libraries = "pg_stat_statements,pg_cron"` and `cron.database_name = "postgres"`).
+   ```bash
+   aws rds modify-db-instance \
+     --db-instance-identifier <YOUR_RDS_INSTANCE_ID> \
+     --db-parameter-group-name doctornect-production-pg15-cron \
+     --apply-immediately
+   ```
+2. **Reboot RDS Instance**:
+   `shared_preload_libraries` changes require an explicit database restart to load background worker processes.
+   ```bash
+   aws rds reboot-db-instance \
+     --db-instance-identifier <YOUR_RDS_INSTANCE_ID>
+   ```
+   Wait for the instance to transition back to the `available` state before proceeding.
+3. **Verify pg_cron Extension Availability**:
+   Connect as administrative user (`postgres` or `rds_superuser`) and confirm extension availability:
+   ```sql
+   SELECT name, default_version, installed_version FROM pg_available_extensions WHERE name = 'pg_cron';
+   ```
+4. **Run preflight guard** to confirm RDS instance is empty of application tables:
    ```bash
    node scripts/db/phase1_rds_preflight.js
    ```
-2. Run database migration pipeline:
+5. **Run database migration pipeline**:
    ```bash
    node scripts/db/migrate.js --target=production --confirm=<YOUR_RDS_HOST>
    ```
-3. Seed ONLY approved reference and app config tables (zero test/user data):
+6. **Seed ONLY approved reference and app config tables** (zero test/user data):
    ```bash
    node scripts/db/seed_reference_data.js --target=production --confirm=<YOUR_RDS_HOST>
    ```
-4. Verify schema parity against staging:
+7. **Verify schema parity against staging**:
    ```bash
    node scripts/db/schema_diff.js --target=production
    ```

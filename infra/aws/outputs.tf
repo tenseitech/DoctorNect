@@ -32,3 +32,9 @@ output "secrets_manager_service_key_arn" {
   value       = aws_secretsmanager_secret.gateway_service_key.arn
   description = "Secrets Manager Secret ARN for Gateway Service Role Key"
 }
+
+output "rds_parameter_group_id" {
+  value       = aws_db_parameter_group.doctornect_pg15.id
+  description = "RDS DB Parameter Group ID configuring pg_cron"
+}
+

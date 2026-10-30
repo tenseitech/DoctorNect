@@ -1,0 +1,131 @@
+commit bdd1d38a4d2c93d2880375f80492e13bfd481d8c
+Author: tenseitech <developer@tenseitech.com>
+Date:   Fri Oct 30 12:03:06 2026 +0530
+
+    fix(ops): Round 5 domain allowlists, reviews RLS completed appointment, cron plan, and test runs
+
+ ...01000001_domain_allowlist_and_reviews_guard.sql |  246 ++++
+ docs/ops/CRON_PLAN.md                              |  171 +++
+ docs/ops/REMAINING_WORK.md                         |   14 +-
+ docs/ops/rls_sql_harness_results.json              |  216 +++-
+ docs/ops/test_runs/backend_test.txt                | 1200 ++++++++++----------
+ docs/ops/test_runs/domain_columns_raw.txt          |  164 +++
+ docs/ops/test_runs/flutter_analyze.txt             |    2 +-
+ docs/ops/test_runs/flutter_test.txt                | 1114 +++++++++---------
+ docs/ops/test_runs/gateway_test.txt                |  246 ++--
+ docs/ops/test_runs/migrate_apply.txt               |    8 +-
+ docs/ops/test_runs/migrate_dry_run_all.txt         |    6 +-
+ docs/ops/test_runs/rls_harness_staging.txt         |  322 +++---
+ ...rls_harness_staging_2026-10-30T06-16-47-236Z.md |  319 ++++++
+ ...rls_harness_staging_2026-10-30T06-19-27-147Z.md |  355 ++++++
+ ...rls_harness_staging_2026-10-30T06-21-33-002Z.md |  357 ++++++
+ ...rls_harness_staging_2026-10-30T06-22-47-354Z.md |  355 ++++++
+ scripts/db/rds_scratch_replay.js                   |   51 +-
+ scripts/db/rls_sql_harness.js                      |  190 +++-
+ 18 files changed, 3876 insertions(+), 1460 deletions(-)
+
+commit 56bb75e025a23594e41a1319ab5e6859730be62d
+Author: tenseitech <developer@tenseitech.com>
+Date:   Thu Oct 29 18:15:17 2026 +0530
+
+    fix(ops): Round 4 trusted writers, domain guards, cron cleanup, checksum parity, and test battery
+
+ .env.example                                       |    2 +-
+ .gitattributes                                     |    3 +
+ ...1031000001_trusted_writers_and_domain_fixes.sql |  181 +++
+ db/rds_bootstrap/01_roles_and_extensions.sql       |   46 -
+ docs/ops/REMAINING_WORK.md                         |   25 +-
+ docs/ops/rls_sql_harness_results.json              |   40 +
+ docs/ops/test_runs/backend_test.txt                | 1256 ++++++++++----------
+ docs/ops/test_runs/flutter_analyze.txt             |  118 +-
+ docs/ops/test_runs/flutter_test.txt                | 1120 ++++++++---------
+ docs/ops/test_runs/gateway_test.txt                |  246 ++--
+ docs/ops/test_runs/migrate_apply.txt               |  Bin 1332 -> 649 bytes
+ docs/ops/test_runs/migrate_dry_run_all.txt         |  Bin 1720 -> 836 bytes
+ docs/ops/test_runs/plpgsql_check.txt               |  Bin 8316 -> 3574 bytes
+ docs/ops/test_runs/rls_harness_staging.txt         |  Bin 69974 -> 35721 bytes
+ ...rls_harness_staging_2026-10-29T12-31-03-059Z.md |  319 +++++
+ .../ambulance/ambulance_driver_home_screen.dart    |   28 +-
+ .../family/add_family_member_profile_screen.dart   |   17 +-
+ frontend/test/family_patient_id_test.dart          |   60 +
+ scripts/db/migrate.js                              |    3 +-
+ scripts/db/rds_scratch_replay.js                   |   16 +-
+ scripts/db/rls_sql_harness.js                      |   37 +
+ scripts/test/migrate.test.js                       |   14 +
+ 22 files changed, 2150 insertions(+), 1381 deletions(-)
+
+commit 31e3751721843c96098b708049bb2115cbf4ae38
+Author: tenseitech <developer@tenseitech.com>
+Date:   Thu Oct 29 17:09:03 2026 +0530
+
+    fix(security): Round 3 domain security, phone masking, family guard, anon limits, rules 182/182 PASS
+
+ ...261025000001_least_privilege_grants_and_rls.sql |    1 -
+ .../20261026000001_rpc_null_safe_authz.sql         |    1 -
+ .../20261029000001_guard_and_drift_fixes.sql       |  563 ++++++++
+ ...030000001_domain_security_and_client_guards.sql |  420 ++++++
+ db/rds_bootstrap/01_roles_and_extensions.sql       |   56 +
+ db/rds_bootstrap/02_auth_shim.sql                  |   37 +-
+ docs/ops/PROGRESS.md                               |    6 +-
+ docs/ops/REMAINING_WORK.md                         |  141 +-
+ docs/ops/RUN_RULES_TESTS.md                        |    1 +
+ docs/ops/rls_sql_harness_results.json              | 1437 +++++++++++++++++++-
+ docs/ops/staging_migration_drift.json              |   19 +
+ docs/ops/test_runs/backend_test.txt                | 1204 ++++++++--------
+ docs/ops/test_runs/contact_privilege.txt           |    8 +
+ docs/ops/test_runs/domain_policies.txt             |  467 +++++++
+ docs/ops/test_runs/flutter_analyze.txt             |    2 +-
+ docs/ops/test_runs/flutter_test.txt                |  881 ++++++------
+ docs/ops/test_runs/gateway_test.txt                |  247 ++--
+ docs/ops/test_runs/guard_definitions_and_scan.txt  |  182 +++
+ docs/ops/test_runs/guard_empirical_proof.txt       |   23 +
+ docs/ops/test_runs/migrate_apply.txt               |  Bin 0 -> 1332 bytes
+ docs/ops/test_runs/migrate_dry_run_all.txt         |  Bin 0 -> 1720 bytes
+ docs/ops/test_runs/plpgsql_check.txt               |  Bin 0 -> 8316 bytes
+ docs/ops/test_runs/plpgsql_check_guards.txt        |   34 +
+ docs/ops/test_runs/replay_status.txt               |   13 +
+ docs/ops/test_runs/rls_harness_staging.txt         |  Bin 0 -> 69974 bytes
+ docs/ops/test_runs/rules_test.txt                  |  438 ++++++
+ docs/ops/test_runs/shim_unit_tests.txt             |  Bin 0 -> 852 bytes
+ docs/ops/test_runs/staging_auth_functions.txt      |   65 +
+ docs/ops/test_runs/staging_drift.txt               |  106 ++
+ docs/ops/test_runs/staging_roles_extensions.txt    |   75 +
+ docs/ops/test_runs/zero_residue.txt                |  Bin 0 -> 2030 bytes
+ docs/ops/zero_residue_audit.json                   |   10 +-
+ ...rls_harness_staging_2026-10-29T07-48-25-679Z.md |  109 ++
+ ...rls_harness_staging_2026-10-29T08-13-01-043Z.md |  109 ++
+ ...rls_harness_staging_2026-10-29T08-20-14-953Z.md |  109 ++
+ ...rls_harness_staging_2026-10-29T09-04-04-129Z.md |  251 ++++
+ ...rls_harness_staging_2026-10-29T09-05-29-495Z.md |  251 ++++
+ ...rls_harness_staging_2026-10-29T11-16-24-949Z.md |  313 +++++
+ ...rls_harness_staging_2026-10-29T11-17-23-412Z.md |  311 +++++
+ ...rls_harness_staging_2026-10-29T11-21-37-772Z.md |  311 +++++
+ firebase.json                                      |    2 +-
+ .../family/add_family_member_profile_screen.dart   |    4 +-
+ package.json                                       |    2 +-
+ scripts/db/audit_staging_catalog.js                |  330 +++++
+ scripts/db/check_contact_privilege.js              |   27 +
+ scripts/db/inspect_ambulance_policies.js           |   40 +
+ scripts/db/inspect_domain_columns.js               |   53 +
+ scripts/db/migrate.js                              |  192 ++-
+ scripts/db/query_guards_and_scan.js                |   91 ++
+ scripts/db/query_staging_auth_functions.js         |   54 +
+ scripts/db/query_staging_roles_extensions.js       |   55 +
+ scripts/db/rds_scratch_replay.js                   |  235 ++++
+ scripts/db/replay_from_scratch.js                  |  130 ++
+ scripts/db/rls_sql_harness.js                      |  606 ++++++++-
+ scripts/db/run_plpgsql_check.js                    |  175 ++-
+ scripts/db/scan_secdef_users.js                    |   69 +
+ scripts/db/scan_table_drift.js                     |   75 +
+ scripts/db/staging_logical_backup.js               |  226 +++
+ scripts/db/test_empirical_secdef.js                |   86 ++
+ scripts/db/verify_backup_integrity.js              |   94 ++
+ scripts/db/verify_zero_residue.js                  |   12 +-
+ scripts/lib/env_guard.js                           |   17 +-
+ scripts/run_rules_tests.js                         |   40 +
+ scripts/test/env_guard.test.js                     |  101 ++
+ scripts/test/migrate.test.js                       |  125 ++
+ services/api-gateway/src/config.js                 |    6 +
+ services/api-gateway/src/server.js                 |   42 +-
+ services/api-gateway/test/gateway.test.js          |   57 +
+ 68 files changed, 9758 insertions(+), 1389 deletions(-)

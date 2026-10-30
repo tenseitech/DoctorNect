@@ -1,0 +1,275 @@
+diff --git a/scripts/db/rls_sql_harness.js b/scripts/db/rls_sql_harness.js
+index f1956ec..49ac695 100644
+--- a/scripts/db/rls_sql_harness.js
++++ b/scripts/db/rls_sql_harness.js
+@@ -103,7 +103,10 @@ async function runRlsSqlHarness() {
+         ('${labB}', '${labB}', 'lab', '${labB}', 'Lab B', 'lb@test.local', '+919999900008', true),
+         ('${ambA}', '${ambA}', 'ambulance', '${ambA}', 'Amb A', 'aa@test.local', '+919999900009', true),
+         ('${ambB}', '${ambB}', 'ambulance', '${ambB}', 'Amb B', 'ab@test.local', '+919999900010', true),
+-        ('test_usr_doc_unverified', 'test_usr_doc_unverified', 'doctor', 'test_usr_doc_unverified', 'Dr. Unverified', 'unverified@test.local', '+919999900099', false)
++        ('test_usr_doc_unverified', 'test_usr_doc_unverified', 'doctor', 'test_usr_doc_unverified', 'Dr. Unverified', 'unverified@test.local', '+919999900099', false),
++        ('test_usr_lab_unverified', 'test_usr_lab_unverified', 'lab', 'test_usr_lab_unverified', 'Lab Unverified', 'unverified_lab@test.local', '+919999900098', false),
++        ('test_usr_store_unverified', 'test_usr_store_unverified', 'medicalStore', 'test_usr_store_unverified', 'Store Unverified', 'unverified_store@test.local', '+919999900097', false),
++        ('test_usr_amb_unverified', 'test_usr_amb_unverified', 'ambulance', 'test_usr_amb_unverified', 'Amb Unverified', 'unverified_amb@test.local', '+919999900096', false)
+       ON CONFLICT (id) DO NOTHING;
+     `);
+ 
+@@ -119,13 +122,16 @@ async function runRlsSqlHarness() {
+         ('test_usr_doc_unverified', 'test_usr_doc_unverified', 'Dr. Unverified', 'unverified@test.local', '+919999900099', 'General', 'MBBS', false, false);
+       INSERT INTO public.medical_stores (store_id, owner_uid, store_name, owner_name, drug_license_number, phone, email, verified) VALUES
+         ('${storeA}', '${storeA}', 'Store A', 'Owner A', 'DL-001', '+919999900005', 'sa@test.local', true),
+-        ('${storeB}', '${storeB}', 'Store B', 'Owner B', 'DL-002', '+919999900006', 'sb@test.local', true);
++        ('${storeB}', '${storeB}', 'Store B', 'Owner B', 'DL-002', '+919999900006', 'sb@test.local', true),
++        ('test_usr_store_unverified', 'test_usr_store_unverified', 'Unverified Store', 'Owner U', 'DL-999', '+919999900097', 'unverified_store@test.local', false);
+       INSERT INTO public.labs (lab_id, owner_uid, lab_name, license_number, phone, email, verified) VALUES
+         ('${labA}', '${labA}', 'Lab A', 'LIC-001', '+919999900007', 'la@test.local', true),
+-        ('${labB}', '${labB}', 'Lab B', 'LIC-002', '+919999900008', 'lb@test.local', true);
++        ('${labB}', '${labB}', 'Lab B', 'LIC-002', '+919999900008', 'lb@test.local', true),
++        ('test_usr_lab_unverified', 'test_usr_lab_unverified', 'Unverified Lab', 'LIC-999', '+919999900098', 'unverified_lab@test.local', false);
+       INSERT INTO public.ambulances (ambulance_id, auth_uid, service_name, driver_name, phone, vehicle_number, ambulance_type, city, verified) VALUES
+         ('${ambA}', '${ambA}', 'Amb Service A', 'Driver A', '+919999900009', 'DL-01-A-1000', 'bls', 'Delhi', true),
+-        ('${ambB}', '${ambB}', 'Amb Service B', 'Driver B', '+919999900010', 'DL-01-B-2000', 'icu', 'Delhi', true);
++        ('${ambB}', '${ambB}', 'Amb Service B', 'Driver B', '+919999900010', 'DL-01-B-2000', 'icu', 'Delhi', true),
++        ('test_usr_amb_unverified', 'test_usr_amb_unverified', 'Unverified Amb', 'Driver U', '+919999900096', 'DL-01-U-9999', 'bls', 'Delhi', false);
+     `);
+ 
+     const apptId = 'test_appt_alpha';
+@@ -141,7 +147,8 @@ async function runRlsSqlHarness() {
+     await client.query(`
+       INSERT INTO public.appointments (appointment_id, doctor_id, patient_id, doctor_name, specialization, patient_name, patient_age, patient_gender, date_time, slot_label, visit_type, patient_status, doctor_status) VALUES
+         ('${apptId}', '${docA}', '${pA}', 'Dr. A', 'General', 'Patient A', 30, 'Male', now(), '10:00 AM', 'newVisit', 'confirmed', 'confirmed'),
+-        ('appt_happy_fam', '${docA}', 'test_fam_a1', 'Dr. A', 'General', 'Child A', 8, 'Female', now() + interval '2 days', '11:30 AM', 'newVisit', 'confirmed', 'confirmed')
++        ('appt_happy_fam', '${docA}', 'test_fam_a1', 'Dr. A', 'General', 'Child A', 8, 'Female', now() + interval '2 days', '11:30 AM', 'newVisit', 'confirmed', 'confirmed'),
++        ('appt_completed_docA', '${docA}', '${pA}', 'Dr. A', 'General', 'Patient A', 30, 'Male', now() - interval '1 day', '10:00 AM', 'newVisit', 'completed', 'completed')
+       ON CONFLICT (appointment_id) DO NOTHING;
+       INSERT INTO public.health_records (record_id, patient_id, title, type, date, source, file_name, shared_with_doctors) VALUES
+         ('${hrId}', '${pA}', 'CBC Report', 'labReport', CURRENT_DATE, 'selfUploaded', 'cbc.pdf', true);
+@@ -1446,12 +1453,13 @@ async function runRlsSqlHarness() {
+       sql: `INSERT INTO public.patients (patient_id, owner_uid, name, mobile) VALUES ('victim_squatted_001', '${pB}', 'Squatted Victim', '+919999900002');`,
+       expectedSqlState: '42501',
+     });
++    const dartGenFamilyId = `${pA}_fm1730000000000`; // Dart AddFamilyMemberProfileScreen.generateFamilyMemberId
+     await testCase({
+       name: 'Family Guard: Patient A inserts namespaced family patient successfully',
+       table: 'patients',
+       role: 'authenticated',
+       claims: getTestJwtClaims('patient', pA),
+-      sql: `INSERT INTO public.patients (patient_id, owner_uid, name, mobile) VALUES ('${pA}_fam_legit123', '${pA}', 'Legit Child', '+919999900001');`,
++      sql: `INSERT INTO public.patients (patient_id, owner_uid, name, mobile) VALUES ('${dartGenFamilyId}', '${pA}', 'Legit Child', '+919999900001');`,
+       expectedRows: 1,
+     });
+     await testCase({
+@@ -1552,6 +1560,213 @@ async function runRlsSqlHarness() {
+       expectedSqlState: '00000',
+     });
+ 
++    // --- ROUND 4: TRUSTED WRITERS & DOMAIN GUARDS ---
++    await testCase({
++      name: 'Privileged Columns: Doctor owner cannot update own rating',
++      table: 'doctors',
++      role: 'authenticated',
++      claims: getTestJwtClaims('doctor', docA),
++      sql: `UPDATE public.doctors SET rating = 5.0 WHERE doctor_id = '${docA}';`,
++      expectedSqlState: '42501',
++    });
++    await testCase({
++      name: 'Trusted Writers: Patient A submits review on Doctor A and aggregates update rating',
++      table: 'reviews',
++      role: 'authenticated',
++      claims: getTestJwtClaims('patient', pA),
++      sql: `
++        INSERT INTO public.reviews (review_id, patient_id, doctor_id, patient_name, rating, comment)
++        VALUES ('test_rev_round4', '${pA}', '${docA}', 'Patient A', 5, 'Great consultation and care');
++      `,
++      expectedRows: 1,
++    });
++    await testCase({
++      name: 'Trusted Writers: Assigned driver completes ambulance trip via complete_ambulance_trip RPC',
++      table: 'ambulance_broadcasts',
++      role: 'authenticated',
++      claims: getTestJwtClaims('ambulance', ambA),
++      sql: `SELECT public.complete_ambulance_trip('${bcId}');`,
++      expectedSqlState: '00000',
++    });
++    await testCase({
++      name: 'Trusted Writers: Super admin verifies unverified doctor account',
++      table: 'doctors',
++      role: 'authenticated',
++      claims: getTestJwtClaims('super_admin', 'super_admin_test_uid'),
++      sql: `UPDATE public.doctors SET verified = true WHERE doctor_id = 'test_usr_doc_unverified';`,
++      expectedRows: 1,
++    });
++
++    // --- ROUND 5: DOMAIN ALLOWLIST, REVIEWS POLICY, AMBULANCE PHONE & FORGERY DEFENSE ---
++    // Item 1: Forgery defense
++    await testCase({
++      name: 'Admin Forgery Denied: Authenticated token with forged user_role claim in request headers/body denied admin RPC',
++      table: 'ambulance_broadcasts',
++      role: 'authenticated',
++      claims: getTestJwtClaims('patient', pA),
++      sql: `SELECT public.get_ambulance_trip_contact('${bcId}');`,
++      expectedSqlState: '42501',
++    });
++
++    // Item 2: Domain UPDATE allowlist - Deny privileged columns per table
++    // Doctors
++    await testCase({
++      name: 'Privileged Columns: Unverified doctor owner cannot self-verify by updating verified=true',
++      table: 'doctors',
++      role: 'authenticated',
++      claims: getTestJwtClaims('doctor', 'test_usr_doc_unverified'),
++      sql: `UPDATE public.doctors SET verified = true WHERE doctor_id = 'test_usr_doc_unverified';`,
++      expectedSqlState: '42501',
++    });
++    await testCase({
++      name: 'Privileged Columns: Doctor owner cannot update owner_uid',
++      table: 'doctors',
++      role: 'authenticated',
++      claims: getTestJwtClaims('doctor', docA),
++      sql: `UPDATE public.doctors SET owner_uid = 'hacked_uid' WHERE doctor_id = '${docA}';`,
++      expectedSqlState: '42501',
++    });
++
++    // Labs
++    await testCase({
++      name: 'Privileged Columns: Lab owner cannot update rating',
++      table: 'labs',
++      role: 'authenticated',
++      claims: getTestJwtClaims('lab', labA),
++      sql: `UPDATE public.labs SET rating = 5.0 WHERE lab_id = '${labA}';`,
++      expectedSqlState: '42501',
++    });
++    await testCase({
++      name: 'Privileged Columns: Unverified lab owner cannot self-verify by updating verified=true',
++      table: 'labs',
++      role: 'authenticated',
++      claims: getTestJwtClaims('lab', 'test_usr_lab_unverified'),
++      sql: `UPDATE public.labs SET verified = true WHERE lab_id = 'test_usr_lab_unverified';`,
++      expectedSqlState: '42501',
++    });
++    await testCase({
++      name: 'Privileged Columns: Lab owner cannot update owner_uid',
++      table: 'labs',
++      role: 'authenticated',
++      claims: getTestJwtClaims('lab', labA),
++      sql: `UPDATE public.labs SET owner_uid = 'hacked_uid' WHERE lab_id = '${labA}';`,
++      expectedSqlState: '42501',
++    });
++
++    // Medical Stores
++    await testCase({
++      name: 'Privileged Columns: Unverified medical store owner cannot self-verify by updating verified=true',
++      table: 'medical_stores',
++      role: 'authenticated',
++      claims: getTestJwtClaims('medicalStore', 'test_usr_store_unverified'),
++      sql: `UPDATE public.medical_stores SET verified = true WHERE store_id = 'test_usr_store_unverified';`,
++      expectedSqlState: '42501',
++    });
++    await testCase({
++      name: 'Privileged Columns: Medical store owner cannot update owner_uid',
++      table: 'medical_stores',
++      role: 'authenticated',
++      claims: getTestJwtClaims('medicalStore', storeA),
++      sql: `UPDATE public.medical_stores SET owner_uid = 'hacked_uid' WHERE store_id = '${storeA}';`,
++      expectedSqlState: '42501',
++    });
++    await testCase({
++      name: 'Privileged Columns: Medical store owner cannot update unallowlisted column (deactivated)',
++      table: 'medical_stores',
++      role: 'authenticated',
++      claims: getTestJwtClaims('medicalStore', storeA),
++      sql: `UPDATE public.medical_stores SET deactivated = true WHERE store_id = '${storeA}';`,
++      expectedSqlState: '42501',
++    });
++
++    // Ambulances
++    await testCase({
++      name: 'Privileged Columns: Ambulance owner cannot update total_rating',
++      table: 'ambulances',
++      role: 'authenticated',
++      claims: getTestJwtClaims('ambulance', ambA),
++      sql: `UPDATE public.ambulances SET total_rating = 5.0 WHERE ambulance_id = '${ambA}';`,
++      expectedSqlState: '42501',
++    });
++    await testCase({
++      name: 'Privileged Columns: Unverified ambulance owner cannot self-verify by updating verified=true',
++      table: 'ambulances',
++      role: 'authenticated',
++      claims: getTestJwtClaims('ambulance', 'test_usr_amb_unverified'),
++      sql: `UPDATE public.ambulances SET verified = true WHERE ambulance_id = 'test_usr_amb_unverified';`,
++      expectedSqlState: '42501',
++    });
++    await testCase({
++      name: 'Privileged Columns: Ambulance owner cannot update auth_uid (via UPDATE guard)',
++      table: 'ambulances',
++      role: 'authenticated',
++      claims: getTestJwtClaims('ambulance', ambA),
++      sql: `UPDATE public.ambulances SET auth_uid = 'hacked_uid' WHERE ambulance_id = '${ambA}';`,
++      expectedSqlState: '42501',
++    });
++
++    // Patients
++    await testCase({
++      name: 'Privileged Columns: Patient owner cannot update verified flag',
++      table: 'patients',
++      role: 'authenticated',
++      claims: getTestJwtClaims('patient', pA),
++      sql: `UPDATE public.patients SET verified = false WHERE patient_id = '${pA}';`,
++      expectedSqlState: '42501',
++    });
++    await testCase({
++      name: 'Privileged Columns: Patient owner cannot update owner_uid',
++      table: 'patients',
++      role: 'authenticated',
++      claims: getTestJwtClaims('patient', pA),
++      sql: `UPDATE public.patients SET owner_uid = 'hacked_uid' WHERE patient_id = '${pA}';`,
++      expectedSqlState: '42501',
++    });
++
++    // Reviews Deny Cases
++    await testCase({
++      name: 'Reviews Guard: Patient B denied review without completed appointment',
++      table: 'reviews',
++      role: 'authenticated',
++      claims: getTestJwtClaims('patient', pB),
++      sql: `INSERT INTO public.reviews (review_id, patient_id, doctor_id, patient_name, rating, comment) VALUES ('test_rev_pB_no_appt', '${pB}', '${docA}', 'Patient B', 4, 'No prior visit');`,
++      expectedSqlState: '42501',
++    });
++    await testCase({
++      name: 'Reviews Guard: Doctor A denied self-reviewing own profile',
++      table: 'reviews',
++      role: 'authenticated',
++      claims: getTestJwtClaims('doctor', docA),
++      sql: `INSERT INTO public.reviews (review_id, patient_id, doctor_id, patient_name, rating, comment) VALUES ('test_rev_docA_self', '${docA}', '${docA}', 'Dr A', 5, 'I am great');`,
++      expectedSqlState: '42501',
++    });
++
++    // Item 3: Ambulance Phone Queries via PostgREST mapping
++    await testCase({
++      name: 'Ambulance Phone: Driver reads accepted broadcast through exact PostgREST query with unmasked contact_phone',
++      table: 'ambulance_broadcasts',
++      role: 'authenticated',
++      claims: getTestJwtClaims('ambulance', ambA),
++      sql: `SELECT contact_phone, patient_name, pickup_location, status, accepted_driver_id, accepted_driver_phone FROM public.ambulance_broadcasts WHERE broadcast_id = '${bcId}';`,
++      expectedRows: 1,
++      assertResult: (res) => {
++        const row = res.rows[0];
++        return row && row.contact_phone === '+919999900001' && row.accepted_driver_phone === '+919999900009';
++      },
++    });
++    await testCase({
++      name: 'Ambulance Phone: Patient reads accepted broadcast through exact PostgREST query with accepted_driver_phone',
++      table: 'ambulance_broadcasts',
++      role: 'authenticated',
++      claims: getTestJwtClaims('patient', pA),
++      sql: `SELECT contact_phone, patient_name, pickup_location, status, accepted_driver_id, accepted_driver_phone FROM public.ambulance_broadcasts WHERE broadcast_id = '${bcId}';`,
++      expectedRows: 1,
++      assertResult: (res) => {
++        const row = res.rows[0];
++        return row && row.accepted_driver_phone === '+919999900009';
++      },
++    });
++
+     // Always ROLLBACK everything
+     await client.query('ROLLBACK');
+     console.log('✔ Transaction ROLLED BACK successfully.');

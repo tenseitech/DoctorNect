@@ -1544,15 +1544,15 @@
       "verdict": "PASS"
     },
     {
-      "name": "Admin Forgery Denied: Authenticated token with forged user_role claim in request headers/body denied admin RPC",
-      "table": "ambulance_broadcasts",
+      "name": "Admin Write Denied: Authenticated patient denied admin write to verify doctor (UPDATE doctors SET verified=true as non-owner)",
+      "table": "doctors",
       "role": "authenticated",
       "expectedSqlState": "42501",
       "actualSqlState": "42501",
       "expectedRows": 0,
       "actualRows": 0,
       "verdict": "PASS",
-      "error": "permission denied for function get_ambulance_trip_contact"
+      "error": "FORBIDDEN: Caller is not the owner of this domain profile"
     },
     {
       "name": "Privileged Columns: Unverified doctor owner cannot self-verify by updating verified=true",
@@ -1737,6 +1737,169 @@
       "actualSqlState": "00000",
       "expectedRows": 1,
       "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "KYC Immutability: Verified doctor owner cannot update council_number",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: KYC column \"council_number\" on table \"doctors\" is immutable once verified"
+    },
+    {
+      "name": "KYC Immutability: Unverified doctor owner can update council_number",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "KYC Immutability: Verified lab owner cannot update license_number",
+      "table": "labs",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: KYC column \"license_number\" on table \"labs\" is immutable once verified"
+    },
+    {
+      "name": "KYC Immutability: Unverified lab owner can update license_number",
+      "table": "labs",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "KYC Immutability: Verified medical store owner cannot update drug_license_number",
+      "table": "medical_stores",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: KYC column \"drug_license_number\" on table \"medical_stores\" is immutable once verified"
+    },
+    {
+      "name": "KYC Immutability: Unverified medical store owner can update drug_license_number",
+      "table": "medical_stores",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "KYC Immutability: Verified ambulance owner cannot update vehicle_number",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "FORBIDDEN: KYC column \"vehicle_number\" on table \"ambulances\" is immutable once verified"
+    },
+    {
+      "name": "KYC Immutability: Unverified ambulance owner can update vehicle_number",
+      "table": "ambulances",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Client Compatibility: Doctor owner updates profile with exact frontend payload",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Provider Lifecycle: Doctor owner deactivates profile via owner-bound RPC",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Provider Lifecycle: Doctor owner reactivates profile via owner-bound RPC",
+      "table": "doctors",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "Reviews Integrity: Patient cannot self-complete appointment to bypass review gating",
+      "table": "appointments",
+      "role": "authenticated",
+      "expectedSqlState": "42501",
+      "actualSqlState": "42501",
+      "expectedRows": 0,
+      "actualRows": 0,
+      "verdict": "PASS",
+      "error": "new row violates row-level security policy for table \"appointments\""
+    },
+    {
+      "name": "Reviews Support: Patient submits review on Doctor A for completed family member appointment",
+      "table": "reviews",
+      "role": "authenticated",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "System Config: Anon selects whitelisted patient_module_status key",
+      "table": "system_config",
+      "role": "anon",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "System Config: Anon selects whitelisted promoted_ads key",
+      "table": "system_config",
+      "role": "anon",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 1,
+      "actualRows": 1,
+      "verdict": "PASS"
+    },
+    {
+      "name": "System Config: Anon query on non-whitelisted key returns 0 rows",
+      "table": "system_config",
+      "role": "anon",
+      "expectedSqlState": "00000",
+      "actualSqlState": "00000",
+      "expectedRows": 0,
+      "actualRows": 0,
       "verdict": "PASS"
     }
   ],

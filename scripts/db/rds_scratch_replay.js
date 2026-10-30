@@ -138,13 +138,24 @@ async function runRdsScratchReplay() {
       await replayClient.query(bootstrap02);
       console.log('✔ Auth shim applied & SQL unit tests passed successfully.\n');
 
-      // Test-only pg_cron mock check for local/scratch environments lacking pg_cron
+      // Verify pg_cron availability: on RDS targets, pg_cron MUST be available or replay fails immediately.
+      // On local/scratch non-RDS environments, install a labeled TEST-ONLY mock recorder.
+      const isRdsHost = parsedAdmin.hostname.includes('.rds.amazonaws.com') ||
+        (getEnv('PROD_RDS_HOST') && parsedAdmin.hostname === getHostFingerprint(getEnv('PROD_RDS_HOST')));
+
       const hasCronExtRes = await replayClient.query(`
         SELECT 1 FROM pg_available_extensions WHERE name = 'pg_cron';
       `);
       const lacksPgCron = hasCronExtRes.rowCount === 0;
+
       if (lacksPgCron) {
-        console.log('[LOCAL REPLAY] Target server lacks pg_cron extension. Installing TEST-ONLY cron recorder schema...');
+        if (isRdsHost) {
+          throw new Error(
+            `[FATAL RDS REPLAY ERROR] Target server is an RDS instance (${parsedAdmin.hostname}) but extension "pg_cron" is not available.\n` +
+            `RDS production replay requires native pg_cron enabled via parameter group (shared_preload_libraries = 'pg_stat_statements,pg_cron', cron.database_name = 'postgres') and an instance reboot.`
+          );
+        }
+        console.log('[TEST-ONLY SCRATCH REPLAY] Non-RDS target lacks pg_cron extension. Installing TEST-ONLY cron mock recorder schema...');
         await replayClient.query(`
           -- ============================================================================
           -- TEST-ONLY CRON RECORDER (LOCAL SCRATCH REPLAY ONLY — NEVER IN RDS BOOTSTRAP)

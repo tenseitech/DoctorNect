@@ -148,7 +148,8 @@ async function runRlsSqlHarness() {
       INSERT INTO public.appointments (appointment_id, doctor_id, patient_id, doctor_name, specialization, patient_name, patient_age, patient_gender, date_time, slot_label, visit_type, patient_status, doctor_status) VALUES
         ('${apptId}', '${docA}', '${pA}', 'Dr. A', 'General', 'Patient A', 30, 'Male', now(), '10:00 AM', 'newVisit', 'confirmed', 'confirmed'),
         ('appt_happy_fam', '${docA}', 'test_fam_a1', 'Dr. A', 'General', 'Child A', 8, 'Female', now() + interval '2 days', '11:30 AM', 'newVisit', 'confirmed', 'confirmed'),
-        ('appt_completed_docA', '${docA}', '${pA}', 'Dr. A', 'General', 'Patient A', 30, 'Male', now() - interval '1 day', '10:00 AM', 'newVisit', 'completed', 'completed')
+        ('appt_completed_docA', '${docA}', '${pA}', 'Dr. A', 'General', 'Patient A', 30, 'Male', now() - interval '1 day', '10:00 AM', 'newVisit', 'completed', 'completed'),
+        ('appt_completed_fam', '${docA}', 'test_fam_a1', 'Dr. A', 'General', 'Child A', 8, 'Female', now() - interval '1 day', '11:00 AM', 'newVisit', 'completed', 'completed')
       ON CONFLICT (appointment_id) DO NOTHING;
       INSERT INTO public.health_records (record_id, patient_id, title, type, date, source, file_name, shared_with_doctors) VALUES
         ('${hrId}', '${pA}', 'CBC Report', 'labReport', CURRENT_DATE, 'selfUploaded', 'cbc.pdf', true);
@@ -1598,13 +1599,13 @@ async function runRlsSqlHarness() {
     });
 
     // --- ROUND 5: DOMAIN ALLOWLIST, REVIEWS POLICY, AMBULANCE PHONE & FORGERY DEFENSE ---
-    // Item 1: Forgery defense
+    // Item 1: Claims Provenance & Admin Write Denial
     await testCase({
-      name: 'Admin Forgery Denied: Authenticated token with forged user_role claim in request headers/body denied admin RPC',
-      table: 'ambulance_broadcasts',
+      name: 'Admin Write Denied: Authenticated patient denied admin write to verify doctor (UPDATE doctors SET verified=true as non-owner)',
+      table: 'doctors',
       role: 'authenticated',
       claims: getTestJwtClaims('patient', pA),
-      sql: `SELECT public.get_ambulance_trip_contact('${bcId}');`,
+      sql: `UPDATE public.doctors SET verified = true WHERE doctor_id = 'test_usr_doc_unverified';`,
       expectedSqlState: '42501',
     });
 
@@ -1765,6 +1766,147 @@ async function runRlsSqlHarness() {
         const row = res.rows[0];
         return row && row.accepted_driver_phone === '+919999900009';
       },
+    });
+
+    // --- ROUND 6: KYC IMMUTABILITY, CLIENT WRITE COMPATIBILITY & REVIEWS ---
+    // Item 4: KYC field immutability
+    await testCase({
+      name: 'KYC Immutability: Verified doctor owner cannot update council_number',
+      table: 'doctors',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', docA),
+      sql: `UPDATE public.doctors SET council_number = 'NEW-COUNCIL-001' WHERE doctor_id = '${docA}';`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'KYC Immutability: Unverified doctor owner can update council_number',
+      table: 'doctors',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', 'test_usr_doc_unverified'),
+      sql: `UPDATE public.doctors SET council_number = 'DMC-NEW-999' WHERE doctor_id = 'test_usr_doc_unverified';`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'KYC Immutability: Verified lab owner cannot update license_number',
+      table: 'labs',
+      role: 'authenticated',
+      claims: getTestJwtClaims('lab', labA),
+      sql: `UPDATE public.labs SET license_number = 'NEW-LIC-001' WHERE lab_id = '${labA}';`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'KYC Immutability: Unverified lab owner can update license_number',
+      table: 'labs',
+      role: 'authenticated',
+      claims: getTestJwtClaims('lab', 'test_usr_lab_unverified'),
+      sql: `UPDATE public.labs SET license_number = 'LIC-UNV-888' WHERE lab_id = 'test_usr_lab_unverified';`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'KYC Immutability: Verified medical store owner cannot update drug_license_number',
+      table: 'medical_stores',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', storeA),
+      sql: `UPDATE public.medical_stores SET drug_license_number = 'NEW-DL-001' WHERE store_id = '${storeA}';`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'KYC Immutability: Unverified medical store owner can update drug_license_number',
+      table: 'medical_stores',
+      role: 'authenticated',
+      claims: getTestJwtClaims('medicalStore', 'test_usr_store_unverified'),
+      sql: `UPDATE public.medical_stores SET drug_license_number = 'DL-UNV-888' WHERE store_id = 'test_usr_store_unverified';`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'KYC Immutability: Verified ambulance owner cannot update vehicle_number',
+      table: 'ambulances',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', ambA),
+      sql: `UPDATE public.ambulances SET vehicle_number = 'DL-01-A-9999' WHERE ambulance_id = '${ambA}';`,
+      expectedSqlState: '42501',
+    });
+    await testCase({
+      name: 'KYC Immutability: Unverified ambulance owner can update vehicle_number',
+      table: 'ambulances',
+      role: 'authenticated',
+      claims: getTestJwtClaims('ambulance', 'test_usr_amb_unverified'),
+      sql: `UPDATE public.ambulances SET vehicle_number = 'DL-01-U-7777' WHERE ambulance_id = 'test_usr_amb_unverified';`,
+      expectedRows: 1,
+    });
+
+    // Item 3: Client write compatibility & Provider lifecycle RPCs
+    await testCase({
+      name: 'Client Compatibility: Doctor owner updates profile with exact frontend payload',
+      table: 'doctors',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', docA),
+      sql: `UPDATE public.doctors SET qualification = 'MBBS, MD', about = 'Dedicated physician' WHERE doctor_id = '${docA}';`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'Provider Lifecycle: Doctor owner deactivates profile via owner-bound RPC',
+      table: 'doctors',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', docA),
+      sql: `SELECT public.deactivate_provider_profile();`,
+      expectedSqlState: '00000',
+    });
+    await testCase({
+      name: 'Provider Lifecycle: Doctor owner reactivates profile via owner-bound RPC',
+      table: 'doctors',
+      role: 'authenticated',
+      claims: getTestJwtClaims('doctor', docA),
+      sql: `SELECT public.reactivate_provider_profile();`,
+      expectedSqlState: '00000',
+    });
+
+    // Item 5: Reviews self-completion denial & Family owner review
+    await testCase({
+      name: 'Reviews Integrity: Patient cannot self-complete appointment to bypass review gating',
+      table: 'appointments',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `UPDATE public.appointments SET patient_status = 'completed' WHERE appointment_id = '${apptId}';`,
+      expectedSqlState: '42501',
+    });
+
+    await testCase({
+      name: 'Reviews Support: Patient submits review on Doctor A for completed family member appointment',
+      table: 'reviews',
+      role: 'authenticated',
+      claims: getTestJwtClaims('patient', pA),
+      sql: `
+        INSERT INTO public.reviews (review_id, patient_id, doctor_id, patient_name, rating, comment)
+        VALUES ('test_rev_fam_round6', 'test_fam_a1', '${docA}', 'Parent for Child A', 5, 'Exceptional care for my child');
+      `,
+      expectedRows: 1,
+    });
+
+    // Item 6: system_config anon keys
+    await testCase({
+      name: 'System Config: Anon selects whitelisted patient_module_status key',
+      table: 'system_config',
+      role: 'anon',
+      claims: { role: 'anon' },
+      sql: `SELECT config_key, config_value FROM public.system_config WHERE config_key = 'patient_module_status';`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'System Config: Anon selects whitelisted promoted_ads key',
+      table: 'system_config',
+      role: 'anon',
+      claims: { role: 'anon' },
+      sql: `SELECT config_key, config_value FROM public.system_config WHERE config_key = 'promoted_ads';`,
+      expectedRows: 1,
+    });
+    await testCase({
+      name: 'System Config: Anon query on non-whitelisted key returns 0 rows',
+      table: 'system_config',
+      role: 'anon',
+      claims: { role: 'anon' },
+      sql: `SELECT config_key, config_value FROM public.system_config WHERE config_key = 'internal_secrets';`,
+      expectedRows: 0,
     });
 
     // Always ROLLBACK everything

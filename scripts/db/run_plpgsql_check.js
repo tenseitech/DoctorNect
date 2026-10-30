@@ -24,6 +24,8 @@ const TARGET_FUNCTION_NAMES = [
   'trg_domain_profile_guard_insert',
   'trg_domain_profile_guard_update',
   'trg_ambulance_broadcast_contact_guard',
+  'deactivate_provider_profile',
+  'reactivate_provider_profile',
 ];
 
 async function runPlpgsqlCheck() {
