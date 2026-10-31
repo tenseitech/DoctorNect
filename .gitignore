@@ -110,7 +110,10 @@ backend/supabase/.temp/
 **/supabase/.temp/
 supabase/.temp/
 
-# Debug and output files!docs/ops/migration_diffs/*.diff
+# Debug and output files
+docs/ops/migration_diffs/*.diff
+docs/ops/rls_sql_harness_results.json
+leaks.json
 *.out
 docs/ops/test_runs/rds_scratch_replay.txt
 docs/ops/test_runs/git_sync_*.txt
