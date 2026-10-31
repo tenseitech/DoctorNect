@@ -66,7 +66,7 @@ Node PostgREST auth gateway: `src/`, `test/`, `Dockerfile`.
 | `runbooks/` | Operator runbooks (e.g. RDS migration) |
 | `reports/` | Audit and harness reports |
 | `db/` | DB authorization notes |
-| `ops/` | Progress, manifests, test-run logs, JSON artifacts |
+| `ops/` | Progress, manifests, JSON artifacts (`test_runs/` is local-only; gitignored) |
 | `archive/planning/` | Superseded milestone/plan markdown (read-only history) |
 | `checklists/` | Cutover checklists |
 

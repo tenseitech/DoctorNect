@@ -115,8 +115,10 @@ docs/ops/migration_diffs/*.diff
 docs/ops/rls_sql_harness_results.json
 leaks.json
 *.out
-docs/ops/test_runs/rds_scratch_replay.txt
-docs/ops/test_runs/git_sync_*.txt
+# Generated CI / harness stdout captures (re-run tests locally; not versioned)
+docs/ops/test_runs/
+docs/Medibond_Legal_Review.pdf
+.artifacts/
 auth_otp.diff
 reset.out
 verify.out

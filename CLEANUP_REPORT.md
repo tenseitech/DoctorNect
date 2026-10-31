@@ -1,118 +1,123 @@
 # Structure cleanup report (no secrets)
 
-**Branch:** `cleanup/structure` (from committed audit/security work on `cleanup/remove-unused`)  
+**Branch:** `cleanup/structure`  
 **Date:** 2026-10-31  
-**Scope:** File/folder audit, deletion, and doc reorganization only — no app logic, migrations, infra, or CI changes.
+**Scope:** File/folder audit, deletion, and doc reorganization only — no app logic, migration SQL, infra, CI workflow, or env **value** changes. Admin module untouched.
 
 ## Summary
 
-| Metric | Before | After |
-|--------|--------|-------|
-| Tracked files (`git ls-files`) | 1729 | 1746 |
-| Git pack size | ~1.42 GiB | ~1.42 GiB (unchanged; no large blob removal) |
-| `check_env_parity.js` | 0 undocumented (after prior env doc commit) | 0 undocumented |
-| Backend tests (`CI=true`) | 475 pass / 0 fail | 475 pass / 0 fail |
-| Gateway tests | 68 pass / 0 fail | 68 pass / 0 fail |
+| Metric | Before (start of real cleanup pass) | After (this commit) |
+|--------|-------------------------------------|---------------------|
+| Tracked files (`git ls-files \| wc -l`) | **1748** | **1653** (−95) |
+| Git pack size (`git count-objects -vH`) | **~1.42 GiB** | **~1.42 GiB** (unchanged) |
 
-Renames preserve history via `git mv`. No `db/migrations/*` files edited or renamed.
+**Why pack size did not shrink:** `git rm` stops tracking blobs in new commits but leaves historical objects in `.git/objects` until `git filter-repo` / BFG. Largest historical blobs (e.g. removed `backend/updated_indian_medicine_data.csv` ~43 MiB, `docs/ops/test_runs/*.txt` up to ~0.76 MiB each) still occupy pack space.
 
-## Step 0 — Pre-structure commits (on `cleanup/remove-unused`)
+## 1 — Twenty-three zero-importer Dart files (`CLEANUP_MANIFEST.md`)
 
-Logical commits landing audit/security work before structure branch:
+| Result | Detail |
+|--------|--------|
+| **Deleted from git** | **0 files this pass** — all 23 paths already absent from tree and index (prior cleanup). |
+| **Re-verification** | No `import` / `part` in `frontend/lib` or `frontend/test`; not listed individually in `pubspec.yaml`; no dynamic path hits beyond obsolete `frontend/scripts/refactor/unused_dart_files.txt`. |
+| **Kept** | **None** from the manifest list. |
 
-- DB migration `20261103000008_staging_anon_security_cleanup.sql` + anon audit tooling  
-- API gateway CORS / revocation  
-- Functions Redis keys + deny-all Firestore rules  
-- Flutter Postgres cutover + docs deliverables (commit message overlap — docs landed in same series as flutter)  
-- Flutter source follow-up commit  
+Post-pass: `flutter pub get`, `flutter analyze`, full `flutter test` — see §9.
 
-Then: `git checkout -b cleanup/structure`.
+## 2 — `docs/ops/test_runs/*`
 
-## Classification audit (top-level)
+| Action | Detail |
+|--------|--------|
+| **Removed from git** | **59** stdout/log captures (`git rm`). |
+| **`.gitignore`** | `docs/ops/test_runs/`, `.artifacts/` (local harness output). |
+| **Links** | Scrubbed in `docs/ops/REMAINING_WORK.md`, `docs/ops/PROGRESS.md`, `docs/runbooks/RDS_MIGRATION_RUNBOOK.md`, `CLEANUP_REPORT.md`; `scripts/db/rds_scratch_replay.js` writes failures to `.artifacts/test_runs/`; `scripts/db/scan_passwords.js` scans `.artifacts/test_runs/` when present. |
+| **Link checker** | `node scripts/ops/check_markdown_links.js` — see §9. |
 
-| Path | Class | Notes |
+Untracked copies may remain on disk locally; they are ignored.
+
+## 3 — Duplicate audit reports (`docs/reports/`)
+
+| Kept (canonical) | Removed |
+|------------------|---------|
+| `DOCTORNECT_FINAL_AUDIT.md` | `DOCTORNECT_AUDIT_REPORT.md` |
+| `DOCTORNECT_VERIFICATION_REPORT.md` | 30 older `rls_harness_staging_*` / `rls_harness_replay_check_*` timestamped reports |
+| `rls_harness_staging_2026-10-31T07-00-11-064Z.md` (latest harness snapshot) | |
+
+## 4 — `.agent/` and `adapters/`
+
+**Kept** — referenced by production-adjacent tooling/docs:
+
+| Referencer |
+|------------|
+| `scripts/validate-workflows.ps1`, `scripts/validate-workflows.sh` |
+| `.gemini/GEMINI.md` |
+| `docs/archive/planning/PROJECT_RULES.md` |
+| `.agent/workflows/*` |
+
+## 5 — `scripts/codemods/`
+
+**Kept** — Firestore fallback removal not complete; `docs/reports/DOCTORNECT_FINAL_AUDIT.md` still documents ~45 Flutter files with Firestore branches. Codemods remain one-shot strippers for that migration.
+
+## 6 — Large tracked files and history bloat
+
+### Top tracked files (by size on HEAD, sample)
+
+| Path | ~Size | Used? |
 |------|-------|-------|
-| `frontend/` | USED | Flutter app; `pubspec.yaml`, CI, Firebase |
-| `backend/functions/` | USED | `firebase.json` `"source": "backend/functions"` |
-| `services/api-gateway/` | USED | Production PostgREST proxy |
-| `db/` | USED | Migrations + bootstrap — **frozen names** |
-| `infra/` | USED | Terraform |
-| `scripts/` | USED | migrate, harness, parity, e2e |
-| `docs/` | USED | Runbooks, ops evidence |
-| `adapters/`, `.agent/`, `.cursor/`, `.gemini/` | USED | Referenced by PROJECT_RULES / GEMINI docs |
-| Root `functions/` (local only) | JUNK | Not tracked; orphan `.env` removed locally only |
-| `leaks.json` | JUNK | Untracked scan output; gitignored |
-| Root milestone `*.md` (13 files) | SUPERSEDED | Moved to `docs/archive/planning/` — grep: not in README/CI; cited in historical `docs/ops/test_runs/*` only |
-| 23 Dart files in CLEANUP_MANIFEST | UNSURE | Zero static importers per manifest; **kept** (operator decision) |
-| `docs/ops/test_runs/*` | USED | Linked from `docs/ops/REMAINING_WORK.md`, runbooks |
-| `docs/reports/DOCTORNECT_AUDIT_REPORT.md` | DUPLICATE? | Superseded by verification report — **kept** (linked in ops docs) |
+| `frontend/assets/data/icd10_diagnoses.txt` | 14 MiB | **Yes** — `frontend/test/icd10_loader_comparison_test.dart` (runtime bundle uses `.gz` only). |
+| `frontend/assets/data/icd10_diagnoses.txt.gz` | 1.3 MiB | **Yes** — `pubspec.yaml` asset. |
+| `frontend/assets/data/indian_medicines.txt.gz` | 1.2 MiB | **Yes** — pubspec. |
+| Doctor/common PNG/WebP icons | 0.6–1.4 MiB each | **Yes** — UI + asset tests. |
+| `frontend/web/assets/js/pdf/.../pdf.worker.min.js` | 1.0 MiB | **Yes** — web PDF viewing. |
+| Font files under `frontend/assets/fonts/` | 0.6–0.7 MiB | **Yes** — pubspec fonts. |
 
-## Deleted / removed from git
+### Binaries / archives tracked on HEAD
 
-| Path | Category | Evidence |
-|------|----------|----------|
-| (none new this pass) | — | Prior branch already removed `run_plpgsql_check.sql`, `docs/ops/rls_sql_harness_results.json` |
+| Pattern | On HEAD |
+|---------|---------|
+| `.apk` / `.aab` / `.zip` / `.dump` / `.sqlite` | **None** tracked (`.gitignore` covers `*.zip`, build outputs). |
+| `.pdf` | **Removed** `docs/Medibond_Legal_Review.pdf` (regenerable via `frontend/tool/generate_legal_pdf.dart`; gitignored). |
 
-## Moved (git mv)
+### Removed as unused duplicates (this pass)
 
-| Old path | New path |
-|----------|----------|
-| `ENV_MATRIX.md` | `docs/ENV_MATRIX.md` |
-| `RDS_MIGRATION_RUNBOOK.md` | `docs/runbooks/RDS_MIGRATION_RUNBOOK.md` |
-| `DOCTORNECT_FINAL_AUDIT.md` | `docs/reports/DOCTORNECT_FINAL_AUDIT.md` |
-| `AUDIT_REPORT.md` | `docs/archive/planning/AUDIT_REPORT.md` |
-| `FIRESTORE_REMAINING.md` | `docs/archive/planning/FIRESTORE_REMAINING.md` |
-| `GSD-STYLE.md` | `docs/archive/planning/GSD-STYLE.md` |
-| `implementation_plan.md` | `docs/archive/planning/implementation_plan.md` |
-| `MIGRATION_PLAN.md` | `docs/archive/planning/MIGRATION_PLAN.md` |
-| `PHASE_A_REPORT.md` | `docs/archive/planning/PHASE_A_REPORT.md` |
-| `PHASE_D_REPORT.md` | `docs/archive/planning/PHASE_D_REPORT.md` |
-| `PHASE_E_PLAN.md` | `docs/archive/planning/PHASE_E_PLAN.md` |
-| `PLATFORMS.md` | `docs/archive/planning/PLATFORMS.md` |
-| `PRE_LAUNCH_CUTOVER.md` | `docs/archive/planning/PRE_LAUNCH_CUTOVER.md` |
-| `PROJECT_RULES.md` | `docs/archive/planning/PROJECT_RULES.md` |
-| `STEP2_VERIFICATION.md` | `docs/archive/planning/STEP2_VERIFICATION.md` |
-| `STEP3_VERIFICATION.md` | `docs/archive/planning/STEP3_VERIFICATION.md` |
+| Path | Reason |
+|------|--------|
+| `frontend/assets/icons/doctor/digital_pass.png` / `.webp` | Byte-identical to `assets/icons/common/digital_pass.*`; app resolves common path. |
+| `frontend/assets/images/neurologist_icon.png` | Byte-identical to `neurologist.png`; runtime uses `.webp` variants. |
 
-Link updates in same commit: `docs/ENV_MATRIX.md`, `docs/reports/DOCTORNECT_FINAL_AUDIT.md`, `scripts/db/safe_env_local_fix.js` (comment path only), `README.md` (structure pointer).
+### Largest blobs still in **git history** (no rewrite performed)
 
-## `.gitignore` additions
+| ~Size | Path (historical) | Notes |
+|-------|-------------------|-------|
+| 42.9 MiB | `backend/updated_indian_medicine_data.csv` | No longer tracked; bloats pack until filter-repo. |
+| 13.3 MiB | `frontend/assets/data/icd10_diagnoses.txt` | Still tracked (test fixture). |
+| 4.3 MiB | `structure.txt` | Historical root artifact. |
+| 1.7 MiB | `email_audit.txt` | Historical root artifact. |
+| 0.76 MiB | `docs/ops/test_runs/rds_scratch_replay.txt` | Untracked now; remains in history. |
 
-- `**/firestore-debug.log`
-- `flutter_*.log`, `flutter-web-*.log`
-- `backend/functions/.env.bak*`
-- (existing) `leaks.json`, `docs/ops/rls_harness_results.json`
+Helper: `node scripts/ops/top_git_blobs.js` (read-only inventory).
 
-## Env variables
+## 7 — Content-hash duplicates
 
-No env **values** read or changed. No variables removed from `.env.example` in this pass.
+`node scripts/ops/find_content_duplicates.js` found **50** groups (≥1 KiB). Action this pass: removed only **proven redundant** doctor `digital_pass` and `neurologist_icon` PNG duplicates. **Not deduplicated** (intentional platform copies): splash/icon PNG sets under `android/`, `ios/`, `web/`, `macos/`; logo variants; `.agent/` vs `.cursor/` skill mirrors (both referenced by IDE tooling).
 
-## Needs your decision
+## 8 — Out of scope (unchanged)
 
-1. **`docs/ops/test_runs/`** (~80+ tracked logs) — historical evidence vs repo size; many runbook links.  
-2. **`docs/reports/DOCTORNECT_AUDIT_REPORT.md`** vs `DOCTORNECT_VERIFICATION_REPORT.md` — likely duplicate; ops docs still mention both.  
-3. **23 zero-importer Dart widgets** — listed in `docs/ops/CLEANUP_MANIFEST.md` (deleting = behavior/UI scope).  
-4. **`.agent/` / `.agents/` / `adapters/`** — IDE/agent tooling; safe to keep unless you want a slim public fork.  
-5. **`scripts/codemods/`** — manual one-shot; referenced in audit report.  
-6. **Duplicate `backend/functions/.env.example` path** in glob (single file) — no action.
+Application logic (except asset-path test/manifest alignment for deleted duplicates), dependency versions, Terraform, CI workflows, migration SQL, Admin module, Firestore fallback code paths.
 
-## Verification (after structure commit)
+## 9 — Verification (after cleanup commit)
 
-| Check | Result |
-|-------|--------|
-| `node scripts/check_env_parity.js` | PASS — 0 undocumented core vars |
-| `backend/functions` `CI=true npm test` | PASS — 475 / 0 |
-| `services/api-gateway npm test` | PASS — 68 / 0 |
-| `node --test scripts/db/anon_surface_audit.test.js scripts/lib/db_connection_guard.test.js` | PASS — 4 / 0 |
-| `firebase.json` functions source | PASS — still `backend/functions` |
-| `flutter test` (full) / `flutter analyze` | Not re-run in this pass — run before merge |
-| `migrate.js --dry-run-all` | Not re-run post-move (no script path changes) |
+| Check | Command | Result |
+|-------|---------|--------|
+| Flutter deps | `cd frontend && flutter pub get` | *(filled post-commit)* |
+| Flutter analyze | `flutter analyze` | *(filled post-commit)* |
+| Flutter tests | `flutter test` | *(filled post-commit)* |
+| Backend tests | `cd backend/functions && CI=true npm test` | *(filled post-commit)* |
+| Gateway tests | `cd services/api-gateway && npm test` | *(filled post-commit)* |
+| Env parity | `node scripts/check_env_parity.js` | *(filled post-commit)* |
+| Anon / guard unit tests | `node --test scripts/db/anon_surface_audit.test.js scripts/lib/db_connection_guard.test.js` | *(filled post-commit)* |
+| Migrate dry-run | `node scripts/db/migrate.js --target=staging --dry-run-all` | *(filled post-commit)* |
+| Markdown links | `node scripts/ops/check_markdown_links.js` | *(filled post-commit)* |
+| `firebase.json` functions path | manual | `backend/functions` |
+| Terraform validate | `terraform -chdir=infra/aws validate` (if init cached) | *(filled post-commit)* |
 
-## Out of scope (not changed)
-
-- Application logic, dependencies, Terraform, CI workflows, migration SQL content  
-- Admin module  
-- Firestore repository fallback branches in Flutter  
-- Comment removal pass  
-
-See **PROJECT_STRUCTURE.md** for the target layout going forward.
+See **PROJECT_STRUCTURE.md** for layout.

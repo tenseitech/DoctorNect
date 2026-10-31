@@ -60,4 +60,6 @@
 
 ## Operator Decision List (Uncertain Items Kept Safe)
 
-Per project invariant, no Dart source files are deleted automatically. The 23 zero-importer Dart files above are categorized under **Needs Operator Decision** and preserved on disk until explicit operator sign-off.
+The 23 zero-importer Dart files listed above were **removed in an earlier cleanup** (not present on `cleanup/structure` — verified `git ls-files` + disk absent). Re-verification: no `import` / `part` references in `frontend/lib` or `frontend/test`, not in `pubspec.yaml` assets, not in generated registrants. No files kept from that list.
+
+Regenerable legal PDF: `docs/Medibond_Legal_Review.pdf` removed from git (output of `frontend/tool/generate_legal_pdf.dart`; gitignored).

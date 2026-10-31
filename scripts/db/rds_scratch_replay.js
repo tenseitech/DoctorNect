@@ -314,8 +314,10 @@ async function runRdsScratchReplay() {
         }
       }
 
-      // Write statement failures to docs/ops/test_runs/rds_scratch_replay_statement_failures.txt
-      const failLogPath = path.resolve(__dirname, '../../docs/ops/test_runs/rds_scratch_replay_statement_failures.txt');
+      // Write statement failures under .artifacts/ (gitignored; not docs/ops/test_runs/)
+      const failLogDir = path.resolve(__dirname, '../../.artifacts/test_runs');
+      fs.mkdirSync(failLogDir, { recursive: true });
+      const failLogPath = path.join(failLogDir, 'rds_scratch_replay_statement_failures.txt');
       let failLogContent = `RDS SCRATCH REPLAY STATEMENT FAILURES REPORT\n`;
       failLogContent += `Total migrations: ${migrationFiles.length}\n`;
       failLogContent += `Total statements executed: ${totalReplayedStmts}\n`;

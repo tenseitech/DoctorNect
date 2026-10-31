@@ -8,7 +8,6 @@ const Set<String> kWebpAssets = {
   'assets/icons/doctor/ambulance.webp',
   'assets/icons/doctor/appointment.webp',
   'assets/icons/doctor/availability.webp',
-  'assets/icons/doctor/digital_pass.webp',
   'assets/icons/doctor/done.webp',
   'assets/icons/doctor/invite.webp',
   'assets/icons/doctor/lab.webp',

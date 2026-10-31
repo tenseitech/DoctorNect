@@ -133,7 +133,7 @@ Apply via `node scripts/db/migrate.js --target=production` once `PROD_RDS_*` / c
 node scripts/db/rds_scratch_replay.js
 ```
 
-Recorded result: **0 statement failures**, RLS harness **208/208 PASS** (`docs/ops/test_runs/round10_rds_scratch_replay.txt`).
+Recorded result (re-verify locally): **0 statement failures** on scratch replay; RLS harness **208/208 PASS** after `node scripts/db/rls_sql_harness.js --target=staging`. Test stdout is not stored in git (`docs/ops/test_runs/` is gitignored).
 
 ---
 

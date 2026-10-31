@@ -9,10 +9,12 @@ const rootDir = path.resolve(__dirname, '../..');
 const trackedOutput = execSync('git ls-files', { cwd: rootDir, encoding: 'utf8' });
 const trackedFiles = trackedOutput.split('\n').map(f => f.trim()).filter(Boolean);
 
-const testRunsDir = path.join(rootDir, 'docs/ops/test_runs');
+const artifactTestRunsDir = path.join(rootDir, '.artifacts/test_runs');
 let testRunsFiles = [];
-if (fs.existsSync(testRunsDir)) {
-  testRunsFiles = fs.readdirSync(testRunsDir).map(f => path.join('docs/ops/test_runs', f));
+if (fs.existsSync(artifactTestRunsDir)) {
+  testRunsFiles = fs.readdirSync(artifactTestRunsDir).map((f) =>
+    path.join('.artifacts/test_runs', f),
+  );
 }
 
 const allFiles = Array.from(new Set([...trackedFiles, ...testRunsFiles]));
