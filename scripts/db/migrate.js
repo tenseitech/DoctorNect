@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const { Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard, getHostFingerprint } = require('../lib/env_guard');
+const { assertSessionCapableConnection, SESSION_CONNECTION_DOC } = require('../lib/db_connection_guard');
 
 let parse;
 try {
@@ -114,7 +115,9 @@ async function runMigrations() {
     process.exit(1);
   }
 
+  assertSessionCapableConnection(dbUrl, 'migrate.js');
   console.log(`Target Connection: ${maskConnectionString(dbUrl)}`);
+  console.log(SESSION_CONNECTION_DOC);
 
   const pool = new Pool(poolConfig);
   const client = await pool.connect();

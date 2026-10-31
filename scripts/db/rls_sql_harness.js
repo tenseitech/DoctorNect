@@ -5,6 +5,7 @@ const path = require('path');
 const { Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard } = require('../lib/env_guard');
+const { assertSessionCapableConnection, SESSION_CONNECTION_DOC } = require('../lib/db_connection_guard');
 const { buildPostgrestPayload } = require('../../services/api-gateway/src/jwt_minter');
 
 // Emits real claims matching backend registration and gateway logic
@@ -65,9 +66,11 @@ async function runRlsSqlHarness(options = {}) {
     process.exit(1);
   }
 
+  assertSessionCapableConnection(dbUrl, 'rls_sql_harness.js');
   console.log(`\n===============================================================`);
   console.log(`DoctorNect RLS & Authz SQL Harness (Target: ${target.toUpperCase()})`);
   console.log(`Connection: ${maskConnectionString(dbUrl)}`);
+  console.log(SESSION_CONNECTION_DOC);
   console.log(`Mode: Transaction-isolated (Always ROLLED BACK, ZERO RESIDUE)`);
   console.log(`===============================================================\n`);
 
@@ -112,7 +115,8 @@ async function runRlsSqlHarness(options = {}) {
         ('test_usr_lab_unverified', 'test_usr_lab_unverified', 'lab', 'test_usr_lab_unverified', 'Lab Unverified', 'unverified_lab@test.local', '+919999900098', false),
         ('test_usr_store_unverified', 'test_usr_store_unverified', 'medicalStore', 'test_usr_store_unverified', 'Store Unverified', 'unverified_store@test.local', '+919999900097', false),
         ('test_usr_amb_unverified', 'test_usr_amb_unverified', 'ambulance', 'test_usr_amb_unverified', 'Amb Unverified', 'unverified_amb@test.local', '+919999900096', false),
-        ('test_usr_amb_unclaimed', 'test_usr_amb_unclaimed', 'ambulance', 'test_amb_unclaimed', 'Driver Unclaimed', 'unclaimed_amb@test.local', '+919999900095', true)
+        ('test_usr_amb_unclaimed', 'test_usr_amb_unclaimed', 'ambulance', 'test_amb_unclaimed', 'Driver Unclaimed', 'unclaimed_amb@test.local', '+919999900095', true),
+        ('test_usr_doc_suspended', 'test_usr_doc_suspended', 'doctor', 'test_usr_doc_suspended', 'Dr. Suspended', 'suspended@test.local', '+919999900088', true)
       ON CONFLICT (id) DO NOTHING;
     `);
 
@@ -125,7 +129,8 @@ async function runRlsSqlHarness(options = {}) {
         ('test_orphan_doc', NULL, 'Orphan Dr', 'orphan@test.local', '+919999900998', 'General', 'MBBS', true, false),
         ('${docA}', '${docA}', 'Dr. A', 'da@test.local', '+919999900003', 'General', 'MBBS', true, false),
         ('${docB}', '${docB}', 'Dr. B', 'db@test.local', '+919999900004', 'Cardiology', 'MD', true, false),
-        ('test_usr_doc_unverified', 'test_usr_doc_unverified', 'Dr. Unverified', 'unverified@test.local', '+919999900099', 'General', 'MBBS', false, false);
+        ('test_usr_doc_unverified', 'test_usr_doc_unverified', 'Dr. Unverified', 'unverified@test.local', '+919999900099', 'General', 'MBBS', false, false),
+        ('test_usr_doc_suspended', 'test_usr_doc_suspended', 'Dr. Suspended', 'suspended@test.local', '+919999900088', 'General', 'MBBS', true, true);
       INSERT INTO public.medical_stores (store_id, owner_uid, store_name, owner_name, drug_license_number, phone, email, verified) VALUES
         ('${storeA}', '${storeA}', 'Store A', 'Owner A', 'DL-001', '+919999900005', 'sa@test.local', true),
         ('${storeB}', '${storeB}', 'Store B', 'Owner B', 'DL-002', '+919999900006', 'sb@test.local', true),
@@ -140,6 +145,11 @@ async function runRlsSqlHarness(options = {}) {
         ('test_usr_amb_unverified', 'test_usr_amb_unverified', 'Unverified Amb', 'Driver U', '+919999900096', 'DL-01-U-9999', 'bls', 'Delhi', false),
         ('test_amb_unclaimed', NULL, 'Unclaimed Amb', 'Driver Unclaimed', '+919999900095', 'DL-01-U-0000', 'bls', 'Delhi', false),
         ('test_amb_unclaimed_flow', NULL, 'Flow Amb', 'Driver Flow', '+919999900055', 'DL-01-U-5555', 'bls', 'Delhi', false);
+      INSERT INTO public.reviews (review_id, patient_id, doctor_id, patient_name, rating, comment) VALUES
+        ('test_rev_harness_docA', '${pA}', '${docA}', 'Patient A', 5, 'Visible for anon review_public'),
+        ('test_rev_harness_suspended', '${pA}', 'test_usr_doc_suspended', 'Patient A', 3, 'Hidden suspended doctor review'),
+        ('test_rev_harness_unverified', '${pA}', 'test_usr_doc_unverified', 'Patient A', 2, 'Hidden unverified doctor review')
+      ON CONFLICT (review_id) DO NOTHING;
     `);
 
     const apptId = 'test_appt_alpha';
@@ -1545,28 +1555,59 @@ async function runRlsSqlHarness(options = {}) {
       expectedSqlState: '42501',
     });
     await testCase({
-      name: 'Anon Access Denied: Anonymous caller cannot SELECT amount_paid from promoted_ads',
+      name: 'Anon Access Denied: Anonymous caller cannot SELECT from promoted_ads',
       table: 'promoted_ads',
       role: 'anon',
       claims: null,
-      sql: `SELECT amount_paid FROM public.promoted_ads LIMIT 1;`,
+      sql: `SELECT ad_id FROM public.promoted_ads LIMIT 1;`,
       expectedSqlState: '42501',
     });
     await testCase({
-      name: 'Anon Access Denied: Anonymous caller cannot SELECT payment_status from promoted_ads',
-      table: 'promoted_ads',
+      name: 'doctor_directory: unverified doctor absent for anon',
+      table: 'doctor_directory',
       role: 'anon',
       claims: null,
-      sql: `SELECT payment_status FROM public.promoted_ads LIMIT 1;`,
-      expectedSqlState: '42501',
+      sql: `SELECT count(*)::int AS cnt FROM public.doctor_directory WHERE doctor_id = 'test_usr_doc_unverified';`,
+      expectedRows: 1,
+      assertResult: (res) => res.rows[0].cnt === 0,
     });
     await testCase({
-      name: 'Anon Access Allow: Anonymous caller selects public columns from promoted_ads',
-      table: 'promoted_ads',
+      name: 'doctor_directory: suspended (deactivated) doctor absent for anon',
+      table: 'doctor_directory',
       role: 'anon',
       claims: null,
-      sql: `SELECT ad_id, title, description, image_url, cta_label, status FROM public.promoted_ads LIMIT 1;`,
+      sql: `SELECT count(*)::int AS cnt FROM public.doctor_directory WHERE doctor_id = 'test_usr_doc_suspended';`,
+      expectedRows: 1,
+      assertResult: (res) => res.rows[0].cnt === 0,
+    });
+    await testCase({
+      name: 'doctor_directory: verified active doctor visible for anon',
+      table: 'doctor_directory',
+      role: 'anon',
+      claims: null,
+      sql: `SELECT count(*)::int AS cnt FROM public.doctor_directory WHERE doctor_id = '${docA}';`,
+      expectedRows: 1,
+      assertResult: (res) => res.rows[0].cnt === 1,
+    });
+    await testCase({
+      name: 'Anon review_public: only reviews for verified non-deactivated doctors (no permission error)',
+      table: 'review_public',
+      role: 'anon',
+      claims: null,
+      sql: `
+        SELECT review_id, doctor_id
+        FROM public.review_public
+        WHERE review_id IN (
+          'test_rev_harness_docA',
+          'test_rev_harness_suspended',
+          'test_rev_harness_unverified'
+        );
+      `,
       expectedSqlState: '00000',
+      assertResult: (res) => {
+        const ids = res.rows.map((r) => r.review_id).sort();
+        return ids.length === 1 && ids[0] === 'test_rev_harness_docA';
+      },
     });
 
     // --- ROUND 4: TRUSTED WRITERS & DOMAIN GUARDS ---
