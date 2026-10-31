@@ -18,7 +18,6 @@ import '../security/abuse_protection_service.dart';
 import '../security/client_request_throttle.dart';
 import '../validators/form_validators.dart';
 import '../security/file_encryption_service.dart';
-import '../supabase/supabase_auth_service.dart';
 import '../supabase/supabase_bootstrap.dart';
 import '../auth/profile_completion_service.dart';
 import '../auth/verification_lifecycle.dart';
@@ -661,7 +660,7 @@ class FirebaseAuthService {
     await SessionExpiry.clear();
     if (SupabaseBootstrap.isReady) {
       try {
-        await SupabaseAuthService.instance.signOut();
+        await SupabaseBootstrap.client.auth.signOut();
       } catch (_) {}
     }
     if (FirebaseBootstrap.isReady) {

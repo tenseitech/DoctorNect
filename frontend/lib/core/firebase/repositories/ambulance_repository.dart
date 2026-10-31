@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../config/doctor_patient_cutover_flag.dart';
 import '../../supabase/supabase_bootstrap.dart';
 import '../../supabase/repositories/supabase_ambulance_repository.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -142,7 +141,7 @@ class AmbulanceRepository {
 
   /// Saves the device FCM token so Cloud Functions can send push alerts.
   Future<void> saveDriverFcmToken(String ambulanceId, String token) async {
-    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+    if (SupabaseBootstrap.isReady && SupabaseBootstrap.isReady) {
       try {
         final uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null && uid.isNotEmpty) {
@@ -186,7 +185,7 @@ class AmbulanceRepository {
 
   /// Removes FCM token on driver logout.
   Future<void> clearDriverFcmToken(String ambulanceId) async {
-    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+    if (SupabaseBootstrap.isReady && SupabaseBootstrap.isReady) {
       try {
         final uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null && uid.isNotEmpty) {
@@ -299,7 +298,7 @@ class AmbulanceRepository {
   }
 
   Future<RegisteredAmbulance?> fetchAmbulanceById(String id) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
+    if (SupabaseBootstrap.isReady) {
       final profile =
           await SupabaseAmbulanceRepository.instance.fetchProfile(id);
       if (profile != null) {
@@ -530,7 +529,7 @@ class AmbulanceRepository {
 
     final driverIds = drivers.map((d) => d.id).toList();
 
-    if (DoctorPatientCutoverFlag.isEnabled) {
+    if (SupabaseBootstrap.isReady) {
       final broadcastId = 'broadcast-${DateTime.now().millisecondsSinceEpoch}';
       final booking = AmbulanceBooking(
         id: broadcastId,
@@ -702,7 +701,7 @@ class AmbulanceRepository {
       return false;
     }
     final resolvedAmbulance = ambulance;
-    if (DoctorPatientCutoverFlag.isEnabled) {
+    if (SupabaseBootstrap.isReady) {
       final existing = AmbulanceStore.instance.findBooking(broadcastId);
       final ok = await SupabaseAmbulanceRepository.instance
           .acceptAmbulanceRequest(

@@ -1,6 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../firestore_paths.dart';
+import '../../supabase/supabase_bootstrap.dart';
 
 class MedicineSuggestionRepository {
   MedicineSuggestionRepository._();
@@ -8,22 +6,20 @@ class MedicineSuggestionRepository {
   static final MedicineSuggestionRepository instance =
       MedicineSuggestionRepository._();
 
-  FirebaseFirestore get _db => FirebaseFirestore.instance;
-
   Future<void> submit({
     required String doctorId,
     required String medicineName,
   }) async {
     final trimmed = medicineName.trim();
-    if (trimmed.isEmpty) return;
+    if (trimmed.isEmpty || !SupabaseBootstrap.isReady) return;
 
-    await _db.collection(FirestorePaths.medicineSuggestions).add({
-      'medicineName': trimmed,
-      'medicineNameLower': trimmed.toLowerCase(),
-      'doctorId': doctorId,
+    await SupabaseBootstrap.client.from('medicine_suggestions').insert({
+      'medicine_name': trimmed,
+      'medicine_name_lower': trimmed.toLowerCase(),
+      'doctor_id': doctorId,
       'status': 'pending',
       'source': 'doctor_prescription',
-      'createdAt': FieldValue.serverTimestamp(),
+      'created_at': DateTime.now().toIso8601String(),
     });
   }
 }

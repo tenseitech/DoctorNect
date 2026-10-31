@@ -7,15 +7,36 @@ const path = require('path');
 const REPO_DIR = path.resolve(__dirname, '../../frontend/lib/core/firebase/repositories');
 
 function findMethodClose(lines, openBraceIdx) {
-  let depth = 0;
-  for (let j = openBraceIdx; j < lines.length; j += 1) {
+  let depth = 1;
+  for (let j = openBraceIdx + 1; j < lines.length; j += 1) {
     for (const ch of lines[j]) {
       if (ch === '{') depth += 1;
       if (ch === '}') depth -= 1;
     }
-    if (depth === 0 && j > openBraceIdx) return j;
+    if (depth === 0) return j;
   }
   return lines.length - 1;
+}
+
+/** Opening `{` of the method body (not optional/named parameter lists). */
+function findMethodBodyOpenBrace(lines, startIdx) {
+  let paren = 0;
+  let started = false;
+  for (let j = startIdx; j < lines.length; j += 1) {
+    const line = lines[j];
+    for (const ch of line) {
+      if (ch === '(') {
+        paren += 1;
+        started = true;
+      } else if (ch === ')') {
+        paren -= 1;
+      }
+    }
+    if (started && paren === 0 && /\)\s*(?:async\s*)?\{\s*$/.test(line.trim())) {
+      return j;
+    }
+  }
+  return -1;
 }
 
 function pruneFile(filePath) {
@@ -27,14 +48,12 @@ function pruneFile(filePath) {
     const methodMatch = line.match(/^(\s*)(?:@\w+\([^)]*\)\s*)?(Future<|Stream<|void |bool |String |int |List<|Map<|\w+[\w<>, ]*)\s+\w+\s*\(/);
     if (methodMatch && !line.trim().startsWith('class ') && !line.includes('=>')) {
       const indent = methodMatch[1];
-      let j = i;
-      while (j < lines.length && !lines[j].includes('{')) j += 1;
-      if (j >= lines.length) {
+      const openBrace = findMethodBodyOpenBrace(lines, i);
+      if (openBrace < 0) {
         out.push(line);
         i += 1;
         continue;
       }
-      const openBrace = j;
       const closeBrace = findMethodClose(lines, openBrace);
 
       let k = openBrace + 1;

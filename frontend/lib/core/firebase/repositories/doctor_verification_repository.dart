@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 
 import '../../auth/demo_auth_config.dart';
 import '../../supabase/repositories/supabase_doctor_repository.dart';
-import '../firebase_bootstrap.dart';
 
 /// Real-time doctor admin-approval status for the verification gate.
 class DoctorVerificationRepository {
@@ -41,25 +40,12 @@ class DoctorVerificationRepository {
   }
 
   Stream<bool> watchVerified(String doctorId) {
-    if (debugWatchVerifiedOverride != null) {
-      return debugWatchVerifiedOverride!(doctorId);
-    }
-
-    final docId = doctorId.trim();
-    if (docId.isEmpty || !FirebaseBootstrap.isReady) {
-      return Stream.value(false);
-    }
-
     return SupabaseDoctorRepository.instance
-        .watchDoctor(docId)
+        .watchDoctor(doctorId)
         .map(parseVerifiedFromDoctorData);
   }
 
   Future<bool> fetchVerified(String doctorId, {bool preferCache = false}) {
-    final docId = doctorId.trim();
-    if (docId.isEmpty || !FirebaseBootstrap.isReady) {
-      return Future.value(false);
-    }
-    return SupabaseDoctorRepository.instance.isDoctorVerified(docId);
+    return SupabaseDoctorRepository.instance.isDoctorVerified(doctorId);
   }
 }

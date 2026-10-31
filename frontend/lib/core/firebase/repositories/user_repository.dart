@@ -1,14 +1,9 @@
-import 'package:flutter/foundation.dart';
-import '../../supabase/supabase_bootstrap.dart';
-import '../../supabase/repositories/supabase_user_repository.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
-import '../../auth/demo_auth_config.dart';
 import '../../enums/user_type.dart';
-import '../../validators/form_validators.dart';
-import '../firestore_paths.dart';
+import '../../supabase/repositories/supabase_user_repository.dart';
 import '../models/medibond_user_profile.dart';
 
 class UserRepository {
@@ -17,58 +12,20 @@ class UserRepository {
   static final UserRepository instance = UserRepository._();
 
   @visibleForTesting
-  static FirebaseFirestore? debugFirestore;
-
-  @visibleForTesting
   static SupabaseUserRepository? debugSupabaseUserRepository;
 
-  FirebaseFirestore get _db => debugFirestore ?? FirebaseFirestore.instance;
-  SupabaseUserRepository get _supabaseRepo =>
+  /// Legacy test hook — Firestore user reads are removed; ignored at runtime.
+  @visibleForTesting
+  static dynamic debugFirestore;
+
+  SupabaseUserRepository get _repo =>
       debugSupabaseUserRepository ?? SupabaseUserRepository.instance;
 
   Future<DoctorNectUserProfile?> fetchProfile(
     String uid, {
     bool preferCache = true,
-  }) async {
-    if (SupabaseBootstrap.isReady) {
-      try {
-        final client = SupabaseBootstrap.client;
-        final res = await client
-            .from('users')
-            .select('*')
-            .or('id.eq.$uid,firebase_uid.eq.$uid')
-            .maybeSingle();
-        if (res != null) {
-          return DoctorNectUserProfile.fromMap(uid, {
-            'role': res['role'],
-            'profileId': res['profile_id'],
-            'displayName': res['display_name'],
-            'name': res['display_name'],
-            'email': res['email'],
-            'mobile': res['mobile'],
-            'profileCompleted': res['profile_completed'] ?? false,
-            'verified': res['verified'] ?? false,
-            'status': res['status'] ?? 'approved',
-            'photoUrl': res['photo_url'],
-            'photoS3Key': res['photo_s3_key'],
-            'photoS3Bucket': res['photo_s3_bucket'],
-            'photoStorageProvider': res['photo_storage_provider'],
-          });
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('[UserRepository] Supabase fetchProfile error: $e');
-        }
-      }
-    }
-    if (debugFirestore != null) {
-      final snap = await _db.collection('users').doc(uid).get();
-      if (snap.exists && snap.data() != null) {
-        return DoctorNectUserProfile.fromMap(uid, snap.data()!);
-      }
-    }
-    return null;
-  }
+  }) =>
+      _repo.fetchProfile(uid, preferCache: preferCache);
 
   Future<void> createProfile({
     required User user,
@@ -78,401 +35,46 @@ class UserRepository {
     String? mobile,
     bool mobileVerified = false,
     Map<String, dynamic>? roleData,
-  }) async {
-    if (debugFirestore != null) {
-      try {
-        await _supabaseRepo.createProfile(
-          user: user,
-          role: role,
-          profileId: profileId,
-          displayName: displayName,
-          mobile: mobile,
-          mobileVerified: mobileVerified,
-          roleData: roleData,
-        );
-      } catch (e) {
-        final roleString = switch (role) {
-          UserType.superAdmin => 'super_admin',
-          UserType.doctor => 'doctor',
-          UserType.medical => 'medical',
-          UserType.medicalStore => 'medicalStore',
-          UserType.patient => 'patient',
-          UserType.lab => 'lab',
-          UserType.ambulance => 'ambulance',
-        };
-        final batch = _db.batch();
-        batch.set(_db.collection('users').doc(user.uid), {
-          'role': roleString,
-          'profileId': profileId,
-          'displayName': displayName,
-          'email': user.email ?? '',
-          if (mobile != null) 'mobile': mobile,
-        });
-        batch.set(_db.collection('profile_claims').doc(profileId), {
-          'uid': user.uid,
-          'role': roleString,
-        });
-        await batch.commit();
-      }
-      return;
-    }
+  }) =>
+      _repo.createProfile(
+        user: user,
+        role: role,
+        profileId: profileId,
+        displayName: displayName,
+        mobile: mobile,
+        mobileVerified: mobileVerified,
+        roleData: roleData,
+      );
 
-    await _supabaseRepo.createProfile(
-      user: user,
-      role: role,
-      profileId: profileId,
-      displayName: displayName,
-      mobile: mobile,
-      mobileVerified: mobileVerified,
-      roleData: roleData,
-    );
-  }
-
-  /// Repairs auth accounts where Firebase Auth exists but users/{uid} was never saved.
   Future<DoctorNectUserProfile?> repairMissingProfile({
     required User user,
     required UserType expectedRole,
-  }) async {
-    final existing = await fetchProfile(user.uid, preferCache: false);
-    if (existing != null) return existing;
+  }) =>
+      _repo.repairMissingProfile(user: user, expectedRole: expectedRole);
 
-    final collection = switch (expectedRole) {
-      UserType.superAdmin => FirestorePaths.users,
-      UserType.doctor => FirestorePaths.doctors,
-      UserType.medical => FirestorePaths.medicalStores,
-      UserType.medicalStore => FirestorePaths.medicalStores,
-      UserType.patient => FirestorePaths.patients,
-      UserType.lab => FirestorePaths.labs,
-      UserType.ambulance => FirestorePaths.ambulances,
-    };
-
-    final roleDoc = await _findRoleDocForUser(
-      user: user,
-      collection: collection,
-    );
-    if (roleDoc == null) return null;
-
-    final data = roleDoc.data();
-    final profileId = switch (expectedRole) {
-      UserType.superAdmin => user.uid,
-      UserType.doctor => data['doctorId'] as String? ?? roleDoc.id,
-      UserType.medical => data['storeId'] as String? ?? roleDoc.id,
-      UserType.medicalStore => data['storeId'] as String? ?? roleDoc.id,
-      UserType.patient => data['patientId'] as String? ?? roleDoc.id,
-      UserType.lab => data['labId'] as String? ?? roleDoc.id,
-      UserType.ambulance => data['ambulanceId'] as String? ?? roleDoc.id,
-    };
-    final displayName = switch (expectedRole) {
-      UserType.superAdmin => 'Super Admin',
-      UserType.doctor => data['name'] as String? ?? '',
-      UserType.medical =>
-        data['storeName'] as String? ?? data['name'] as String? ?? '',
-      UserType.medicalStore =>
-        data['storeName'] as String? ?? data['name'] as String? ?? '',
-      UserType.patient => data['name'] as String? ?? '',
-      UserType.lab =>
-        data['labName'] as String? ?? data['name'] as String? ?? '',
-      UserType.ambulance => data['serviceName'] as String? ??
-          data['driverName'] as String? ??
-          data['name'] as String? ??
-          '',
-    };
-
-    final roleString = switch (expectedRole) {
-      UserType.superAdmin => 'super_admin',
-      UserType.doctor => 'doctor',
-      UserType.medical => 'medical',
-      UserType.medicalStore => 'medicalStore',
-      UserType.patient => 'patient',
-      UserType.lab => 'lab',
-      UserType.ambulance => 'ambulance',
-    };
-
-    final batch = _db.batch();
-    if (roleString != 'super_admin') {
-      final claimRef = _db.collection('profile_claims').doc(profileId);
-      batch.set(
-          claimRef,
-          {
-            'uid': user.uid,
-            'role': roleString,
-            'createdAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
-    }
-
-    final userRef = _db.collection(FirestorePaths.users).doc(user.uid);
-    batch.set(userRef, {
-      'role': roleString,
-      'profileId': profileId,
-      'displayName': displayName,
-      'email': _normalizeEmail(
-        user.email?.trim().isNotEmpty == true
-            ? user.email
-            : (data['email'] as String?),
-      ),
-      if (data['mobile'] is String) 'mobile': data['mobile'],
-      if (data['phone'] is String) 'mobile': data['phone'],
-      if (kDebugMode && expectedRole == UserType.doctor &&
-          DemoAuthConfig.isDemoDoctorPhone(
-            data['mobile'] as String? ?? data['phone'] as String?,
-          )) ...{
-        'verified': true,
-        'verificationStatus': 'verified',
-        'status': 'approved',
-        'profileCompleted': true,
-      },
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
-    await batch.commit();
-
-    return fetchProfile(user.uid, preferCache: false);
-  }
-
-  /// Links a Google/Apple session to an existing account saved under another Auth uid.
   Future<DoctorNectUserProfile?> relinkOAuthProfileByEmail({
     required User user,
     required UserType expectedRole,
-  }) async {
-    final email = user.email?.trim();
-    if (email == null || email.isEmpty) return null;
+  }) =>
+      _repo.relinkOAuthProfileByEmail(user: user, expectedRole: expectedRole);
 
-    final roleValue = switch (expectedRole) {
-      UserType.superAdmin => 'super_admin',
-      UserType.doctor => 'doctor',
-      UserType.medical => 'medical',
-      UserType.medicalStore => 'medicalStore',
-      UserType.patient => 'patient',
-      UserType.lab => 'lab',
-      UserType.ambulance => 'ambulance',
-    };
+  Future<DoctorNectUserProfile?> findProfileByEmail(String email) =>
+      _repo.findProfileByEmail(email);
 
-    final collection = switch (expectedRole) {
-      UserType.superAdmin => FirestorePaths.users,
-      UserType.doctor => FirestorePaths.doctors,
-      UserType.medical => FirestorePaths.medicalStores,
-      UserType.medicalStore => FirestorePaths.medicalStores,
-      UserType.patient => FirestorePaths.patients,
-      UserType.lab => FirestorePaths.labs,
-      UserType.ambulance => FirestorePaths.ambulances,
-    };
-
-    try {
-      for (final candidate in _emailCandidates(email)) {
-        final snap = await _db
-            .collection(FirestorePaths.users)
-            .where('role', isEqualTo: roleValue)
-            .where('email', isEqualTo: candidate)
-            .limit(1)
-            .get(const GetOptions(source: Source.server));
-        if (snap.docs.isEmpty) continue;
-
-        final existingDoc = snap.docs.first;
-        final data = existingDoc.data();
-        if (!_emailsMatch(data['email'] as String?, email)) continue;
-
-        final profileId = data['profileId'] as String? ?? '';
-        if (profileId.isEmpty) continue;
-
-        final displayName = data['displayName'] as String? ??
-            user.displayName ??
-            switch (expectedRole) {
-              UserType.superAdmin => 'Super Admin',
-              UserType.doctor => 'Doctor',
-              UserType.medical => 'Medical',
-              UserType.medicalStore => 'Medical Store',
-              UserType.patient => 'Patient',
-              UserType.lab => 'Lab',
-              UserType.ambulance => 'Ambulance',
-            };
-
-        final normalizedEmail = _normalizeEmail(email);
-        final roleRef = _db.collection(collection).doc(profileId);
-        try {
-          await roleRef.update({
-            'ownerUid': user.uid,
-            'email': normalizedEmail,
-          });
-        } on FirebaseException {
-          await roleRef.set({
-            'ownerUid': user.uid,
-            'email': normalizedEmail,
-          }, SetOptions(merge: true));
-        }
-
-        await _db.collection(FirestorePaths.users).doc(user.uid).set({
-          'role': roleValue,
-          'profileId': profileId,
-          'displayName': displayName,
-          'email': normalizedEmail,
-          if (data['mobile'] is String) 'mobile': data['mobile'],
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
-        return await fetchProfile(user.uid, preferCache: false);
-      }
-    } on FirebaseException {
-      return null;
-    }
-    return null;
-  }
-
-  /// Searches for a user profile by email address across user documents.
-  Future<DoctorNectUserProfile?> findProfileByEmail(String email) async {
-    final normalized = _normalizeEmail(email);
-    if (normalized == null || normalized.isEmpty) return null;
-    for (final candidate in _emailCandidates(normalized)) {
-      try {
-        final snap = await _db
-            .collection(FirestorePaths.users)
-            .where('email', isEqualTo: candidate)
-            .limit(1)
-            .get(const GetOptions(source: Source.server));
-        if (snap.docs.isNotEmpty) {
-          return await fetchProfile(snap.docs.first.id, preferCache: false);
-        }
-      } catch (_) {}
-    }
-    return null;
-  }
-
-  Future<QueryDocumentSnapshot<Map<String, dynamic>>?> _findRoleDocForUser({
-    required User user,
-    required String collection,
-  }) async {
-    try {
-      final byOwner = await _db
-          .collection(collection)
-          .where('ownerUid', isEqualTo: user.uid)
-          .limit(1)
-          .get(const GetOptions(source: Source.server));
-      if (byOwner.docs.isNotEmpty) {
-        final doc = byOwner.docs.first;
-        await _ensureRoleDocEmail(doc, user.email);
-        return doc;
-      }
-    } on FirebaseException {
-      return null;
-    }
-
-    if (collection == FirestorePaths.ambulances) {
-      try {
-        final byAuth = await _db
-            .collection(collection)
-            .where('authUid', isEqualTo: user.uid)
-            .limit(1)
-            .get(const GetOptions(source: Source.server));
-        if (byAuth.docs.isNotEmpty) {
-          return byAuth.docs.first;
-        }
-      } on FirebaseException {
-        return null;
-      }
-    }
-
-    return null;
-  }
-
-  Iterable<String> _emailCandidates(String email) sync* {
-    final trimmed = email.trim();
-    yield trimmed;
-    yield trimmed.toLowerCase();
-  }
-
-  bool _emailsMatch(String? a, String? b) {
-    if (a == null || b == null) return false;
-    return a.trim().toLowerCase() == b.trim().toLowerCase();
-  }
-
-  String? _normalizeEmail(String? email) {
-    if (email == null) return null;
-    final trimmed = email.trim().toLowerCase();
-    if (trimmed.isEmpty || trimmed.endsWith('@patient.doctornect.com'))
-      return null;
-    return trimmed;
-  }
-
-  Future<bool> _activeUsersDocExists(String uid) async {
-    final normalized = uid.trim();
-    if (normalized.isEmpty) return false;
-    try {
-      final snap = await _db
-          .collection(FirestorePaths.users)
-          .doc(normalized)
-          .get(const GetOptions(source: Source.server));
-      return snap.exists;
-    } on FirebaseException {
-      return false;
-    }
-  }
-
-  String _accountUidFromRoleDoc(UserType role, Map<String, dynamic> data) {
-    if (role == UserType.ambulance) {
-      final authUid = data['authUid'] as String? ?? '';
-      if (authUid.trim().isNotEmpty) return authUid.trim();
-    }
-    return (data['ownerUid'] as String? ?? '').trim();
-  }
-
-  Future<void> _ensureRoleDocEmail(
-    QueryDocumentSnapshot<Map<String, dynamic>> roleDoc,
-    String? email,
-  ) async {
-    final normalized = _normalizeEmail(email);
-    if (normalized == null || normalized.isEmpty) return;
-    final stored = roleDoc.data()['email'] as String?;
-    if (_emailsMatch(stored, normalized)) return;
-    try {
-      await roleDoc.reference.update({'email': normalized});
-    } on FirebaseException {
-      // Non-fatal — profile repair can continue without email backfill.
-    }
-  }
-
-  /// Finds account email for phone login (no OTP). Tries common stored formats.
   Future<String?> findEmailByMobile({
     required UserType role,
     required String mobile,
-  }) async {
-    final digits = FormValidators.mobileDigits(mobile);
-    if (digits == null) return null;
+  }) =>
+      _repo.findEmailByMobile(role: role, mobile: mobile);
 
-    final roleValue = switch (role) {
-      UserType.superAdmin => 'super_admin',
-      UserType.doctor => 'doctor',
-      UserType.medicalStore || UserType.medical => 'medicalStore',
-      UserType.patient => 'patient',
-      UserType.lab => 'lab',
-      UserType.ambulance => 'ambulance',
-    };
+  Future<DoctorNectUserProfile?> findProfileByMobile({
+    required UserType role,
+    required String mobile,
+  }) =>
+      _repo.findProfileByMobile(role: role, mobile: mobile);
 
-    final candidates = <String>{digits, '+91$digits', '91$digits', '0$digits'};
-
-    for (final candidate in candidates) {
-      try {
-        final snap = await _db
-            .collection(FirestorePaths.users)
-            .where('role', isEqualTo: roleValue)
-            .where('mobile', isEqualTo: candidate)
-            .limit(1)
-            .get(const GetOptions(source: Source.server));
-
-        if (snap.docs.isEmpty) continue;
-        final email = snap.docs.first.data()['email'] as String?;
-        if (email != null && email.trim().isNotEmpty) {
-          return email.trim();
-        }
-      } on FirebaseException catch (e) {
-        if (e.code == 'permission-denied' || e.code == 'unauthenticated')
-          return null;
-      } catch (_) {}
-    }
-
-    return null;
-  }
+  Future<UserType?> findRoleWithMobile(String mobile) =>
+      _repo.findRoleWithMobile(mobile);
 
   Future<void> ensureDemoProfile({
     required User user,
@@ -481,18 +83,53 @@ class UserRepository {
     required String displayName,
     String? mobile,
     Map<String, dynamic>? roleData,
-  }) async {
-    final existing = await fetchProfile(user.uid);
-    if (existing != null) return;
-    await createProfile(
-      user: user,
-      role: role,
-      profileId: profileId,
-      displayName: displayName,
-      mobile: mobile,
-      roleData: roleData,
-    );
-  }
+  }) =>
+      _repo.ensureDemoProfile(
+        user: user,
+        role: role,
+        profileId: profileId,
+        displayName: displayName,
+        mobile: mobile,
+        roleData: roleData,
+      );
+
+  Future<String?> checkDuplicateAccountExists({
+    required String email,
+    required String? mobile,
+    required UserType currentRole,
+  }) =>
+      _repo.checkDuplicateAccountExists(
+        email: email,
+        mobile: mobile,
+        currentRole: currentRole,
+      );
+
+  Future<String?> checkDoctorCouncilNumberExists({
+    required String councilNumber,
+    required String doctorId,
+  }) =>
+      _repo.checkDoctorCouncilNumberExists(
+        councilNumber: councilNumber,
+        doctorId: doctorId,
+      );
+
+  Future<void> deletePendingAuthUser(User user) =>
+      _repo.deletePendingAuthUser(user);
+
+  Future<String?> validateNewRegistration({
+    required UserType role,
+    required String email,
+    required String? mobile,
+    required String profileId,
+    Map<String, dynamic>? roleData,
+  }) =>
+      _repo.validateNewRegistration(
+        role: role,
+        email: email,
+        mobile: mobile,
+        profileId: profileId,
+        roleData: roleData,
+      );
 
   Future<void> deleteAccount({required User user}) async {
     final callable = FirebaseFunctions.instanceFor(region: 'asia-south1')
@@ -505,384 +142,5 @@ class UserRepository {
         message: 'Could not delete account. Please try again.',
       );
     }
-  }
-
-  Future<String?> checkDuplicateAccountExists({
-    required String email,
-    required String? mobile,
-    required UserType currentRole,
-  }) async {
-    try {
-      final normEmail = _normalizeEmail(email);
-      if (normEmail != null && normEmail.isNotEmpty) {
-        final existingRole = await _findRoleWithEmail(normEmail);
-        if (existingRole != null) {
-          if (existingRole != currentRole) {
-            return 'An account with email "$normEmail" is already registered under the ${_roleLabel(existingRole)} role. Duplicate registration across different roles is not allowed.';
-          } else {
-            return 'An account with email "$normEmail" is already registered.';
-          }
-        }
-      }
-
-      if (mobile != null && mobile.trim().isNotEmpty) {
-        final digits = FormValidators.registrationMobileDigits(mobile) ??
-            FormValidators.mobileDigits(mobile);
-        if (digits != null && digits.isNotEmpty) {
-          final existingRole = await _findRoleWithMobile(digits);
-          if (existingRole != null) {
-            if (existingRole != currentRole) {
-              return 'An account with mobile number "$mobile" is already registered under the ${_roleLabel(existingRole)} role. Duplicate registration across different roles is not allowed.';
-            } else {
-              return 'An account with mobile number "$mobile" is already registered.';
-            }
-          }
-        }
-      }
-
-      return null;
-    } on FirebaseException catch (e) {
-      if (e.code == 'permission-denied' || e.code == 'unauthenticated')
-        return null;
-      return 'Could not validate duplicate account details (${e.code}). Check your connection and try again.';
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<String?> checkDoctorCouncilNumberExists({
-    required String councilNumber,
-    required String doctorId,
-  }) async {
-    try {
-      final trimmed = councilNumber.trim();
-      if (trimmed.isEmpty) return null;
-      final snap = await _db
-          .collection(FirestorePaths.doctors)
-          .where('verified', isEqualTo: true)
-          .where('councilNumber', isEqualTo: trimmed)
-          .limit(1)
-          .get(const GetOptions(source: Source.server));
-      if (snap.docs.any((doc) => doc.id != doctorId)) {
-        return 'This council registration number is already associated with another account.';
-      }
-      return null;
-    } on FirebaseException catch (e) {
-      if (e.code == 'permission-denied') return null;
-      return 'Could not validate council registration number. Check your connection and try again.';
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> _deleteAuthUserQuietly(User user) async {
-    if (kDebugMode) {
-      debugPrint(
-        '[UserRepository] Pending auth user deletion skipped for ${user.uid}',
-      );
-    }
-  }
-
-  Future<void> deletePendingAuthUser(User user) => _deleteAuthUserQuietly(user);
-
-  Future<String?> validateNewRegistration({
-    required UserType role,
-    required String email,
-    required String? mobile,
-    required String profileId,
-    Map<String, dynamic>? roleData,
-  }) async {
-    final duplicateError = await checkDuplicateAccountExists(
-      email: email,
-      mobile: mobile,
-      currentRole: role,
-    );
-    if (duplicateError != null) return duplicateError;
-
-    if (role == UserType.doctor) {
-      final councilNumber = roleData?['councilNumber'] as String?;
-      if (councilNumber != null && councilNumber.trim().isNotEmpty) {
-        return checkDoctorCouncilNumberExists(
-          councilNumber: councilNumber,
-          doctorId: profileId,
-        );
-      }
-    }
-    return null;
-  }
-
-  Future<UserType?> _findRoleWithEmail(String email) async {
-    final norm = _normalizeEmail(email);
-    if (norm == null || norm.isEmpty) return null;
-    final candidates = _emailCandidates(norm).toSet();
-    for (final candidate in candidates) {
-      if (candidate.isEmpty) continue;
-      try {
-        final userSnap = await _db
-            .collection(FirestorePaths.users)
-            .where('email', isEqualTo: candidate)
-            .limit(1)
-            .get(const GetOptions(source: Source.server));
-        if (userSnap.docs.isNotEmpty) {
-          final role = _parseRoleString(
-            userSnap.docs.first.data()['role'] as String?,
-          );
-          if (role != null) return role;
-        }
-      } on FirebaseException catch (e) {
-        if (e.code != 'permission-denied') rethrow;
-      }
-    }
-    return null;
-  }
-
-  Future<UserType?> findRoleWithMobile(String mobile) {
-    final digits = FormValidators.registrationMobileDigits(mobile) ??
-        FormValidators.mobileDigits(mobile) ??
-        mobile.trim();
-    return _findRoleWithMobile(digits);
-  }
-
-  Set<String> _buildMobileCandidates(String rawMobile) {
-    final digits = FormValidators.registrationMobileDigits(rawMobile) ??
-        FormValidators.mobileDigits(rawMobile) ??
-        rawMobile.replaceAll(RegExp(r'[^\d]'), '');
-
-    final candidates = <String>{};
-    final trimmed = rawMobile.trim();
-    if (trimmed.isNotEmpty) candidates.add(trimmed);
-    if (digits.isNotEmpty) {
-      candidates.add(digits);
-      candidates.add('+91$digits');
-      candidates.add('+91 $digits');
-      candidates.add('+91-$digits');
-      candidates.add('91$digits');
-      candidates.add('0$digits');
-    }
-    return candidates;
-  }
-
-  Future<DoctorNectUserProfile?> findProfileByMobile({
-    required UserType role,
-    required String mobile,
-  }) async {
-    final digits = FormValidators.registrationMobileDigits(mobile) ??
-        FormValidators.mobileDigits(mobile) ??
-        mobile.trim();
-    if (digits.isEmpty) return null;
-
-    final candidates = _buildMobileCandidates(mobile);
-    const fields = ['mobile', 'phone', 'phoneNumber', 'mobileNumber'];
-    final roleStr = switch (role) {
-      UserType.superAdmin => 'super_admin',
-      UserType.doctor => 'doctor',
-      UserType.medical => 'medical',
-      UserType.medicalStore => 'medicalStore',
-      UserType.patient => 'patient',
-      UserType.lab => 'lab',
-      UserType.ambulance => 'ambulance',
-    };
-
-    // 1. Search users collection across all candidate formats & field names in parallel
-    final userFutures = <Future<QuerySnapshot<Map<String, dynamic>>?>>[];
-    for (final candidate in candidates) {
-      for (final field in fields) {
-        userFutures.add(
-          _db
-              .collection(FirestorePaths.users)
-              .where('role', isEqualTo: roleStr)
-              .where(field, isEqualTo: candidate)
-              .limit(1)
-              .get(const GetOptions(source: Source.server))
-              .then<QuerySnapshot<Map<String, dynamic>>?>(
-                (s) => s,
-                onError: (_) => null,
-              ),
-        );
-      }
-    }
-    final userSnaps = await Future.wait(userFutures);
-    for (final userSnap in userSnaps) {
-      if (userSnap != null && userSnap.docs.isNotEmpty) {
-        final doc = userSnap.docs.first;
-        if (doc.data()['mobile'] != digits) {
-          _db.collection(FirestorePaths.users).doc(doc.id).set({
-            'mobile': digits,
-          }, SetOptions(merge: true));
-        }
-        return fetchProfile(doc.id, preferCache: true);
-      }
-    }
-
-    // 2. Fallback: Search role collection (patients, doctors, etc.) in parallel
-    final collPath = switch (role) {
-      UserType.superAdmin => FirestorePaths.users,
-      UserType.doctor => FirestorePaths.doctors,
-      UserType.medical => FirestorePaths.medicalStores,
-      UserType.medicalStore => FirestorePaths.medicalStores,
-      UserType.patient => FirestorePaths.patients,
-      UserType.lab => FirestorePaths.labs,
-      UserType.ambulance => FirestorePaths.ambulances,
-    };
-
-    final roleFutures = <Future<QuerySnapshot<Map<String, dynamic>>?>>[];
-    for (final candidate in candidates) {
-      for (final field in fields) {
-        roleFutures.add(
-          _db
-              .collection(collPath)
-              .where(field, isEqualTo: candidate)
-              .limit(1)
-              .get(const GetOptions(source: Source.server))
-              .then<QuerySnapshot<Map<String, dynamic>>?>(
-                (s) => s,
-                onError: (_) => null,
-              ),
-        );
-      }
-    }
-    final roleSnaps = await Future.wait(roleFutures);
-    for (final snap in roleSnaps) {
-      if (snap != null && snap.docs.isNotEmpty) {
-        final doc = snap.docs.first;
-        var accountUid = _accountUidFromRoleDoc(role, doc.data());
-        if (accountUid.isEmpty || !await _activeUsersDocExists(accountUid)) {
-          final profileId = doc.id.trim();
-          if (profileId.isNotEmpty) {
-            try {
-              final userSnap = await _db
-                  .collection(FirestorePaths.users)
-                  .where('profileId', isEqualTo: profileId)
-                  .limit(1)
-                  .get(const GetOptions(source: Source.server));
-              if (userSnap.docs.isNotEmpty) {
-                accountUid = userSnap.docs.first.id;
-              }
-            } on FirebaseException {
-              continue;
-            }
-          }
-        }
-        if (accountUid.isEmpty || !await _activeUsersDocExists(accountUid)) {
-          continue;
-        }
-        return fetchProfile(accountUid, preferCache: true);
-      }
-    }
-
-    return null;
-  }
-
-  Future<UserType?> _findRoleWithMobile(String digits) async {
-    final candidates = _buildMobileCandidates(digits);
-    const fields = ['mobile', 'phone', 'phoneNumber', 'mobileNumber'];
-
-    // 1. Search users collection in parallel
-    final userFutures = <Future<QuerySnapshot<Map<String, dynamic>>?>>[];
-    for (final candidate in candidates) {
-      for (final field in fields) {
-        userFutures.add(
-          _db
-              .collection(FirestorePaths.users)
-              .where(field, isEqualTo: candidate)
-              .limit(1)
-              .get(const GetOptions(source: Source.server))
-              .then<QuerySnapshot<Map<String, dynamic>>?>(
-                (s) => s,
-                onError: (_) => null,
-              ),
-        );
-      }
-    }
-    final userSnaps = await Future.wait(userFutures);
-    for (final userSnap in userSnaps) {
-      if (userSnap != null && userSnap.docs.isNotEmpty) {
-        final doc = userSnap.docs.first;
-        final role = _parseRoleString(doc.data()['role'] as String?);
-        if (role != null) {
-          if (doc.data()['mobile'] != digits) {
-            _db.collection(FirestorePaths.users).doc(doc.id).set({
-              'mobile': digits,
-            }, SetOptions(merge: true));
-          }
-          return role;
-        }
-      }
-    }
-
-    // 2. Fallback: Search role collections in parallel
-    final roleCollections = <UserType, String>{
-      UserType.patient: FirestorePaths.patients,
-      UserType.doctor: FirestorePaths.doctors,
-      UserType.medical: FirestorePaths.medicalStores,
-      UserType.medicalStore: FirestorePaths.medicalStores,
-      UserType.lab: FirestorePaths.labs,
-      UserType.ambulance: FirestorePaths.ambulances,
-    };
-
-    final roleFutures = <Future<
-        ({UserType role, QuerySnapshot<Map<String, dynamic>> snap})?>>[];
-    for (final entry in roleCollections.entries) {
-      final role = entry.key;
-      final collPath = entry.value;
-
-      for (final candidate in candidates) {
-        for (final field in fields) {
-          roleFutures.add(
-            _db
-                .collection(collPath)
-                .where(field, isEqualTo: candidate)
-                .limit(1)
-                .get(const GetOptions(source: Source.server))
-                .then<
-                    ({
-                      UserType role,
-                      QuerySnapshot<Map<String, dynamic>> snap
-                    })?>(
-                  (s) => s.docs.isNotEmpty ? (role: role, snap: s) : null,
-                  onError: (_) => null,
-                ),
-          );
-        }
-      }
-    }
-    final roleResults = await Future.wait(roleFutures);
-    for (final match in roleResults) {
-      if (match != null && match.snap.docs.isNotEmpty) {
-        final doc = match.snap.docs.first;
-        final accountUid = _accountUidFromRoleDoc(match.role, doc.data());
-        if (accountUid.isEmpty || !await _activeUsersDocExists(accountUid)) {
-          continue;
-        }
-        return match.role;
-      }
-    }
-
-    return null;
-  }
-
-  UserType? _parseRoleString(String? roleStr) {
-    return switch (roleStr) {
-      'super_admin' || 'superAdmin' => UserType.superAdmin,
-      'doctor' => UserType.doctor,
-      'patient' => UserType.patient,
-      'medical' => UserType.medical,
-      'medicalStore' => UserType.medicalStore,
-      'lab' => UserType.lab,
-      'ambulance' => UserType.ambulance,
-      _ => null,
-    };
-  }
-
-  String _roleLabel(UserType role) {
-    return switch (role) {
-      UserType.superAdmin => 'Super Admin',
-      UserType.doctor => 'Doctor',
-      UserType.patient => 'Patient',
-      UserType.medical => 'Medical',
-      UserType.medicalStore => 'Pharmacy / Medical Store',
-      UserType.lab => 'Diagnostic Lab',
-      UserType.ambulance => 'Ambulance Service',
-    };
   }
 }

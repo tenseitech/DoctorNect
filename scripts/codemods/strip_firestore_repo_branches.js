@@ -21,19 +21,14 @@ function stripFile(filePath) {
   let src = fs.readFileSync(filePath, 'utf8');
   const original = src;
 
-  // Pattern: if (DoctorPatientCutoverFlag.isEnabled[ && ...]) { return ...; }
+  // Replace cutover guard blocks whose body is a single return (possibly multiline).
   src = src.replace(
-    /if\s*\(\s*DoctorPatientCutoverFlag\.isEnabled(?:[^)]*)\)\s*\{\s*return\s+([\s\S]*?);\s*\}\s*\n/g,
-    (match, inner) => {
-      const trimmed = inner.trim();
-      return `return ${trimmed};\n`;
+    /if\s*\(\s*DoctorPatientCutoverFlag\.isEnabled[^)]*\)\s*\{([\s\S]*?)\n\s*\}\s*\n/g,
+    (match, body) => {
+      const trimmed = body.trim();
+      if (!/^return\s/m.test(trimmed)) return match;
+      return `${trimmed}\n`;
     },
-  );
-
-  // Pattern: if (DoctorPatientCutoverFlag.isEnabled) { return expr; }  (stream)
-  src = src.replace(
-    /if\s*\(\s*DoctorPatientCutoverFlag\.isEnabled(?:[^)]*)\)\s*\{\s*return\s+([^;]+);\s*\}\s*\n/g,
-    'return $1;\n',
   );
 
   // Remove unused firestore imports if cloud_firestore no longer referenced

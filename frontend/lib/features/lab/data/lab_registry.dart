@@ -152,8 +152,7 @@ class LabRegistry extends ChangeNotifier {
       pincode: pincode,
       phone: phone,
       email: normalizedEmail,
-      gstNumber: gstNumber,
-      clearGstNumber: clearGstNumber,
+      gstNumber: clearGstNumber ? null : (gstNumber ?? current.gstNumber),
       verified: verified,
     );
     if (labName != null && labId == LabSession.loggedInLabId) {

@@ -1,9 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../enums/user_type.dart';
 import '../../supabase/supabase_bootstrap.dart';
-import '../firebase_bootstrap.dart';
-import '../firestore_paths.dart';
 import 'doctor_account_repository.dart';
 
 /// Shared admin-approval and provider lifecycle gate for all account roles.
@@ -36,7 +32,6 @@ class RoleAccountRepository {
     };
   }
 
-  /// Deactivates provider profile across Supabase (RPC) and Firestore
   Future<void> deactivateProvider({
     required UserType role,
     required String profileId,
@@ -50,40 +45,12 @@ class RoleAccountRepository {
       return;
     }
 
-    if (SupabaseBootstrap.isReady) {
-      await SupabaseBootstrap.client.rpc('deactivate_provider_profile');
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError('Supabase is not available.');
     }
-
-    if (FirebaseBootstrap.isReady) {
-      final collectionName = switch (role) {
-        UserType.lab => FirestorePaths.labs,
-        UserType.medicalStore || UserType.medical => FirestorePaths.medicalStores,
-        UserType.ambulance => FirestorePaths.ambulances,
-        _ => null,
-      };
-      if (collectionName != null) {
-        final batch = FirebaseFirestore.instance.batch();
-        batch.update(
-          FirebaseFirestore.instance.collection(collectionName).doc(profileId),
-          {
-            'deactivated': true,
-            'verified': false,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-        );
-        batch.update(
-          FirebaseFirestore.instance.collection(FirestorePaths.users).doc(ownerUid),
-          {
-            'deactivated': true,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-        );
-        await batch.commit();
-      }
-    }
+    await SupabaseBootstrap.client.rpc('deactivate_provider_profile');
   }
 
-  /// Reactivates provider profile across Supabase (RPC) and Firestore
   Future<void> reactivateProvider({
     required UserType role,
     required String profileId,
@@ -97,37 +64,10 @@ class RoleAccountRepository {
       return;
     }
 
-    if (SupabaseBootstrap.isReady) {
-      await SupabaseBootstrap.client.rpc('reactivate_provider_profile');
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError('Supabase is not available.');
     }
-
-    if (FirebaseBootstrap.isReady) {
-      final collectionName = switch (role) {
-        UserType.lab => FirestorePaths.labs,
-        UserType.medicalStore || UserType.medical => FirestorePaths.medicalStores,
-        UserType.ambulance => FirestorePaths.ambulances,
-        _ => null,
-      };
-      if (collectionName != null) {
-        final batch = FirebaseFirestore.instance.batch();
-        batch.update(
-          FirebaseFirestore.instance.collection(collectionName).doc(profileId),
-          {
-            'deactivated': false,
-            'verified': false,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-        );
-        batch.update(
-          FirebaseFirestore.instance.collection(FirestorePaths.users).doc(ownerUid),
-          {
-            'deactivated': false,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-        );
-        await batch.commit();
-      }
-    }
+    await SupabaseBootstrap.client.rpc('reactivate_provider_profile');
   }
 }
 

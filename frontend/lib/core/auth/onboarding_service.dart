@@ -76,8 +76,6 @@ class OnboardingService {
     final trimmedName = fullName.trim();
     final cleanDigits =
         FormValidators.mobileDigits(mobileDigits) ?? mobileDigits;
-    final formattedMobile = FormValidators.formatFullPhone('+91', cleanDigits);
-
     String? uid = FirebaseAuth.instance.currentUser?.uid;
 
     // If no Firebase Auth session exists yet, ensure one (e.g. for phone or ambulance)

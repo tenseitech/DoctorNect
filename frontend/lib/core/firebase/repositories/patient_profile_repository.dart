@@ -1,16 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import '../../supabase/supabase_bootstrap.dart';
 
-import '../../../features/patient/records/data/health_record_file_store.dart';
 import '../../../features/patient/records/models/health_record_models.dart';
-import '../../config/doctor_patient_cutover_flag.dart';
 import '../../supabase/repositories/supabase_health_records_repository.dart';
 import '../../supabase/repositories/supabase_patient_profile_repository.dart';
-import '../firestore_paths.dart';
-import '../firebase_bootstrap.dart';
-import '../firestore_read_helper.dart';
+import '../../supabase/supabase_bootstrap.dart';
 
 class PatientProfileRepository {
   PatientProfileRepository._();
@@ -106,22 +100,8 @@ class PatientProfileRepository {
     String patientId, {
     bool preferCache = true,
   }) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabasePatientProfileRepository.instance
+    return SupabasePatientProfileRepository.instance
           .fetchPatientDocument(patientId);
-    }
-    if (!FirebaseBootstrap.isReady) return null;
-    try {
-      final snap = await FirestoreReadHelper.getDocument(
-        reference: FirebaseFirestore.instance
-            .collection(FirestorePaths.patients)
-            .doc(patientId),
-        preferCache: preferCache,
-      );
-      return snap.data();
-    } catch (e) {
-      return null;
-    }
   }
 
   /// Records a patient↔doctor relationship for rules-side care-team grant checks.
@@ -133,265 +113,90 @@ class PatientProfileRepository {
     String? fromDoctorId,
     String? referralId,
   }) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabasePatientProfileRepository.instance.ensureDoctorPatientLink(
+    return SupabasePatientProfileRepository.instance.ensureDoctorPatientLink(
         patientId: patientId,
         doctorId: doctorId,
         source: source,
         fromDoctorId: fromDoctorId,
         referralId: referralId,
       );
-    }
-    if (!FirebaseBootstrap.isReady || patientId.isEmpty || doctorId.isEmpty)
-      return false;
-    if (!isRegisteredPatientId(patientId)) return false;
-
-    final payload = <String, dynamic>{
-      'doctorId': doctorId,
-      'source': source,
-      'createdAt': FieldValue.serverTimestamp(),
-      if (fromDoctorId != null && fromDoctorId.isNotEmpty)
-        'fromDoctorId': fromDoctorId,
-      if (referralId != null && referralId.isNotEmpty) 'referralId': referralId,
-    };
-
-    try {
-      await FirebaseFirestore.instance
-          .collection(FirestorePaths.patients)
-          .doc(patientId)
-          .collection('doctor_links')
-          .doc(doctorId)
-          .set(payload, SetOptions(merge: true));
-      return true;
-    } catch (_) {
-      return false;
-    }
   }
 
   Future<bool> grantDoctorCareTeamAccess({
     required String patientId,
     required String doctorId,
   }) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabasePatientProfileRepository.instance
+    return SupabasePatientProfileRepository.instance
           .grantDoctorCareTeamAccess(
         patientId: patientId,
         doctorId: doctorId,
       );
-    }
-    if (!FirebaseBootstrap.isReady || patientId.isEmpty || doctorId.isEmpty)
-      return false;
-    if (isWalkInPatientId(patientId)) return false;
-    if (!isRegisteredPatientId(patientId)) return false;
-    try {
-      await FirebaseFirestore.instance
-          .collection(FirestorePaths.patients)
-          .doc(patientId)
-          .set({
-        'careTeamDoctorIds': FieldValue.arrayUnion([doctorId]),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-      return true;
-    } catch (_) {
-      return false;
-    }
   }
 
   Future<void> savePatientDocument(
     String patientId,
     Map<String, dynamic> data,
   ) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabasePatientProfileRepository.instance
+    return SupabasePatientProfileRepository.instance
           .savePatientDocument(patientId, data);
-    }
-    if (!FirebaseBootstrap.isReady) return;
-    await FirebaseFirestore.instance
-        .collection(FirestorePaths.patients)
-        .doc(patientId)
-        .set({
-      ...data,
-      'patientId': patientId,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
   }
 
   Future<List<HealthRecord>> fetchHealthRecords(String patientId) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseHealthRecordsRepository.instance
+    return SupabaseHealthRecordsRepository.instance
           .fetchForPatient(patientId);
-    }
-    if (!FirebaseBootstrap.isReady) return const [];
-
-    try {
-      final snapshot = await FirestoreReadHelper.getQuery(
-        query: FirebaseFirestore.instance
-            .collection(FirestorePaths.healthRecords)
-            .where('patientId', isEqualTo: patientId)
-            .limit(50),
-      );
-
-      final records = snapshot.docs.map((doc) {
-        final data = doc.data();
-        final storageStatus = data['fileStorage'] as String?;
-        return HealthRecord(
-          id: doc.id,
-          title: data['title'] as String? ?? 'Record',
-          type: HealthRecordType.values.byName(
-            data['type'] as String? ?? 'other',
-          ),
-          date: (data['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
-          source: RecordSource.values.byName(
-            data['source'] as String? ?? 'selfUploaded',
-          ),
-          fileName: data['fileName'] as String? ?? '',
-          doctorName: data['doctorName'] as String?,
-          labName: data['labName'] as String?,
-          isImage: data['isImage'] as bool? ?? false,
-          notes: data['notes'] as String?,
-          sharedWithDoctors: data['sharedWithDoctors'] as bool? ?? false,
-          fileStorage: storageStatus != null
-              ? HealthRecordFileStorage.values.byName(storageStatus)
-              : HealthRecordFileStorage.none,
-          storageUrl: data['storageUrl'] as String?,
-          storageKey: data['storageKey'] as String?,
-          storageProvider: data['storageProvider'] as String?,
-        );
-      }).toList()
-        ..sort((a, b) => b.date.compareTo(a.date));
-      return records;
-    } catch (e) {
-      rethrow; // FIXED: surface fetch failures to callers instead of returning an empty list
-    }
   }
 
   Future<void> savePatientFcmToken(String patientId, String token) async {
-    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
-      try {
-        final uid = FirebaseAuth.instance.currentUser?.uid;
-        if (uid != null && uid.isNotEmpty) {
-          final platform = kIsWeb
-              ? 'web'
-              : (defaultTargetPlatform == TargetPlatform.android
-                  ? 'android'
-                  : (defaultTargetPlatform == TargetPlatform.iOS
-                      ? 'ios'
-                      : 'unknown'));
-          await SupabaseBootstrap.client.from('user_devices').upsert({
-            'user_id': uid,
-            'platform': platform,
-            'fcm_token': token,
-            'updated_at': DateTime.now().toUtc().toIso8601String(),
-          }, onConflict: 'user_id,platform');
-        }
-      } catch (e) {
-        if (kDebugMode) debugPrint('[savePatientFcmToken] Supabase error: $e');
-      }
-      return;
+    if (!SupabaseBootstrap.isReady || token.isEmpty) return;
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null || uid.isEmpty) return;
+      final platform = kIsWeb
+          ? 'web'
+          : (defaultTargetPlatform == TargetPlatform.android
+              ? 'android'
+              : (defaultTargetPlatform == TargetPlatform.iOS
+                  ? 'ios'
+                  : 'unknown'));
+      await SupabaseBootstrap.client.from('user_devices').upsert({
+        'user_id': uid,
+        'platform': platform,
+        'fcm_token': token,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }, onConflict: 'user_id,platform');
+    } catch (e) {
+      if (kDebugMode) debugPrint('[savePatientFcmToken] Supabase error: $e');
     }
-
-    if (!FirebaseBootstrap.isReady || patientId.isEmpty || token.isEmpty)
-      return;
-    await FirebaseFirestore.instance
-        .collection(FirestorePaths.patients)
-        .doc(patientId)
-        .set({
-      'fcmToken': token,
-      'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
   }
 
   Future<void> clearPatientFcmToken(String patientId) async {
-    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
-      try {
-        final uid = FirebaseAuth.instance.currentUser?.uid;
-        if (uid != null && uid.isNotEmpty) {
-          final platform = kIsWeb
-              ? 'web'
-              : (defaultTargetPlatform == TargetPlatform.android
-                  ? 'android'
-                  : (defaultTargetPlatform == TargetPlatform.iOS
-                      ? 'ios'
-                      : 'unknown'));
-          await SupabaseBootstrap.client
-              .from('user_devices')
-              .delete()
-              .match({'user_id': uid, 'platform': platform});
-        }
-      } catch (e) {
-        if (kDebugMode) debugPrint('[clearPatientFcmToken] Supabase error: $e');
-      }
-      return;
+    if (!SupabaseBootstrap.isReady) return;
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null || uid.isEmpty) return;
+      final platform = kIsWeb
+          ? 'web'
+          : (defaultTargetPlatform == TargetPlatform.android
+              ? 'android'
+              : (defaultTargetPlatform == TargetPlatform.iOS
+                  ? 'ios'
+                  : 'unknown'));
+      await SupabaseBootstrap.client
+          .from('user_devices')
+          .delete()
+          .match({'user_id': uid, 'platform': platform});
+    } catch (e) {
+      if (kDebugMode) debugPrint('[clearPatientFcmToken] Supabase error: $e');
     }
-
-    if (!FirebaseBootstrap.isReady || patientId.isEmpty) return;
-    await FirebaseFirestore.instance
-        .collection(FirestorePaths.patients)
-        .doc(patientId)
-        .set({
-      'fcmToken': FieldValue.delete(),
-      'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
   }
 
   Future<void> saveHealthRecord(String patientId, HealthRecord record) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseHealthRecordsRepository.instance
+    return SupabaseHealthRecordsRepository.instance
           .save(record, patientId: patientId);
-    }
-    if (!FirebaseBootstrap.isReady) return;
-    await FirebaseFirestore.instance
-        .collection(FirestorePaths.healthRecords)
-        .doc(record.id)
-        .set({
-      'patientId': patientId,
-      'title': record.title,
-      'type': record.type.name,
-      'date': Timestamp.fromDate(record.date),
-      'source': record.source.name,
-      'fileName': record.fileName,
-      if (record.doctorName != null) 'doctorName': record.doctorName,
-      if (record.labName != null) 'labName': record.labName,
-      'isImage': record.isImage,
-      if (record.notes != null) 'notes': record.notes,
-      'sharedWithDoctors': record.sharedWithDoctors,
-      if (record.fileStorage != HealthRecordFileStorage.none)
-        'fileStorage': record.fileStorage.name,
-      if (record.storageUrl != null) 'storageUrl': record.storageUrl,
-      if (record.storageKey != null) 'storageKey': record.storageKey,
-      if (record.storageProvider != null)
-        'storageProvider': record.storageProvider,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
   }
 
   Future<void> deleteHealthRecord(String recordId) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseHealthRecordsRepository.instance
+    return SupabaseHealthRecordsRepository.instance
           .delete(recordId, patientId: '');
-    }
-    if (!FirebaseBootstrap.isReady || recordId.isEmpty) return;
-
-    final ref = FirebaseFirestore.instance
-        .collection(FirestorePaths.healthRecords)
-        .doc(recordId);
-    final snap = await ref.get();
-    final data = snap.data();
-    if (data != null) {
-      final patientId = data['patientId'] as String? ?? '';
-      final fileName = data['fileName'] as String? ?? '';
-      final storageKey = data['storageKey'] as String?;
-      if (patientId.isNotEmpty && (fileName.isNotEmpty || storageKey != null)) {
-        await HealthRecordFileStore.deleteRecordFiles(
-          patientId: patientId,
-          recordId: recordId,
-          fileName: fileName,
-          storageKey: storageKey,
-        );
-      }
-    }
-
-    await ref.delete();
   }
 }

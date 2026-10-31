@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/auth/profile_completion_service.dart';
 import '../../core/auth/profile_draft_store.dart';
@@ -205,13 +206,7 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
     // 3. Overlay Supabase domain doc if ready
     if (SupabaseBootstrap.isReady && id.isNotEmpty) {
       try {
-        final domainTable = _domainTableForRole();
-        final pk = _primaryKeyForRole();
-        final data = await SupabaseBootstrap.client
-            .from(domainTable)
-            .select()
-            .eq(pk, id)
-            .maybeSingle();
+        final data = await _fetchDomainProfile(id);
         if (data != null) {
           _applyDataToControllers(data);
         }
@@ -245,6 +240,55 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
           : AmbulanceSession.loggedInServiceName,
       UserType.superAdmin => AppSession.adminName,
     };
+  }
+
+  Future<Map<String, dynamic>?> _fetchDomainProfile(String id) async {
+    final client = SupabaseBootstrap.client;
+    switch (widget.role) {
+      case UserType.doctor:
+        return client.from('doctors').select().eq('doctor_id', id).maybeSingle();
+      case UserType.patient:
+        return client.from('patients').select().eq('patient_id', id).maybeSingle();
+      case UserType.medical:
+      case UserType.medicalStore:
+        return client
+            .from('medical_stores')
+            .select()
+            .eq('store_id', id)
+            .maybeSingle();
+      case UserType.lab:
+        return client.from('labs').select().eq('lab_id', id).maybeSingle();
+      case UserType.ambulance:
+        return client
+            .from('ambulances')
+            .select()
+            .eq('ambulance_id', id)
+            .maybeSingle();
+      case UserType.superAdmin:
+        return client.from('users').select().eq('id', id).maybeSingle();
+    }
+  }
+
+  Future<void> _markDomainProfileComplete(SupabaseClient client, String id) async {
+    final payload = {
+      'profile_completed': true,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    };
+    switch (widget.role) {
+      case UserType.doctor:
+        await client.from('doctors').update(payload).eq('doctor_id', id);
+      case UserType.patient:
+        await client.from('patients').update(payload).eq('patient_id', id);
+      case UserType.medical:
+      case UserType.medicalStore:
+        await client.from('medical_stores').update(payload).eq('store_id', id);
+      case UserType.lab:
+        await client.from('labs').update(payload).eq('lab_id', id);
+      case UserType.ambulance:
+        await client.from('ambulances').update(payload).eq('ambulance_id', id);
+      case UserType.superAdmin:
+        break;
+    }
   }
 
   String _domainTableForRole() {
@@ -405,13 +449,8 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
             'updated_at': DateTime.now().toUtc().toIso8601String(),
           }).eq('id', uid);
         }
-        final domainTable = _domainTableForRole();
-        final pk = _primaryKeyForRole();
-        if (id.isNotEmpty && domainTable != 'users') {
-          await client.from(domainTable).update({
-            'profile_completed': true,
-            'updated_at': DateTime.now().toUtc().toIso8601String(),
-          }).eq(pk, id);
+        if (id.isNotEmpty && widget.role != UserType.superAdmin) {
+          await _markDomainProfileComplete(client, id);
         }
       }
 

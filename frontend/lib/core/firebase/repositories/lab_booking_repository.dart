@@ -1,20 +1,16 @@
 import 'dart:typed_data';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../../config/doctor_patient_cutover_flag.dart';
+import '../../constants/app_constants.dart';
+import '../../session/patient_session.dart';
+import '../../storage/storage_service.dart';
 import '../../supabase/repositories/supabase_lab_repository.dart';
 import '../../supabase/supabase_bootstrap.dart';
-import '../../constants/app_constants.dart';
 import '../../../features/patient/lab/models/lab_models.dart';
 import '../../../features/patient/lab/utils/patient_selected_investigations_mapper.dart';
 import '../lab_report_file_store.dart';
-import '../../storage/storage_service.dart';
-import '../../session/patient_session.dart';
-import '../firebase_bootstrap.dart';
-import '../firestore_paths.dart';
-import '../firestore_read_helper.dart';
 
 /// Patient lab booking as seen by the lab operator.
 class LabBookingRecord {
@@ -59,8 +55,6 @@ class LabBookingRecord {
   final String? reportStorageKey;
   final String? reportStorageProvider;
   final DateTime? reportSubmittedAt;
-
-  /// Booking row that owns the uploaded report file (may differ in grouped checkouts).
   final String? reportBookingId;
   final DateTime? createdAt;
 
@@ -93,11 +87,9 @@ class LabBookingRepository {
 
   static final LabBookingRepository instance = LabBookingRepository._();
 
+  /// Legacy test hook — Postgres-only; ignored at runtime.
   @visibleForTesting
-  FirebaseFirestore? firestoreOverride;
-
-  FirebaseFirestore get firestore =>
-      firestoreOverride ?? FirebaseFirestore.instance;
+  dynamic firestoreOverride;
 
   static String newBookingId({int suffix = 0}) {
     final stamp = DateTime.now().microsecondsSinceEpoch;
@@ -125,7 +117,7 @@ class LabBookingRepository {
         .map((test) => test.name.trim())
         .where((name) => name.isNotEmpty)
         .toList();
-    final testIds = tests.map((test) => test.id).toList();
+
     final summary = PatientSelectedInvestigationsMapper.summaryFromNames(
       testNames,
     );
@@ -146,46 +138,10 @@ class LabBookingRepository {
       createdAt: DateTime.now(),
     );
 
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      await SupabaseLabRepository.instance.saveBooking(record);
-      return record;
-    }
-
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError('Firebase is not ready');
-    }
-
-    await FirebaseFirestore.instance
-        .collection(FirestorePaths.labBookings)
-        .doc(bookingId)
-        .set({
-      'bookingId': bookingId,
-      'patientId': patientId,
-      'testId': testIds.first,
-      'testIds': testIds,
-      'testName': summary,
-      'testNames': testNames,
-      'patientName': draft.patientName,
-      'patientAge': draft.patientAge,
-      'bookingForSelf': draft.bookingForSelf,
-      if (familyMemberId != null && familyMemberId.isNotEmpty)
-        'familyMemberId': familyMemberId,
-      'collectionType': draft.collectionType.name,
-      'partnerLab': draft.selectedLab?.name ?? '',
-      if (draft.selectedLab?.id != null && draft.selectedLab!.id!.isNotEmpty)
-        'labId': draft.selectedLab!.id,
-      'address': draft.address ?? '',
-      'dateTime': Timestamp.fromDate(dateTime),
-      'slotLabel': draft.selectedSlotLabel,
-      'status': status,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
+    await SupabaseLabRepository.instance.saveBooking(record);
     return record;
   }
 
-  /// Registers a walk-in patient at the lab counter (no patient app account).
   Future<LabBookingRecord> saveWalkInBooking({
     required String labId,
     required String labName,
@@ -229,74 +185,17 @@ class LabBookingRepository {
       createdAt: now,
     );
 
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      await SupabaseLabRepository.instance.saveBooking(record);
-      return record;
-    }
-
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError('Firebase is not ready');
-    }
-
-    await FirebaseFirestore.instance
-        .collection(FirestorePaths.labBookings)
-        .doc(bookingId)
-        .set({
-      'bookingId': bookingId,
-      'patientId': patientId,
-      'patientName': patientName.trim(),
-      'patientAge': patientAge,
-      'patientGender': AppConstants.normalizePatientGender(patientGender),
-      if (contactNumber != null && contactNumber.trim().isNotEmpty)
-        'contactNumber': contactNumber.trim(),
-      'testName': summary,
-      'testNames': trimmedTests,
-      'testId': trimmedTests.first.toLowerCase().replaceAll(
-            RegExp(r'\s+'),
-            '_',
-          ),
-      'testIds': trimmedTests
-          .map((t) => t.toLowerCase().replaceAll(RegExp(r'\s+'), '_'))
-          .toList(),
-      'collectionType': LabCollectionType.walkIn.name,
-      'partnerLab': labName,
-      'labId': labId,
-      'address': '',
-      'dateTime': Timestamp.fromDate(dateTime),
-      'slotLabel': slotLabel,
-      'status': 'confirmed',
-      'source': 'walkin',
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
+    await SupabaseLabRepository.instance.saveBooking(record);
     return record;
   }
 
   Future<Set<String>> bookedSlotLabelsForDate(DateTime date) async {
-    if (!FirebaseBootstrap.isReady) return {};
-
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isEmpty) return {};
-
-    final dayStart = DateTime(date.year, date.month, date.day);
-    final dayEnd = dayStart.add(const Duration(days: 1));
-
-    final snapshot = await FirestoreReadHelper.getQuery(
-      query: FirebaseFirestore.instance
-          .collection(FirestorePaths.labBookings)
-          .where('patientId', isEqualTo: patientId)
-          .where(
-            'dateTime',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(dayStart),
-          )
-          .where('dateTime', isLessThan: Timestamp.fromDate(dayEnd)),
+    return SupabaseLabRepository.instance.bookedSlotLabelsForPatientOnDate(
+      patientId,
+      date,
     );
-
-    return snapshot.docs
-        .map((doc) => doc.data()['slotLabel'] as String? ?? '')
-        .where((label) => label.isNotEmpty)
-        .toSet();
   }
 
   Future<List<String>> availableSlotsForPeriod({
@@ -313,104 +212,26 @@ class LabBookingRepository {
     String patientId, {
     bool preferCache = true,
   }) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseLabRepository.instance.fetchBookingsForPatient(patientId);
-    }
-    if (!FirebaseBootstrap.isReady || patientId.isEmpty) return const [];
-
-    final snapshot = await FirestoreReadHelper.getQuery(
-      query: FirebaseFirestore.instance
-          .collection(FirestorePaths.labBookings)
-          .where('patientId', isEqualTo: patientId)
-          .orderBy('dateTime', descending: true)
-          .limit(100),
-      preferCache: preferCache,
-    );
-
-    return snapshot.docs
-        .map((doc) => _fromMap(doc.id, doc.data()))
-        .whereType<LabBookingRecord>()
-        .toList()
-      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    return SupabaseLabRepository.instance.fetchBookingsForPatient(patientId);
   }
 
   Future<List<LabBookingRecord>> fetchForLab(String labId) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseLabRepository.instance.fetchBookingsForLab(labId);
-    }
-    if (!FirebaseBootstrap.isReady || labId.isEmpty) return const [];
-
-    final snapshot = await FirestoreReadHelper.getQuery(
-      query: FirebaseFirestore.instance
-          .collection(FirestorePaths.labBookings)
-          .where('labId', isEqualTo: labId)
-          .orderBy('dateTime', descending: true)
-          .limit(100),
-    );
-
-    return snapshot.docs
-        .map((doc) => _fromMap(doc.id, doc.data()))
-        .whereType<LabBookingRecord>()
-        .toList();
+    return SupabaseLabRepository.instance.fetchBookingsForLab(labId);
   }
 
   Stream<List<LabBookingRecord>> watchForLab(String labId) {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseLabRepository.instance.watchBookingsForLab(labId);
-    }
-    if (!FirebaseBootstrap.isReady || labId.isEmpty) {
-      return const Stream.empty();
-    }
-
-    return FirebaseFirestore.instance
-        .collection(FirestorePaths.labBookings)
-        .where('labId', isEqualTo: labId)
-        .orderBy('dateTime', descending: true)
-        .limit(100)
-        .snapshots()
-        .map(
-          (snap) => snap.docs
-              .map((doc) => _fromMap(doc.id, doc.data()))
-              .whereType<LabBookingRecord>()
-              .toList(),
-        );
+    return SupabaseLabRepository.instance.watchBookingsForLab(labId);
   }
 
   Stream<List<LabBookingRecord>> watchForPatient(String patientId) {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseLabRepository.instance.watchBookingsForPatient(patientId);
-    }
-    if (!FirebaseBootstrap.isReady || patientId.isEmpty) {
-      return const Stream.empty();
-    }
-
-    return FirebaseFirestore.instance
-        .collection(FirestorePaths.labBookings)
-        .where('patientId', isEqualTo: patientId)
-        .orderBy('dateTime', descending: true)
-        .limit(100)
-        .snapshots()
-        .map(
-          (snap) => snap.docs
-              .map((doc) => _fromMap(doc.id, doc.data()))
-              .whereType<LabBookingRecord>()
-              .toList(),
-        );
+    return SupabaseLabRepository.instance.watchBookingsForPatient(patientId);
   }
 
   Future<void> updateBookingStatus(String bookingId, String status) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      await SupabaseLabRepository.instance.updateLabBookingStatus(
-        bookingId: bookingId,
-        newStatus: status,
-      );
-      return;
-    }
-    if (!FirebaseBootstrap.isReady || bookingId.isEmpty) return;
-    await FirebaseFirestore.instance
-        .collection(FirestorePaths.labBookings)
-        .doc(bookingId)
-        .update({'status': status, 'updatedAt': FieldValue.serverTimestamp()});
+    await SupabaseLabRepository.instance.updateLabBookingStatus(
+      bookingId: bookingId,
+      newStatus: status,
+    );
   }
 
   Future<StorageUploadResult> submitReport({
@@ -451,102 +272,24 @@ class LabBookingRepository {
       storageKey: uploadResult.objectKey,
     );
 
-    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
-      await SupabaseLabRepository.instance.updateLabBookingStatus(
-        bookingId: bookingId,
-        newStatus: 'completed',
-        notes: uploadResult.objectKey,
-      );
+    if (SupabaseBootstrap.isReady) {
+      for (final id in {
+        bookingId,
+        ...linkedBookingIds,
+      }.where((id) => id.trim().isNotEmpty)) {
+        await SupabaseLabRepository.instance.updateLabBookingStatus(
+          bookingId: id,
+          newStatus: 'completed',
+          notes: uploadResult.objectKey,
+        );
+      }
       if (existingReportStorageKey != null &&
           existingReportStorageKey.trim().isNotEmpty &&
           existingReportStorageKey != uploadResult.objectKey) {
         await LabReportFileStore.deleteS3Report(existingReportStorageKey);
       }
-      return uploadResult;
-    }
-
-    final updatePayload = <String, dynamic>{
-      'status': 'completed',
-      'reportFileName': fileName,
-      if (uploadResult.downloadUrl != null)
-        'reportStorageUrl': uploadResult.downloadUrl,
-      'reportStorageKey': uploadResult.objectKey,
-      'reportStorageProvider': uploadResult.provider,
-      'reportBookingId': bookingId,
-      'reportSubmittedAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
-
-    final bookingIds = {
-      bookingId,
-      ...linkedBookingIds,
-    }.where((id) => id.trim().isNotEmpty).toList();
-
-    if (bookingIds.length == 1) {
-      await firestore
-          .collection(FirestorePaths.labBookings)
-          .doc(bookingIds.first)
-          .update(updatePayload)
-          .timeout(const Duration(seconds: 20));
-    } else {
-      final batch = firestore.batch();
-      for (final id in bookingIds) {
-        batch.update(
-          firestore.collection(FirestorePaths.labBookings).doc(id),
-          updatePayload,
-        );
-      }
-      await batch.commit().timeout(const Duration(seconds: 20));
-    }
-
-    if (existingReportStorageKey != null &&
-        existingReportStorageKey.trim().isNotEmpty &&
-        existingReportStorageKey != uploadResult.objectKey) {
-      await LabReportFileStore.deleteS3Report(existingReportStorageKey);
     }
 
     return uploadResult;
-  }
-
-  LabBookingRecord? _fromMap(String docId, Map<String, dynamic> data) {
-    try {
-      final dateTime =
-          (data['dateTime'] as Timestamp?)?.toDate() ?? DateTime.now();
-      final testNamesRaw = data['testNames'];
-      final testNames = testNamesRaw is List
-          ? testNamesRaw
-              .map((item) => item.toString().trim())
-              .where((name) => name.isNotEmpty)
-              .toList()
-          : <String>[];
-      final testName = data['testName'] as String? ??
-          (testNames.isNotEmpty
-              ? PatientSelectedInvestigationsMapper.summaryFromNames(testNames)
-              : 'Lab test');
-
-      return LabBookingRecord(
-        bookingId: data['bookingId'] as String? ?? docId,
-        labId: data['labId'] as String?,
-        labName: data['partnerLab'] as String?,
-        patientId: data['patientId'] as String? ?? '',
-        patientName: data['patientName'] as String? ?? 'Patient',
-        testName: testName,
-        testNames: testNames,
-        dateTime: dateTime,
-        slotLabel: data['slotLabel'] as String? ?? '',
-        collectionType: data['collectionType'] as String? ?? 'home',
-        address: data['address'] as String? ?? '',
-        status: data['status'] as String? ?? 'confirmed',
-        reportFileName: data['reportFileName'] as String?,
-        reportStorageUrl: data['reportStorageUrl'] as String?,
-        reportStorageKey: data['reportStorageKey'] as String?,
-        reportStorageProvider: data['reportStorageProvider'] as String?,
-        reportSubmittedAt: (data['reportSubmittedAt'] as Timestamp?)?.toDate(),
-        reportBookingId: data['reportBookingId'] as String? ?? docId,
-        createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-      );
-    } catch (_) {
-      return null;
-    }
   }
 }

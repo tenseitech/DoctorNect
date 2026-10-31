@@ -366,4 +366,51 @@ class SupabasePharmacyRepository {
       return const FirestorePage(items: [], hasMore: false);
     }
   }
+
+  Future<void> updateMedicalStoreFields(
+    String storeId, {
+    String? storeName,
+    String? ownerName,
+    String? drugLicenseNumber,
+    Map<String, dynamic>? address,
+    String? phone,
+    String? email,
+    String? gstNumber,
+    bool clearGstNumber = false,
+  }) async {
+    if (!SupabaseBootstrap.isReady || storeId.isEmpty) return;
+
+    final updates = <String, dynamic>{
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (storeName != null) updates['store_name'] = storeName;
+    if (ownerName != null) updates['owner_name'] = ownerName;
+    if (drugLicenseNumber != null) {
+      updates['drug_license_number'] = drugLicenseNumber;
+      updates['license_number'] = drugLicenseNumber;
+    }
+    if (address != null) {
+      if (address['country'] != null) updates['country'] = address['country'];
+      if (address['state'] != null) updates['state'] = address['state'];
+      if (address['city'] != null) updates['city'] = address['city'];
+      if (address['addressLine1'] != null) {
+        updates['address_line1'] = address['addressLine1'];
+      }
+      if (address['addressLine2'] != null) {
+        updates['address_line2'] = address['addressLine2'];
+      }
+      if (address['pinCode'] != null) updates['pincode'] = address['pinCode'];
+    }
+    if (phone != null) updates['phone'] = phone;
+    if (email != null) updates['email'] = email.trim().toLowerCase();
+    if (clearGstNumber) {
+      updates['gst_number'] = null;
+    } else if (gstNumber != null) {
+      updates['gst_number'] = gstNumber;
+    }
+
+    if (updates.length == 1) return;
+
+    await _client.from('medical_stores').update(updates).eq('store_id', storeId);
+  }
 }

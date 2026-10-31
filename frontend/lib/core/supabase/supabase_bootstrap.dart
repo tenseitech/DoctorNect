@@ -3,15 +3,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'supabase_auth_service.dart';
-
 /// Bootstrap and lifecycle management for Supabase in DoctorNect.
-/// Allows parallel execution alongside Firebase during the staged migration window.
 abstract final class SupabaseBootstrap {
   static bool isReady = false;
   static String? lastInitError;
 
-  // Compile-time environment variables injected via --dart-define
   static const String _envUrl = String.fromEnvironment('SUPABASE_URL');
   static const String _envAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
   static const String appEnv =
@@ -22,7 +18,8 @@ abstract final class SupabaseBootstrap {
   @visibleForTesting
   static bool? debugIsReleaseModeOverride;
 
-  static bool get _effectiveReleaseMode => kReleaseMode || (debugIsReleaseModeOverride ?? false);
+  static bool get _effectiveReleaseMode =>
+      kReleaseMode || (debugIsReleaseModeOverride ?? false);
 
   @visibleForTesting
   static String? get debugAppEnvOverride => _debugAppEnvOverride;
@@ -42,20 +39,10 @@ abstract final class SupabaseBootstrap {
     return (_debugAppEnvOverride ?? appEnv).toLowerCase() == 'production';
   }
 
-  static const bool useSupabaseAuth =
-      bool.fromEnvironment('USE_SUPABASE_AUTH', defaultValue: false);
-
-  /// Test override for USE_SUPABASE_AUTH mode — do not use outside test/
-  @visibleForTesting
-  static bool? debugUseSupabaseAuthOverride;
-
   /// Test stand-in for the Firebase ID token passed to Supabase.
   @visibleForTesting
   static Future<String?> Function()? debugAccessTokenOverride;
 
-  /// Firebase ID token for Supabase third-party auth (`accessToken`).
-  /// Pass [forceRefresh] = true to force Firebase to mint a fresh token (e.g. after custom claim updates).
-  /// Returns null when Firebase has no signed-in user.
   static Future<String?> currentFirebaseAccessToken({
     bool forceRefresh = false,
   }) async {
@@ -72,9 +59,6 @@ abstract final class SupabaseBootstrap {
     }
   }
 
-  /// Explicitly forces a token refresh via `getIdToken(true)` and verifies that
-  /// the token carries the mandatory Supabase third-party auth claim `role: "authenticated"`.
-  /// Throws [MissingSupabaseClaimException] if missing, preventing silent empty query results.
   static Future<String?> refreshAndVerifySession({bool forceRefresh = true}) async {
     if (debugAccessTokenOverride != null) {
       return debugAccessTokenOverride!();
@@ -101,19 +85,12 @@ abstract final class SupabaseBootstrap {
     return token;
   }
 
-  /// Explicitly refreshes the Firebase ID token and returns the new token,
-  /// ensuring Supabase PostgREST and Realtime have access to freshly minted custom claims.
   static Future<String?> refreshSession() async {
     return refreshAndVerifySession(forceRefresh: true);
   }
 
-  static bool get isSupabaseAuthEnabled =>
-      debugUseSupabaseAuthOverride ?? useSupabaseAuth;
-
-  /// Whether valid Supabase compile-time configuration was provided via --dart-define.
   static bool get hasConfig => _envUrl.isNotEmpty && _envAnonKey.isNotEmpty;
 
-  /// Fallback configuration placeholders (replace with your project ref if not using dart-define)
   static const String defaultUrl = 'https://your-project-ref.supabase.co';
   static const String defaultAnonKey = 'your-anon-key';
 
@@ -121,62 +98,19 @@ abstract final class SupabaseBootstrap {
   static String get resolvedAnonKey =>
       _envAnonKey.isNotEmpty ? _envAnonKey : defaultAnonKey;
 
-  /// Test overrides for unit testing registration gating — do not use outside test/
-  @visibleForTesting
-  static bool? debugFirebaseUserActiveOverride;
-  @visibleForTesting
-  static bool? debugSupabaseUserLoggedInOverride;
-  @visibleForTesting
-  static bool? debugHasActiveSessionOverride;
-
-  /// Explicit check for whether registration should proceed in Supabase mode:
-  /// - USE_SUPABASE_AUTH flag is enabled
-  /// - SupabaseBootstrap is ready and an authenticated Supabase user is logged in
-  /// - No active Firebase user is logged in (FirebaseAuth.instance.currentUser == null)
-  /// - The user's role in public.users matches [targetRole]
-  static Future<bool> isSupabaseModeForRole(String targetRole) async {
-    if (!isSupabaseAuthEnabled) return false;
-    final isFirebaseActive = debugFirebaseUserActiveOverride ??
-        (FirebaseAuth.instance.currentUser != null);
-    if (isFirebaseActive) return false;
-
-    final isSupabaseUserPresent = debugSupabaseUserLoggedInOverride ??
-        (isReady && client.auth.currentUser != null);
-    if (!isSupabaseUserPresent) return false;
-
-    final profile =
-        await SupabaseAuthService.instance.fetchCurrentUserProfile();
-    return profile != null && profile.role == targetRole;
-  }
-
-  /// When a Firebase flow starts (login or registration), any stale Supabase session is signed out.
-  static Future<void> ensureSupabaseSignedOutIfFirebaseFlow() async {
-    try {
-      final hasSession = debugHasActiveSessionOverride ??
-          (isReady && client.auth.currentSession != null);
-      if (hasSession) {
-        await SupabaseAuthService.instance.signOut();
-      }
-    } catch (_) {}
-  }
-
-  /// Resolves the registration profileId based on the explicit Supabase auth mode:
-  /// - If isSupabaseModeForRole(role) is TRUE -> returns the server profile ID from public.users.
-  /// - If FALSE (flag off, role mismatch, or Firebase active) -> returns defaultClientId AND clears stale Supabase session.
   static Future<String> resolveRegistrationProfileId({
     required String role,
     required String defaultClientId,
   }) async {
-    if (await isSupabaseModeForRole(role)) {
-      final serverProfileId =
-          await SupabaseAuthService.instance.fetchCurrentProfileId();
-      if (serverProfileId != null && serverProfileId.isNotEmpty) {
-        return serverProfileId;
-      }
-    } else {
-      await ensureSupabaseSignedOutIfFirebaseFlow();
-    }
     return defaultClientId;
+  }
+
+  static Future<void> ensureSupabaseSignedOutIfFirebaseFlow() async {
+    try {
+      if (isReady && client.auth.currentSession != null) {
+        await client.auth.signOut();
+      }
+    } catch (_) {}
   }
 
   static SupabaseClient? _debugClientOverride;
@@ -192,9 +126,10 @@ abstract final class SupabaseBootstrap {
     _debugClientOverride = value;
   }
 
-  /// Global accessor to the Supabase client instance
   static SupabaseClient get client {
-    if (!kReleaseMode && _debugClientOverride != null) return _debugClientOverride!;
+    if (!kReleaseMode && _debugClientOverride != null) {
+      return _debugClientOverride!;
+    }
     if (!isReady) {
       throw StateError(
         'Supabase has not been initialized. Call SupabaseBootstrap.initialize() first.',
@@ -208,19 +143,11 @@ abstract final class SupabaseBootstrap {
     isReady = false;
     lastInitError = null;
     _debugClientOverride = null;
-    debugFirebaseUserActiveOverride = null;
-    debugSupabaseUserLoggedInOverride = null;
-    debugHasActiveSessionOverride = null;
-    debugUseSupabaseAuthOverride = null;
     debugAccessTokenOverride = null;
     debugAppEnvOverride = null;
     debugIsReleaseModeOverride = null;
   }
 
-  /// Initializes Supabase client with local persistence and auto refresh.
-  /// If [url] and [anonKey] are not provided and compile-time defines
-  /// (SUPABASE_URL, SUPABASE_ANON_KEY) are absent, this method is a safe no-op
-  /// returning false without throwing or attempting network connections.
   static Future<bool> initialize({String? url, String? anonKey}) async {
     if (isReady) return true;
 
@@ -255,8 +182,6 @@ abstract final class SupabaseBootstrap {
 
       isReady = true;
 
-      // In production, Realtime WebSocket is disabled; queries use adaptive polling via streamTable.
-      // In staging, ensure Realtime WebSocket connection is authenticated with initial token.
       if (!isProduction) {
         final initialToken = await currentFirebaseAccessToken();
         if (initialToken != null && initialToken.isNotEmpty) {
@@ -265,7 +190,6 @@ abstract final class SupabaseBootstrap {
           } catch (_) {}
         }
 
-        // Automatically sync Realtime auth state on re-login or ID token refresh
         if (Firebase.apps.isNotEmpty) {
           FirebaseAuth.instance.idTokenChanges().listen((user) async {
             if (user != null && isReady) {
@@ -303,7 +227,6 @@ abstract final class SupabaseBootstrap {
   }
 }
 
-/// Thrown when a Firebase ID token lacks the required Supabase third-party custom claim (`role: "authenticated"`).
 class MissingSupabaseClaimException implements Exception {
   const MissingSupabaseClaimException(this.message);
 
@@ -312,4 +235,3 @@ class MissingSupabaseClaimException implements Exception {
   @override
   String toString() => 'MissingSupabaseClaimException: $message';
 }
-

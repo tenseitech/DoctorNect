@@ -430,4 +430,39 @@ class SupabaseLabRepository {
       return const FirestorePage(items: [], hasMore: false);
     }
   }
+
+  Future<void> saveConnection(LabConnection connection) async {
+    if (!SupabaseBootstrap.isReady) return;
+    final row = LabSupabaseMapper.connectionToRow(connection);
+    await _client
+        .from('lab_connections')
+        .upsert(row, onConflict: 'connection_id');
+  }
+
+  Future<Set<String>> bookedSlotLabelsForPatientOnDate(
+    String patientId,
+    DateTime date,
+  ) async {
+    if (!SupabaseBootstrap.isReady || patientId.isEmpty) return {};
+    try {
+      final dayStart = DateTime(date.year, date.month, date.day);
+      final dayEnd = dayStart.add(const Duration(days: 1));
+      final res = await _client
+          .from('lab_bookings')
+          .select('slot_label')
+          .eq('patient_id', patientId)
+          .gte('date_time', dayStart.toIso8601String())
+          .lt('date_time', dayEnd.toIso8601String());
+      final rows = List<Map<String, dynamic>>.from(res as List);
+      return rows
+          .map((row) => row['slot_label'] as String? ?? '')
+          .where((label) => label.isNotEmpty)
+          .toSet();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[SupabaseLab] bookedSlotLabelsForPatientOnDate error: $e');
+      }
+      return {};
+    }
+  }
 }

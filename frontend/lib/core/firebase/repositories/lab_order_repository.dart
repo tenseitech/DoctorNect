@@ -1,47 +1,27 @@
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
-import '../../config/doctor_patient_cutover_flag.dart';
+import '../../storage/storage_service.dart';
 import '../../supabase/repositories/supabase_lab_repository.dart';
 import '../../supabase/supabase_bootstrap.dart';
-import '../firebase_bootstrap.dart';
-import '../lab_report_file_store.dart';
-import '../../storage/storage_service.dart';
-import '../firestore_paths.dart';
 import '../firestore_query_limits.dart';
-import '../firestore_read_helper.dart';
-import '../mappers/lab_order_firestore_mapper.dart';
+import '../lab_report_file_store.dart';
 import '../models/doctor_lab_order.dart';
 import '../models/firestore_page.dart';
-import 'patient_profile_repository.dart';
 
 class LabOrderRepository {
   LabOrderRepository._();
 
   static final LabOrderRepository instance = LabOrderRepository._();
 
+  /// Legacy test hook — Postgres-only; ignored at runtime.
   @visibleForTesting
-  FirebaseFirestore? firestoreOverride;
-
-  FirebaseFirestore get firestore =>
-      firestoreOverride ?? FirebaseFirestore.instance;
+  dynamic firestoreOverride;
 
   Future<void> save(DoctorLabOrder order) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseLabRepository.instance.saveOrder(order);
-    }
-    if (!FirebaseBootstrap.isReady) return;
-
-    await FirebaseFirestore.instance
-        .collection(FirestorePaths.labOrders)
-        .doc(order.orderId)
-        .set({
-      ...LabOrderFirestoreMapper.toMap(order),
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    return SupabaseLabRepository.instance.saveOrder(order);
   }
 
   Future<FirestorePage<DoctorLabOrder>> fetchForDoctor(
@@ -50,39 +30,8 @@ class LabOrderRepository {
     int limit = FirestoreQueryLimits.labOrdersPage,
     bool preferCache = true,
   }) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseLabRepository.instance
-          .fetchOrdersForDoctor(doctorId, limit: limit);
-    }
-    if (!FirebaseBootstrap.isReady) {
-      return const FirestorePage(items: [], hasMore: false);
-    }
-
-    final baseQuery = FirebaseFirestore.instance
-        .collection(FirestorePaths.labOrders)
-        .where('doctorId', isEqualTo: doctorId)
-        .orderBy('createdAt', descending: true)
-        .limit(limit);
-
-    final query = startAfter == null
-        ? baseQuery
-        : baseQuery.startAfterDocument(startAfter);
-    final snapshot = await FirestoreReadHelper.getQuery(
-      query: query,
-      preferCache: preferCache,
-    );
-
-    final items = snapshot.docs
-        .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
-        .whereType<DoctorLabOrder>()
-        .toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-    return FirestorePage(
-      items: items,
-      lastDocument: snapshot.docs.isEmpty ? null : snapshot.docs.last,
-      hasMore: snapshot.docs.length == limit,
-    );
+    return SupabaseLabRepository.instance
+        .fetchOrdersForDoctor(doctorId, limit: limit);
   }
 
   Future<FirestorePage<DoctorLabOrder>> fetchForPatient(
@@ -91,67 +40,18 @@ class LabOrderRepository {
     int limit = FirestoreQueryLimits.labOrdersPage,
     bool preferCache = true,
   }) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseLabRepository.instance
-          .fetchOrdersForPatient(patientId, limit: limit);
-    }
-    if (!FirebaseBootstrap.isReady || patientId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
-    }
-
-    final baseQuery = FirebaseFirestore.instance
-        .collection(FirestorePaths.labOrders)
-        .where('patientId', isEqualTo: patientId)
-        .limit(limit);
-
-    final query = startAfter == null
-        ? baseQuery
-        : baseQuery.startAfterDocument(startAfter);
-    final snapshot = await FirestoreReadHelper.getQuery(
-      query: query,
-      preferCache: preferCache,
-    );
-
-    final items = snapshot.docs
-        .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
-        .whereType<DoctorLabOrder>()
-        .toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-    return FirestorePage(
-      items: items,
-      lastDocument: snapshot.docs.isEmpty ? null : snapshot.docs.last,
-      hasMore: snapshot.docs.length == limit,
-    );
+    return SupabaseLabRepository.instance
+        .fetchOrdersForPatient(patientId, limit: limit);
   }
 
-  /// Doctor-facing fetch — empty when the patient has turned off sharing.
   Future<FirestorePage<DoctorLabOrder>> fetchForPatientForDoctor(
     String patientId, {
     DocumentSnapshot<Map<String, dynamic>>? startAfter,
     int limit = FirestoreQueryLimits.labOrdersPage,
     bool preferCache = true,
   }) async {
-    if (patientId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
-    }
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseLabRepository.instance
-          .fetchOrdersForPatient(patientId, limit: limit);
-    }
-    if (!await PatientProfileRepository.instance
-        .isPatientSharingClinicalDataWithDoctors(
-      patientId,
-      preferCache: preferCache,
-    )) {
-      return const FirestorePage(items: [], hasMore: false);
-    }
-    return fetchForPatient(
-      patientId,
-      startAfter: startAfter,
-      limit: limit,
-      preferCache: preferCache,
-    );
+    return SupabaseLabRepository.instance
+        .fetchOrdersForPatient(patientId, limit: limit);
   }
 
   Future<FirestorePage<DoctorLabOrder>> fetchForLab(
@@ -160,102 +60,27 @@ class LabOrderRepository {
     int limit = FirestoreQueryLimits.labOrdersPage,
     bool preferCache = true,
   }) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      final orders = await SupabaseLabRepository.instance.fetchOrdersForLab(labId);
-      return FirestorePage(items: orders, hasMore: false);
-    }
-    if (!FirebaseBootstrap.isReady || labId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
-    }
-
-    final baseQuery = FirebaseFirestore.instance
-        .collection(FirestorePaths.labOrders)
-        .where('labId', isEqualTo: labId)
-        .orderBy('createdAt', descending: true)
-        .limit(limit);
-
-    final query = startAfter == null
-        ? baseQuery
-        : baseQuery.startAfterDocument(startAfter);
-    final snapshot = await FirestoreReadHelper.getQuery(
-      query: query,
-      preferCache: preferCache,
-    );
-
-    final items = snapshot.docs
-        .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
-        .whereType<DoctorLabOrder>()
-        .toList();
-
-    return FirestorePage(
-      items: items,
-      lastDocument: snapshot.docs.isEmpty ? null : snapshot.docs.last,
-      hasMore: snapshot.docs.length == limit,
-    );
+    final orders =
+        await SupabaseLabRepository.instance.fetchOrdersForLab(labId);
+    return FirestorePage(items: orders, hasMore: false);
   }
 
   Stream<List<DoctorLabOrder>> watchForLab(String labId) {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseLabRepository.instance.watchOrdersForLab(labId);
-    }
-    if (!FirebaseBootstrap.isReady || labId.isEmpty) {
-      return const Stream.empty();
-    }
-
-    return FirebaseFirestore.instance
-        .collection(FirestorePaths.labOrders)
-        .where('labId', isEqualTo: labId)
-        .orderBy('createdAt', descending: true)
-        .limit(100)
-        .snapshots()
-        .map(
-          (snap) => snap.docs
-              .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
-              .whereType<DoctorLabOrder>()
-              .toList(),
-        );
+    return SupabaseLabRepository.instance.watchOrdersForLab(labId);
   }
 
   Stream<List<DoctorLabOrder>> watchForDoctor(String doctorId) {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      return SupabaseLabRepository.instance.watchOrdersForDoctor(doctorId);
-    }
-    if (!FirebaseBootstrap.isReady || doctorId.isEmpty) {
-      return const Stream.empty();
-    }
-
-    return FirebaseFirestore.instance
-        .collection(FirestorePaths.labOrders)
-        .where('doctorId', isEqualTo: doctorId)
-        .orderBy('createdAt', descending: true)
-        .limit(FirestoreQueryLimits.labOrdersPage)
-        .snapshots()
-        .map((snap) {
-      final items = snap.docs
-          .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
-          .whereType<DoctorLabOrder>()
-          .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return items;
-    });
+    return SupabaseLabRepository.instance.watchOrdersForDoctor(doctorId);
   }
 
   Stream<List<DoctorLabOrder>> watchOrdersForDoctor(String doctorId) =>
       watchForDoctor(doctorId);
 
   Future<void> updateOrderStatus(String orderId, String status) async {
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      await SupabaseLabRepository.instance.updateLabOrderStatus(
-        orderId: orderId,
-        newStatus: status,
-      );
-      return;
-    }
-    if (!FirebaseBootstrap.isReady || orderId.isEmpty) return;
-    await FirebaseFirestore.instance
-        .collection(FirestorePaths.labOrders)
-        .doc(orderId)
-        .update({'status': status, 'updatedAt': FieldValue.serverTimestamp()});
+    await SupabaseLabRepository.instance.updateLabOrderStatus(
+      orderId: orderId,
+      newStatus: status,
+    );
   }
 
   Future<StorageUploadResult> submitReport({
@@ -292,7 +117,7 @@ class LabOrderRepository {
       storageKey: uploadResult.objectKey,
     );
 
-    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+    if (SupabaseBootstrap.isReady) {
       await SupabaseLabRepository.instance.updateLabOrderStatus(
         orderId: orderId,
         newStatus: 'completed',
@@ -303,30 +128,6 @@ class LabOrderRepository {
           existingReportStorageKey != uploadResult.objectKey) {
         await LabReportFileStore.deleteS3Report(existingReportStorageKey);
       }
-      return uploadResult;
-    }
-
-    final updatePayload = <String, dynamic>{
-      'status': 'completed',
-      'reportFileName': fileName,
-      if (uploadResult.downloadUrl != null)
-        'reportStorageUrl': uploadResult.downloadUrl,
-      'reportStorageKey': uploadResult.objectKey,
-      'reportStorageProvider': uploadResult.provider,
-      'reportSubmittedAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
-
-    await firestore
-        .collection(FirestorePaths.labOrders)
-        .doc(orderId)
-        .update(updatePayload)
-        .timeout(const Duration(seconds: 20));
-
-    if (existingReportStorageKey != null &&
-        existingReportStorageKey.trim().isNotEmpty &&
-        existingReportStorageKey != uploadResult.objectKey) {
-      await LabReportFileStore.deleteS3Report(existingReportStorageKey);
     }
 
     return uploadResult;
