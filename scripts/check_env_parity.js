@@ -36,6 +36,8 @@ const SYSTEM_ENV_VARS = new Set([
   'ENTRY_POINT',
   'CLOUD_ML_PROJECT_ID',
   'GOOGLE_APPLICATION_CREDENTIALS',
+  'CI',
+  'npm_config_devdir',
 ]);
 
 // Test-only emulator / mock variables used in test files
