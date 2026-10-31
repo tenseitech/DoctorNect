@@ -7,26 +7,41 @@ const ROOT = path.resolve(__dirname, '../..');
 const MD_LINK = /\[[^\]]*\]\(([^)]+)\)/g;
 const MD_REF_LINK = /\[[^\]]*\]:\s*(\S+)/g;
 
-function existsTarget(raw) {
+function stripFencedCode(content) {
+  return content.replace(/```[\s\S]*?```/g, '');
+}
+
+function existsTarget(fromRelFile, raw) {
   let t = raw.trim();
-  if (!t || t.startsWith('http://') || t.startsWith('https://') || t.startsWith('mailto:')) return true;
+  if (
+    !t ||
+    t.startsWith('http://') ||
+    t.startsWith('https://') ||
+    t.startsWith('mailto:') ||
+    t.startsWith('file://')
+  ) {
+    return true;
+  }
   if (t.startsWith('#')) return true;
   t = t.split('#')[0].split('?')[0];
   if (!t) return true;
-  const abs = path.resolve(ROOT, t.replace(/^\//, ''));
+  const fromDir = path.dirname(path.join(ROOT, fromRelFile));
+  const abs = t.startsWith('/')
+    ? path.join(ROOT, t.replace(/^\//, ''))
+    : path.resolve(fromDir, t);
   return fs.existsSync(abs);
 }
 
 function scanFile(filePath) {
   const rel = path.relative(ROOT, filePath);
-  const content = fs.readFileSync(filePath, 'utf8');
+  const content = stripFencedCode(fs.readFileSync(filePath, 'utf8'));
   const broken = [];
   for (const re of [MD_LINK, MD_REF_LINK]) {
     re.lastIndex = 0;
     let m;
     while ((m = re.exec(content))) {
       const target = m[1];
-      if (!existsTarget(target)) broken.push({ file: rel, target });
+      if (!existsTarget(rel, target)) broken.push({ file: rel, target });
     }
   }
   return broken;

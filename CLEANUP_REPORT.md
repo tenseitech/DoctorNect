@@ -8,7 +8,7 @@
 
 | Metric | Before (start of real cleanup pass) | After (this commit) |
 |--------|-------------------------------------|---------------------|
-| Tracked files (`git ls-files \| wc -l`) | **1748** | **1653** (−95) |
+| Tracked files (`git ls-files \| wc -l`) | **1748** | **1657** (−91) |
 | Git pack size (`git count-objects -vH`) | **~1.42 GiB** | **~1.42 GiB** (unchanged) |
 
 **Why pack size did not shrink:** `git rm` stops tracking blobs in new commits but leaves historical objects in `.git/objects` until `git filter-repo` / BFG. Largest historical blobs (e.g. removed `backend/updated_indian_medicine_data.csv` ~43 MiB, `docs/ops/test_runs/*.txt` up to ~0.76 MiB each) still occupy pack space.
@@ -108,16 +108,16 @@ Application logic (except asset-path test/manifest alignment for deleted duplica
 
 | Check | Command | Result |
 |-------|---------|--------|
-| Flutter deps | `cd frontend && flutter pub get` | *(filled post-commit)* |
-| Flutter analyze | `flutter analyze` | *(filled post-commit)* |
-| Flutter tests | `flutter test` | *(filled post-commit)* |
-| Backend tests | `cd backend/functions && CI=true npm test` | *(filled post-commit)* |
-| Gateway tests | `cd services/api-gateway && npm test` | *(filled post-commit)* |
-| Env parity | `node scripts/check_env_parity.js` | *(filled post-commit)* |
-| Anon / guard unit tests | `node --test scripts/db/anon_surface_audit.test.js scripts/lib/db_connection_guard.test.js` | *(filled post-commit)* |
-| Migrate dry-run | `node scripts/db/migrate.js --target=staging --dry-run-all` | *(filled post-commit)* |
-| Markdown links | `node scripts/ops/check_markdown_links.js` | *(filled post-commit)* |
-| `firebase.json` functions path | manual | `backend/functions` |
-| Terraform validate | `terraform -chdir=infra/aws validate` (if init cached) | *(filled post-commit)* |
+| Flutter deps | `cd frontend && flutter pub get` | **PASS** |
+| Flutter analyze | `flutter analyze` | **1 warning** (pre-existing `unused_local_variable` in `onboarding_service.dart:79`; not introduced by cleanup) |
+| Flutter tests | `flutter test` | **PASS** — 562 passed, 0 failed |
+| Backend tests | `cd backend/functions && CI=true npm test` | **PASS** — 497 passed, 0 failed |
+| Gateway tests | `cd services/api-gateway && npm test` | **PASS** — 68 passed, 0 failed |
+| Env parity | `node scripts/check_env_parity.js` | **PASS** — 0 undocumented core vars |
+| Anon / guard unit tests | `node --test scripts/db/anon_surface_audit.test.js scripts/lib/db_connection_guard.test.js` | **PASS** — 4 / 4 |
+| Migrate dry-run | `node scripts/db/migrate.js --target=staging --dry-run-all` | **2 statement errors** on pending `20261103000008_staging_anon_security_cleanup.sql` (`42710` policies already exist on staging — idempotency gap; unchanged by cleanup) |
+| Markdown links | `node scripts/ops/check_markdown_links.js` | **PASS** — 65 files (relative links; code fences stripped) |
+| `firebase.json` functions path | manual | **PASS** — `"source": "backend/functions"` |
+| Terraform validate | `terraform init -backend=false && terraform validate` in `infra/aws` | **PASS** |
 
 See **PROJECT_STRUCTURE.md** for layout.

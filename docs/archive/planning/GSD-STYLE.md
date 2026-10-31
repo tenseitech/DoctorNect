@@ -90,7 +90,7 @@ The `effort` attribute hints at task complexity for model selection:
 
 **Default:** `medium` if omitted. No workflow should fail if this attribute is absent.
 
-See [docs/model-selection-playbook.md](docs/model-selection-playbook.md) for model selection guidance.
+See [model-selection-playbook.md](../../model-selection-playbook.md) for model selection guidance.
 
 
 ### Checkpoint Structure
