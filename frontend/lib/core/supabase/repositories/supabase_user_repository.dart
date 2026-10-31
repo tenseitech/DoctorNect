@@ -219,7 +219,7 @@ class SupabaseUserRepository {
         'updated_at': DateTime.now().toIso8601String(),
       }, onConflict: 'id');
 
-      return fetchProfile(user.uid, preferCache: false);
+      return await fetchProfile(user.uid, preferCache: false);
     } catch (_) {
       return null;
     }
@@ -237,7 +237,7 @@ class SupabaseUserRepository {
             .limit(1)
             .maybeSingle();
         if (res != null) {
-          return fetchProfile(res['id'] as String, preferCache: false);
+          return await fetchProfile(res['id'] as String, preferCache: false);
         }
       } catch (_) {}
     }
@@ -289,7 +289,7 @@ class SupabaseUserRepository {
             .limit(1)
             .maybeSingle();
         if (res != null) {
-          return fetchProfile(res['id'] as String, preferCache: true);
+          return await fetchProfile(res['id'] as String, preferCache: true);
         }
       } catch (_) {}
     }
@@ -458,7 +458,7 @@ class SupabaseUserRepository {
           'updated_at': DateTime.now().toIso8601String(),
         }, onConflict: 'id');
 
-        return fetchProfile(user.uid, preferCache: false);
+        return await fetchProfile(user.uid, preferCache: false);
       } catch (_) {}
     }
     return null;
