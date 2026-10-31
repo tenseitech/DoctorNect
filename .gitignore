@@ -121,6 +121,10 @@ auth_otp.diff
 reset.out
 verify.out
 firestore-debug.log
+**/firestore-debug.log
+flutter_*.log
+flutter-web-*.log
+backend/functions/.env.bak*
 baseline_functions.json
 secrets.txt
 secrets*.txt

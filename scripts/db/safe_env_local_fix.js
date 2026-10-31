@@ -265,7 +265,7 @@ function ensureMissingVars(targetFile) {
   for (const name of REQUIRED_VARS) {
     if (present.has(name)) continue;
     if (mergedBefore[name]) continue;
-    const comment = PLACEHOLDER_COMMENTS[name] || 'see ENV_MATRIX.md';
+    const comment = PLACEHOLDER_COMMENTS[name] || 'see docs/ENV_MATRIX.md';
     append.push(`# ${comment}`);
     append.push(`${name}=`);
     added.push(name);

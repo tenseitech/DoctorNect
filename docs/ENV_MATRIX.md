@@ -73,6 +73,6 @@ Legend: **S** = required in staging, **P** = required in production, **O** = opt
 | `FIREBASE_PROJECT_ID` | Override compile-time Firebase project | Flutter | O | O | `medibond-staging` / `medibond-45fad` |
 | `FIREBASE_STORAGE_BUCKET` | Override Firebase Storage bucket (unused for PHI) | Flutter | O | O | env-specific bucket |
 
-See also: [ENVIRONMENTS.md](ENVIRONMENTS.md), root [.env.example](.env.example), [backend/functions/.env.example](backend/functions/.env.example).
+See also: [ENVIRONMENTS.md](../ENVIRONMENTS.md), root [.env.example](../.env.example), [backend/functions/.env.example](../backend/functions/.env.example).
 
 **Validator:** `node scripts/check_env_parity.js` → **0 undocumented core variables** (2026-10-31).

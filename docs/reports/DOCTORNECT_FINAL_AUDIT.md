@@ -232,7 +232,7 @@ Shared OTP + Firebase; role in custom claims + `users` row upsert (`onboarding_s
 
 ## 12. Production go-live checklist
 
-See `RDS_MIGRATION_RUNBOOK.md`, `ENV_MATRIX.md`, and §5–7 above.
+See [RDS_MIGRATION_RUNBOOK.md](../runbooks/RDS_MIGRATION_RUNBOOK.md), [ENV_MATRIX.md](../ENV_MATRIX.md), and §5–7 above.
 
 ---
 
@@ -252,6 +252,6 @@ See `RDS_MIGRATION_RUNBOOK.md`, `ENV_MATRIX.md`, and §5–7 above.
 
 ## 14. Changed files (second pass)
 
-`backend/firestore.rules`, `backend/storage.rules`, `backend/functions/registration_otp.js`, `abuse_rate_limit.js`, `s3_storage.js`, `src/config/redis_keys.js`, multiple tests, `services/api-gateway` (CORS, revocation), `frontend/lib/core/config/*`, `firebase_options.dart`, `app_environment.dart`, `onboarding_service.dart`, `appointment_repository.dart`, `DOCTORNECT_FINAL_AUDIT.md`, `ENV_MATRIX.md` (update pending), codemods under `scripts/codemods/`.
+`backend/firestore.rules`, `backend/storage.rules`, `backend/functions/registration_otp.js`, `abuse_rate_limit.js`, `s3_storage.js`, `src/config/redis_keys.js`, multiple tests, `services/api-gateway` (CORS, revocation), `frontend/lib/core/config/*`, `firebase_options.dart`, `app_environment.dart`, `onboarding_service.dart`, `appointment_repository.dart`, `docs/reports/DOCTORNECT_FINAL_AUDIT.md`, `docs/ENV_MATRIX.md`, codemods under `scripts/codemods/`.
 
 **VERDICT:** **PASS** on authorization and backend tests against **live staging Postgres**; **PARTIAL** on Postgres-only client binary until remaining Firestore repository code is deleted.

@@ -1,6 +1,6 @@
-# Medibond
+# DoctorNect (Medibond)
 
-A new Flutter project.
+Monorepo layout: `frontend/` (Flutter), `backend/functions/` (Firebase), `services/api-gateway/`, `db/`, `infra/`, `scripts/`, `docs/` (runbooks, env matrix, audits). See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
 
 ## Getting Started
 
