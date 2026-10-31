@@ -1,16 +1,11 @@
-import '../config/doctor_patient_cutover_flag.dart';
 import '../supabase/supabase_bootstrap.dart';
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../enums/user_type.dart';
 import '../firebase/ambulance_auth_helper.dart';
-import '../firebase/firebase_auth_service.dart';
-import '../firebase/firebase_bootstrap.dart';
-import '../firebase/firestore_paths.dart';
 import '../session/ambulance_session.dart';
 import '../session/app_session.dart';
 import '../session/doctor_session.dart';
@@ -20,8 +15,6 @@ import '../session/patient_session.dart';
 import '../validators/form_validators.dart';
 import '../validators/name_validator.dart';
 import 'registration_credentials.dart';
-import 'registration_otp_service.dart';
-
 /// Single, unified onboarding service for ALL 6 roles:
 /// Doctor, Patient, Medical, Pharmacy, Lab, Ambulance.
 ///
@@ -29,7 +22,7 @@ import 'registration_otp_service.dart';
 /// - Full Name is required and validated before ever entering a dashboard.
 /// - Exactly one user record per user (keyed by uid/phone).
 /// - profileCompletionStatus is initialized to 'incomplete'.
-/// - Name and role persist in Firestore, local cache, and active sessions.
+/// - Name and role persist in Postgres (users upsert), local cache, and active sessions.
 class OnboardingService {
   OnboardingService._();
 
@@ -67,8 +60,8 @@ class OnboardingService {
     };
   }
 
-  /// Completes the signup flow: validates real name, provisions Firestore records,
-  /// initializes active role sessions, and persists credentials.
+  /// Completes the signup flow: validates real name, upserts Postgres users row,
+  /// initializes active role sessions, and persists credentials locally.
   Future<void> completeNameOnboarding({
     required UserType role,
     required String fullName,
@@ -123,8 +116,7 @@ class OnboardingService {
       name: trimmedName,
     );
 
-    // Persist to Supabase if cutover flag is ON
-    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+    if (SupabaseBootstrap.isReady) {
       final effectiveUid = uid ?? profileId;
       final email = RegistrationCredentials.emailForMobile(cleanDigits);
       try {
@@ -147,126 +139,6 @@ class OnboardingService {
       }
     }
 
-    // Persist to Cloud Firestore if connected and cutover is OFF
-    if (FirebaseBootstrap.isReady && !DoctorPatientCutoverFlag.isEnabled) {
-      final db = FirebaseFirestore.instance;
-      final effectiveUid = uid ?? profileId;
-      final batch = db.batch();
-
-      final userRef = db.collection(FirestorePaths.users).doc(effectiveUid);
-      final email = RegistrationCredentials.emailForMobile(cleanDigits);
-
-      batch.set(
-        userRef,
-        {
-          'role': roleStr,
-          'profileId': profileId,
-          'displayName': trimmedName,
-          'name': trimmedName,
-          'mobile': cleanDigits,
-          'email': email,
-          'mobileVerified': true,
-          'profileCompleted': false,
-          'profileCompletionStatus': 'incomplete',
-          'verificationStatus':
-              role == UserType.patient ? 'verified' : 'profile_incomplete',
-          'status': role == UserType.patient ? 'approved' : 'pending_review',
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      // Domain profile collection
-      final domainCollection = switch (role) {
-        UserType.doctor => FirestorePaths.doctors,
-        UserType.patient => FirestorePaths.patients,
-        UserType.medical => FirestorePaths.medicalStores,
-        UserType.medicalStore => FirestorePaths.medicalStores,
-        UserType.lab => FirestorePaths.labs,
-        UserType.ambulance => FirestorePaths.ambulances,
-        UserType.superAdmin => FirestorePaths.users,
-      };
-
-      final domainRef = db.collection(domainCollection).doc(profileId);
-      final domainData = <String, dynamic>{
-        'name': trimmedName,
-        'mobile': formattedMobile,
-        'phone': formattedMobile,
-        'email': email,
-        'profileCompleted': false,
-        'profileCompletionStatus': 'incomplete',
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      if (role == UserType.doctor) {
-        domainData['doctorId'] = profileId;
-        domainData['status'] = 'pending_review';
-        domainData['verificationStatus'] = 'profile_incomplete';
-      } else if (role == UserType.patient) {
-        domainData['patientId'] = profileId;
-        domainData['verified'] = true;
-      } else if (role == UserType.medical || role == UserType.medicalStore) {
-        domainData['storeId'] = profileId;
-        domainData['storeName'] = trimmedName;
-        domainData['ownerName'] = trimmedName;
-        domainData['verified'] = false;
-        domainData['verificationStatus'] = 'profile_incomplete';
-      } else if (role == UserType.lab) {
-        domainData['labId'] = profileId;
-        domainData['labName'] = trimmedName;
-        domainData['verified'] = false;
-        domainData['verificationStatus'] = 'profile_incomplete';
-      } else if (role == UserType.ambulance) {
-        domainData['ambulanceId'] = profileId;
-        domainData['serviceName'] = trimmedName;
-        domainData['driverName'] = trimmedName;
-        domainData['available'] = false;
-        domainData['verified'] = false;
-        domainData['verificationStatus'] = 'profile_incomplete';
-      }
-
-      batch.set(domainRef, domainData, SetOptions(merge: true));
-
-      // Profile claim
-      final claimRef = db.collection('profile_claims').doc(profileId);
-      batch.set(
-        claimRef,
-        {
-          'uid': effectiveUid,
-          'role': roleStr,
-          'createdAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      try {
-        await batch.commit();
-      } catch (e) {
-        if (kDebugMode) debugPrint('Onboarding batch commit failed: $e');
-      }
-
-      // If user is not yet created in Firebase Auth, register credentials
-      if (FirebaseAuth.instance.currentUser == null) {
-        try {
-          final password = RegistrationCredentials.generatePassword();
-          await FirebaseAuthService.instance.registerProfile(
-            role: role == UserType.medical ? UserType.medicalStore : role,
-            email: email,
-            password: password,
-            profileId: profileId,
-            displayName: trimmedName,
-            mobile: formattedMobile,
-            otpVerificationSessionId:
-                RegistrationOtpService.verificationSessionId,
-            roleData: domainData,
-          );
-        } catch (e) {
-          if (kDebugMode) debugPrint('FirebaseAuthService register failed: $e');
-        }
-      }
-    }
   }
 
   /// Updates all active in-memory session singletons with the real name.
