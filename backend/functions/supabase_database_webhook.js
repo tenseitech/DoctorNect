@@ -1,6 +1,10 @@
 'use strict';
 
+const { defineSecret } = require('firebase-functions/params');
 const crypto = require('crypto');
+
+/** Bind via Cloud Functions secrets (name must match Secret Manager). */
+const supabaseWebhookSecret = defineSecret('SUPABASE_WEBHOOK_SECRET');
 const { sendFcmIfTokenExists } = require('./fcm_push');
 const { redisKey } = require('./src/config/redis_keys');
 const {
@@ -122,4 +126,5 @@ async function supabaseDatabaseWebhookHandler(req, res, options = {}) {
 module.exports = {
   supabaseDatabaseWebhookHandler,
   safeCompareSecrets,
+  supabaseWebhookSecret,
 };

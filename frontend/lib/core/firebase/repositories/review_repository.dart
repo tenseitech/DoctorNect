@@ -1,8 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
-
-import '../../../features/patient/data/registered_doctors_store.dart';
 import '../../../features/patient/doctor_profile/models/doctor_profile_detail.dart';
 import '../../supabase/repositories/supabase_review_repository.dart';
 

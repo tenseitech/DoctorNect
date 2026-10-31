@@ -48,6 +48,7 @@ const TEST_ONLY_VARS = new Set([
   'FIRESTORE_BASE_URL',
   'GOOGLE_OAUTH_TOKEN_URL',
   'SIMULATE_APPT_WRITE_FAIL',
+  '__TEST_FORCE_LEGACY_DOCTOR_PATIENT',
 ]);
 
 // Documented legacy aliases that fallback to primary canonical environment variables

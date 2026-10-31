@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../../constants/app_constants.dart';
 import '../../session/patient_session.dart';
 import '../../storage/storage_service.dart';
 import '../../supabase/repositories/supabase_lab_repository.dart';

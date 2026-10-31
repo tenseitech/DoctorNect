@@ -9,7 +9,10 @@ initializeApp();
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { sendFcmIfTokenExists, resolveAmbulanceDriverToken } = require('./fcm_push');
 const crypto = require('crypto');
-const { supabaseDatabaseWebhookHandler } = require('./supabase_database_webhook');
+const {
+  supabaseDatabaseWebhookHandler,
+  supabaseWebhookSecret,
+} = require('./supabase_database_webhook');
 
 /**
  * Constant-time string comparison preventing timing attacks on webhook secrets.
@@ -1368,7 +1371,7 @@ exports.processNotificationOutboxScheduled = onSchedule(
 exports.supabaseDatabaseWebhook = onRequest(
   {
     region: CALLABLE_REGION,
-    secrets: ['SUPABASE_WEBHOOK_SECRET', supabaseServiceRoleKey],
+    secrets: [supabaseWebhookSecret, supabaseServiceRoleKey],
   },
   supabaseDatabaseWebhookHandler,
 );
