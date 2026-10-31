@@ -121,11 +121,11 @@ function createMockRedis() {
   };
 }
 
-test('flag default: RATE_LIMIT_BACKEND defaults to firestore', () => {
+test('flag default: RATE_LIMIT_BACKEND defaults to redis (Postgres-only prod)', () => {
   const orig = process.env.RATE_LIMIT_BACKEND;
   delete process.env.RATE_LIMIT_BACKEND;
   try {
-    assert.equal(getRateLimitBackend(), 'firestore');
+    assert.equal(getRateLimitBackend(), 'redis');
   } finally {
     if (orig !== undefined) process.env.RATE_LIMIT_BACKEND = orig;
   }

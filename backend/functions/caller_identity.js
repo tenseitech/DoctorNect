@@ -35,7 +35,12 @@ async function resolveCallerIdentity({ db, uid, supabaseClient = null, forceSupa
     throw new HttpsError('unauthenticated', 'User profile document not found.');
   }
 
-  const useSupabase = forceSupabase || (await isDoctorPatientSupabasePrimary());
+  const useSupabase =
+    forceSupabase === true
+      ? true
+      : forceSupabase === false
+        ? false
+        : await isDoctorPatientSupabasePrimary();
 
   if (useSupabase) {
     const sb = supabaseClient || getSupabaseAdminClient();

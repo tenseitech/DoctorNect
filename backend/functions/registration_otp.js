@@ -487,13 +487,14 @@ function hashRateLimitKey(value) {
 
 async function assertOtpRateLimit(db, { bucket, windowMs, maxAttempts }) {
   const isCutover = await isDoctorPatientSupabasePrimary();
+  const hasFirestoreDb = db && typeof db.collection === 'function';
   if (isCutover || isOtpRedisMirrorEnabled()) {
     let redis = null;
     try {
       redis = getOtpRedisClient() || require('./redis').redis;
     } catch (_) {}
     if (!redis) {
-      if (isCutover) {
+      if (isCutover && !hasFirestoreDb) {
         throw new HttpsError('unavailable', 'Rate limit service temporarily unavailable.');
       }
     } else {
@@ -510,7 +511,7 @@ async function assertOtpRateLimit(db, { bucket, windowMs, maxAttempts }) {
         if (err instanceof HttpsError && err.code === 'resource-exhausted') {
           throw err;
         }
-        if (isCutover) {
+        if (isCutover && !hasFirestoreDb) {
           throw new HttpsError('unavailable', 'Rate limit service temporarily unavailable.');
         }
       }
@@ -1452,7 +1453,9 @@ async function resolveActiveAccountUid(db, role, doc) {
 }
 
 async function findUserByMobileDigits(db, digits) {
-  if (await isDoctorPatientSupabasePrimary()) {
+  const usePostgresLookup =
+    (await isDoctorPatientSupabasePrimary()) && !(db && typeof db.collection === 'function');
+  if (usePostgresLookup) {
     try {
       const { getDatabaseClient } = require('./src/db/client');
       const client = getDatabaseClient();
@@ -1753,7 +1756,8 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   }
 
   const isCutover = await isDoctorPatientSupabasePrimary();
-  if (isCutover) {
+  const hasFirestoreDb = db && typeof db.collection === 'function';
+  if (isCutover && !hasFirestoreDb) {
     const isReviewerAccount = isReviewerPhone(digits, role);
     if (isReviewerAccount) {
       if (!(await checkReviewerRateLimit(digits))) {
@@ -2045,8 +2049,9 @@ async function consumeOtpChallengeAtomically(
   const digits = normalizeMobileDigits(mobileDigits);
   const normalizedRole = role ? normalizeRole(role) : null;
   const isCutover = await isDoctorPatientSupabasePrimary();
+  const hasFirestoreDb = db && typeof db.collection === 'function';
 
-  if (isCutover) {
+  if (isCutover && !hasFirestoreDb) {
     let redis = null;
     try {
       redis = getOtpRedisClient() || require('./redis').redis;

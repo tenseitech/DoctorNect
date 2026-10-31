@@ -47,7 +47,7 @@ test('supabaseDatabaseWebhook rejects invalid or missing secret with 401', async
     },
   };
 
-  await supabaseDatabaseWebhookHandler(mockReq1, mockRes1, { expectedSecret });
+  await supabaseDatabaseWebhookHandler(mockReq1, mockRes1, { dispatchMode: 'webhook', expectedSecret });
   assert.equal(statusCode, 401);
   assert.deepEqual(jsonResponse, { error: 'Unauthorized' });
 
@@ -70,7 +70,7 @@ test('supabaseDatabaseWebhook rejects invalid or missing secret with 401', async
     },
   };
 
-  await supabaseDatabaseWebhookHandler(mockReq2, mockRes2, { expectedSecret });
+  await supabaseDatabaseWebhookHandler(mockReq2, mockRes2, { dispatchMode: 'webhook', expectedSecret });
   assert.equal(statusCode, 401);
   assert.deepEqual(jsonResponse, { error: 'Unauthorized' });
 });
@@ -142,6 +142,7 @@ test('supabaseDatabaseWebhook sends FCM once on right secret, and skips second s
   };
 
   await supabaseDatabaseWebhookHandler(req1, res1, {
+    dispatchMode: 'webhook',
     expectedSecret,
     db: mockDb,
     sendFcm: mockSendFcm,
@@ -167,6 +168,7 @@ test('supabaseDatabaseWebhook sends FCM once on right secret, and skips second s
   };
 
   await supabaseDatabaseWebhookHandler(req2, res2, {
+    dispatchMode: 'webhook',
     expectedSecret,
     db: mockDb,
     sendFcm: mockSendFcm,
@@ -227,101 +229,12 @@ test('Dual-write loop guard simulation: single write does not ping-pong', async 
   assert.equal(isLoopOrigin, true, 'Supabase reverse bridge must drop write originating from Firestore');
 });
 
-test('Cutover Flag: Reads Firebase Remote Config key use_supabase_db_doctor_patient (ON and OFF)', async () => {
+test('Postgres-only: isDoctorPatientSupabasePrimary is always true (no Firestore dual-write path)', async () => {
   resetRemoteConfigCache();
   try {
-    // 1. Remote Config ON
     setMockRemoteConfigTemplate(async () => ({
       parameters: {
-        use_supabase_db_doctor_patient: {
-          defaultValue: { value: 'true' },
-        },
-      },
-    }));
-    resetRemoteConfigCache();
-    const primaryOn = await isDoctorPatientSupabasePrimary();
-    assert.equal(primaryOn, true, 'isDoctorPatientSupabasePrimary must return true when Remote Config is true');
-
-    // 2. Remote Config OFF
-    setMockRemoteConfigTemplate(async () => ({
-      parameters: {
-        use_supabase_db_doctor_patient: {
-          defaultValue: { value: 'false' },
-        },
-      },
-    }));
-    resetRemoteConfigCache();
-    const primaryOff = await isDoctorPatientSupabasePrimary();
-    assert.equal(primaryOff, false, 'isDoctorPatientSupabasePrimary must return false when Remote Config is false');
-  } finally {
-    setMockRemoteConfigTemplate(null);
-    resetRemoteConfigCache();
-  }
-});
-
-test('Cutover Flag: In-memory cache returns cached value without re-querying Remote Config', async () => {
-  resetRemoteConfigCache();
-  let queryCount = 0;
-  try {
-    setMockRemoteConfigTemplate(async () => {
-      queryCount++;
-      return {
-        parameters: {
-          use_supabase_db_doctor_patient: {
-            defaultValue: { value: 'true' },
-          },
-        },
-      };
-    });
-
-    const firstCall = await isDoctorPatientSupabasePrimary();
-    assert.equal(firstCall, true);
-    assert.equal(queryCount, 1, 'First call must fetch from Remote Config');
-
-    // Second call within 60s cache window
-    const secondCall = await isDoctorPatientSupabasePrimary();
-    assert.equal(secondCall, true);
-    assert.equal(queryCount, 1, 'Second call must hit in-memory cache without calling Remote Config again');
-  } finally {
-    setMockRemoteConfigTemplate(null);
-    resetRemoteConfigCache();
-  }
-});
-
-test('Cutover Flag: Falls back to environment variable when Remote Config is unreachable', async () => {
-  resetRemoteConfigCache();
-  const origEnv = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
-  try {
-    // Remote Config throws network/permission error
-    setMockRemoteConfigTemplate(async () => {
-      throw new Error('Remote Config service unavailable');
-    });
-
-    // Fallback case 1: env is true
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = 'true';
-    resetRemoteConfigCache();
-    const fallbackTrue = await isDoctorPatientSupabasePrimary();
-    assert.equal(fallbackTrue, true, 'Must fallback to env=true when Remote Config fails');
-
-    // Fallback case 2: env is false
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = 'false';
-    resetRemoteConfigCache();
-    const fallbackFalse = await isDoctorPatientSupabasePrimary();
-    assert.equal(fallbackFalse, false, 'Must fallback to env=false when Remote Config fails');
-  } finally {
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origEnv;
-    setMockRemoteConfigTemplate(null);
-    resetRemoteConfigCache();
-  }
-});
-
-test('Single notification path routing: exactly one notification fires for ON and OFF cases', async () => {
-  resetRemoteConfigCache();
-  try {
-    // --- CASE 1: Cutover flag is ON (Supabase primary) ---
-    setMockRemoteConfigTemplate(async () => ({
-      parameters: {
-        use_supabase_db_doctor_patient: { defaultValue: { value: 'true' } },
+        use_supabase_db_doctor_patient: { defaultValue: { value: 'false' } },
       },
     }));
     resetRemoteConfigCache();
@@ -337,31 +250,8 @@ test('Single notification path routing: exactly one notification fires for ON an
       supabaseWebhookFired = true;
     }
 
-    assert.equal(firestoreTriggerFired, false, 'Firestore FCM trigger must be OFF when Supabase is primary');
-    assert.equal(supabaseWebhookFired, true, 'Supabase webhook must send notification when Supabase is primary');
-    assert.equal((firestoreTriggerFired ? 1 : 0) + (supabaseWebhookFired ? 1 : 0), 1);
-
-    // --- CASE 2: Cutover flag is OFF (Firestore primary) ---
-    setMockRemoteConfigTemplate(async () => ({
-      parameters: {
-        use_supabase_db_doctor_patient: { defaultValue: { value: 'false' } },
-      },
-    }));
-    resetRemoteConfigCache();
-    assert.equal(await isDoctorPatientSupabasePrimary(), false);
-
-    firestoreTriggerFired = false;
-    supabaseWebhookFired = false;
-
-    if (!(await isDoctorPatientSupabasePrimary())) {
-      firestoreTriggerFired = true;
-    }
-    if (await isDoctorPatientSupabasePrimary()) {
-      supabaseWebhookFired = true;
-    }
-
-    assert.equal(firestoreTriggerFired, true, 'Firestore FCM trigger must send notification when Firestore is primary');
-    assert.equal(supabaseWebhookFired, false, 'Supabase webhook must not send notification when Firestore is primary');
+    assert.equal(firestoreTriggerFired, false, 'Firestore FCM triggers are removed in postgres-only architecture');
+    assert.equal(supabaseWebhookFired, true, 'Supabase webhook is the notification path');
     assert.equal((firestoreTriggerFired ? 1 : 0) + (supabaseWebhookFired ? 1 : 0), 1);
   } finally {
     setMockRemoteConfigTemplate(null);
@@ -410,6 +300,7 @@ test('Phase D Webhooks: pharmacy_deliveries INSERT notifies store and UPDATE(dis
   };
 
   await supabaseDatabaseWebhookHandler(reqInsert, mockRes, {
+    dispatchMode: 'webhook',
     expectedSecret,
     db: mockDb,
     sendFcm: mockSendFcm,
@@ -442,6 +333,7 @@ test('Phase D Webhooks: pharmacy_deliveries INSERT notifies store and UPDATE(dis
   };
 
   await supabaseDatabaseWebhookHandler(reqUpdate, mockRes, {
+    dispatchMode: 'webhook',
     expectedSecret,
     db: mockDb,
     sendFcm: mockSendFcm,
@@ -488,6 +380,7 @@ test('Phase D Webhooks: lab_bookings INSERT notifies lab and UPDATE(completed) n
   };
 
   await supabaseDatabaseWebhookHandler(reqInsert, mockRes, {
+    dispatchMode: 'webhook',
     expectedSecret,
     db: mockDb,
     sendFcm: mockSendFcm,
@@ -520,6 +413,7 @@ test('Phase D Webhooks: lab_bookings INSERT notifies lab and UPDATE(completed) n
   };
 
   await supabaseDatabaseWebhookHandler(reqUpdate, mockRes, {
+    dispatchMode: 'webhook',
     expectedSecret,
     db: mockDb,
     sendFcm: mockSendFcm,
@@ -568,6 +462,7 @@ test('Phase D Webhooks: ambulance_broadcasts UPDATE(accepted) notifies patient',
   };
 
   await supabaseDatabaseWebhookHandler(reqUpdate, mockRes, {
+    dispatchMode: 'webhook',
     expectedSecret,
     db: mockDb,
     sendFcm: mockSendFcm,

@@ -68,7 +68,7 @@ async function sendFcmIfTokenExists(db, {
   supabaseClient = null,
 }) {
   const label = logLabel || `${collection}/${docId}`;
-  const useSupabase = forceSupabase || (await isDoctorPatientSupabasePrimary());
+  const useSupabase = true;
 
   if (useSupabase) {
     const sb = supabaseClient || getSupabaseAdminClient();

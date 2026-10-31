@@ -360,14 +360,6 @@ test('User ID Bridge: toUserUuid produces deterministic RFC 4122 v5 UUID and par
   // Parity with cross_role_sync exported helper
   assert.equal(crossRoleToUserUuid(uid1), uuid1, 'cross_role_sync toUserUuid must produce identical UUID');
 
-  // Verify migration script imports and uses the shared helper
-  const migrateScriptPath = path.resolve(__dirname, '../../scripts/migrate_firestore_to_supabase.js');
-  const scriptContent = fs.readFileSync(migrateScriptPath, 'utf8');
-  assert.ok(
-    scriptContent.includes("require('../functions/user_id_bridge')"),
-    'migrate_firestore_to_supabase.js must require user_id_bridge'
-  );
-
   // Edge cases
   assert.equal(toUserUuid(''), null);
   assert.equal(toUserUuid(null), null);

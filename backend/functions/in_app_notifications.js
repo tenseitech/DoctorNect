@@ -1,8 +1,4 @@
-const { FieldValue } = require('firebase-admin/firestore');
-
-const IN_APP_NOTIFICATIONS = 'in_app_notifications';
-const DOCTORS = 'doctors';
-const PATIENTS = 'patients';
+const { getDatabaseClient } = require('./src/db/client');
 
 function sanitizeDocIdPart(value) {
   return String(value || '')
@@ -14,77 +10,70 @@ function sanitizeDocIdPart(value) {
 /**
  * Resolve the doctor's Firebase Auth uid from their profile id.
  */
-async function resolveDoctorRecipientUid(db, doctorId) {
+async function resolveDoctorRecipientUid(_db, doctorId) {
   const normalizedDoctorId = String(doctorId || '').trim();
   if (!normalizedDoctorId) return null;
 
-  const doctorSnap = await db.collection(DOCTORS).doc(normalizedDoctorId).get();
-  if (!doctorSnap.exists) return null;
+  const { data, error } = await getDatabaseClient()
+    .from('doctors')
+    .select('owner_uid')
+    .eq('doctor_id', normalizedDoctorId)
+    .maybeSingle();
+  if (error || !data) return null;
 
-  const ownerUid = String(doctorSnap.data()?.ownerUid || '').trim();
+  const ownerUid = String(data.owner_uid || '').trim();
   return ownerUid || null;
 }
 
 /**
  * Resolve the patient's Firebase Auth uid from their profile id.
  */
-async function resolvePatientRecipientUid(db, patientId) {
+async function resolvePatientRecipientUid(_db, patientId) {
   const normalizedPatientId = String(patientId || '').trim();
   if (!normalizedPatientId) return null;
 
-  const patientSnap = await db.collection(PATIENTS).doc(normalizedPatientId).get();
-  if (!patientSnap.exists) return null;
+  const { data, error } = await getDatabaseClient()
+    .from('patients')
+    .select('owner_uid')
+    .eq('patient_id', normalizedPatientId)
+    .maybeSingle();
+  if (error || !data) return null;
 
-  const ownerUid = String(patientSnap.data()?.ownerUid || '').trim();
+  const ownerUid = String(data.owner_uid || '').trim();
   return ownerUid || null;
 }
 
 /**
  * Idempotent in-app notification write using a deterministic document id.
  */
-async function createInAppNotification(db, payload) {
+async function createInAppNotification(_db, payload) {
   const recipientUid = String(payload.recipientUid || '').trim();
   const dedupeKey = String(payload.dedupeKey || '').trim();
   if (!recipientUid || !dedupeKey) return null;
 
   const docId = `${sanitizeDocIdPart(recipientUid)}_${sanitizeDocIdPart(dedupeKey)}`;
-  const ref = db.collection(IN_APP_NOTIFICATIONS).doc(docId);
 
-  const data = {
-    recipientUid,
-    recipientRole: payload.recipientRole,
-    recipientProfileId: payload.recipientProfileId,
+  const { error } = await getDatabaseClient().from('in_app_notifications').upsert({
+    id: docId,
+    recipient_uid: recipientUid,
+    recipient_role: payload.recipientRole,
+    recipient_profile_id: payload.recipientProfileId || null,
     title: payload.title,
     body: payload.body,
     type: payload.type,
-    target: payload.target || null,
-    targetId: payload.targetId || null,
-    dedupeKey,
-    doctorTrigger: payload.doctorTrigger || null,
-    patientTrigger: payload.patientTrigger || null,
-    isRead: false,
-    createdAt: FieldValue.serverTimestamp(),
-    sourceEvent: payload.sourceEvent,
-    sourceId: payload.sourceId,
-  };
-
-  await ref.set(data, { merge: true });
-
-  try {
-    const { getDatabaseClient } = require('./src/db/client');
-    const sbClient = getDatabaseClient();
-    await sbClient.from('in_app_notifications').upsert({
-      id: docId,
-      recipient_uid: recipientUid,
-      recipient_role: payload.recipientRole,
-      title: payload.title,
-      body: payload.body,
-      type: payload.type,
-      target_screen: payload.target || null,
-      target_id: payload.targetId || null,
-      is_read: false,
-    });
-  } catch (_) {}
+    target_screen: payload.target || null,
+    target_id: payload.targetId || null,
+    dedupe_key: dedupeKey,
+    doctor_trigger: payload.doctorTrigger || null,
+    patient_trigger: payload.patientTrigger || null,
+    is_read: false,
+    source_event: payload.sourceEvent || null,
+    source_id: payload.sourceId || null,
+  });
+  if (error) {
+    console.error('createInAppNotification upsert failed', error.message);
+    return null;
+  }
 
   return docId;
 }

@@ -82,15 +82,15 @@ function getSupabaseAdminClient() {
 }
 
 async function resolveStorageContext(dbOrOptions) {
-  const db = (dbOrOptions && typeof dbOrOptions.collection === 'function')
+  const isExplicitFirestoreDb =
+    dbOrOptions && typeof dbOrOptions.collection === 'function';
+  const db = isExplicitFirestoreDb
     ? dbOrOptions
     : (dbOrOptions?.db || getFirestore());
-  const options = (dbOrOptions && typeof dbOrOptions.collection === 'function')
-    ? {}
-    : (dbOrOptions || {});
+  const options = isExplicitFirestoreDb ? {} : (dbOrOptions || {});
   const isSupabase = options.isSupabasePrimary !== undefined
     ? options.isSupabasePrimary
-    : await isDoctorPatientSupabasePrimary();
+    : (isExplicitFirestoreDb ? false : await isDoctorPatientSupabasePrimary());
   const supabase = options.supabaseClient || getSupabaseAdminClient();
   return { db, options, isSupabase, supabase };
 }
@@ -106,6 +106,13 @@ function getS3Client() {
     process.env.AWS_SECRET_ACCESS_KEY;
 
   if (!keyId || !secretKey) {
+    if (String(process.env.APP_ENV || '').trim().toLowerCase() === 'production') {
+      return new S3Client({
+        region: AWS_REGION,
+        requestChecksumCalculation: 'WHEN_REQUIRED',
+        responseChecksumValidation: 'WHEN_REQUIRED',
+      });
+    }
     throw new HttpsError('failed-precondition', 'AWS S3 credentials are not configured.');
   }
 
@@ -264,7 +271,7 @@ async function resolveCallerUser(db, uid, ctx = {}) {
     db,
     uid,
     supabaseClient: ctx.supabase || null,
-    forceSupabase: ctx.isSupabase ?? false,
+    forceSupabase: ctx.isSupabase === true,
   });
 }
 

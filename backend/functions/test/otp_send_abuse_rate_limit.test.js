@@ -5,11 +5,17 @@ const assert = require('node:assert/strict');
 const adminFirestore = require('firebase-admin/firestore');
 const { LIMITS, enforceAbuseLimit } = require('../abuse_rate_limit');
 const { enforceSendUserRegistrationOtpRateLimit } = require('../index');
+const { setRedisClientForTesting } = require('../redis');
 
 let origCutover;
+let origRateLimitBackend;
 test.beforeEach(() => {
   origCutover = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+  origRateLimitBackend = process.env.RATE_LIMIT_BACKEND;
   process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+  process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
+  process.env.RATE_LIMIT_BACKEND = 'firestore';
+  setRedisClientForTesting(null);
   try {
     const { _resetRemoteConfigCache } = require('../sync_flags');
     _resetRemoteConfigCache();
@@ -17,8 +23,12 @@ test.beforeEach(() => {
 });
 
 test.afterEach(() => {
+  setRedisClientForTesting(null);
+  delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
   if (origCutover === undefined) delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
   else process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origCutover;
+  if (origRateLimitBackend === undefined) delete process.env.RATE_LIMIT_BACKEND;
+  else process.env.RATE_LIMIT_BACKEND = origRateLimitBackend;
   try {
     const { _resetRemoteConfigCache } = require('../sync_flags');
     _resetRemoteConfigCache();

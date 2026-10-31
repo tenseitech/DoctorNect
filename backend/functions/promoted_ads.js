@@ -309,7 +309,8 @@ async function activatePromotedAdPayment(db, {
   }
 
   const isCutover = await isDoctorPatientSupabasePrimary();
-  if (isCutover) {
+  const useFirestoreDb = db && typeof db.collection === 'function';
+  if (isCutover && !useFirestoreDb) {
     const supabase = getSupabaseAdmin();
     if (!supabase) {
       throw new HttpsError('unavailable', 'Database service temporarily unavailable.');
@@ -784,7 +785,8 @@ async function razorpayWebhookHandler(req, res, db) {
   const durationHours = notes.durationHours ? parseInt(notes.durationHours, 10) : null;
 
   const isCutover = await isDoctorPatientSupabasePrimary();
-  if (isCutover) {
+  const useFirestoreDb = db && typeof db.collection === 'function';
+  if (isCutover && !useFirestoreDb) {
     const supabase = getSupabaseAdmin();
     if (!supabase) {
       res.status(503).json({ error: { message: 'Database service unavailable' } });
@@ -1123,8 +1125,9 @@ async function reviewPromotedAdHandler(db, data, auth) {
 
   const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
   const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
+  const useFirestoreDb = db && typeof db.collection === 'function';
 
-  if (isCutover) {
+  if (isCutover && !useFirestoreDb) {
     const { getSupabaseAdminClient } = require('./caller_identity');
     const sb = getSupabaseAdminClient();
     if (!sb) throw new HttpsError('internal', 'Supabase client not configured.');

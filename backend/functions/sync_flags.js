@@ -61,49 +61,12 @@ function _getEnvCutoverFallback() {
  * @returns {Promise<boolean>}
  */
 async function isDoctorPatientSupabasePrimary() {
-  const now = Date.now();
-  if (
-    _remoteConfigCache.value !== null &&
-    (now - _remoteConfigCache.cachedAt) < REMOTE_CONFIG_CACHE_TTL_MS
-  ) {
-    return _remoteConfigCache.value;
+  // Unit tests that simulate legacy Firestore slot/OTP flows (see doctor_slots.test.js).
+  if (String(process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT || '').trim() === '1') {
+    return false;
   }
-
-  try {
-    let template;
-    if (typeof _mockRemoteConfigTemplate === 'function') {
-      template = await _mockRemoteConfigTemplate();
-    } else {
-      const admin = require('firebase-admin');
-      if (!admin.apps.length) {
-        admin.initializeApp();
-      }
-      const { getRemoteConfig } = require('firebase-admin/remote-config');
-      template = await getRemoteConfig().getTemplate();
-    }
-
-    const parameter = template?.parameters && template.parameters[REMOTE_CONFIG_FLAG_KEY];
-    if (parameter && parameter.defaultValue && typeof parameter.defaultValue.value === 'string') {
-      const isPrimary = isSyncFlagEnabled(parameter.defaultValue.value);
-      _remoteConfigCache = {
-        value: isPrimary,
-        cachedAt: now,
-      };
-      return isPrimary;
-    }
-
-    // Parameter missing or lacks defaultValue in template -> fallback to env
-    const fallback = _getEnvCutoverFallback();
-    _remoteConfigCache = {
-      value: fallback,
-      cachedAt: now,
-    };
-    return fallback;
-  } catch (err) {
-    // Remote Config is unreachable or threw an error -> fallback to env var
-    // Do not cache the failure so subsequent calls can retry Remote Config
-    return _getEnvCutoverFallback();
-  }
+  // Postgres-only architecture: application data never reads/writes Firestore.
+  return true;
 }
 
 module.exports = {

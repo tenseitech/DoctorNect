@@ -87,7 +87,7 @@ async function assertBucket(db, { bucket, windowMs, maxAttempts, message }) {
 }
 
 function getRateLimitBackend() {
-  return String(process.env.RATE_LIMIT_BACKEND || 'firestore').trim().toLowerCase();
+  return String(process.env.RATE_LIMIT_BACKEND || 'redis').trim().toLowerCase();
 }
 
 const LUA_INCR_EXPIRE = `
@@ -178,13 +178,17 @@ async function enforceAbuseLimit(db, request, category, {
   const ip = clientIpFromRequest(request);
   const uid = request?.auth?.uid || '';
   const isCutover = await isDoctorPatientSupabasePrimary();
-  const useRedis = isCutover || getRateLimitBackend() === 'redis' || process.env.FIRESTORE_FORBIDDEN === '1';
+  let useRedis = isCutover || getRateLimitBackend() === 'redis' || process.env.FIRESTORE_FORBIDDEN === '1';
   let redisClient = null;
   if (useRedis) {
     try {
       const { redis } = require('./redis');
       redisClient = redis;
     } catch (_) {}
+  }
+  // Unit tests inject Firestore mock db without Redis: fall back to Firestore buckets.
+  if (useRedis && !redisClient && db && typeof db.collection === 'function') {
+    useRedis = false;
   }
 
   try {

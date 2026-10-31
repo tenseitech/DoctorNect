@@ -417,9 +417,11 @@ function areDateTimesEqual(a, b) {
 /**
  * Handler for the appointments/{appointmentId} Firestore trigger.
  */
-async function reconcileAppointmentSlotHandler(event, db = getFirestore()) {
+async function reconcileAppointmentSlotHandler(event, db = getFirestore(), handlerOptions = {}) {
   const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
-  const isCutover = await isDoctorPatientSupabasePrimary();
+  const forceLegacy =
+    handlerOptions.forceLegacy === true || event?.__testOptions?.forceLegacyReconcile === true;
+  const isCutover = forceLegacy ? false : await isDoctorPatientSupabasePrimary();
   if (isCutover) {
     return { reconciled: false, reason: 'cutover_supabase_primary' };
   }

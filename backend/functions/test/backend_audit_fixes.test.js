@@ -5,13 +5,12 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 
-test('H-9: Firestore triggers default to the live database location asia-south2', () => {
+test('H-9: Postgres-only index does not register Firestore document sync triggers', () => {
   const src = fs.readFileSync(path.join(__dirname, '../index.js'), 'utf8');
-  assert.match(
-    src,
-    /FIRESTORE_TRIGGER_REGION = String\(process\.env\.FIRESTORE_TRIGGER_REGION \|\| 'asia-south2'\)/,
-  );
-  assert.match(src, /region: FIRESTORE_TRIGGER_REGION/);
+  assert.doesNotMatch(src, /exports\.\w+\s*=\s*onDocumentWritten/);
+  assert.match(src, /processNotificationOutboxScheduled/);
+  assert.doesNotMatch(src, /exports\.sync\w+ToSupabase\s*=/);
+  assert.match(src, /exports\.supabaseDatabaseWebhook\s*=/);
 });
 
 test('H-6: REDIS_SECRETS bind only when OTP_REDIS_MIRROR is on', () => {
