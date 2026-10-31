@@ -161,7 +161,7 @@ Superset of functions runtime; includes `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_W
 | Client public config | `frontend/.env.example` + root `.env` for local build keys only | **Never** service role |
 | Functions runtime | `backend/functions/.env` + `.env.example` | Yes (local); SM in prod |
 | Migration/infra CLI | `.env.migration` + `backend/.env.migration.example` | Yes (local only) |
-| Root index | `.env.example` points to the three above; no duplicate keys | Names + comments only |
+| Root index | `.env.example` points to frontend / functions / migration templates; **zero runtime keys** | Names + comments only |
 
 ---
 
@@ -173,11 +173,21 @@ Superset of functions runtime; includes `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_W
 | B Near-duplicates | No `*_old` / `.bak` suffix files found in scan | — |
 | G Config | Single `backend/firestore.rules`; single `firebase.json` | OK |
 | I Backups | `backups/staging_logical_*` duplicates DB snapshot | **Quarantine / externalize** (not delete without approval) |
-| Structure | Root `functions/` orphan | **Gitignore** `/functions/` (canonical `backend/functions`) |
+| Structure | Root `functions/` orphan | **Deleted** locally (2026-10-31); canonical `backend/functions` |
+| I Backups | `backups/` untracked (~84 files) | **`backups/` in .gitignore**; folder kept on disk |
 | A Exact duplicates | `.artifacts/reports/baseline_functions.json` = `docs/ops/baseline_cloud_functions.json` | **No local copy** at audit time; canonical tracked path `docs/ops/baseline_cloud_functions.json` per `docs/ops/baselines.json` |
 | A Exact duplicates | `.agent/skills/ui-ux-pro-max/**` mirrors `.cursor/skills/ui-ux-pro-max/**` (55 vs 28 tracked) | **Pending human** — pick one IDE skill root before delete |
 
-Full duplicate table will be appended per batch in this file.
+### Phase 1 batch — docs / SQL / Dart (2026-10-31)
+
+| Category | Finding | Action |
+|----------|---------|--------|
+| I Docs | 21 audit/verification/report markdown files (`FINAL_VERIFICATION`, `FULL_AUDIT`, `SECURITY_AUDIT_v2`, archive planning, etc.) | **Flag only** — supersession order TBD; no deletes |
+| H SQL | 48 migrations; **199** unique policy names; many names appear in 2–6 files (e.g. `users_*`, `doctors_*` across `20260923…`, `20261008…`, `20261020…`) | **Flag only** — idempotent `DROP POLICY IF EXISTS` pattern; do not edit applied migrations |
+| C Dart | Cross-role duplicate basenames under `features/{doctor,patient,pharmacy,lab,ambulance}/` | **0 groups** (same filename in multiple roles) — deeper AST dedupe deferred |
+| Env | Templates collapsed — see `docs/ENV_STAGING_RDS_READERS.md`, `docs/FLAGS_CUTOVER_PROPOSAL.md` | Root index only; disjoint function/frontend/migration templates |
+
+**Test baselines:** No new Flutter or emulator failures vs `docs/baseline_flutter_failing_tests.txt` / `docs/baseline_failing_tests.txt` (no full flutter test re-run this batch; `flutter analyze` **0 issues**).
 
 ### Phase 1 verification policy (this branch)
 
