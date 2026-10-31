@@ -15,9 +15,10 @@
 | Working tree files (excl. node_modules, build, .dart_tool, .git) | 1906 files, 418 dirs |
 | SQL migrations (`db/migrations/*.sql`) | 48 |
 | Exact duplicate content groups (code/text, excl. large binaries) | 47 |
-| `flutter analyze` | **FAIL** — 4 issues (unawaited_return in `supabase_user_repository.dart`) |
-| `flutter test` | **FAIL** — 546 pass / 13 fail (see `auth_flows_test.dart`) |
-| Backend `npm test` | **PASS** — 471 pass / 0 fail / 22 skipped (493 total) |
+| `flutter analyze` | **PASS** — 0 issues (after commit `fff59e4`) |
+| `flutter test` | **FAIL** — 546 pass / 13 fail (unchanged; `auth_flows_test.dart`) |
+| Backend `npm test` (default, no emulators) | **PASS** — 471 pass / 0 fail / **22 skipped** (493 total) |
+| Backend `npm test` + Firestore/Storage emulators | **Mixed** — 591 pass / 139 fail / **5 skipped** (735 total); **17** of 22 former skips now execute (emulator-gated rules/emulator suites). Remaining **5 skips** = local Docker Postgres on `127.0.0.1:54322` (Docker Desktop was **not running** on audit machine). Command: `npx firebase-tools emulators:exec --only firestore,storage --project demo-doctornect-test "npm test --prefix backend/functions"`. Re-run after SQL/rules/config phases with emulators + `npx supabase start` in `backend/` when Docker is available. |
 | `check_env_parity.js` | **PASS** (0 undocumented core vars at last run on parent branch) |
 
 ---
@@ -172,9 +173,17 @@ Superset of functions runtime; includes `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_W
 | B Near-duplicates | No `*_old` / `.bak` suffix files found in scan | — |
 | G Config | Single `backend/firestore.rules`; single `firebase.json` | OK |
 | I Backups | `backups/staging_logical_*` duplicates DB snapshot | **Quarantine / externalize** (not delete without approval) |
-| Structure | Root `functions/` orphan | **Remove local** after quarantine note |
+| Structure | Root `functions/` orphan | **Gitignore** `/functions/` (canonical `backend/functions`) |
+| A Exact duplicates | `.artifacts/reports/baseline_functions.json` = `docs/ops/baseline_cloud_functions.json` | **No local copy** at audit time; canonical tracked path `docs/ops/baseline_cloud_functions.json` per `docs/ops/baselines.json` |
+| A Exact duplicates | `.agent/skills/ui-ux-pro-max/**` mirrors `.cursor/skills/ui-ux-pro-max/**` (55 vs 28 tracked) | **Pending human** — pick one IDE skill root before delete |
 
 Full duplicate table will be appended per batch in this file.
+
+### Phase 1 verification policy (this branch)
+
+- Per batch: `dart analyze` on touched Dart paths only.
+- End of each phase: full `flutter analyze`.
+- Backend: default `npm test` must stay **471 pass / 0 fail / 22 skip**; optional emulator+Docker matrix documented above (not a merge gate while Docker off).
 
 ---
 
@@ -195,7 +204,9 @@ git reset --hard 5c107e9                       # safety snapshot
 | Commit | Message |
 |--------|---------|
 | `5c107e9` | Safety snapshot (empty commit on parent HEAD) |
-| (pending) | Phase 0 audit scripts + this report |
+| `a3c39dd` | Phase 0 audit scripts + initial report |
+| `fff59e4` | fix: clear pre-existing analyze issues |
+| (pending) | Phase 1 structure gitignore + report baseline updates |
 
 ---
 

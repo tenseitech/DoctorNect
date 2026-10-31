@@ -14,6 +14,9 @@ migrate_working_dir/
 node_modules/
 **/node_modules/
 
+# Orphan root `functions/` (canonical: backend/functions per firebase.json)
+/functions/
+
 # IntelliJ related
 *.iml
 *.ipr
