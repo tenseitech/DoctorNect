@@ -27,6 +27,22 @@
       "new": "docs/reports/DOCTORNECT_VERIFICATION_REPORT.md"
     },
     {
+      "old": "ENV_MATRIX.md",
+      "new": "docs/ENV_MATRIX.md"
+    },
+    {
+      "old": "RDS_MIGRATION_RUNBOOK.md",
+      "new": "docs/runbooks/RDS_MIGRATION_RUNBOOK.md"
+    },
+    {
+      "old": "DOCTORNECT_FINAL_AUDIT.md",
+      "new": "docs/reports/DOCTORNECT_FINAL_AUDIT.md"
+    },
+    {
+      "old": "MIGRATION_PLAN.md",
+      "new": "docs/archive/planning/MIGRATION_PLAN.md"
+    },
+    {
       "old": "RDS_PRODUCTION_CHECKLIST.md",
       "new": "docs/checklists/RDS_PRODUCTION_CHECKLIST.md"
     },
