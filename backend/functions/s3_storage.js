@@ -15,6 +15,7 @@ const {
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
 const { enforceAbuseLimit } = require('./abuse_rate_limit');
+const { redisKey: envRedisKey } = require('./src/config/redis_keys');
 
 // Firebase Secret Manager declarations
 const awsAccessKeyId = defineSecret('AWS_ACCESS_KEY_ID');
@@ -947,7 +948,7 @@ function hashKey(value) {
 }
 
 function s3DownloadUrlCacheKey(objectKey) {
-  return `s3:dl:${hashKey(objectKey)}`;
+  return envRedisKey(`s3:dl:${hashKey(objectKey)}`);
 }
 
 function getS3UrlCacheConfig() {

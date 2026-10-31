@@ -196,7 +196,7 @@ test('Redis rate limiting: key contains no raw identifier or raw IP', async () =
 
     assert.ok(mockRedis.recordedKeys.length >= 2, 'Expected IP and ID keys in Redis');
     for (const key of mockRedis.recordedKeys) {
-      assert.ok(key.startsWith('ratelimit:otp_send:'), `Key ${key} must start with ratelimit:otp_send:`);
+      assert.ok(key.includes('ratelimit:otp_send:'), `Key ${key} must contain ratelimit:otp_send: (with APP_ENV prefix)`);
       assert.equal(key.includes(rawPhone), false, `Key ${key} must NOT contain raw phone number`);
       assert.equal(key.includes(rawIp), false, `Key ${key} must NOT contain raw IP address`);
       // Verify key ends with sha256 hex string (64 characters)

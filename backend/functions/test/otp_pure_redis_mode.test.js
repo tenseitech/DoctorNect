@@ -12,12 +12,15 @@ const {
   consumeOtpChallengeAtomically,
   hashOtp,
 } = require('../registration_otp');
+const { redisKey: envRedisKey } = require('../src/config/redis_keys');
 
 process.env.MSG91_AUTHKEY = 'test_msg91_authkey_pure_redis';
 process.env.MSG91_TEMPLATE_ID_REGISTRATION = 'test_template_reg_pure_redis';
 process.env.MSG91_SENDER_ID = 'DRNECT';
 process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = 'true';
 process.env.FIRESTORE_FORBIDDEN = '1';
+process.env.OTP_REDIS_MIRROR = 'on';
+process.env.APP_ENV = 'staging';
 
 function stubSms(onCode) {
   const original = https.request;
@@ -111,7 +114,7 @@ test('1. Redis UP: OTP send and verify succeed with zero Firestore access', asyn
 
     // Verify Redis has challenge
     const keys = Array.from(mockRedis.store.keys());
-    const challengeKey = keys.find((k) => k.startsWith('otp:challenge:'));
+    const challengeKey = keys.find((k) => k.includes('otp:challenge:'));
     assert.ok(challengeKey, 'Challenge must be stored in Redis');
     const challengeData = JSON.parse(mockRedis.store.get(challengeKey).val);
 
@@ -203,8 +206,8 @@ test('4. Expired OTP: past TTL throws deadline-exceeded', async () => {
 
     const secret = process.env.MSG91_AUTHKEY;
     const hashed = crypto.createHmac('sha256', secret).update(mobile).digest('hex');
-    const keyNull = `otp:challenge:${hashed}`;
-    const keyRole = `otp:challenge:${role}:${hashed}`;
+    const keyNull = envRedisKey(`otp:challenge:${hashed}`);
+    const keyRole = envRedisKey(`otp:challenge:${role}:${hashed}`);
 
     const payload = JSON.stringify({
       otpHash: hashOtp(testCode, { role, digits: mobile, purpose: 'create' }),
@@ -247,8 +250,8 @@ test('5. 5 failed attempts lockout: wrong OTP 5 times locks out and deletes chal
 
     const secret = process.env.MSG91_AUTHKEY;
     const hashed = crypto.createHmac('sha256', secret).update(mobile).digest('hex');
-    const keyNull = `otp:challenge:${hashed}`;
-    const keyRole = `otp:challenge:${role}:${hashed}`;
+    const keyNull = envRedisKey(`otp:challenge:${hashed}`);
+    const keyRole = envRedisKey(`otp:challenge:${role}:${hashed}`);
 
     const payload = JSON.stringify({
       otpHash: hashOtp(correctCode, { role, digits: mobile, purpose: 'create' }),
@@ -329,8 +332,8 @@ test('6. Concurrent verify race: exactly one request succeeds and the other fail
 
     const secret = process.env.MSG91_AUTHKEY;
     const hashed = crypto.createHmac('sha256', secret).update(mobile).digest('hex');
-    const keyNull = `otp:challenge:${hashed}`;
-    const keyRole = `otp:challenge:${role}:${hashed}`;
+    const keyNull = envRedisKey(`otp:challenge:${hashed}`);
+    const keyRole = envRedisKey(`otp:challenge:${role}:${hashed}`);
 
     const payload = JSON.stringify({
       otpHash: hashOtp(testCode, { role, digits: mobile, purpose: 'create' }),

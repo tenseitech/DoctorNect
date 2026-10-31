@@ -137,6 +137,8 @@ async function assertBucketRedis(redisClient, { key, windowMs, maxAttempts, mess
   }
 }
 
+const { redisKey: envRedisKey } = require('./src/config/redis_keys');
+
 async function assertBucketUnified({ db, redisClient, useRedis, bucket, redisKey, windowMs, maxAttempts, message }) {
   if (useRedis) {
     if (!redisClient) {
@@ -144,7 +146,7 @@ async function assertBucketUnified({ db, redisClient, useRedis, bucket, redisKey
     }
     try {
       await assertBucketRedis(redisClient, {
-        key: redisKey,
+        key: envRedisKey(redisKey),
         windowMs,
         maxAttempts,
         message,

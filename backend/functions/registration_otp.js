@@ -58,6 +58,16 @@ function mobileHash(role, digits) {
   return crypto.createHash('sha256').update(`${norm}:${digits}`).digest('hex');
 }
 
+const { redisKey: envPrefixedRedisKey } = require('./src/config/redis_keys');
+
+function otpAttemptsRedisKey(digits) {
+  return envPrefixedRedisKey(`otp:attempts:${digits}`);
+}
+
+function otpSessionRedisKey(sessionIdOrHash) {
+  return envPrefixedRedisKey(`otp:session:${sessionIdOrHash}`);
+}
+
 function otpRedisKey(role, digits) {
   const secret = readMsg91AuthKey({ required: false });
   if (!secret) return null;
@@ -66,7 +76,8 @@ function otpRedisKey(role, digits) {
     .createHmac('sha256', secret)
     .update(String(digits || '').trim())
     .digest('hex');
-  return normRole ? `otp:challenge:${normRole}:${hashedDigits}` : `otp:challenge:${hashedDigits}`;
+  const base = normRole ? `otp:challenge:${normRole}:${hashedDigits}` : `otp:challenge:${hashedDigits}`;
+  return envPrefixedRedisKey(base);
 }
 
 const OTP_REDIS_TIMEOUT_MS = 1500;
@@ -1798,7 +1809,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
         keyNull ? withOtpRedisTimeout(redis.set(keyNull, redisPayload, 'EX', ttlSec)) : Promise.resolve(),
         keyRole ? withOtpRedisTimeout(redis.set(keyRole, redisPayload, 'EX', ttlSec)) : Promise.resolve(),
       ]);
-      const attemptsKey = `otp:attempts:${digits}`;
+      const attemptsKey = otpAttemptsRedisKey(digits);
       if (typeof redis.del === 'function') {
         await withOtpRedisTimeout(redis.del(attemptsKey)).catch(() => {});
       }
@@ -2046,7 +2057,7 @@ async function consumeOtpChallengeAtomically(
 
     const keyNull = otpRedisKey(null, digits);
     const keyRole = normalizedRole ? otpRedisKey(normalizedRole, digits) : null;
-    const attemptsKey = `otp:attempts:${digits}`;
+    const attemptsKey = otpAttemptsRedisKey(digits);
 
     let rawChallenge = null;
     let attempts = 0;
@@ -2338,7 +2349,7 @@ async function consumeOtpVerificationSessionAtomically(
   const redis = getOtpRedisClient() || (isDoctorPatientSupabasePrimary() ? require('./redis').redis : null);
   if (redis && typeof redis.get === 'function') {
     try {
-      const raw = await withOtpRedisTimeout(redis.get(`otp:session:${sessionId}`));
+      const raw = await withOtpRedisTimeout(redis.get(otpSessionRedisKey(sessionId)));
       if (raw) {
         const session = JSON.parse(raw);
         if (session.consumed === true) {
@@ -2346,7 +2357,7 @@ async function consumeOtpVerificationSessionAtomically(
         }
         const expiresAt = session.expiresAt ? new Date(session.expiresAt) : null;
         if (!expiresAt || Date.now() > expiresAt.getTime()) {
-          await withOtpRedisTimeout(redis.del(`otp:session:${sessionId}`)).catch(() => {});
+          await withOtpRedisTimeout(redis.del(otpSessionRedisKey(sessionId))).catch(() => {});
           throw new HttpsError('failed-precondition', msg.expired);
         }
         if (assertSession) {
@@ -2354,7 +2365,7 @@ async function consumeOtpVerificationSessionAtomically(
         }
         await withOtpRedisTimeout(redis.del(`otp:session:${sessionId}`)).catch(() => {});
         if (session.mobileDigits) {
-          await withOtpRedisTimeout(redis.del(`otp:session:${mobileHash(session.role, session.mobileDigits)}`)).catch(() => {});
+          await withOtpRedisTimeout(redis.del(otpSessionRedisKey(mobileHash(session.role, session.mobileDigits)))).catch(() => {});
         }
         return { status: 'consumed', session };
       }
@@ -2410,7 +2421,7 @@ async function consumeOtpVerificationSessionAtomically(
     try {
       const redis = getOtpRedisClient() || (isDoctorPatientSupabasePrimary() ? require('./redis').redis : null);
       if (redis && typeof redis.del === 'function') {
-        withOtpRedisTimeout(redis.del(`otp:session:${sessionId}`)).catch(() => {});
+        withOtpRedisTimeout(redis.del(otpSessionRedisKey(sessionId))).catch(() => {});
       }
     } catch (_) {}
   }
@@ -2541,9 +2552,9 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
         consumed: false,
       };
       const jsonStr = JSON.stringify(sessionData);
-      await withOtpRedisTimeout(redis.set(`otp:session:${sessionId}`, jsonStr, 'EX', ttlSec));
+      await withOtpRedisTimeout(redis.set(otpSessionRedisKey(sessionId), jsonStr, 'EX', ttlSec));
       if (!isEmail) {
-        await withOtpRedisTimeout(redis.set(`otp:session:${mobileHash(role, digits)}`, jsonStr, 'EX', ttlSec));
+        await withOtpRedisTimeout(redis.set(otpSessionRedisKey(mobileHash(role, digits)), jsonStr, 'EX', ttlSec));
       }
     }
   } catch (err) {
