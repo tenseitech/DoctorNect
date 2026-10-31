@@ -177,9 +177,9 @@ function checkEnvParity() {
 
   // 1. Gather declared keys across all .env.example files
   const exampleFiles = [
-    path.join(ROOT_DIR, '.env.example'),
     path.join(ROOT_DIR, 'backend', 'functions', '.env.example'),
     path.join(ROOT_DIR, 'frontend', '.env.example'),
+    path.join(ROOT_DIR, 'backend', '.env.migration.example'),
   ];
 
   const declaredInExamples = new Map(); // key -> list of files
