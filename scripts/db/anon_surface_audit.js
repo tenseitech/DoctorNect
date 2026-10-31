@@ -183,7 +183,7 @@ async function runAnonSurfaceAudit(options = {}) {
     }
 
     const fnRes = await client.query(`
-      SELECT p.oid::regprocedure::text AS sig
+      SELECT p.oid::regprocedure::text AS sig, p.oid
       FROM pg_proc p
       JOIN pg_namespace n ON n.oid = p.pronamespace
       WHERE n.nspname = 'public'
@@ -191,16 +191,33 @@ async function runAnonSurfaceAudit(options = {}) {
     `);
 
     for (const row of fnRes.rows) {
-      const probe = await probeSql(client, `SELECT ${row.sig};`, {
-        expectSuccess: false,
-        allowedErrorCodes: ['42501', '42883', 'P0001'],
-      });
-      if (!probe.ok) {
-        failures.push(
-          probe.unexpected
-            ? `anon function probe ${row.sig} — ${probe.code}: ${probe.message}`
-            : `anon EXECUTE allowed on ${row.sig} (${probe.code})`,
-        );
+      const privRes = await client.query(
+        `SELECT has_function_privilege('anon', $1::oid, 'EXECUTE') AS anon_exec;`,
+        [row.oid],
+      );
+      if (privRes.rows[0]?.anon_exec === true) {
+        failures.push(`anon EXECUTE granted on ${row.sig}`);
+        continue;
+      }
+
+      const publicExecRes = await client.query(
+        `
+        SELECT EXISTS (
+          SELECT 1
+          FROM aclexplode(
+            COALESCE(
+              (SELECT proacl FROM pg_proc WHERE oid = $1::oid),
+              acldefault('f', (SELECT relowner FROM pg_proc WHERE oid = $1::oid))
+            )
+          ) AS acl
+          WHERE acl.grantee = 0
+            AND acl.privilege_type = 'EXECUTE'
+        ) AS public_exec;
+        `,
+        [row.oid],
+      );
+      if (publicExecRes.rows[0]?.public_exec === true) {
+        failures.push(`PUBLIC EXECUTE granted on ${row.sig}`);
       }
     }
 
