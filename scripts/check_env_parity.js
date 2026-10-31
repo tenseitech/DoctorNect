@@ -51,17 +51,21 @@ const TEST_ONLY_VARS = new Set([
   '__TEST_FORCE_LEGACY_DOCTOR_PATIENT',
 ]);
 
-// Documented legacy aliases that fallback to primary canonical environment variables
-const LEGACY_ALIASES = {
-  MSG91_AUTHKEY: 'MSG91_AUTH_KEY',
-  AUTH_KEY: 'MSG91_AUTH_KEY',
-  SUPABASE_SECRET_KEY: 'SUPABASE_SERVICE_ROLE_KEY',
-  SUPABASE_SERVICE_KEY: 'SUPABASE_SERVICE_ROLE_KEY',
-  CUTOVER_DOCTOR_PATIENT: 'USE_SUPABASE_DB_DOCTOR_PATIENT',
-  GOOGLE_PLAY_REVIEW_PHONE: 'DEMO_PHONE_PATIENT',
-  MSG91_SENDER: 'MSG91_SENDER_ID',
-  REDIS_URL: 'REDIS_HOST',
-};
+// One canonical name per concept — duplicate names in .env.example must fail the check.
+const ENV_CONCEPT_GROUPS = [
+  { canonical: 'S3_BUCKET', aliases: ['S3_BUCKET_NAME', 'AWS_S3_VAULT_BUCKET'] },
+  { canonical: 'MSG91_AUTH_KEY', aliases: ['MSG91_AUTHKEY', 'AUTH_KEY'] },
+  { canonical: 'SUPABASE_SERVICE_ROLE_KEY', aliases: ['SUPABASE_SECRET_KEY', 'SUPABASE_SERVICE_KEY'] },
+  { canonical: 'USE_SUPABASE_DB_DOCTOR_PATIENT', aliases: ['CUTOVER_DOCTOR_PATIENT'] },
+  { canonical: 'DEMO_PHONE_PATIENT', aliases: ['GOOGLE_PLAY_REVIEW_PHONE'] },
+  { canonical: 'MSG91_SENDER_ID', aliases: ['MSG91_SENDER'] },
+  { canonical: 'REDIS_HOST', aliases: ['REDIS_URL'] },
+];
+
+// Legacy names still read in runtime code (outside dedicated migration helpers) — reported as errors.
+const LEGACY_ALIASES = Object.fromEntries(
+  ENV_CONCEPT_GROUPS.flatMap(({ canonical, aliases }) => aliases.map((a) => [a, canonical])),
+);
 
 // Ad-hoc script variables used exclusively in developer CLI maintenance tools
 const DEV_SCRIPT_VARS = new Set([
@@ -212,6 +216,44 @@ function checkEnvParity() {
   console.log(`Discovered ${declaredInExamples.size} variables documented across .env.example templates.`);
   console.log(`Discovered ${codeVars.size} environment variable references in source code.\n`);
 
+  const conceptViolations = [];
+  for (const { canonical, aliases } of ENV_CONCEPT_GROUPS) {
+    for (const alias of aliases) {
+      if (declaredInExamples.has(alias)) {
+        conceptViolations.push({
+          alias,
+          canonical,
+          files: declaredInExamples.get(alias),
+        });
+      }
+    }
+  }
+
+  const legacyInProductionCode = [];
+  const secureConfigRel = 'backend/functions/secure_config.js';
+  const LEGACY_ALIAS_HELPER_FILES = {
+    S3_BUCKET_NAME: ['backend/functions/src/config/s3_bucket.js'],
+    AWS_S3_VAULT_BUCKET: ['backend/functions/src/config/s3_bucket.js'],
+    MSG91_AUTHKEY: [secureConfigRel],
+    AUTH_KEY: [secureConfigRel],
+    SUPABASE_SECRET_KEY: [secureConfigRel],
+    SUPABASE_SERVICE_KEY: [secureConfigRel],
+    GOOGLE_PLAY_REVIEW_PHONE: ['backend/functions/production_otp_guard.js'],
+  };
+  for (const [varName, files] of codeVars.entries()) {
+    if (!LEGACY_ALIASES[varName]) continue;
+    const canonical = LEGACY_ALIASES[varName];
+    const prodFiles = [...files].filter((f) => !f.replace(/\\/g, '/').includes('/test/'));
+    if (prodFiles.length === 0) continue;
+    const allowed = LEGACY_ALIAS_HELPER_FILES[varName];
+    if (allowed) {
+      const normalized = prodFiles.map((f) => f.replace(/\\/g, '/'));
+      const onlyAllowed = normalized.every((f) => allowed.includes(f));
+      if (onlyAllowed) continue;
+    }
+    legacyInProductionCode.push({ name: varName, canonical, files: prodFiles });
+  }
+
   // 3. Classify variables
   const missingCoreVars = [];
   const recognizedAliases = [];
@@ -253,6 +295,22 @@ function checkEnvParity() {
   }
 
   // Reporting
+  if (conceptViolations.length > 0) {
+    console.log('❌ CRITICAL: Duplicate env concept documented (use canonical name only in .env.example):');
+    conceptViolations.sort((a, b) => a.alias.localeCompare(b.alias)).forEach((item) => {
+      console.log(`   - ${item.alias} (use ${item.canonical} instead) in: ${item.files.join(', ')}`);
+    });
+    console.log('');
+  }
+
+  if (legacyInProductionCode.length > 0) {
+    console.log('❌ CRITICAL: Legacy alias read in production code (migrate to canonical env name):');
+    legacyInProductionCode.sort((a, b) => a.name.localeCompare(b.name)).forEach((item) => {
+      console.log(`   - ${item.name} -> ${item.canonical} (referenced in: ${item.files.slice(0, 3).join(', ')})`);
+    });
+    console.log('');
+  }
+
   if (missingCoreVars.length > 0) {
     console.log('❌ CRITICAL: Missing from .env.example (Production code uses these but they are undocumented):');
     missingCoreVars.sort((a, b) => a.name.localeCompare(b.name)).forEach(item => {
@@ -263,10 +321,13 @@ function checkEnvParity() {
     console.log('✅ ALL core production & runtime variables are documented in .env.example templates!\n');
   }
 
-  if (recognizedAliases.length > 0) {
-    console.log('ℹ️  Legacy Aliases (Fallbacks to documented canonical variables):');
-    recognizedAliases.sort((a, b) => a.name.localeCompare(b.name)).forEach(item => {
-      console.log(`   - ${item.name} -> maps to canonical ${item.canonical} (${item.documented ? 'DOCUMENTED' : 'MISSING'})`);
+  const infoAliases = recognizedAliases.filter(
+    (item) => !['S3_BUCKET_NAME', 'AWS_S3_VAULT_BUCKET'].includes(item.name),
+  );
+  if (infoAliases.length > 0) {
+    console.log('ℹ️  Legacy Aliases still referenced in code (canonical must be documented):');
+    infoAliases.sort((a, b) => a.name.localeCompare(b.name)).forEach((item) => {
+      console.log(`   - ${item.name} -> ${item.canonical} (${item.documented ? 'DOCUMENTED' : 'MISSING'})`);
     });
     console.log('');
   }
@@ -288,10 +349,14 @@ function checkEnvParity() {
   }
 
   console.log('----------------------------------------------------------------');
-  console.log(`Summary: ${missingCoreVars.length} undocumented core variables.`);
+  const failCount =
+    missingCoreVars.length + conceptViolations.length + legacyInProductionCode.length;
+  console.log(
+    `Summary: ${missingCoreVars.length} undocumented, ${conceptViolations.length} duplicate concepts, ${legacyInProductionCode.length} legacy alias code refs.`,
+  );
   console.log('----------------------------------------------------------------\n');
 
-  if (missingCoreVars.length > 0) {
+  if (failCount > 0) {
     process.exitCode = 1;
   }
 }
@@ -307,6 +372,7 @@ module.exports = {
   extractDartEnvVars,
   SYSTEM_ENV_VARS,
   LEGACY_ALIASES,
+  ENV_CONCEPT_GROUPS,
   TEST_ONLY_VARS,
   DEV_SCRIPT_VARS,
 };

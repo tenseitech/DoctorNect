@@ -22,13 +22,11 @@ const awsAccessKeyId = defineSecret('AWS_ACCESS_KEY_ID');
 const awsSecretAccessKey = defineSecret('AWS_SECRET_ACCESS_KEY');
 const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');
 
+const { getS3BucketName } = require('./src/config/s3_bucket');
+
 const CALLABLE_REGION = 'asia-south1';
 const AWS_REGION = process.env.AWS_REGION || 'ap-south-1';
-const S3_BUCKET =
-  process.env.S3_BUCKET ||
-  process.env.S3_BUCKET_NAME ||
-  process.env.AWS_S3_VAULT_BUCKET ||
-  'doctornect-672027759702-ap-south-1-an';
+const S3_BUCKET = getS3BucketName();
 
 const ENFORCE_ABUSE_APP_CHECK = String(
   process.env.ENFORCE_ABUSE_APP_CHECK || process.env.ENFORCE_OTP_APP_CHECK || 'true',

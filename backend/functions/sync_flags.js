@@ -43,9 +43,7 @@ function _setMockRemoteConfigTemplate(mockFn) {
 }
 
 function _getEnvCutoverFallback() {
-  const envVal =
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT ||
-    process.env.CUTOVER_DOCTOR_PATIENT;
+  const envVal = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
   return isSyncFlagEnabled(envVal);
 }
 

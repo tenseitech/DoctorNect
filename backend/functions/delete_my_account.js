@@ -27,7 +27,8 @@ function getS3Sdk() {
   return _s3Sdk;
 }
 
-const S3_BUCKET = process.env.S3_BUCKET || 'doctornect';
+const { getS3BucketName } = require('./src/config/s3_bucket');
+const S3_BUCKET = getS3BucketName();
 let _testingS3Client = null;
 
 function setS3ClientForTesting(client) {
@@ -683,8 +684,6 @@ function getSupabaseServiceConfig() {
     : (readBoundSecret(supabaseServiceRoleKey, 'SUPABASE_SERVICE_ROLE_KEY') ||
       readSupabaseServiceRoleKey({ required: false }) ||
       String(process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY || '').trim() ||
-      String(process.env.SUPABASE_SECRET_KEY || '').trim() ||
-      String(process.env.SUPABASE_SERVICE_KEY || '').trim() ||
       String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim());
   if (!url || !key) return null;
   return { url, key, isProduction };

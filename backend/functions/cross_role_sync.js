@@ -20,6 +20,7 @@ require('./firestore_forbidden_guard');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const crypto = require('crypto');
 const { toUserUuid, executeUserSyncWithEmailFallback } = require('./user_id_bridge');
+const { readSupabaseServiceRoleKey } = require('./secure_config');
 
 // Resolve Supabase config from environment or Firebase functions config
 function getSupabaseConfig() {
@@ -29,7 +30,7 @@ function getSupabaseConfig() {
     : (process.env.STAGING_SUPABASE_URL || process.env.SUPABASE_URL || '');
   const key = isProduction
     ? (process.env.PROD_GATEWAY_SERVICE_KEY || '')
-    : (process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SECRET_KEY || '');
+    : (process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY || readSupabaseServiceRoleKey() || '');
   return { url, key };
 }
 

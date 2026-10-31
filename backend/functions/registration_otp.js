@@ -244,7 +244,7 @@ function getReviewerRedisClient() {
   try {
     const redisModule = require("./redis");
     if (typeof redisModule.getRedisClient === "function") {
-      if (process.env.REDIS_HOST || process.env.REDIS_URL) {
+      if (process.env.REDIS_HOST) {
         return redisModule.getRedisClient();
       }
     }
@@ -920,7 +920,7 @@ function resolveMsg91TemplateId(otpType) {
 }
 
 function resolveMsg91SenderId() {
-  return String(process.env.MSG91_SENDER_ID || process.env.MSG91_SENDER || 'DRNECT')
+  return String(process.env.MSG91_SENDER_ID || 'DRNECT')
     .trim()
     .toUpperCase();
 }

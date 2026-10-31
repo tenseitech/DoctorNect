@@ -141,7 +141,7 @@ Superset of functions runtime; includes `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_W
 |---------|-------------|-------------------|
 | Supabase service role | `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_KEY`, `SERVICE_ROLE_KEY` | `SUPABASE_SERVICE_ROLE_KEY` |
 | Supabase URL | `SUPABASE_URL`, `STAGING_SUPABASE_URL` | `SUPABASE_URL` (runtime); staging prefix in examples only |
-| S3 bucket | `S3_BUCKET`, `S3_BUCKET_NAME`, `AWS_S3_VAULT_BUCKET` | `S3_BUCKET` |
+| S3 bucket | ~~triple alias~~ | **`S3_BUCKET` only** in examples; legacy reads in `src/config/s3_bucket.js` until 2026-06-30 — see `docs/S3_BUCKET_CANONICAL.md` |
 | MSG91 auth | `MSG91_AUTH_KEY`, (legacy `MSG91_AUTHKEY`, `AUTH_KEY` in code) | `MSG91_AUTH_KEY` |
 
 ### Human decisions required (values differ — hashes only in `docs/_audit_env_conflicts.json`)

@@ -7,13 +7,4 @@ abstract final class AppEnvironment {
       appEnv.trim().toLowerCase() == 'production';
 
   static bool get isStaging => !isProduction;
-
-  /// AWS S3 vault bucket name (never Firebase Storage for PHI).
-  static String get s3VaultBucket {
-    const fromDefine = String.fromEnvironment('AWS_S3_VAULT_BUCKET');
-    if (fromDefine.isNotEmpty) return fromDefine;
-    return isProduction
-        ? 'doctornect-prod-vault'
-        : 'doctornect-staging-vault';
-  }
 }

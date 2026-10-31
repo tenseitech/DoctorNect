@@ -251,7 +251,7 @@ async function verifyRedis() {
 
 async function verifyAwsS3() {
   const region = mergedEnv.AWS_REGION || 'ap-south-1';
-  const bucket = mergedEnv.S3_BUCKET || mergedEnv.S3_BUCKET_NAME || mergedEnv.AWS_S3_VAULT_BUCKET || 'doctornect-672027759702-ap-south-1-an';
+  const bucket = mergedEnv.S3_BUCKET || 'doctornect-672027759702-ap-south-1-an';
   const bucketUrl = `https://${bucket}.s3.${region}.amazonaws.com/`;
 
   const startTime = Date.now();
