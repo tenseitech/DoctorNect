@@ -54,9 +54,9 @@ Legend: **S** = required in staging, **P** = required in production, **O** = opt
 | `OTP_TEST_MODE` | Disable real SMS (non-prod only) | Functions | O | O | `false` in prod |
 | `ENABLE_SUPABASE_SYNC` | Firestore→Postgres forward sync | Functions | O | O | `0` |
 | `FORCE_ENABLE_SUPABASE_SYNC_IN_PROD` | Emergency sync bridge | Functions | O | O | `0` |
-| `USE_SUPABASE_DB_DOCTOR_PATIENT` | Remote Config compile override | Flutter | O | O | `true` |
-| `ENABLE_SUPABASE` | Flutter compile: enable Postgres client | Flutter build | O | O | `0` \| `1` |
-| `USE_SUPABASE_AUTH` | Must remain false (Firebase Auth only) | Flutter | **S** | **P** | `false` |
+| `ENABLE_SUPABASE` | Flutter compile: enable Postgres REST client | Flutter build | O | **P** | `1` in prod |
+| `PROD_GATEWAY_URL` | Production API gateway base (PostgREST via gateway) | Flutter build | O | **P** | `https://api…` |
+| `RATE_LIMIT_BACKEND` | Abuse limits store | Functions | O | **P** | `redis` |
 | `DEMO_PHONE_*` / `REVIEW_*` | Store-review OTP bypass | Functions | O | O | empty in prod |
 | `ENABLE_REVIEW_DEMO` | Staging reviewer demo flag | Functions | O | O | empty in prod |
 | `SUPABASE_WEBHOOK_SECRET` | HMAC for DB webhooks | Functions | O | O | secret |
@@ -65,7 +65,7 @@ Legend: **S** = required in staging, **P** = required in production, **O** = opt
 | `PGRST_JWT_AUD` | PostgREST JWT audience | Gateway | O | O | `authenticated` |
 | `SERVICE_ROLE_KEY` | Gateway service key env name | Gateway | O | **P** | secret |
 | `ANON_KEY` | Gateway public anon key | Gateway | O | **P** | public |
-| `FIRESTORE_TRIGGER_REGION` | Firestore trigger region | Functions | **S** | **P** | `asia-south2` |
+| `FIRESTORE_TRIGGER_REGION` | Legacy (triggers removed); unused in postgres-only | Functions | O | O | n/a |
 | `FIRESTORE_FORBIDDEN` | Block Cloud Functions Firestore (OTP → Redis only) | Functions | O | **P** | `1` |
 | `OTP_REDIS_MIRROR` | Store OTP challenges in Redis | Functions | O | **P** | `on` |
 | `CORS_ALLOWED_ORIGINS` | Gateway browser CORS allow-list (comma-separated) | Gateway | O | **P** | `https://doctornect.com,...` |

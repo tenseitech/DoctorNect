@@ -39,6 +39,12 @@ Everything else: **no table GRANT** to `anon` and **no EXECUTE** on `public` fun
 
 Automated check: `node scripts/db/anon_surface_audit.js --target=staging` (or `replay` / `production`).
 
+## Production Flutter REST base
+
+Release builds compile `SUPABASE_URL` from **`PROD_GATEWAY_URL`** (see `frontend/scripts/release_build.sh`) so `supabase_flutter` talks to the **auth gateway**, not Supabase-hosted PostgREST. The gateway verifies the Firebase ID token, mints a PostgREST JWT, and proxies to the PostgREST sidecar → RDS. Staging continues to use the Supabase project URL.
+
+Local RDS parity (no live AWS): `scripts/db/verify_rds_migration_parity.sh`.
+
 ## Manual verification (do not run against production without change window)
 
 ```powershell
