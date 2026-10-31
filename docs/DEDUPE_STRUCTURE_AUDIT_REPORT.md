@@ -169,7 +169,7 @@ Superset of functions runtime; includes `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_W
 
 | Category | Finding | Action |
 |----------|---------|--------|
-| A Exact duplicates | 47 groups; large share `.agent/skills/ui-ux-pro-max/**` = `.cursor/skills/ui-ux-pro-max/**` | **Human:** keep one IDE skill root |
+| A Exact duplicates | 47 groups (includes IDE skill mirrors) | **Out of scope:** `.agent/`, `.agents/`, `.cursor/` skill trees excluded from dedupe |
 | B Near-duplicates | No `*_old` / `.bak` suffix files found in scan | — |
 | G Config | Single `backend/firestore.rules`; single `firebase.json` | OK |
 | I Backups | `backups/staging_logical_*` duplicates DB snapshot | **Quarantine / externalize** (not delete without approval) |

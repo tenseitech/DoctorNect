@@ -1,0 +1,17 @@
+# Flutter tests failing at safety commit 5c107e9 (pre-dedupe baseline)
+# Full suite: 546 pass / 13 fail (559 executed). Same on chore/dedupe-structure-audit after fff59e4.
+# Worktree: ../doctor-safety-baseline (requires local frontend/lib/firebase_options.secrets.dart copy to compile)
+
+auth_flows_test.dart :: Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks) :: (a) profile null after 3 attempts triggers signOut and does NOT call user.delete()
+auth_flows_test.dart :: Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks) :: (b) SupabaseUserRepository.createProfile exception is non-fatal and Firestore write succeeds
+auth_flows_test.dart :: Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks) :: (c) orphan Firebase Auth user with role doc repairs users/{uid} and completes login
+auth_flows_test.dart :: Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks) :: (d) orphan Firebase Auth user with NO role doc returns null cleanly without hanging
+auth_flows_test.dart :: Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks) :: (i) role doc ka ownerUid kisi aur uid ka ho, repair null return kare aur users/{uid} na bane
+auth_flows_test.dart :: Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks) :: (ii) user ka role doc patients mein ho par expectedRole doctor ho, null return kare aur users/{uid} na bane
+doctor_verification_gate_test.dart :: DoctorVerificationRepository.watchVerified guards :: returns false when Firebase is unavailable
+doctor_verification_gate_test.dart :: DoctorVerificationRepository.watchVerified guards :: returns false for empty doctor id
+doctor_verification_gate_test.dart :: DoctorVerificationRepository.watchVerified guards :: uses debug override stream in tests
+s3_photo_upload_ordering_test.dart :: LabBookingRepository.submitReport ordering :: Success: S3 upload -> Firestore update -> Old S3 report deleted
+s3_photo_upload_ordering_test.dart :: LabBookingRepository.submitReport ordering :: Firestore fails -> Old S3 report is NOT deleted
+s3_photo_upload_ordering_test.dart :: LabOrderRepository.submitReport ordering :: Success: S3 upload -> Firestore update -> Old S3 report deleted
+s3_photo_upload_ordering_test.dart :: LabOrderRepository.submitReport ordering :: Firestore fails -> Old S3 report is NOT deleted

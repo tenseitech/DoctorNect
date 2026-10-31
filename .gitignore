@@ -99,6 +99,8 @@ android/key.properties
 **/scripts/*_audit_results.json
 **/scripts/backfill_profile_claims_report.json
 docs/_audit_*.json
+docs/_emulator_test_run.log
+docs/_flutter_test_run.jsonl
 **/scripts/*_report.json
 **/scripts/*_report.csv
 

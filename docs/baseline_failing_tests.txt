@@ -1,0 +1,155 @@
+# Backend npm test failures under Firestore+Storage emulators (demo-doctornect-test)
+# Captured: 2026-10-31. Totals: 735 tests, 591 pass, 139 fail, 5 skipped (Docker Postgres off).
+# Command: npx firebase-tools emulators:exec --only firestore,storage --project demo-doctornect-test
+#          npm test --prefix backend/functions
+# Node runner total: 139 failures. This file lists 149 unique failing subtest/suite names from spec output.
+# Diff this file after SQL/rules/config cleanup phases.
+FAIL :: (10) positive registration: medicalStore legit create with full registration fields succeeds
+FAIL :: (11) positive registration: lab legit create with full registration fields succeeds
+FAIL :: (12) positive registration: ambulance legit create with full registration fields succeeds
+FAIL :: (13) positive registration: patient legit create with full registration fields succeeds
+FAIL :: (14) users update: client attempting to self-approve status on update is denied
+FAIL :: (15) doctors update: client attempting to self-approve status or verified is denied; legitimate updates succeed
+FAIL :: (16) medical_stores update: client attempting to self-approve status or verified is denied; legitimate updates succeed
+FAIL :: (17) labs update: client attempting to self-approve status or verified is denied; legitimate updates succeed
+FAIL :: (18) ambulances update: client attempting to self-approve status or verified is denied; legitimate updates succeed
+FAIL :: (5) cross-role claim: owner of that doctor doc claiming role doctor -> allowed
+FAIL :: (9) positive registration: doctor legit create with full registration fields succeeds
+FAIL :: (a) legacy user with profile doc and no claim: legitimate owner can claim, attacker is blocked
+FAIL :: (b) user with existing claim: legitimate owner can repair/update claim, attacker is blocked
+FAIL :: (c) users doc missing: legitimate owner repairs missing users doc using existing claim in batch
+FAIL :: 1. Patient cancel (cancelByPatient): payload replay on real baseline
+FAIL :: 10. Labs directory list (fetchVerifiedLabs: verified == true, limit <= 100)
+FAIL :: 10. community_medicines catalog add: payload replay
+FAIL :: 11. community_diagnoses catalog add: payload replay
+FAIL :: 12. Ambulance single doc get (registered ambulance)
+FAIL :: 12. community_lab_tests catalog add: payload replay
+FAIL :: 13. community_radiology catalog add: payload replay
+FAIL :: 14. community_body_parts catalog add: payload replay
+FAIL :: 15. Users single doc get (own user doc: allowed; other user doc: denied)
+FAIL :: 15. ambulance updateAvailability: payload replay
+FAIL :: 16. medical_directory read by doctor with doctorId filter (allowed); patient or unverified (denied)
+FAIL :: 16b. ambulance updateAmbulanceProfile: clean profile without PIN passes on both
+FAIL :: 17. ambulance registerAmbulance: payload replay
+FAIL :: 17. lab_catalog read / get (signed in: allowed)
+FAIL :: 18. community_* catalogs read / list (signed in: allowed)
+FAIL :: 2. Doctor cancel: payload replay on real baseline
+FAIL :: 2. fetchAllDoctors(verifiedOnly: true) [doctors.where(verified == true).limit
+FAIL :: 3. Doctor reschedule: payload replay on real baseline
+FAIL :: 4. Doctor complete (saveConsultationOutcome): payload replay on real baseline
+FAIL :: 4. councilNumber lookup at HEAD [doctors.where(verified == true).where(councilNumber == ...).limit
+FAIL :: 5. Doctor single doc get (verified doctor)
+FAIL :: 5. Walk-in create (addWalkInAppointment): payload replay
+FAIL :: 6. Prescription create: payload replay
+FAIL :: 7. Doctor single doc get (unverified doctor by owner: allowed)
+FAIL :: 7. Prescription update: payload replay
+FAIL :: 741cb46 Client Payload Replay Suite on Real Baseline (HEAD vs Live)
+FAIL :: 741cb46 delivery update (store) succeeds on both HEAD and Live
+FAIL :: 741cb46 doctor cancel succeeds on both HEAD and Live
+FAIL :: 741cb46 doctor reschedule succeeds on both HEAD and Live
+FAIL :: 741cb46 patient cancel on existing doc ID passes on both HEAD and Live
+FAIL :: 741cb46 pharmacy delivery create (doctor) succeeds on both HEAD and Live
+FAIL :: 741cb46 walk-in create succeeds on both HEAD and Live
+FAIL :: 8. Medical stores directory list (fetchVerifiedStores: verified == true, limit <= 100)
+FAIL :: 8. Pharmacy delivery create (doctor): payload replay
+FAIL :: 9. Pharmacy delivery update (store): payload replay
+FAIL :: A1. baseline WITHOUT createdVia: patient cancel succeeds under HEAD rules
+FAIL :: A2. baseline WITHOUT createdVia: doctor cancel succeeds under HEAD rules
+FAIL :: A3. baseline WITHOUT createdVia: doctor reschedule succeeds under HEAD rules
+FAIL :: A4. baseline WITHOUT createdVia: doctor complete succeeds under HEAD rules
+FAIL :: B1. baseline WITH createdVia: patient cancel succeeds under HEAD rules
+FAIL :: B2. baseline WITH createdVia: doctor cancel succeeds under HEAD rules
+FAIL :: B3. baseline WITH createdVia: doctor reschedule succeeds under HEAD rules
+FAIL :: B4. baseline WITH createdVia: doctor complete succeeds under HEAD rules
+FAIL :: Baseline Comparison: WITHOUT createdVia
+FAIL :: CONTROL for
+FAIL :: CONTROL: claiming an unclaimed profile doc by its legitimate owner succeeds
+FAIL :: CONTROL: registering with a unique unclaimed profileId succeeds
+FAIL :: CONTROL: registration with matching roles between user doc and claim doc succeeds
+FAIL :: CONTROL: users doc created with valid claim in batch succeeds
+FAIL :: Dart actual create payload (promoted_ads_service.dart:145-168) is allowed
+FAIL :: Edge Function Auth: Accepts valid secret via x-webhook-secret or Bearer token
+FAIL :: Edge Function Execution: Writes appointment status changes and cancellations to Firestore
+FAIL :: Edge Function Failure: Returns non-2xx status on Firestore write error so Supabase retries
+FAIL :: Emulator Protocol: Verified against local HTTP server simulating Firestore REST API
+FAIL :: HEAD Rules Replay Suite (Real Baseline)
+FAIL :: Owner changing durationHours, razorpayOrderId, razorpayPaymentId, amountPaid, startTime, endTime, paymentStatus on update is rejected
+FAIL :: Owner read of own pending or draft ad is allowed
+FAIL :: Owner setting status to active directly on update is rejected
+FAIL :: Replay against HEAD Rules
+FAIL :: Super admin read of any ad (active, pending, draft) is allowed
+FAIL :: TASK 3c: Cancellation writes only cancellation fields and adjusts updateMask
+FAIL :: TASK 3c: Missing old_record uses safe fallback (propagates defined status fields, skips when none)
+FAIL :: TASK 3c: Status change written to Firestore with only changed fields
+FAIL :: Unauthenticated read of an active ad is allowed
+FAIL :: admin: allowlisted admin email with email_verified: true can list users
+FAIL :: ambulance owner can upload KYC but cannot read it back
+FAIL :: anonymous reader can read public review projection without patientId
+FAIL :: appointment update key restrictions
+FAIL :: assigned lab can upload lab report and patient owner can read it
+FAIL :: community catalog create bounds
+FAIL :: community_body_parts normal create is allowed
+FAIL :: community_diagnoses normal create is allowed
+FAIL :: community_lab_tests normal create is allowed
+FAIL :: community_medicines normal create is allowed
+FAIL :: community_radiology normal create is allowed
+FAIL :: directory list rules
+FAIL :: doctor accept/complete/notes/prescription keys are allowed
+FAIL :: doctor owner can upload profile photo and any signed-in user can read it
+FAIL :: doctor walk-in create is allowed only for their profileId (when uid != profileId) and without createdVia
+FAIL :: doctor, medicalStore, lab, ambulance can create; patient cannot
+FAIL :: doctors: doctor can update own profile photo with valid prefix
+FAIL :: doctors: legacy update accepted with photoStorage "firebase" and only photoUrl
+FAIL :: doctors: legacy update accepted without photoKey/photoStorage (e.g. only name/address changed)
+FAIL :: each doctor clinical update is allowed and patientId is not
+FAIL :: existing user update paths still work after initial creation
+FAIL :: firestore.rules: promotedAds & razorpayPayments security rules
+FAIL :: health_records: S3 provider with correct prefix is accepted
+FAIL :: health_records: legacy record without storageProvider is accepted
+FAIL :: lab owner can upload KYC but cannot read it back
+FAIL :: lab_bookings: assigned lab can submit legacy report without reportStorageProvider
+FAIL :: lab_bookings: assigned lab can submit report with S3 provider and correct prefix
+FAIL :: lab_orders: assigned lab can submit report with S3 provider and correct prefix
+FAIL :: legit registration for all 5 roles succeeds via client-shaped 3-doc batch (claim + user + profile)
+FAIL :: owner and super admin can read a pending ad; active ads are readable
+FAIL :: owner doctor can upload KYC but cannot read it back
+FAIL :: patient appointment create
+FAIL :: patient can read a delivery and the store can update its status
+FAIL :: patient can read their prescription and the doctor can update the title
+FAIL :: patient cancel and reschedule update the existing document and cannot create another
+FAIL :: patient cancel, reschedule, and review are allowed
+FAIL :: patient cancel/reschedule/review keys are allowed
+FAIL :: patient owner can upload and read health records; unrelated user cannot
+FAIL :: patient owner can upload profile photo and any signed-in user can read it
+FAIL :: patient reschedule is denied and cancel depends on doctorStatus
+FAIL :: patient review is allowed only after the appointment is completed
+FAIL :: patients: legacy update accepted with photoStorage "firebase" and only photoUrl
+FAIL :: patients: legacy update accepted without photoKey/photoStorage (e.g. only name changed)
+FAIL :: patients: owner can set valid S3 profile photo fields
+FAIL :: pharmacy owner can upload KYC but cannot read it back
+FAIL :: prescription, delivery, and ambulance party rules
+FAIL :: profile_claims read permissions: owner and superadmin succeed, third party fails
+FAIL :: promotedAds provider role rules
+FAIL :: promotedAds: legacy update accepted without imageKey/imageStorage or with imageStorage "firebase"
+FAIL :: promotedAds: non-owner provider cannot update another provider ad
+FAIL :: promotedAds: owner cannot change durationHours or razorpayOrderId on update, client cannot access razorpayPayments
+FAIL :: promotedAds: owning provider can create and update ad with valid S3 banner key
+FAIL :: provider can upload banner image and any signed-in user can read it
+FAIL :: razorpayWebhookRejections denies client writes, anonymous reads, and regular/provider reads, but allows super admin reads
+FAIL :: signed-in medical_stores and labs lists require verified==true
+FAIL :: store can set dispensed status but cannot change patientName or prescriptionId
+FAIL :: super admin can list unverified doctors
+FAIL :: super admin can list unverified medical_stores and labs
+FAIL :: super admin can read ambulance KYC documents
+FAIL :: super admin can read doctor KYC documents
+FAIL :: super admin can read lab KYC documents
+FAIL :: super admin can read pharmacy KYC documents
+FAIL :: syncDeadLetters Rules: Super Admin read allowed
+FAIL :: the driver can read their ambulance and update availability
+FAIL :: tightened appointment rules
+FAIL :: unauthenticated council-number lookup with verified filter and limit 1 is allowed
+FAIL :: unauthenticated doctors list with verified==true and limit 100 is allowed
+FAIL :: users: legacy update accepted with photoStorage "firebase" and only photoUrl
+FAIL :: users: legacy update accepted without photoKey/photoStorage
+FAIL :: users: user can update own photo fields with matching prefix but not arbitrary prefix
+FAIL :: verified doctor can still create a walk-in appointment
