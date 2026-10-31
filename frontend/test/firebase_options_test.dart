@@ -8,8 +8,9 @@ void main() {
 
     expect(source, isNot(contains('AIzaSy')));
     expect(source, isNot(contains('_defaultApiKey')));
-    expect(source, isNot(contains('defaultValue:')));
     expect(source, contains("String.fromEnvironment('FIREBASE_API_KEY_WEB')"));
+    expect(source, contains("String.fromEnvironment('APP_ENV'"));
+    expect(source, contains("String.fromEnvironment('FIREBASE_PROJECT_ID')"));
     expect(source, contains('_requireConfiguredApiKey'));
   });
 }

@@ -1,12 +1,13 @@
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 
-/// Guard to enforce FIRESTORE_FORBIDDEN test mode in Flutter.
-///
-/// When active, any Firestore operation or repository access throws immediately.
+/// Client Firestore SDK is disabled for application data (Postgres-only architecture).
 abstract final class FirestoreForbiddenGuard {
+  static const String _appEnv =
+      String.fromEnvironment('APP_ENV', defaultValue: 'staging');
+
   static const bool _fromEnv =
-      bool.fromEnvironment('FIRESTORE_FORBIDDEN', defaultValue: false);
+      bool.fromEnvironment('FIRESTORE_FORBIDDEN', defaultValue: true);
 
   @visibleForTesting
   static bool? debugOverride;
@@ -14,17 +15,18 @@ abstract final class FirestoreForbiddenGuard {
   static bool get isForbidden {
     if (debugOverride != null) return debugOverride!;
     if (_fromEnv) return true;
+    if (_appEnv == 'production') return true;
     try {
       return Platform.environment['FIRESTORE_FORBIDDEN'] == '1';
     } catch (_) {
-      return false;
+      return true;
     }
   }
 
   static void assertNotForbidden([String? context]) {
     if (isForbidden) {
       throw StateError(
-        'FIRESTORE_FORBIDDEN: Firestore access is blocked under FIRESTORE_FORBIDDEN=1'
+        'FIRESTORE_FORBIDDEN: Client Firestore is disabled; use Supabase/Postgres.'
         '${context != null ? ' ($context)' : ''}',
       );
     }

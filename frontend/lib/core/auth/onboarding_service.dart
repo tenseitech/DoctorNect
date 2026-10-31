@@ -15,6 +15,7 @@ import '../session/patient_session.dart';
 import '../validators/form_validators.dart';
 import '../validators/name_validator.dart';
 import 'registration_credentials.dart';
+
 /// Single, unified onboarding service for ALL 6 roles:
 /// Doctor, Patient, Medical, Pharmacy, Lab, Ambulance.
 ///
