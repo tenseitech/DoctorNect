@@ -151,6 +151,9 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
       serviceRoleKey: testServiceRoleKey,
       postgrestJwtSecret: testPostgrestJwtSecret,
       jwksClient: mockJwksClient,
+      firebaseRevocationCheck: false,
+      requireFirebaseRevocationCheck: false,
+      corsAllowedOrigins: ['http://127.0.0.1', 'http://localhost'],
       rateLimitMaxRequests: 10, // Small limit for testing
       maxBodySizeBytes: 1024, // 1 KB limit for testing
     });
@@ -183,7 +186,11 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
   it('handles OPTIONS preflight with CORS headers', async () => {
     const res = await makeRequest({ method: 'OPTIONS', path: '/rest/v1/doctor_directory' });
     assert.strictEqual(res.statusCode, 204);
-    assert.strictEqual(res.headers['access-control-allow-origin'], '*');
+    assert.ok(
+      !res.headers['access-control-allow-origin']
+        || res.headers['access-control-allow-origin'] !== '*',
+      'Wildcard CORS must not be used',
+    );
   });
 
   it('returns 404 for paths outside /rest/v1', async () => {

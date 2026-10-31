@@ -12,5 +12,8 @@
   },
   "author": "DoctorNect Engineering",
   "license": "UNLICENSED",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "firebase-admin": "^14.4.0"
+  }
 }

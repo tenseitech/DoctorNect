@@ -4,6 +4,8 @@ const http = require('node:http');
 const path = require('node:path');
 const config = require('./config');
 const { verifyFirebaseIdToken } = require('./token_verifier');
+const { assertFirebaseTokenNotRevoked } = require('./firebase_revocation');
+const { resolveCorsOrigin } = require('./cors');
 const { mintPostgrestJwt } = require('./jwt_minter');
 const { secureCompare, hashUid, RateLimiter, emitAuditLog } = require('./security');
 const { proxyToPostgrest } = require('./proxy');
@@ -108,17 +110,22 @@ function createGatewayServer(overrides = {}) {
     }
 
     // Helper to send response and log
+    const corsOrigin = resolveCorsOrigin(req, cfg.corsAllowedOrigins || []);
+
     const sendJson = (statusCode, data, headers = {}) => {
       const diff = process.hrtime(startTime);
       const latencyMs = diff[0] * 1000 + diff[1] / 1e6;
 
       const responseHeaders = {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type, apikey, Prefer, Range, x-client-info',
         ...headers,
       };
+      if (corsOrigin) {
+        responseHeaders['Access-Control-Allow-Origin'] = corsOrigin;
+        responseHeaders.Vary = 'Origin';
+      }
 
       res.writeHead(statusCode, responseHeaders);
       res.end(JSON.stringify(data));
@@ -136,8 +143,14 @@ function createGatewayServer(overrides = {}) {
 
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
+      if (!corsOrigin) {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
       res.writeHead(204, {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': corsOrigin,
+        Vary: 'Origin',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type, apikey, Prefer, Range, x-client-info',
         'Access-Control-Max-Age': '86400',
@@ -270,6 +283,11 @@ function createGatewayServer(overrides = {}) {
           jwksClient,
           projectId: cfg.firebaseProjectId,
         });
+        if (cfg.firebaseRevocationCheck !== false) {
+          await assertFirebaseTokenNotRevoked(bearerToken, {
+            required: cfg.requireFirebaseRevocationCheck === true,
+          });
+        }
         clientRole = 'authenticated';
         clientUidHash = hashUid(authenticatedPayload.uid);
         // Per-UID rate limit for authenticated callers

@@ -154,6 +154,9 @@ describe('API Gateway Token Claims Provenance Test Suite', () => {
       serviceRoleKey: testServiceRoleKey,
       firebaseProjectId: testProjectId,
       jwksClient: mockJwksClient,
+      firebaseRevocationCheck: false,
+      requireFirebaseRevocationCheck: false,
+      corsAllowedOrigins: ['http://127.0.0.1', 'http://localhost'],
     });
 
     gatewayServer = gatewayInstance.server;

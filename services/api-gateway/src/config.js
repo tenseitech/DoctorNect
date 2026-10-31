@@ -5,6 +5,14 @@ module.exports = {
   host: process.env.HOST || '0.0.0.0',
   postgrestUrl: process.env.PGRST_URL || 'http://127.0.0.1:3001',
   firebaseProjectId: process.env.FIREBASE_PROJECT_ID || 'medibond-45fad',
+  // After JWKS crypto verify, call Firebase Admin verifyIdToken(..., checkRevoked=true).
+  // Set FIREBASE_REVOCATION_CHECK=false only for local gateway dev without ADC.
+  firebaseRevocationCheck: String(process.env.FIREBASE_REVOCATION_CHECK || 'true').trim().toLowerCase() !== 'false',
+  requireFirebaseRevocationCheck: String(process.env.APP_ENV || '').trim().toLowerCase() === 'production',
+  corsAllowedOrigins: String(process.env.CORS_ALLOWED_ORIGINS || 'https://doctornect.com,https://www.doctornect.com,https://app.doctornect.com')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
   postgrestJwtSecret: process.env.PGRST_JWT_SECRET || 'doctornect-secure-postgrest-jwt-secret-min32chars',
   postgrestJwtAud: process.env.PGRST_JWT_AUD || 'authenticated',
   serviceRoleKey: process.env.SERVICE_ROLE_KEY || '',
@@ -22,7 +30,6 @@ module.exports = {
     '/rest/v1/doctor_directory',
     '/rest/v1/lab_catalog_tests',
     '/rest/v1/system_config',
-    '/rest/v1/promoted_ads',
     '/rest/v1/review_public',
     '/healthz',
   ],
