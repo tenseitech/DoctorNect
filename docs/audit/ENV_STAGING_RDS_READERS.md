@@ -13,7 +13,7 @@
 
 - `ENABLE_SUPABASE_SYNC` — `sync_flags.js`; disabled in production unless `FORCE_ENABLE_SUPABASE_SYNC_IN_PROD=1`. Firestore→Supabase bridge (legacy).
 - `isDoctorPatientSupabasePrimary()` — always `true` in current postgres-only code (`sync_flags.js`); env fallback exists but is overridden.
-- `APP_ENV` — selects staging Supabase vs production gateway in `src/db/client.js`.
+- `APP_ENV` — selects live-legacy Supabase (**40D01C23**, often named “staging” in env) vs production gateway in `src/db/client.js` until RDS cutover.
 
 ## Migration / scripts only (moved to `backend/.env.migration.example`)
 
