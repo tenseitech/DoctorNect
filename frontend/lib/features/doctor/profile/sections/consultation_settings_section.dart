@@ -144,6 +144,37 @@ class _ConsultationSettingsSectionState
                               validator: FormValidators.consultationDuration,
                               onChanged: (_) => _markDirty(),
                             ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Quick select duration:',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: AppTypography.labelSmall,
+                                  color: AppColors.textSecondaryOf(context),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: [10, 15, 20, 30, 45, 60].map((mins) {
+                                final isSelected =
+                                    _duration.text.trim() == '$mins';
+                                return ChoiceChip(
+                                  label: Text('$mins mins'),
+                                  selected: isSelected,
+                                  onSelected: (_) {
+                                    setState(() {
+                                      _duration.text = '$mins';
+                                    });
+                                    _markDirty();
+                                  },
+                                );
+                              }).toList(),
+                            ),
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _maxPatients,

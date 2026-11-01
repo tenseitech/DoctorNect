@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
 /// Ambulance action icon used across doctor and patient UI.
 abstract final class AmbulanceIcons {
-  static const IconData sign = TablerIcons.ambulance;
-  static const IconData signFilled = TablerIcons.ambulance;
+  static const IconData sign = Icons.emergency_rounded;
+  static const IconData signFilled = Icons.emergency_rounded;
 
   static const gradient = [Color(0xFFDC2626), Color(0xFFB91C1C)];
 }
@@ -32,7 +31,7 @@ class AmbulanceWithPlusIcon extends StatelessWidget {
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          Icon(TablerIcons.ambulance, size: vehicleSize, color: color),
+          Icon(Icons.emergency_rounded, size: vehicleSize, color: color),
           Positioned(
             right: -badgeSize * 0.08,
             top: -badgeSize * 0.12,
@@ -86,6 +85,6 @@ class AmbulancePlusSign extends StatelessWidget {
       return AmbulanceWithPlusIcon(size: size, color: color);
     }
 
-    return Icon(TablerIcons.ambulance, size: size * 0.88, color: color);
+    return Icon(Icons.emergency_rounded, size: size * 0.88, color: color);
   }
 }

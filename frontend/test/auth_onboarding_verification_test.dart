@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/core/auth/verification_lifecycle.dart';
 import 'package:medibond/core/enums/user_type.dart';
@@ -309,6 +311,167 @@ void main() {
       expect(applicant.verificationStatus, VerificationStage.revisionRequested);
       expect(applicant.rejectionReason, contains('Drug license expired'));
       expect(applicant.verificationStatus.isRevisionRequested, isTrue);
+    });
+  });
+
+  group('SuperAdminVerificationService pending queue and pagination', () {
+    test(
+      'pending applicant is shown even when there are 200+ users in the collection',
+      () async {
+        final firestore = FakeFirebaseFirestore();
+
+        // Populate collection with 210 existing users (patients and verified professionals)
+        for (var i = 0; i < 210; i++) {
+          await firestore.collection('users').doc('user_$i').set({
+            'displayName': 'Existing User $i',
+            'role': i.isEven ? 'patient' : 'doctor',
+            'verificationStatus': 'verified',
+            'status': 'approved',
+            'verified': true,
+            'createdAt': Timestamp.now(),
+          });
+        }
+
+        // Add 1 pending doctor applicant whose status is submitted_for_verification
+        await firestore.collection('users').doc('pending_doc_target').set({
+          'displayName': 'Dr. Pending Verification',
+          'email': 'dr.pending@example.com',
+          'mobile': '9876543210',
+          'role': 'doctor',
+          'profileId': 'doc_pending_01',
+          'verificationStatus': 'submitted_for_verification',
+          'status': 'pending_review',
+          'verified': false,
+          'submittedAt': Timestamp.now(),
+          'createdAt': Timestamp.now(),
+        });
+
+        final service = SuperAdminVerificationService(firestore: firestore);
+
+        // Stream pending applicants queue (stageFilter: submittedForVerification)
+        final applicants = await service
+            .streamApplicants(
+              stageFilter: VerificationStage.submittedForVerification,
+            )
+            .first;
+
+        // Verify the pending applicant is shown despite 200+ other users
+        expect(applicants.length, 1);
+        expect(applicants.first.uid, 'pending_doc_target');
+        expect(applicants.first.displayName, 'Dr. Pending Verification');
+        expect(applicants.first.role, UserType.doctor);
+        expect(
+          applicants.first.verificationStatus,
+          VerificationStage.submittedForVerification,
+        );
+      },
+    );
+
+    test('admin and super admin accounts are never listed as applicants',
+        () async {
+      final firestore = FakeFirebaseFirestore();
+
+      await firestore.collection('users').doc('superadmin_01').set({
+        'displayName': 'System Super Admin',
+        'role': 'super_admin',
+        'verificationStatus': 'submitted_for_verification',
+        'status': 'pending_review',
+      });
+
+      await firestore.collection('users').doc('admin_02').set({
+        'displayName': 'Admin User',
+        'role': 'admin',
+        'verificationStatus': 'submitted_for_verification',
+        'status': 'pending_review',
+      });
+
+      await firestore.collection('users').doc('patient_01').set({
+        'displayName': 'Patient Person',
+        'role': 'patient',
+        'verificationStatus': 'submitted_for_verification',
+        'status': 'pending_review',
+      });
+
+      await firestore.collection('users').doc('doc_applicant').set({
+        'displayName': 'Dr. Valid Applicant',
+        'role': 'doctor',
+        'verificationStatus': 'submitted_for_verification',
+        'status': 'pending_review',
+      });
+
+      final service = SuperAdminVerificationService(firestore: firestore);
+      final applicants = await service
+          .streamApplicants(
+            stageFilter: VerificationStage.submittedForVerification,
+          )
+          .first;
+
+      expect(applicants.length, 1);
+      expect(applicants.first.uid, 'doc_applicant');
+      expect(applicants.first.displayName, 'Dr. Valid Applicant');
+    });
+
+    test('covers all applicant roles: Doctor, Pharmacy, Lab, Ambulance',
+        () async {
+      final firestore = FakeFirebaseFirestore();
+
+      final roles = ['doctor', 'medicalStore', 'lab', 'ambulance'];
+      for (final r in roles) {
+        await firestore.collection('users').doc('applicant_$r').set({
+          'displayName': 'Applicant $r',
+          'role': r,
+          'verificationStatus': 'submitted_for_verification',
+          'status': 'pending_review',
+        });
+      }
+
+      final service = SuperAdminVerificationService(firestore: firestore);
+      final applicants = await service
+          .streamApplicants(
+            stageFilter: VerificationStage.submittedForVerification,
+          )
+          .first;
+
+      expect(applicants.length, 4);
+      final rolesPresent = applicants.map((a) => a.role).toSet();
+      expect(rolesPresent, contains(UserType.doctor));
+      expect(rolesPresent, contains(UserType.medicalStore));
+      expect(rolesPresent, contains(UserType.lab));
+      expect(rolesPresent, contains(UserType.ambulance));
+    });
+
+    test('fetchApplicantsPage supports cursor pagination with page size 50',
+        () async {
+      final firestore = FakeFirebaseFirestore();
+
+      for (var i = 0; i < 65; i++) {
+        await firestore.collection('users').doc('doc_$i').set({
+          'displayName': 'Dr. $i',
+          'role': 'doctor',
+          'verificationStatus': 'verified',
+          'verified': true,
+        });
+      }
+
+      final service = SuperAdminVerificationService(firestore: firestore);
+
+      // Page 1
+      final page1 = await service.fetchApplicantsPage(
+        stageFilter: VerificationStage.verified,
+        pageSize: 50,
+      );
+      expect(page1.applicants.length, 50);
+      expect(page1.hasMore, isTrue);
+      expect(page1.lastDocument, isNotNull);
+
+      // Page 2 using startAfterDocument
+      final page2 = await service.fetchApplicantsPage(
+        stageFilter: VerificationStage.verified,
+        startAfterDocument: page1.lastDocument,
+        pageSize: 50,
+      );
+      expect(page2.applicants.length, 15);
+      expect(page2.hasMore, isFalse);
     });
   });
 }

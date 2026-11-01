@@ -634,7 +634,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           const SizedBox(height: 12),
                           ProfileEditWidgets.genderChips(
                             selected: _selectedGender,
-                            onSelected: null,
+                            onSelected: (g) =>
+                                setState(() => _selectedGender = g),
                             errorText: _genderError,
                           ),
                           const SizedBox(height: 12),
@@ -665,7 +666,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         children: [
                           ProfileEditWidgets.bloodGroupChips(
                             selected: _selectedBloodGroup,
-                            onSelected: null,
+                            onSelected: (b) =>
+                                setState(() => _selectedBloodGroup = b),
                             errorText: _bloodGroupError,
                           ),
                           const SizedBox(height: 14),

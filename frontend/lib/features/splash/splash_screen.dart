@@ -10,8 +10,8 @@ import '../../core/session/ambulance_session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../widgets/mobile_scaffold.dart';
 import '../../widgets/medibond_logo.dart';
-import '../ambulance/ambulance_shell_auto.dart';
-import '../ambulance/ambulance_invite_setup_screen.dart';
+import '../ambulance/ambulance_shell_auto.dart' deferred as amb_auto;
+import '../ambulance/ambulance_invite_setup_screen.dart' deferred as amb_invite;
 import '../dashboard/dashboard_shell.dart';
 import '../auth/unified_auth_intro_screen.dart';
 import '../../core/invite/invite_deep_link_resolver.dart';
@@ -30,7 +30,8 @@ class SplashScreen extends StatefulWidget {
       if (initializeFirebase) {
         await FirebaseBootstrap.initialize();
       }
-      return AmbulanceInviteSetupScreen(
+      await amb_invite.loadLibrary();
+      return amb_invite.AmbulanceInviteSetupScreen(
         inviteId: PendingAmbulanceInviteStore.inviteId!,
         token: PendingAmbulanceInviteStore.token!,
       );
@@ -70,7 +71,8 @@ class SplashScreen extends StatefulWidget {
 
     // Persisted ambulance session requires PIN re-entry via [AmbulanceShellAuto].
     if (ambulancePersisted) {
-      return const AmbulanceShellAuto();
+      await amb_auto.loadLibrary();
+      return amb_auto.AmbulanceShellAuto();
     }
 
     final inviteLogin = InviteDeepLinkResolver.loginScreenFromPendingInvite();

@@ -756,6 +756,7 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
                     Expanded(
                       child: Text(
                         _pharmacyDoctorLabel(d.doctorName),
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: compact ? 13 : 14,

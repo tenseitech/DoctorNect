@@ -169,7 +169,10 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                 items: InviteNetworkUserType.values
                     .where((t) => t != InviteNetworkUserType.doctor)
                     .map(
-                      (t) => DropdownMenuItem(value: t, child: Text(t.label)),
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(t.label, overflow: TextOverflow.ellipsis),
+                      ),
                     )
                     .toList(),
                 onChanged: _onUserTypeChanged,

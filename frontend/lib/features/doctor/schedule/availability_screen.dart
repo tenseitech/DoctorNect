@@ -745,6 +745,7 @@ class _TimeDropdown extends StatelessWidget {
                   value: t,
                   child: Text(
                     t,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         fontFamily: 'Inter', fontSize: AppTypography.bodySmall),
                   ),

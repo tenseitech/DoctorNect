@@ -2,7 +2,6 @@ import '../../../core/firebase/firestore_service.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/auth/profile_action_guard.dart';
@@ -353,7 +352,7 @@ class _LabDayStatsHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                _buildStatBadge(TablerIcons.flask, '$newCount New'),
+                _buildStatBadge(Icons.science_outlined, '$newCount New'),
                 const SizedBox(width: 8),
                 _buildStatBadge(Icons.check_circle_outline, '$doneCount Done'),
                 const Spacer(),
@@ -502,7 +501,7 @@ class _LabDayStatsHeader extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildStatBadge(TablerIcons.flask, '$newCount New'),
+                    _buildStatBadge(Icons.science_outlined, '$newCount New'),
                     const SizedBox(width: 8),
                     _buildStatBadge(
                       Icons.check_circle_outline,

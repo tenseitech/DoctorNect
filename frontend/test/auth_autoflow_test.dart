@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/features/auth/auth_autoflow_helper.dart';
 import 'package:medibond/widgets/otp_input.dart';
+import 'package:pinput/pinput.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -204,7 +205,9 @@ void main() {
   });
 
   group('Behaviour 2: OTP Auto-Fill, Auto-Submit & Shake-Clear Logic', () {
-    testWidgets('OtpInput renders 6 input boxes', (tester) async {
+    testWidgets(
+        'OtpInput renders single-input Pinput with length 6 and AutofillGroup',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -215,8 +218,12 @@ void main() {
         ),
       );
 
-      final textFields = find.byType(TextField);
-      expect(textFields, findsNWidgets(6));
+      expect(find.byType(Pinput), findsOneWidget);
+      expect(find.byType(AutofillGroup), findsWidgets);
+      final pinput = tester.widget<Pinput>(find.byType(Pinput));
+      expect(pinput.length, 6);
+      expect(pinput.keyboardType, TextInputType.number);
+      expect(pinput.autofillHints, contains(AutofillHints.oneTimeCode));
     });
 
     testWidgets(
@@ -239,27 +246,21 @@ void main() {
         ),
       );
 
-      final textFields = find.byType(TextField);
-
       // Type first 5 digits
-      for (int i = 0; i < 5; i++) {
-        await tester.enterText(textFields.at(i), '${i + 1}');
-        await tester.pump();
-      }
+      await tester.enterText(find.byType(Pinput), '12345');
+      await tester.pump();
       expect(completedCalls, 0);
       expect(completedCode, isNull);
 
       // Type 6th digit
-      await tester.enterText(textFields.at(5), '6');
+      await tester.enterText(find.byType(Pinput), '123456');
       await tester.pump();
 
       expect(completedCalls, 1);
       expect(completedCode, '123456');
     });
 
-    testWidgets(
-        'Pasting a 6-digit code into any box fills all 6 boxes and completes',
-        (tester) async {
+    testWidgets('Pasting a 6-digit code fills and completes', (tester) async {
       String? completedCode;
 
       await tester.pumpWidget(
@@ -273,19 +274,53 @@ void main() {
         ),
       );
 
-      final textFields = find.byType(TextField);
-      // Paste into box 0
-      await tester.enterText(textFields.at(0), '948201');
+      await tester.enterText(find.byType(Pinput), '948201');
       await tester.pump();
 
       expect(completedCode, '948201');
-      for (int i = 0; i < 6; i++) {
-        final field = tester.widget<TextField>(textFields.at(i));
-        expect(field.controller?.text, '948201'[i]);
-      }
     });
 
-    testWidgets('enabled: false locks all 6 boxes while verifying',
+    test(
+        'OtpDigitsInputFormatter extracts 6 digits from raw, formatted, or SMS text',
+        () {
+      expect(OtpDigitsInputFormatter.extractOtp('948201'), '948201');
+      expect(OtpDigitsInputFormatter.extractOtp('123-456'), '123456');
+      expect(OtpDigitsInputFormatter.extractOtp('123 456'), '123456');
+      expect(
+        OtpDigitsInputFormatter.extractOtp('Your DoctorNect OTP is 654321'),
+        '654321',
+      );
+      expect(OtpDigitsInputFormatter.extractOtp('abc 999 888 xyz'), '999888');
+    });
+
+    testWidgets('Backspacing across boxes updates code length and value',
+        (tester) async {
+      String currentCode = '';
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OtpInput(
+              onChanged: (val) => currentCode = val,
+            ),
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(Pinput), '123456');
+      await tester.pump();
+      expect(currentCode, '123456');
+
+      await tester.enterText(find.byType(Pinput), '12345');
+      await tester.pump();
+      expect(currentCode, '12345');
+
+      await tester.enterText(find.byType(Pinput), '123');
+      await tester.pump();
+      expect(currentCode, '123');
+    });
+
+    testWidgets('enabled: false locks the input while verifying',
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -298,15 +333,12 @@ void main() {
         ),
       );
 
-      final textFields = find.byType(TextField);
-      for (int i = 0; i < 6; i++) {
-        final field = tester.widget<TextField>(textFields.at(i));
-        expect(field.enabled, isFalse);
-      }
+      final pinput = tester.widget<Pinput>(find.byType(Pinput));
+      expect(pinput.enabled, isFalse);
     });
 
     testWidgets(
-        'shakeAndClear clears all 6 boxes, notifies empty string, and refocuses box 0',
+        'shakeAndClear clears code, notifies empty string, and refocuses',
         (tester) async {
       final key = GlobalKey<OtpInputState>();
       String currentCode = '';
@@ -322,8 +354,7 @@ void main() {
         ),
       );
 
-      final textFields = find.byType(TextField);
-      await tester.enterText(textFields.at(0), '123456');
+      await tester.enterText(find.byType(Pinput), '123456');
       await tester.pump();
       expect(currentCode, '123456');
 
@@ -332,16 +363,42 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      // All 6 boxes cleared
       expect(currentCode, '');
-      for (int i = 0; i < 6; i++) {
-        final field = tester.widget<TextField>(textFields.at(i));
-        expect(field.controller?.text, '');
-      }
+      final pinput = tester.widget<Pinput>(find.byType(Pinput));
+      expect(pinput.controller?.text, '');
+      expect(pinput.focusNode?.hasFocus, isTrue);
+    });
 
-      // Box 0 has focus
-      final firstField = tester.widget<TextField>(textFields.at(0));
-      expect(firstField.focusNode?.hasFocus, isTrue);
+    testWidgets(
+        'clearAndFocusFirst clears code, resets focus, and clears error on Resend',
+        (tester) async {
+      final key = GlobalKey<OtpInputState>();
+      String currentCode = '';
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OtpInput(
+              key: key,
+              hasError: true,
+              onChanged: (val) => currentCode = val,
+            ),
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(Pinput), '123456');
+      await tester.pump();
+      expect(currentCode, '123456');
+
+      // On resend, clearAndFocusFirst clears digits and resets focus
+      key.currentState?.clearAndFocusFirst();
+      await tester.pump();
+
+      expect(currentCode, '');
+      final pinput = tester.widget<Pinput>(find.byType(Pinput));
+      expect(pinput.controller?.text, '');
+      expect(pinput.focusNode?.hasFocus, isTrue);
     });
 
     test('Never auto-submits identical wrong OTP twice guard', () {

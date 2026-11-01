@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import '../../../../core/constants/specialty_categories.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/stomach_icon.dart';
@@ -640,32 +639,32 @@ abstract final class _ExploreSpecialtyAssets {
 
 abstract final class _ExploreIcons {
   static const Map<String, IconData> _icons = {
-    'General Physician': TablerIcons.stethoscope,
-    "Women's Health": TablerIcons.gender_female,
-    'Child Care': TablerIcons.baby_carriage,
-    'Eye Specialist': TablerIcons.eye,
-    'Ear, Nose & Throat': TablerIcons.ear,
-    'Dentist': TablerIcons.dental,
-    'Heart Specialist': TablerIcons.heart,
-    'Mental Wellness': TablerIcons.brain,
-    'Skin Specialist': TablerIcons.hand_stop,
-    'Bone & Joint': TablerIcons.bone,
-    'Diabetes': TablerIcons.needle,
-    'Stomach & Digestion': TablerIcons.pill,
-    'Urinary Problems': TablerIcons.droplet,
-    'Physiotherapist': TablerIcons.run,
-    'Lung & Respiratory': TablerIcons.lungs,
-    'Dietitian': TablerIcons.apple,
-    'Cancer Specialist': TablerIcons.ribbon_health,
-    'Neurologist': TablerIcons.brain,
-    'General Surgeon': TablerIcons.scissors,
-    'Sexual Health': TablerIcons.venus,
-    'Ayurveda': TablerIcons.leaf,
-    'Homeopathy': TablerIcons.flask,
-    'Veterinary': TablerIcons.paw,
+    'General Physician': Icons.medical_services_rounded,
+    "Women's Health": Icons.female_rounded,
+    'Child Care': Icons.child_care_rounded,
+    'Eye Specialist': Icons.visibility_rounded,
+    'Ear, Nose & Throat': Icons.hearing_rounded,
+    'Dentist': Icons.sentiment_very_satisfied_rounded,
+    'Heart Specialist': Icons.favorite_rounded,
+    'Mental Wellness': Icons.psychology_rounded,
+    'Skin Specialist': Icons.healing_rounded,
+    'Bone & Joint': Icons.accessibility_new_rounded,
+    'Diabetes': Icons.vaccines_rounded,
+    'Stomach & Digestion': Icons.medication_rounded,
+    'Urinary Problems': Icons.water_drop_rounded,
+    'Physiotherapist': Icons.directions_run_rounded,
+    'Lung & Respiratory': Icons.air_rounded,
+    'Dietitian': Icons.restaurant_rounded,
+    'Cancer Specialist': Icons.health_and_safety_rounded,
+    'Neurologist': Icons.psychology_rounded,
+    'General Surgeon': Icons.content_cut_rounded,
+    'Sexual Health': Icons.female_rounded,
+    'Ayurveda': Icons.eco_rounded,
+    'Homeopathy': Icons.science_outlined,
+    'Veterinary': Icons.pets_rounded,
   };
 
   static IconData forCategory(String category) {
-    return _icons[category] ?? TablerIcons.stethoscope;
+    return _icons[category] ?? Icons.medical_services_rounded;
   }
 }

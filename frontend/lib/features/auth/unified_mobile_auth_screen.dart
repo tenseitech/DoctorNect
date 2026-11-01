@@ -283,6 +283,10 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
     final digits = _flow.mobileDigits;
     if (digits == null) return;
     _mobileController.text = digits;
+    _otpInputKey.currentState?.clearAndFocusFirst();
+    _flow.setOtp('');
+    _lastFailedOtp = null;
+    setState(() => _inlineError = null);
     await _flow.resendOtp(context);
   }
 

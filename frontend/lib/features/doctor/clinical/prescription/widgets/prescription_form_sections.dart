@@ -490,7 +490,12 @@ class PrescriptionClinicalSection extends StatelessWidget {
             isExpanded: true,
             decoration: const InputDecoration(labelText: 'Diagnosis type'),
             items: ClinicalMockData.diagnosisTypes
-                .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                .map(
+                  (d) => DropdownMenuItem(
+                    value: d,
+                    child: Text(d, overflow: TextOverflow.ellipsis),
+                  ),
+                )
                 .toList(),
             onChanged: (v) {
               if (v != null) {

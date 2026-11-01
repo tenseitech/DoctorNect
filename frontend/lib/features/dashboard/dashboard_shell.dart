@@ -4,11 +4,10 @@ import '../../core/enums/user_type.dart';
 import '../../core/session/ambulance_session.dart';
 import '../../core/session/doctor_session.dart';
 import '../../core/theme/app_colors.dart';
-import '../ambulance/data/ambulance_store.dart';
-import '../ambulance/models/ambulance_models.dart';
 
 import '../ambulance/ambulance_shell.dart' deferred as ambulance_module;
-import '../doctor/verification/doctor_verification_gate.dart' deferred as doctor_module;
+import '../doctor/verification/doctor_verification_gate.dart'
+    deferred as doctor_module;
 import '../patient/patient_shell.dart' deferred as patient_module;
 import '../pharmacy/medical_store_shell.dart' deferred as pharmacy_module;
 import '../lab/lab_shell.dart' deferred as lab_module;
@@ -57,30 +56,36 @@ class DashboardShell extends StatelessWidget {
       );
     }
     if (userType.isAmbulance) {
-      final ambId = AmbulanceSession.loggedInAmbulanceId.isNotEmpty
-          ? AmbulanceSession.loggedInAmbulanceId
-          : 'amb-new';
-      final amb = AmbulanceStore.instance.findAmbulance(ambId) ??
-          (AmbulanceStore.instance.registeredAmbulances.isNotEmpty
-              ? AmbulanceStore.instance.registeredAmbulances.first
-              : RegisteredAmbulance(
-                  id: ambId,
-                  serviceName: AmbulanceSession.loggedInServiceName.isNotEmpty
-                      ? AmbulanceSession.loggedInServiceName
-                      : 'Ambulance Service',
-                  driverName: AmbulanceSession.loggedInDriverName.isNotEmpty
-                      ? AmbulanceSession.loggedInDriverName
-                      : '',
-                  phone: '',
-                  vehicleNumber: '',
-                  city: '',
-                  available: false,
-                  verified: false,
-                ));
       return DeferredModuleLoader(
         moduleName: 'Ambulance Dashboard',
         loader: ambulance_module.loadLibrary,
-        builder: () => ambulance_module.AmbulanceShell(ambulance: amb),
+        builder: () {
+          final ambId = AmbulanceSession.loggedInAmbulanceId.isNotEmpty
+              ? AmbulanceSession.loggedInAmbulanceId
+              : 'amb-new';
+          final amb = ambulance_module.AmbulanceStore.instance
+                  .findAmbulance(ambId) ??
+              (ambulance_module
+                      .AmbulanceStore.instance.registeredAmbulances.isNotEmpty
+                  ? ambulance_module
+                      .AmbulanceStore.instance.registeredAmbulances.first
+                  : ambulance_module.RegisteredAmbulance(
+                      id: ambId,
+                      serviceName:
+                          AmbulanceSession.loggedInServiceName.isNotEmpty
+                              ? AmbulanceSession.loggedInServiceName
+                              : 'Ambulance Service',
+                      driverName: AmbulanceSession.loggedInDriverName.isNotEmpty
+                          ? AmbulanceSession.loggedInDriverName
+                          : '',
+                      phone: '',
+                      vehicleNumber: '',
+                      city: '',
+                      available: false,
+                      verified: false,
+                    ));
+          return ambulance_module.AmbulanceShell(ambulance: amb);
+        },
       );
     }
     return DeferredModuleLoader(

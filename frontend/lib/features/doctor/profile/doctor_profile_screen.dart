@@ -4,7 +4,6 @@ import '../../../core/notifications/app_toast.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -588,7 +587,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               child: Column(
                 children: [
                   DoctorProfileMenuTile(
-                    icon: TablerIcons.speakerphone,
+                    icon: Icons.campaign_rounded,
                     label: 'Promote Banner Ad (Paid Ads)',
                     subtitle:
                         'Create & manage paid promotional ads on Patient Home',
