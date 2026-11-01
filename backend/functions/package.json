@@ -28,8 +28,8 @@
   "scripts": {
     "build": "node --check index.js src/config/redis.js redis.js",
     "deploy": "firebase deploy --only firestore:rules,storage,functions",
-    "test": "node --test \"test/**/*.test.js\"",
-    "test:env-parity": "node --test test/env_parity.test.js",
+    "test": "node --require ./test/setup_env.js --test \"test/**/*.test.js\"",
+    "test:env-parity": "node --require ./test/setup_env.js --test test/env_parity.test.js",
     "test:storage-rules": "firebase emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node --test --test-concurrency=1 test/storage_doctor_kyc.rules.test.js test/storage_provider_kyc.rules.test.js test/storage_live_app_paths.rules.test.js\"",
     "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-doctornect-reviews \"node --test test/firestore_reviews.rules.test.js\"",
     "test:firestore-s3-rules": "firebase emulators:exec --only firestore --project demo-doctornect-s3-rules \"node --test test/firestore_s3_rules.test.js\"",
