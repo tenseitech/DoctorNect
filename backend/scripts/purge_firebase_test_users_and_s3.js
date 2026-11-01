@@ -184,9 +184,9 @@ async function run() {
 
   // --- Step 2: S3 Object Scan & Deletion ---
   console.log('\n--- 2. S3 TEST USER OBJECT SCAN ---');
-  const bucket = process.env.AWS_S3_BUCKET_NAME;
+  const bucket = process.env.S3_BUCKET;
   if (!bucket || !S3Client) {
-    console.log(`NOTICE: ${!bucket ? 'AWS_S3_BUCKET_NAME not set' : 'S3Client not available'}. Skipping S3 scan.`);
+    console.log(`NOTICE: ${!bucket ? 'S3_BUCKET not set' : 'S3Client not available'}. Skipping S3 scan.`);
   } else {
     try {
       const s3 = new S3Client({

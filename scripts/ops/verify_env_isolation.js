@@ -40,7 +40,7 @@ function main() {
     process.env.SUPABASE_URL || '',
     process.env.PROD_GATEWAY_URL || '',
     process.env.FIREBASE_PROJECT_ID || '',
-    process.env.AWS_S3_BUCKET || '',
+    process.env.S3_BUCKET || '',
     process.env.REDIS_HOST || '',
   ].join('\n');
 

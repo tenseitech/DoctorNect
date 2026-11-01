@@ -274,7 +274,10 @@ async function testSupabaseTables() {
 // ----------------------------------------------------------------------------
 async function testAwsS3() {
   const region = mergedEnv.AWS_REGION || 'ap-south-1';
-  const bucket = mergedEnv.S3_BUCKET || 'doctornect-672027759702-ap-south-1-an';
+  const bucket = mergedEnv.S3_BUCKET;
+  if (!bucket) {
+    throw new Error('S3_BUCKET is required in env for verify-roundtrip');
+  }
   const hasAccessKey = Boolean(mergedEnv.AWS_ACCESS_KEY_ID && mergedEnv.AWS_ACCESS_KEY_ID.trim());
   const hasSecretKey = Boolean(mergedEnv.AWS_SECRET_ACCESS_KEY && mergedEnv.AWS_SECRET_ACCESS_KEY.trim());
 

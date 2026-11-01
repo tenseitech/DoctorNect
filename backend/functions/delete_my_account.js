@@ -27,8 +27,10 @@ function getS3Sdk() {
   return _s3Sdk;
 }
 
-const { getS3BucketName } = require('./src/config/s3_bucket');
-const S3_BUCKET = getS3BucketName();
+const { resolveS3Bucket } = require('./src/config/s3_bucket');
+function s3Bucket() {
+  return resolveS3Bucket();
+}
 let _testingS3Client = null;
 
 function setS3ClientForTesting(client) {
@@ -1108,7 +1110,7 @@ async function deleteMyAccountHandler(uid) {
         s3Prefixes.push(`promoted_ads/${profileId}/`);
       }
       s3Prefixes.push(`avatars/${normalizedUid}/`);
-      failedS3Prefixes = await cleanupUserS3Prefixes(s3, S3_BUCKET, s3Prefixes);
+      failedS3Prefixes = await cleanupUserS3Prefixes(s3, s3Bucket(), s3Prefixes);
     } catch (s3Err) {
       logger.warn('deleteMyAccount S3 cleanup unexpected failure (soft-fail)', {
         uid: normalizedUid,
@@ -1208,7 +1210,7 @@ async function deleteMyAccountHandler(uid) {
         role,
         profileId,
       });
-      failedS3Prefixes = await cleanupUserS3Prefixes(s3, S3_BUCKET, s3Prefixes);
+      failedS3Prefixes = await cleanupUserS3Prefixes(s3, s3Bucket(), s3Prefixes);
 
       // Collect specific S3 object keys (e.g. lab reports uploaded by this lab for patients)
       const specificReportKeys = await collectRoleSpecificS3ReportKeys(db, {
@@ -1217,7 +1219,7 @@ async function deleteMyAccountHandler(uid) {
         uid: normalizedUid,
       });
       if (specificReportKeys.length > 0) {
-        const keysRes = await deleteS3SpecificKeysVersions(s3, S3_BUCKET, specificReportKeys);
+        const keysRes = await deleteS3SpecificKeysVersions(s3, s3Bucket(), specificReportKeys);
         if (!keysRes.success && keysRes.failedKeys) {
           failedS3Keys = keysRes.failedKeys;
         }

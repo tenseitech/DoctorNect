@@ -251,7 +251,10 @@ async function verifyRedis() {
 
 async function verifyAwsS3() {
   const region = mergedEnv.AWS_REGION || 'ap-south-1';
-  const bucket = mergedEnv.S3_BUCKET || 'doctornect-672027759702-ap-south-1-an';
+  const bucket = mergedEnv.S3_BUCKET;
+  if (!bucket) {
+    throw new Error('S3_BUCKET is required in env for verify-connections');
+  }
   const bucketUrl = `https://${bucket}.s3.${region}.amazonaws.com/`;
 
   const startTime = Date.now();

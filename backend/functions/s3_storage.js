@@ -22,11 +22,13 @@ const awsAccessKeyId = defineSecret('AWS_ACCESS_KEY_ID');
 const awsSecretAccessKey = defineSecret('AWS_SECRET_ACCESS_KEY');
 const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');
 
-const { getS3BucketName } = require('./src/config/s3_bucket');
+const { resolveS3Bucket } = require('./src/config/s3_bucket');
 
 const CALLABLE_REGION = 'asia-south1';
 const AWS_REGION = process.env.AWS_REGION || 'ap-south-1';
-const S3_BUCKET = getS3BucketName();
+function s3Bucket() {
+  return resolveS3Bucket();
+}
 
 const ENFORCE_ABUSE_APP_CHECK = String(
   process.env.ENFORCE_ABUSE_APP_CHECK || process.env.ENFORCE_OTP_APP_CHECK || 'true',
@@ -588,7 +590,7 @@ async function getS3UploadUrlHandler(data, auth, dbOrOptions) {
 
   const s3 = getS3Client();
   const command = new PutObjectCommand({
-    Bucket: S3_BUCKET,
+    Bucket: s3Bucket(),
     Key: objectKey,
     ContentType: contentType,
     ContentLength: sizeBytes,
@@ -1052,7 +1054,7 @@ async function getS3DownloadUrlHandler(data, auth, dbOrOptions) {
 
   const s3 = getS3Client();
   const command = new GetObjectCommand({
-    Bucket: S3_BUCKET,
+    Bucket: s3Bucket(),
     Key: objectKey,
   });
 
@@ -1136,7 +1138,7 @@ async function getS3DownloadUrlsHandler(data, auth, dbOrOptions) {
     }
 
     const command = new GetObjectCommand({
-      Bucket: S3_BUCKET,
+      Bucket: s3Bucket(),
       Key: key,
     });
     try {
@@ -1187,7 +1189,7 @@ async function deleteS3ObjectHandler(data, auth, dbOrOptions) {
   const s3 = getS3Client();
   await s3.send(
     new DeleteObjectCommand({
-      Bucket: S3_BUCKET,
+      Bucket: s3Bucket(),
       Key: objectKey,
     }),
   );
@@ -1264,12 +1266,12 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
   try {
     head = await s3.send(
       new HeadObjectCommand({
-        Bucket: S3_BUCKET,
+        Bucket: s3Bucket(),
         Key: objectKey,
       }),
     );
   } catch (err) {
-    await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: objectKey })).catch(() => {});
+    await s3.send(new DeleteObjectCommand({ Bucket: s3Bucket(), Key: objectKey })).catch(() => {});
     await logStorageAccess(ctx.db, {
       who: auth.uid,
       role: caller.role,
@@ -1286,7 +1288,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
 
   // Enforce content-type allowlist
   if (!ALLOWED_CONTENT_TYPES.has(contentType)) {
-    await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: objectKey })).catch(() => {});
+    await s3.send(new DeleteObjectCommand({ Bucket: s3Bucket(), Key: objectKey })).catch(() => {});
     await logStorageAccess(ctx.db, {
       who: auth.uid,
       role: caller.role,
@@ -1306,7 +1308,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
 
   const maxAllowedBytes = isImagePurpose ? MAX_IMAGE_BYTES : MAX_DOC_BYTES;
   if (contentLength <= 0 || contentLength > maxAllowedBytes) {
-    await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: objectKey })).catch(() => {});
+    await s3.send(new DeleteObjectCommand({ Bucket: s3Bucket(), Key: objectKey })).catch(() => {});
     await logStorageAccess(ctx.db, {
       who: auth.uid,
       role: caller.role,
@@ -1326,7 +1328,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
           .from('health_records')
           .update({
             s3_key: objectKey,
-            s3_bucket: S3_BUCKET,
+            s3_bucket: s3Bucket(),
             storage_key: objectKey,
             storage_provider: 's3',
             file_size_bytes: contentLength,
@@ -1340,7 +1342,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
           .from('lab_bookings')
           .update({
             report_s3_key: objectKey,
-            report_s3_bucket: S3_BUCKET,
+            report_s3_bucket: s3Bucket(),
             report_storage_key: objectKey,
             report_storage_provider: 's3',
             report_file_size_bytes: contentLength,
@@ -1355,7 +1357,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
           .from('patients')
           .update({
             photo_s3_key: objectKey,
-            photo_s3_bucket: S3_BUCKET,
+            photo_s3_bucket: s3Bucket(),
             photo_storage_provider: 's3',
             photo_updated_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -1367,7 +1369,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
           .from('doctors')
           .update({
             photo_s3_key: objectKey,
-            photo_s3_bucket: S3_BUCKET,
+            photo_s3_bucket: s3Bucket(),
             photo_storage_provider: 's3',
             photo_updated_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -1379,7 +1381,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
       if (purpose === 'health_records') {
         await ctx.db.collection('health_records').doc(recordId).set({
           s3Key: objectKey,
-          s3Bucket: S3_BUCKET,
+          s3Bucket: s3Bucket(),
           storageProvider: 's3',
           fileSizeBytes: contentLength,
           mimeType: contentType,
@@ -1388,7 +1390,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
       } else if (purpose === 'lab_reports') {
         await ctx.db.collection('lab_bookings').doc(recordId).set({
           reportS3Key: objectKey,
-          reportS3Bucket: S3_BUCKET,
+          reportS3Bucket: s3Bucket(),
           storageProvider: 's3',
           reportFileSizeBytes: contentLength,
           reportMimeType: contentType,
@@ -1397,14 +1399,14 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
       } else if (purpose === 'patient_profile') {
         await ctx.db.collection('patients').doc(caller.profileId || recordId).set({
           photoS3Key: objectKey,
-          photoS3Bucket: S3_BUCKET,
+          photoS3Bucket: s3Bucket(),
           photoStorageProvider: 's3',
           photoUpdatedAt: new Date().toISOString(),
         }, { merge: true });
       } else if (purpose === 'doctor_profile') {
         await ctx.db.collection('doctors').doc(caller.profileId || recordId).set({
           photoS3Key: objectKey,
-          photoS3Bucket: S3_BUCKET,
+          photoS3Bucket: s3Bucket(),
           photoStorageProvider: 's3',
           photoUpdatedAt: new Date().toISOString(),
         }, { merge: true });
