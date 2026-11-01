@@ -295,8 +295,7 @@ class _DesktopAuthScaffold extends StatelessWidget {
                           keyboardDismissBehavior:
                               ScrollViewKeyboardDismissBehavior.onDrag,
                           child: ConstrainedBox(
-                            constraints:
-                                BoxConstraints(maxWidth: formMaxWidth),
+                            constraints: BoxConstraints(maxWidth: formMaxWidth),
                             child: desktopForm,
                           ),
                         ),
@@ -308,8 +307,7 @@ class _DesktopAuthScaffold extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(40, 8, 40, 24),
                         child: ConstrainedBox(
-                          constraints:
-                              BoxConstraints(maxWidth: formMaxWidth),
+                          constraints: BoxConstraints(maxWidth: formMaxWidth),
                           child: desktopBottomAction!,
                         ),
                       ),

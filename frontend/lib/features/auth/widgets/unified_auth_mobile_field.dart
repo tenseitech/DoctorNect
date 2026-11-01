@@ -81,7 +81,8 @@ class UnifiedAuthMobileField extends StatelessWidget {
       decoration: BoxDecoration(
         color: fillColor ?? AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: resolvedBorderColor, width: hasError ? 1.5 : 1.0),
+        border:
+            Border.all(color: resolvedBorderColor, width: hasError ? 1.5 : 1.0),
         boxShadow: boxShadow,
       ),
       clipBehavior: Clip.antiAlias,

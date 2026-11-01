@@ -299,9 +299,8 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
             width: active ? 22 : 6,
             height: 6,
             decoration: BoxDecoration(
-              color: active
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.35),
+              color:
+                  active ? Colors.white : Colors.white.withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(3),
             ),
           ),
@@ -532,8 +531,8 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                       vertical: 36,
                     ),
                     child: ConstrainedBox(
-                      constraints:
-                          const BoxConstraints(maxWidth: kAuthDesktopFormMaxWidth),
+                      constraints: const BoxConstraints(
+                          maxWidth: kAuthDesktopFormMaxWidth),
                       child: UnifiedAuthLoginForm(
                         mobileController: _readOnlyMobileController,
                         accentColor: _accent,
@@ -648,9 +647,7 @@ class UnifiedAuthLoginForm extends StatelessWidget {
           controller: mobileController,
           readOnly: true,
           borderRadius: 12,
-          fillColor: isDark
-              ? const Color(0xFF0F172A)
-              : const Color(0xFFF8FAFC),
+          fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
           borderColor: AppColors.borderOf(context),
           onTap: onTapMobileField,
         ),
@@ -691,9 +688,7 @@ class UnifiedAuthLoginForm extends StatelessWidget {
                 fontFamily: 'Inter',
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isDark
-                    ? const Color(0xFF38BDF8)
-                    : AppColors.patientTeal,
+                color: isDark ? const Color(0xFF38BDF8) : AppColors.patientTeal,
               ),
             ),
           ),

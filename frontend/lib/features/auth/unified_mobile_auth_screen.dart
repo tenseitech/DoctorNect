@@ -232,7 +232,8 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _inlineError = e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
+          _inlineError =
+              e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
         });
       }
     } finally {
