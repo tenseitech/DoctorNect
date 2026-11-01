@@ -178,6 +178,16 @@ Superset of functions runtime; includes `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_W
 | A Exact duplicates | `.artifacts/reports/baseline_functions.json` = `docs/ops/baseline_cloud_functions.json` | **No local copy** at audit time; canonical tracked path `docs/ops/baseline_cloud_functions.json` per `docs/ops/baselines.json` |
 | A Exact duplicates | `.agent/skills/ui-ux-pro-max/**` mirrors `.cursor/skills/ui-ux-pro-max/**` (55 vs 28 tracked) | **Pending human** — pick one IDE skill root before delete |
 
+### Phase 1 batch — docs / SQL / Dart (re-run 2026-11-01)
+
+Scripts: `phase1_near_dup_docs.js`, `phase1_dart_basename_dupes.js`, `phase1_sql_duplicate_policies.js` — **flag only**, no deletes.
+
+| Category | Result (2026-11-01) |
+|----------|---------------------|
+| Near-duplicate audit docs | **21** markdown files flagged (same set as 2026-10-31 scan) |
+| Dart cross-role basename dupes | **0** groups under `features/{roles}/` |
+| SQL duplicate policy names | **199** unique names; repeats across migrations (e.g. `users_*`, `review_public_anon_select`) — idempotent migrations, no edits |
+
 ### Phase 1 batch — docs / SQL / Dart (2026-10-31)
 
 | Category | Finding | Action |
