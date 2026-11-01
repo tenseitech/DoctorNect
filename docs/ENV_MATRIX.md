@@ -43,7 +43,7 @@ Legend: **S** = required in staging, **P** = required in production, **O** = opt
 | `AWS_REGION` | S3 region | Functions | **S** | **P** | `ap-south-1` |
 | `AWS_ACCESS_KEY_ID` | S3 IAM access | Functions | **S** | **P** | `AKIA...` (secret) |
 | `AWS_SECRET_ACCESS_KEY` | S3 IAM secret | Functions | **S** | **P** | secret |
-| `S3_BUCKET` / `AWS_S3_VAULT_BUCKET` | Private vault bucket | Functions, Flutter | **S** | **P** | bucket name |
+| `S3_BUCKET` | Private vault bucket | Functions (presign/delete) | **S** | **P** | bucket name |
 | `S3_URL_CACHE` | Cache presigned URLs in Redis | Functions | O | O | `on` \| `off` |
 | `USE_S3_STORAGE` | Client compile-time S3 vs Firebase Storage | Flutter | O | O | `true` \| `false` |
 | `RAZORPAY_KEY_ID` | Payments | Flutter, Functions | **S** | **P** | `rzp_test_*` / `rzp_live_*` |

@@ -23,7 +23,7 @@ Non-secret config (may stay in `.env`): template IDs, `S3_BUCKET` (bucket **name
 | `STAGING_SUPABASE_DB_URL` | yes — `cross_role_sync.js` | **Bridge only**; gated by `ENABLE_SUPABASE_SYNC` (off in prod unless forced) |
 | `PROD_RDS_*` | **no** | **Scripts/migration only** (`backend/.env.migration.example`, `scripts/`) |
 
-See `docs/ENV_STAGING_RDS_READERS.md`.
+See [ENV_STAGING_RDS_READERS.md](./ENV_STAGING_RDS_READERS.md).
 
 ## (c) `USE_SUPABASE_DB_DOCTOR_PATIENT` / `FIRESTORE_FORBIDDEN` defaults
 
@@ -36,4 +36,4 @@ See `docs/ENV_STAGING_RDS_READERS.md`.
 
 **Proposed per environment (Option A — same names):** local, staging, prod → client `FIRESTORE_FORBIDDEN=true`, functions `FIRESTORE_FORBIDDEN=1`, both cutover flags **on** for postgres-only release.
 
-Alternative Option B (split `CLIENT_*` / server names): `docs/FLAGS_CUTOVER_PROPOSAL.md`.
+Alternative Option B (split `CLIENT_*` / server names): [FLAGS_CUTOVER_PROPOSAL.md](./FLAGS_CUTOVER_PROPOSAL.md).

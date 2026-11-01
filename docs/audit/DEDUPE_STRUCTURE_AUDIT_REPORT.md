@@ -141,7 +141,7 @@ Superset of functions runtime; includes `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_W
 |---------|-------------|-------------------|
 | Supabase service role | `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_KEY`, `SERVICE_ROLE_KEY` | `SUPABASE_SERVICE_ROLE_KEY` |
 | Supabase URL | `SUPABASE_URL`, `STAGING_SUPABASE_URL` | `SUPABASE_URL` (runtime); staging prefix in examples only |
-| S3 bucket | ~~triple alias~~ | **`S3_BUCKET` only** in examples; legacy reads in `src/config/s3_bucket.js` until 2026-06-30 — see `docs/S3_BUCKET_CANONICAL.md` |
+| S3 bucket | ~~triple alias~~ | **`S3_BUCKET` only** in examples; legacy reads in `src/config/s3_bucket.js` until 2026-06-30 — see `docs/audit/S3_BUCKET_CANONICAL.md` |
 | MSG91 auth | `MSG91_AUTH_KEY`, (legacy `MSG91_AUTHKEY`, `AUTH_KEY` in code) | `MSG91_AUTH_KEY` |
 
 ### Human decisions required (values differ — hashes only in `docs/_audit_env_conflicts.json`)
@@ -185,15 +185,15 @@ Superset of functions runtime; includes `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_W
 | I Docs | 21 audit/verification/report markdown files (`FINAL_VERIFICATION`, `FULL_AUDIT`, `SECURITY_AUDIT_v2`, archive planning, etc.) | **Flag only** — supersession order TBD; no deletes |
 | H SQL | 48 migrations; **199** unique policy names; many names appear in 2–6 files (e.g. `users_*`, `doctors_*` across `20260923…`, `20261008…`, `20261020…`) | **Flag only** — idempotent `DROP POLICY IF EXISTS` pattern; do not edit applied migrations |
 | C Dart | Cross-role duplicate basenames under `features/{doctor,patient,pharmacy,lab,ambulance}/` | **0 groups** (same filename in multiple roles) — deeper AST dedupe deferred |
-| Env | Templates collapsed — see `docs/ENV_STAGING_RDS_READERS.md`, `docs/FLAGS_CUTOVER_PROPOSAL.md` | Root index only; disjoint function/frontend/migration templates |
+| Env | Templates collapsed — see `docs/audit/ENV_STAGING_RDS_READERS.md`, `docs/audit/FLAGS_CUTOVER_PROPOSAL.md` | Root index only; disjoint function/frontend/migration templates |
 
-**Test baselines:** No new Flutter or emulator failures vs `docs/baseline_flutter_failing_tests.txt` / `docs/baseline_failing_tests.txt` (no full flutter test re-run this batch; `flutter analyze` **0 issues**).
+**Test baselines:** No new Flutter or emulator failures vs `docs/audit/baseline_flutter_failing_tests.txt` / `docs/audit/baseline_failing_tests.txt` (no full flutter test re-run this batch; `flutter analyze` **0 issues**).
 
 ### Phase 1 verification policy (this branch)
 
 - Per batch: `dart analyze` on touched Dart paths only.
 - End of each phase: full `flutter analyze`.
-- Backend: default `npm test` must stay **471 pass / 0 fail / 22 skip**; optional emulator+Docker matrix documented above (not a merge gate while Docker off).
+- Backend: default `npm test` baseline **473 pass / 0 fail / 22 skip** (495 total) — see `docs/audit/baseline_backend_default_npm_test.txt`; optional emulator+Docker matrix in `baseline_failing_tests.txt` (not a merge gate while Docker off).
 
 ---
 
