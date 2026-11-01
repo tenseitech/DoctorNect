@@ -42,8 +42,10 @@ const SYSTEM_ENV_VARS = new Set([
 
 // Test-only emulator / mock variables used in test files
 const TEST_ONLY_VARS = new Set([
+  'FIREBASE_AUTH_EMULATOR_HOST',
   'FIRESTORE_EMULATOR_HOST',
   'FIREBASE_STORAGE_EMULATOR_HOST',
+  'GCP_PROJECT',
   'LOCAL_DOCKER_PG_URL',
   'FIRESTORE_BASE_URL',
   'GOOGLE_OAUTH_TOKEN_URL',
@@ -56,7 +58,6 @@ const ENV_CONCEPT_GROUPS = [
   { canonical: 'S3_BUCKET', aliases: ['S3_BUCKET_NAME', 'AWS_S3_VAULT_BUCKET'] },
   { canonical: 'MSG91_AUTH_KEY', aliases: ['MSG91_AUTHKEY', 'AUTH_KEY'] },
   { canonical: 'SUPABASE_SERVICE_ROLE_KEY', aliases: ['SUPABASE_SECRET_KEY', 'SUPABASE_SERVICE_KEY'] },
-  { canonical: 'USE_SUPABASE_DB_DOCTOR_PATIENT', aliases: ['CUTOVER_DOCTOR_PATIENT'] },
   { canonical: 'DEMO_PHONE_PATIENT', aliases: ['GOOGLE_PLAY_REVIEW_PHONE'] },
   { canonical: 'MSG91_SENDER_ID', aliases: ['MSG91_SENDER'] },
   { canonical: 'REDIS_HOST', aliases: ['REDIS_URL'] },
