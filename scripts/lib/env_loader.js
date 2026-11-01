@@ -30,6 +30,9 @@ const backendEnv = parseEnvFile(path.join(rootDir, 'backend/functions/.env'));
 const mergedEnv = { ...rootEnv, ...migEnv, ...backendEnv, ...process.env };
 
 function getEnv(key) {
+  if (Object.prototype.hasOwnProperty.call(process.env, key) && process.env[key] !== '') {
+    return process.env[key];
+  }
   return mergedEnv[key] || '';
 }
 

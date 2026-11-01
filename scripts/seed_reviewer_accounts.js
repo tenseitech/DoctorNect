@@ -1,5 +1,7 @@
 'use strict';
 
+const { bootstrapMutatingScript } = require('./lib/mutating_script_bootstrap');
+
 /**
  * scripts/seed_reviewer_accounts.js
  *
@@ -423,6 +425,7 @@ async function handleApply(admin) {
 }
 
 async function main() {
+  bootstrapMutatingScript('scripts/seed_reviewer_accounts.js');
   console.log('================================================================');
   console.log('  DOCTORNECT: PLAY STORE / APP STORE REVIEWER ACCOUNTS TOOL     ');
   console.log('================================================================');

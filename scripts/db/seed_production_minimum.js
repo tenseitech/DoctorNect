@@ -10,6 +10,7 @@ try {
 }
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard, getHostFingerprint } = require('../lib/env_guard');
+const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 
 const SYSTEM_CONFIG_SEEDS = [
   {
@@ -37,6 +38,7 @@ const SYSTEM_CONFIG_SEEDS = [
 ];
 
 async function main() {
+  bootstrapMutatingScript('scripts/db/seed_production_minimum.js');
   const args = process.argv.slice(2);
   const isExecute = args.includes('--execute');
   const isDryRun = !isExecute || args.includes('--dry-run');

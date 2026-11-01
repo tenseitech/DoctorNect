@@ -34,6 +34,7 @@ if (fs.existsSync(envMigrationPath)) {
 }
 
 const { assertDatabaseGuard } = require('./lib/env_guard');
+const { bootstrapMutatingScript } = require('./lib/mutating_script_bootstrap');
 
 function assertSafetyGuard() {
   assertDatabaseGuard({
@@ -70,6 +71,7 @@ function mintToken(uid, role, secret) {
 }
 
 async function runReplay() {
+  bootstrapMutatingScript('scripts/replay_client_postgrest.js');
   assertSafetyGuard();
   console.log(`Starting PostgREST and Realtime replay against staging target: ${stagingUrl}`);
 

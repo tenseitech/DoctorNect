@@ -2,8 +2,10 @@
 
 const { Client } = require('pg');
 const { getEnv } = require('../lib/env_loader');
+const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 
 async function testDoctorUpdate() {
+  bootstrapMutatingScript('scripts/db/test_doctor_relogin_upsert.js');
   const c = new Client({ connectionString: getEnv('STAGING_SUPABASE_DB_URL') });
   await c.connect();
 

@@ -24,6 +24,7 @@ const path = require('path');
 const { Client, Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { getHostFingerprint, assertDatabaseGuard } = require('../lib/env_guard');
+const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 const { fetchCatalog, compareCatalogs } = require('./schema_diff');
 
 let parse;
@@ -124,6 +125,7 @@ async function preflightChecks(adminClient) {
 }
 
 async function runRdsScratchReplay() {
+  bootstrapMutatingScript('scripts/db/rds_scratch_replay.js');
   console.log('================================================================');
   console.log('DoctorNect: AWS RDS Scratch Replay & Security Parity Verification');
   console.log('================================================================\n');

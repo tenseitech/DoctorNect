@@ -323,7 +323,10 @@ async function reverseSyncUsers() {
   return res.rows.length;
 }
 
+const { bootstrapMutatingScript } = require('../../scripts/lib/mutating_script_bootstrap');
+
 async function runReverseSync() {
+  bootstrapMutatingScript('backend/scripts/reverse_sync_supabase_to_firestore.js');
   const startTime = Date.now();
   try {
     await pgClient.connect();

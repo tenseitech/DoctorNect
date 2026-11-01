@@ -335,8 +335,11 @@ module.exports = {
   pgClient,
 };
 
+const { bootstrapMutatingScript } = require('../../scripts/lib/mutating_script_bootstrap');
+
 if (require.main === module) {
   (async () => {
+    bootstrapMutatingScript('backend/scripts/supabase_to_firestore_worker.js');
     await pgClient.connect();
     console.log('Connected to Staging Postgres for sync bridge worker.');
     const result = await processDeltaSync({ since: '2000-01-01T00:00:00Z', collectionPrefix: 'test_rollback_' });

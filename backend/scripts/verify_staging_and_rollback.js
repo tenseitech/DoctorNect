@@ -10,6 +10,7 @@
 
 require('./load_env').loadEnv();
 
+const { bootstrapMutatingScript } = require('../../scripts/lib/mutating_script_bootstrap');
 const { Client } = require('pg');
 const admin = require('firebase-admin');
 const { v4: uuidv4 } = require('uuid');
@@ -339,6 +340,7 @@ async function runPart3RollbackDryRun() {
 }
 
 async function main() {
+  bootstrapMutatingScript('backend/scripts/verify_staging_and_rollback.js');
   try {
     await pgClient.connect();
     console.log('Connected to Staging PostgreSQL database successfully.\n');

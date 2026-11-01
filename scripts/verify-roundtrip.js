@@ -299,7 +299,10 @@ async function testAwsS3() {
 // ----------------------------------------------------------------------------
 // MAIN EXECUTION
 // ----------------------------------------------------------------------------
+const { bootstrapMutatingScript } = require('./lib/mutating_script_bootstrap');
+
 async function main() {
+  bootstrapMutatingScript('scripts/verify-roundtrip.js');
   console.log('='.repeat(80));
   console.log('DOCTORNECT DEEP ROUND-TRIP VERIFIER');
   console.log('='.repeat(80));

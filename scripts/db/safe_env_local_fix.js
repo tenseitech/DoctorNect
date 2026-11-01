@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 
 const ROOT = path.resolve(__dirname, '../..');
 
@@ -278,6 +279,7 @@ function ensureMissingVars(targetFile) {
 }
 
 function main() {
+  bootstrapMutatingScript('scripts/db/safe_env_local_fix.js');
   console.log('=== safe_env_local_fix (no secret values) ===\n');
 
   const patchResults = [];

@@ -11,8 +11,10 @@ const { Client } = require('pg');
 const fs = require('node:fs');
 const path = require('node:path');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
+const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 
 async function run() {
+  bootstrapMutatingScript('scripts/db/verify_zero_residue.js');
   const stagingUri = getEnv('STAGING_SUPABASE_DB_URL');
   if (!stagingUri) {
     console.error('STAGING_SUPABASE_DB_URL not found.');

@@ -123,7 +123,10 @@ function isTargetUser(user) {
   return false;
 }
 
+const { bootstrapMutatingScript } = require('../../scripts/lib/mutating_script_bootstrap');
+
 async function run() {
+  bootstrapMutatingScript('backend/scripts/purge_firebase_test_users_and_s3.js');
   console.log('================================================================');
   console.log('DOCTORNECT: FIREBASE AUTH & S3 TEST DATA PURGE');
   console.log(`MODE: ${isDryRun ? 'DRY-RUN (Audit only — zero mutations)' : '*** LIVE PURGE ***'}`);

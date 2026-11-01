@@ -5,6 +5,7 @@ const https = require('https');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 module.paths.push(path.resolve(ROOT_DIR, 'backend/functions/node_modules'));
+const { bootstrapMutatingScript } = require('./lib/mutating_script_bootstrap');
 
 function parseEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return {};
@@ -31,6 +32,7 @@ const backendEnv = parseEnvFile(path.resolve(ROOT_DIR, 'backend/functions/.env')
 const mergedEnv = { ...rootEnv, ...backendEnv, ...process.env };
 
 async function checkPostgrestFirebaseToken() {
+  bootstrapMutatingScript('scripts/test_firebase_postgrest.js');
   const saPath = path.resolve(ROOT_DIR, 'scripts/service-account.json');
   if (!fs.existsSync(saPath)) {
     console.error('ERROR: scripts/service-account.json missing');

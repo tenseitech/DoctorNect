@@ -72,7 +72,10 @@ function initFirebaseAdmin() {
   return admin.initializeApp({ projectId: 'medibond-45fad' });
 }
 
+const { bootstrapMutatingScript } = require('../../scripts/lib/mutating_script_bootstrap');
+
 async function runBackfill() {
+  bootstrapMutatingScript('backend/scripts/backfill_supabase_custom_claims.js');
   console.log('================================================================');
   console.log(`DOCTORNECT: SUPABASE AUTH CLAIMS BACKFILL [${IS_APPLY ? 'APPLY MODE' : 'DRY RUN'}]`);
   console.log('================================================================\n');

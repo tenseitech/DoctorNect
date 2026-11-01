@@ -5,6 +5,7 @@ const path = require('path');
 const { Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard } = require('../lib/env_guard');
+const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 const { assertSessionCapableConnection, SESSION_CONNECTION_DOC } = require('../lib/db_connection_guard');
 const { buildPostgrestPayload } = require('../../services/api-gateway/src/jwt_minter');
 
@@ -31,6 +32,10 @@ async function runRlsSqlHarness(options = {}) {
   const args = process.argv.slice(2);
   const targetArg = args.find(a => a.startsWith('--target='));
   const target = options.targetOverride || (targetArg ? targetArg.split('=')[1].toLowerCase() : 'staging');
+
+  if (!options.targetOverride) {
+    bootstrapMutatingScript('scripts/db/rls_sql_harness.js');
+  }
 
   let poolConfig;
   let dbUrl;

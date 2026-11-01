@@ -29,6 +29,7 @@
 const fs = require('fs');
 const path = require('path');
 const admin = require('firebase-admin');
+const { bootstrapMutatingScript } = require('./lib/mutating_script_bootstrap');
 const { Pool } = require('pg');
 
 const serviceAccountPath = path.join(__dirname, 'service-account.json');
@@ -151,6 +152,7 @@ async function postgrestRequest(endpoint, method = 'GET', body = null, token = n
 }
 
 async function runLiveRlsSuite() {
+  bootstrapMutatingScript('scripts/test_live_rls_idor.js');
   assertSafetyGuard();
   console.log(`\nStarting expanded live RLS/IDOR verification against staging: ${STAGING_URL}`);
 

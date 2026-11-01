@@ -6,6 +6,7 @@ const { execSync } = require('child_process');
 const { Client } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { getHostFingerprint } = require('../lib/env_guard');
+const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 
 async function checkDockerAvailable() {
   try {
@@ -17,6 +18,7 @@ async function checkDockerAvailable() {
 }
 
 async function replayFromScratch() {
+  bootstrapMutatingScript('scripts/db/replay_from_scratch.js');
   console.log('======================================================');
   console.log('DoctorNect: From-Scratch Migration Replay & Verification');
   console.log('======================================================\n');

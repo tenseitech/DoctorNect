@@ -214,7 +214,10 @@ async function scanAppointmentsForSlots(db) {
   };
 }
 
+const { bootstrapMutatingScript } = require('../../scripts/lib/mutating_script_bootstrap');
+
 async function runBackfill() {
+  bootstrapMutatingScript('backend/scripts/backfill_doctor_slots.js');
   const app = initFirebaseAdmin();
   const db = admin.firestore();
 

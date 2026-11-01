@@ -7,6 +7,7 @@ const { Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard, getHostFingerprint } = require('../lib/env_guard');
 const { assertSessionCapableConnection, SESSION_CONNECTION_DOC } = require('../lib/db_connection_guard');
+const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 
 let parse;
 try {
@@ -55,8 +56,12 @@ function computeChecksum(content) {
 }
 
 async function runMigrations() {
+  bootstrapMutatingScript('scripts/db/migrate.js');
   const args = process.argv.slice(2);
-  const isDryRun = args.includes('--dry-run');
+  const isDryRun =
+    args.includes('--dry-run') ||
+    args.includes('--dry-run-all') ||
+    !args.includes('--execute');
   const isDryRunAll = args.includes('--dry-run-all');
   const targetArg = args.find(a => a.startsWith('--target='));
   const target = targetArg ? targetArg.split('=')[1].toLowerCase() : 'staging';

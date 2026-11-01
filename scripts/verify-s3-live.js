@@ -15,6 +15,7 @@
 const fs = require('fs');
 const path = require('path');
 const admin = require('firebase-admin');
+const { bootstrapMutatingScript } = require('./lib/mutating_script_bootstrap');
 
 function parseEnv(filePath) {
   if (!fs.existsSync(filePath)) return {};
@@ -101,6 +102,7 @@ async function callFunction(funcName, payload, token) {
 }
 
 async function run() {
+  bootstrapMutatingScript('scripts/verify-s3-live.js');
   const testUid = `s3_verify_${Date.now()}`;
   let objectKeyToDelete = null;
 

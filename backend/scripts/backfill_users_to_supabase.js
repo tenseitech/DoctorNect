@@ -19,6 +19,7 @@
 
 'use strict';
 
+const { bootstrapMutatingScript } = require('../../scripts/lib/mutating_script_bootstrap');
 const fs = require('fs');
 const path = require('path');
 const { createRequire } = require('module');
@@ -397,6 +398,7 @@ async function runBackfill(options = {}) {
 }
 
 if (require.main === module) {
+  bootstrapMutatingScript('backend/scripts/backfill_users_to_supabase.js');
   runBackfill()
     .then(() => process.exit(0))
     .catch((err) => {
