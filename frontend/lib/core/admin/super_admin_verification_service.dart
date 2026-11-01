@@ -93,6 +93,7 @@ class SuperAdminVerificationService {
   Stream<List<VerificationApplicant>> streamApplicants({
     UserType? roleFilter,
     VerificationStage? stageFilter,
+    int limit = 150,
   }) {
     if (debugApplicantsStreamOverride != null) {
       return debugApplicantsStreamOverride!;
