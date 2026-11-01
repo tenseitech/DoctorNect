@@ -86,7 +86,7 @@ graph LR
 - `auth-otp` Edge function deleted from repository.
 - `backend/supabase/scratch/` deleted.
 - `seed_demo_accounts.js` guarded with a strict production environment blocker.
-- Dashboard configuration steps documented in `docs/SUPABASE_AUTH_AUDIT.md`.
+- Dashboard configuration steps documented in `docs/archive/verification/SUPABASE_AUTH_AUDIT.md`.
 
 ---
 

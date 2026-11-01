@@ -1,5 +1,7 @@
 # Backend unit tests vs real services
 
+Emulator suites: [EMULATOR_TESTS.md](./EMULATOR_TESTS.md) (`npm run test:emulators`).
+
 ## Root cause (ambulance OTP / full-suite hang)
 
 Commit **`92a983c`** added `test/setup_env.js` that **merged `backend/functions/.env`** into `process.env` before tests. That turned on **`OTP_REDIS_MIRROR=on`** and real **`REDIS_HOST`**, so `registration_otp.js` opened **TCP to Memorystore** and OTP session consumption diverged from fake Firestore DB tests.

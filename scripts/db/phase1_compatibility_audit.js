@@ -126,7 +126,7 @@ for (const f of auditFindings) {
   md += `| \`${f.migration}\` | L${f.line} | ${f.type} | \`${cleanSnippet}\` | ${f.rdsFix} |\n`;
 }
 
-fs.writeFileSync('docs/ops/rds_compatibility_audit.md', md);
-fs.writeFileSync('docs/ops/rds_compatibility_audit.json', JSON.stringify(auditFindings, null, 2));
+fs.writeFileSync('docs/archive/verification/rds_compatibility_audit.md', md);
+fs.writeFileSync('docs/archive/verification/rds_compatibility_audit.json', JSON.stringify(auditFindings, null, 2));
 
-console.log('Compatibility audit saved to docs/ops/rds_compatibility_audit.md');
+console.log('Compatibility audit saved to docs/archive/verification/rds_compatibility_audit.md');
