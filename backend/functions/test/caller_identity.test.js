@@ -10,10 +10,10 @@ describe('caller_identity helper', () => {
   });
 
   describe('Firestore path (cutover flag OFF)', () => {
-    let origCutover;
+    let origLegacyCutover;
     beforeEach(() => {
-      origCutover = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
-      process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+      origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+      process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
       try {
         const { _resetRemoteConfigCache } = require('../sync_flags');
         _resetRemoteConfigCache();
@@ -21,8 +21,8 @@ describe('caller_identity helper', () => {
     });
 
     afterEach(() => {
-      if (origCutover === undefined) delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
-      else process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origCutover;
+      if (origLegacyCutover === undefined) delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+      else process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacyCutover;
       try {
         const { _resetRemoteConfigCache } = require('../sync_flags');
         _resetRemoteConfigCache();

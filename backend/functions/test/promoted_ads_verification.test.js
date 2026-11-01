@@ -340,8 +340,8 @@ const TEST_KEY_ID = 'rzp_test_key_abc123';
 const TEST_KEY_SECRET = 'rzp_test_secret_xyz789';
 process.env.RAZORPAY_KEY_ID = TEST_KEY_ID;
 process.env.RAZORPAY_KEY_SECRET = TEST_KEY_SECRET;
-const origCutoverPart2 = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
-process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+const origLegacyCutoverPart2 = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
 try {
   const { _resetRemoteConfigCache } = require('../sync_flags');
   _resetRemoteConfigCache();
@@ -1726,12 +1726,12 @@ describe('reviewPromotedAd and App Check', () => {
   const ADMIN_UID = 'super_admin_uid';
   const AD_ID = 'ad_promoted_1001';
 
-  let origCutover;
+  let origLegacyCutover;
   beforeEach(() => {
     mockFirestoreStore.clear();
     mockFirestoreWrites = [];
-    origCutover = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+    origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+    delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
     try {
       const { _resetRemoteConfigCache } = require('../sync_flags');
       _resetRemoteConfigCache();
@@ -1739,10 +1739,10 @@ describe('reviewPromotedAd and App Check', () => {
   });
 
   afterEach(() => {
-    if (origCutover === undefined) {
-      delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+    if (origLegacyCutover === undefined) {
+      delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
     } else {
-      process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origCutover;
+      process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacyCutover;
     }
     try {
       const { _resetRemoteConfigCache } = require('../sync_flags');
@@ -1956,8 +1956,8 @@ describe('reviewPromotedAd and App Check', () => {
   });
 
   after(() => {
-    if (origCutoverPart2 === undefined) delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
-    else process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origCutoverPart2;
+    if (origLegacyCutoverPart2 === undefined) delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+    else process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacyCutoverPart2;
     try {
       const { _resetRemoteConfigCache } = require('../sync_flags');
       _resetRemoteConfigCache();

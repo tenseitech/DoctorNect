@@ -18,12 +18,12 @@ const {
 
 const { _resetRemoteConfigCache } = require('../sync_flags');
 
-let origEnvCutover;
+let origLegacyCutover;
 let origServiceKey;
 test.beforeEach(() => {
-  origEnvCutover = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+  origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
   origServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+  process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'dummy-service-role-key-for-test';
   }
@@ -31,8 +31,8 @@ test.beforeEach(() => {
 });
 
 test.afterEach(() => {
-  if (origEnvCutover === undefined) delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
-  else process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origEnvCutover;
+  if (origLegacyCutover === undefined) delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+  else process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacyCutover;
 
   if (origServiceKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   else process.env.SUPABASE_SERVICE_ROLE_KEY = origServiceKey;

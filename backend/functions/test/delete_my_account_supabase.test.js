@@ -31,7 +31,7 @@ afterEach(() => {
   delete process.env.SUPABASE_URL;
   delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   delete process.env.FIRESTORE_FORBIDDEN;
-  delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+  delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
 });
 
 test('cleanupUserSupabaseRows skips when secrets are absent', async () => {
@@ -117,7 +117,7 @@ test('cleanupUserSupabaseRows records table failures without throwing', async ()
 
 test('deleteMyAccountHandler runs with FIRESTORE_FORBIDDEN=1 without touching Firestore', async () => {
   process.env.FIRESTORE_FORBIDDEN = '1';
-  process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = 'true';
+  delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
 
   let firebaseAuthDeleted = false;
   // Mock Firebase Admin getAuth

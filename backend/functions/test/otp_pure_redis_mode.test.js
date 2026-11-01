@@ -17,7 +17,7 @@ const { redisKey: envRedisKey } = require('../src/config/redis_keys');
 process.env.MSG91_AUTHKEY = 'test_msg91_authkey_pure_redis';
 process.env.MSG91_TEMPLATE_ID_REGISTRATION = 'test_template_reg_pure_redis';
 process.env.MSG91_SENDER_ID = 'DRNECT';
-process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = 'true';
+delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
 process.env.FIRESTORE_FORBIDDEN = '1';
 process.env.OTP_REDIS_MIRROR = 'on';
 process.env.APP_ENV = 'staging';

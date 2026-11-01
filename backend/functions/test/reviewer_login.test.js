@@ -18,12 +18,12 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
   const origReviewUntil = process.env.REVIEW_ACCESS_UNTIL;
   const origAppEnv = process.env.APP_ENV;
   const origEnableReviewDemo = process.env.ENABLE_REVIEW_DEMO;
-  let origCutover;
+  let origLegacyCutover;
 
   test.beforeEach(() => {
-    origCutover = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+    origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
     process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
+    delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
     try {
       const { _resetRemoteConfigCache } = require('../sync_flags');
       _resetRemoteConfigCache();
@@ -32,8 +32,8 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
 
   test.afterEach(() => {
     delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
-    if (origCutover === undefined) delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
-    else process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origCutover;
+    if (origLegacyCutover === undefined) delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+    else process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacyCutover;
     try {
       const { _resetRemoteConfigCache } = require('../sync_flags');
       _resetRemoteConfigCache();

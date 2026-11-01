@@ -225,7 +225,11 @@ function createMockSupabaseStore(initialAds = [], initialUsers = []) {
 function runWebhookSecurityTestSuite(suiteName, isSupabase) {
   test(`${suiteName}: 11 Webhook Security Tests`, async (t) => {
     process.env.RAZORPAY_WEBHOOK_SECRET = TEST_SECRET;
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = isSupabase ? 'true' : 'false';
+    if (isSupabase) {
+      delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+    } else {
+      process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
+    }
 
     const validPayload = {
       event: 'payment.captured',
@@ -560,7 +564,7 @@ test('Razorpay Supabase Path: Local Docker PostgreSQL Integration Test', async (
 
     // 2. Execute webhook with valid signature and event
     process.env.RAZORPAY_WEBHOOK_SECRET = TEST_SECRET;
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = 'true';
+    delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
     setSupabaseClientForTesting(null); // Use real Supabase client
 
     const webhookPayload = {

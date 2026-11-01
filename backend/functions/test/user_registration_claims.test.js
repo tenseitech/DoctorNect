@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { supabaseCompatibleCustomClaims } = require('../registration_otp');
 
-process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = 'true';
+delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
 
 // Mock Firebase Admin Auth
 function createMockAuth() {

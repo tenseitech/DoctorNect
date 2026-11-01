@@ -7,12 +7,11 @@ const { LIMITS, enforceAbuseLimit } = require('../abuse_rate_limit');
 const { enforceSendUserRegistrationOtpRateLimit } = require('../index');
 const { setRedisClientForTesting } = require('../redis');
 
-let origCutover;
+let origLegacyCutover;
 let origRateLimitBackend;
 test.beforeEach(() => {
-  origCutover = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+  origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
   origRateLimitBackend = process.env.RATE_LIMIT_BACKEND;
-  process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
   process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
   process.env.RATE_LIMIT_BACKEND = 'firestore';
   setRedisClientForTesting(null);
@@ -25,8 +24,8 @@ test.beforeEach(() => {
 test.afterEach(() => {
   setRedisClientForTesting(null);
   delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
-  if (origCutover === undefined) delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
-  else process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origCutover;
+  if (origLegacyCutover === undefined) delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+  else process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacyCutover;
   if (origRateLimitBackend === undefined) delete process.env.RATE_LIMIT_BACKEND;
   else process.env.RATE_LIMIT_BACKEND = origRateLimitBackend;
   try {

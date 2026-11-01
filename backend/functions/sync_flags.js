@@ -2,8 +2,6 @@
 
 /**
  * DoctorNect: Sync Feature Flags & Cutover Flags Parser
- * 
- * Centralized parsing and single-source-of-truth cutover flag resolver.
  */
 
 function isSyncFlagEnabled(val) {
@@ -13,8 +11,6 @@ function isSyncFlagEnabled(val) {
 }
 
 function isSupabaseSyncEnabled() {
-  // Dual-master hazard prevention: bridge is disabled when APP_ENV=production
-  // unless explicitly forced via FORCE_ENABLE_SUPABASE_SYNC_IN_PROD=1.
   if (process.env.APP_ENV === 'production' && !isSyncFlagEnabled(process.env.FORCE_ENABLE_SUPABASE_SYNC_IN_PROD)) {
     return false;
   }
@@ -22,7 +18,7 @@ function isSupabaseSyncEnabled() {
 }
 
 const REMOTE_CONFIG_FLAG_KEY = 'use_supabase_db_doctor_patient';
-const REMOTE_CONFIG_CACHE_TTL_MS = 60 * 1000; // ~60s in-memory cache
+const REMOTE_CONFIG_CACHE_TTL_MS = 60 * 1000;
 
 let _remoteConfigCache = {
   value: null,
@@ -42,28 +38,16 @@ function _setMockRemoteConfigTemplate(mockFn) {
   _mockRemoteConfigTemplate = mockFn;
 }
 
-function _getEnvCutoverFallback() {
-  const envVal = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
-  return isSyncFlagEnabled(envVal);
-}
-
 /**
- * Checks whether Supabase is primary for Doctor & Patient modules.
- * 
- * Single source of truth:
- * Reads the SAME Firebase Remote Config key (use_supabase_db_doctor_patient)
- * via Firebase Admin SDK with a ~60s in-memory cache.
- * Env var USE_SUPABASE_DB_DOCTOR_PATIENT is strictly a fallback default
- * if Remote Config is unreachable or unconfigured.
- * 
+ * Supabase is primary for Doctor & Patient modules (Postgres app data).
+ * Tests may set __TEST_FORCE_LEGACY_DOCTOR_PATIENT=1 to exercise Firestore-only paths.
+ *
  * @returns {Promise<boolean>}
  */
 async function isDoctorPatientSupabasePrimary() {
-  // Unit tests that simulate legacy Firestore slot/OTP flows (see doctor_slots.test.js).
   if (String(process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT || '').trim() === '1') {
     return false;
   }
-  // Postgres-only architecture: application data never reads/writes Firestore.
   return true;
 }
 
@@ -73,7 +57,6 @@ module.exports = {
   isDoctorPatientSupabasePrimary,
   _resetRemoteConfigCache,
   _setMockRemoteConfigTemplate,
-  _getEnvCutoverFallback,
   REMOTE_CONFIG_FLAG_KEY,
   REMOTE_CONFIG_CACHE_TTL_MS,
 };

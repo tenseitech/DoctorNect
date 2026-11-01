@@ -8,12 +8,12 @@ const { setSupabaseClientForTesting } = require('../caller_identity');
 describe('security_logger service', () => {
   afterEach(() => {
     setSupabaseClientForTesting(null);
-    delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+    delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
     delete process.env.FIRESTORE_FORBIDDEN;
   });
 
   it('persists security event to Postgres security_events when cutover flag is ON', async () => {
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = 'true';
+    delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
     let insertedRow = null;
 
     const mockSupabase = {

@@ -71,13 +71,12 @@ function createMockRedis() {
   };
 }
 
-let origEnvCutover;
+let origLegacyCutover;
 let origRateLimitBackend;
 let currentMockRedis;
 test.beforeEach(() => {
-  origEnvCutover = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+  origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
   origRateLimitBackend = process.env.RATE_LIMIT_BACKEND;
-  process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
   process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
   process.env.RATE_LIMIT_BACKEND = 'redis';
   currentMockRedis = createMockRedis();
@@ -88,10 +87,10 @@ test.beforeEach(() => {
 test.afterEach(() => {
   setRedisClientForTesting(null);
   delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
-  if (origEnvCutover === undefined) {
-    delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+  if (origLegacyCutover === undefined) {
+    delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
   } else {
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origEnvCutover;
+    process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacyCutover;
   }
   if (origRateLimitBackend === undefined) {
     delete process.env.RATE_LIMIT_BACKEND;
@@ -1348,7 +1347,6 @@ test('reconcileAppointmentSlot is idempotent after rescheduleAppointment has mov
 
 test('reconcileAppointmentSlotHandler exits early with cutover_supabase_primary when Postgres is primary', async () => {
   delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
-  process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '1';
   _resetRemoteConfigCache();
   try {
     const db = createConcurrentMockFirestore();
@@ -1364,8 +1362,7 @@ test('reconcileAppointmentSlotHandler exits early with cutover_supabase_primary 
     const res = await reconcileAppointmentSlotHandler(event, db);
     assert.deepEqual(res, { reconciled: false, reason: 'cutover_supabase_primary' });
   } finally {
-    process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+    delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
     _resetRemoteConfigCache();
   }
 });
