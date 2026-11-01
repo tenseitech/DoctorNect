@@ -264,8 +264,8 @@ class _PatientShellState extends State<PatientShell> {
       shortLabel: 'Appointment',
     ),
     const PatientTabItem(
-      outlinedIcon: Icons.science_outlined,
-      filledIcon: Icons.science_rounded,
+      outlinedIcon: TablerIcons.flask,
+      filledIcon: TablerIcons.flask_filled,
       label: 'My Labs',
       shortLabel: 'Labs',
     ),
