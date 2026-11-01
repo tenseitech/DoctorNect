@@ -29,6 +29,10 @@ node_modules/
 
 # Flutter/Dart/Pub related
 **/doc/api/
+frontend/ios/Flutter/ephemeral/
+frontend/macos/Flutter/ephemeral/
+**/ios/Flutter/ephemeral/
+**/macos/Flutter/ephemeral/
 **/ios/Flutter/.last_build_id
 .dart_tool/
 **/.dart_tool/
@@ -102,6 +106,7 @@ android/key.properties
 docs/_audit_*.json
 docs/audit/_audit_*.json
 docs/audit/_jscpd_features/
+docs/audit/_runs/
 docs/audit/_phase1_sql_policies.json
 docs/_phase1_*.json
 docs/_emulator_test_run.log
@@ -114,6 +119,7 @@ docs/_replay_*.txt
 
 # Temporary and scratch folders
 scratch/
+adapters/scratch/
 .bin/
 *.exe
 *.zip
