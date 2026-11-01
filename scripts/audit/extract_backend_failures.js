@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const logPath = process.argv[2] || path.join(__dirname, '../../docs/_emulator_test_run.log');
-const outPath = process.argv[3] || path.join(__dirname, '../../docs/baseline_failing_tests.txt');
+const outPath = process.argv[3] || path.join(__dirname, '../../docs/audit/baseline_failing_tests.txt');
 const lines = fs.readFileSync(logPath, 'utf8').split(/\r?\n/);
 const names = new Set();
 for (const line of lines) {

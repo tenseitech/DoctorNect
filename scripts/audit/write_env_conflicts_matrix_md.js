@@ -3,8 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const jsonPath = path.join(__dirname, '../../docs/_audit_env_runtime.json');
-const outPath = path.join(__dirname, '../../docs/ENV_CONFLICTS_MATRIX.md');
+const jsonPath = path.join(__dirname, '../../docs/audit/_audit_env_runtime.json');
+const outPath = path.join(__dirname, '../../docs/audit/ENV_CONFLICTS_MATRIX.md');
 const raw = fs.readFileSync(jsonPath, 'utf8').replace(/^\uFEFF/, '');
 const { rows } = JSON.parse(raw);
 

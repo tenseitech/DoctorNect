@@ -115,6 +115,6 @@ const rows = [...conflicts].sort().map((key) => ({
 }));
 
 const payload = { conflictCount: conflicts.length, rows };
-const outPath = path.join(ROOT, 'docs/_audit_env_runtime.json');
+const outPath = path.join(ROOT, 'docs/audit/_audit_env_runtime.json');
 fs.writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
 console.log(JSON.stringify({ written: outPath, conflictCount: conflicts.length }, null, 2));

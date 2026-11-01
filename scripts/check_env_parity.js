@@ -232,8 +232,6 @@ function checkEnvParity() {
   const legacyInProductionCode = [];
   const secureConfigRel = 'backend/functions/secure_config.js';
   const LEGACY_ALIAS_HELPER_FILES = {
-    S3_BUCKET_NAME: ['backend/functions/src/config/s3_bucket.js'],
-    AWS_S3_VAULT_BUCKET: ['backend/functions/src/config/s3_bucket.js'],
     MSG91_AUTHKEY: [secureConfigRel],
     AUTH_KEY: [secureConfigRel],
     SUPABASE_SECRET_KEY: [secureConfigRel],
