@@ -39,7 +39,7 @@ Notable **non-test** paths under `backend/functions/`: `index.js`, `registration
 
 | Question | Answer |
 |----------|--------|
-| Redeploy stale cohort **at the same build** as today (`fb8e2e13`) | **No exported-function JavaScript delta** — only rebaked **`SUPABASE_URL`** / env and secret bindings change (hash **800DB356** → **40D01C23** when deploy env is corrected). |
+| Redeploy stale cohort **at the same build** as today (`fb8e2e13`) | **Intended:** only rebaked **`SUPABASE_URL`** / env and secret bindings (hash **800DB356** → **40D01C23**). **“No JS change” is UNVERIFIED** — **`fb8e2e13` is not a git object**; git proxy **`4fc3a6b`** is approximate; confirm with Cloud Run revision / source provenance before trusting zero code delta. |
 | Redeploy same cohort **from `9883f00` (24 Oct)** instead | All **50** STALE_REF exports still exist; shared modules **`registration_otp.js`**, **`delete_my_account.js`**, **`s3_storage.js`**, **`index.js`**, etc. differ from proxy — **OTP/login/register**, **delete account**, **S3**, **validation** callables pick up Oct audit fixes. |
 | Redeploy from **`4dfae67` (31 Oct postgres-only)** instead | **22** Tier-1 Firestore triggers **dropped from exports**; **28** cohort callables remain exported but sit on postgres-only / outbox architecture — **do not** use for STALE_REF env-only refresh without explicit cutover review. |
 
@@ -144,6 +144,68 @@ firebase deploy --only \
 ```
 
 **Plan doc commit:** **`d6a34c8`**. **PROGRESS.md:** no tier marked executed.
+
+---
+
+## ⚠️ Never full-fleet deploy from chore / postgres branch before RDS cutover
+
+**Do not run** `firebase deploy --only functions` (no `--only functions:…` list) from **`chore/dedupe-structure-audit`**, **`feature/postgres-only-architecture`**, or any tip that includes commit **`4dfae67`**, until RDS cutover is explicitly approved.
+
+- That deploy **removes 22 Tier-1 Firestore trigger exports** from the live project (postgres-only `index.js`).
+- **Never** pass **`--force`** to override safety prompts for a full functions deploy.
+- STALE_REF work must use **tier-scoped** `firebase deploy --only functions:name,…` from the **commit/build that matches the revision you intend to ship**, not branch tip by default.
+
+---
+
+## Canary deploy and rollback (docs only — Gen2 / Cloud Run)
+
+**Build id note:** **`fb8e2e13`** = Cloud Run revision label from **SECURITY_AUDIT_2026-10-06**. Git stand-in **`4fc3a6b`** is **not** guaranteed byte-identical to that build.
+
+### First function (canary)
+
+Deploy **one** Tier-2 callable first (low blast radius, client-facing smoke):
+
+- **Function:** `getValidationRules`
+- **Region:** `asia-south1`
+- **Command (single-function canary):**
+
+```bash
+firebase deploy --only functions:getValidationRules --project medibond-45fad
+```
+
+### Log checks (5–15 minutes after canary)
+
+```bash
+gcloud logging read \
+  'resource.type="cloud_run_revision" AND resource.labels.service_name="getvalidationrules" AND severity>=ERROR' \
+  --project=medibond-45fad --limit=20 --freshness=30m
+```
+
+Confirm:
+
+- No startup / Secret Manager / Redis connection fatal errors.
+- No spike in `severity>=ERROR` vs pre-deploy baseline.
+- Optional: invoke callable from staging client; expect schema JSON, not 5xx.
+
+### Rollback traffic (Gen2 function = Cloud Run service)
+
+Replace placeholders with values from `gcloud run services describe` (revision names are **not** git hashes).
+
+```bash
+# List revisions (note previous good revision)
+gcloud run services describe getvalidationrules \
+  --region=asia-south1 --project=medibond-45fad \
+  --format='value(status.traffic)'
+
+# Roll 100% traffic to prior revision (<PREVIOUS_REVISION> e.g. getvalidationrules-00042-abc)
+gcloud run services update-traffic getvalidationrules \
+  --region=asia-south1 --project=medibond-45fad \
+  --to-revisions=<PREVIOUS_REVISION>=100
+```
+
+Repeat per function if a tier batch partially succeeds; prefer **traffic rollback** before redeploying older source.
+
+Env name drift for 800DB356 refresh: **`docs/audit/STALE_REDEPLOY_ENV_DIFF.md`**.
 
 ---
 
