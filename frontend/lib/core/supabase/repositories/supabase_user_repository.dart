@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
 import '../../auth/demo_auth_config.dart';
+import '../../auth/registration_otp_service.dart';
 import '../../enums/user_type.dart';
 import '../../firebase/models/medibond_user_profile.dart';
 import '../../validators/form_validators.dart';
@@ -391,6 +392,9 @@ class SupabaseUserRepository {
   /// Outcome of [deletePendingAuthUser] — used when finalize succeeded server-side
   /// but the client lost the HTTP response.
   static const pendingAuthDeleted = 'deleted';
+  static const pendingAuthServerCleaned = 'server_cleaned';
+  static const pendingAuthServerDeclined = 'server_declined';
+  static const pendingAuthFallbackNoRetry = 'fallback_no_retry';
   static const pendingAuthSkippedAlreadyVerified = 'skipped_already_verified';
 
   /// Reads `public.users` for rollback decisions (no side effects).
@@ -439,7 +443,8 @@ class SupabaseUserRepository {
     return rowId == uid || firebaseUid == uid;
   }
 
-  /// Removes a fresh, unverified `public.users` row (and role table row) for [uid].
+  /// Best-effort client row delete — **RLS blocks** owner DELETE on `users` /
+  /// `patients` / `doctors`; prefer [RegistrationOtpService.cleanupPendingRegistration].
   /// See [loadRegistrationProfileRowForRollback] for guard list.
   Future<void> deleteFreshOrphanRegistrationProfile(String uid) async {
     if (uid.isEmpty || !SupabaseBootstrap.isReady) return;
@@ -492,11 +497,40 @@ class SupabaseUserRepository {
     if (await isRegistrationProfileAlreadyVerified(uid)) {
       return pendingAuthSkippedAlreadyVerified;
     }
+
     if (debugDeleteFreshOrphanProfileRows != null) {
       await debugDeleteFreshOrphanProfileRows!(uid);
-    } else {
-      await deleteFreshOrphanRegistrationProfile(uid);
+      try {
+        await user.delete();
+      } on FirebaseAuthException catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '[SupabaseUserRepository] deletePendingAuthUser failed: ${e.code}',
+          );
+        }
+        rethrow;
+      }
+      return pendingAuthDeleted;
     }
+
+    try {
+      final cleanup = await RegistrationOtpService.cleanupPendingRegistration();
+      if (cleanup.ok && cleanup.cleaned) {
+        try {
+          await user.delete();
+        } on FirebaseAuthException catch (e) {
+          if (e.code != 'user-not-found') rethrow;
+        }
+        return pendingAuthServerCleaned;
+      }
+      if (cleanup.ok && !cleanup.cleaned) {
+        return pendingAuthServerDeclined;
+      }
+    } catch (_) {
+      // Callable unreachable — auth-only fallback below (retry not guaranteed).
+    }
+
+    await deleteFreshOrphanRegistrationProfile(uid);
     try {
       await user.delete();
     } on FirebaseAuthException catch (e) {
@@ -507,7 +541,7 @@ class SupabaseUserRepository {
       }
       rethrow;
     }
-    return pendingAuthDeleted;
+    return pendingAuthFallbackNoRetry;
   }
 
   Future<String?> validateNewRegistration({

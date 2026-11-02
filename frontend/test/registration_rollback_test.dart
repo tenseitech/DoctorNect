@@ -41,6 +41,7 @@ void main() {
     UserRepository.debugSupabaseUserRepository = null;
     RegistrationOtpService.debugFinalizeRegistrationVerification = null;
     RegistrationOtpService.clearVerificationSession();
+    RegistrationOtpService.debugCleanupPendingRegistration = null;
     SupabaseUserRepository.debugDeleteFreshOrphanProfileRows = null;
     SupabaseUserRepository.debugIsRegistrationProfileAlreadyVerified = null;
   });
@@ -111,6 +112,9 @@ void main() {
             mobileVerified: any(named: 'mobileVerified'),
             roleData: any(named: 'roleData'),
           )).thenAnswer((_) async {});
+      RegistrationOtpService.debugCleanupPendingRegistration =
+          () async => (ok: true, cleaned: true);
+
       when(() => mockRepo.deletePendingAuthUser(any())).thenAnswer((invocation) async {
         final pendingUser = invocation.positionalArguments[0] as User;
         return SupabaseUserRepository.instance.deletePendingAuthUser(pendingUser);
@@ -238,6 +242,42 @@ void main() {
       );
       expect(retryValidation, isNull);
       verify(() => mockUser.delete()).called(1);
+    });
+
+    test('calls cleanup callable before sign-out on finalize failure', () async {
+      var cleanupCalled = false;
+      RegistrationOtpService.debugCleanupPendingRegistration = () async {
+        cleanupCalled = true;
+        return (ok: true, cleaned: true);
+      };
+
+      when(() => mockRepo.fetchProfile(any(), preferCache: any(named: 'preferCache')))
+          .thenAnswer(
+        (_) async => DoctorNectUserProfile(
+          uid: 'reg_rollback_uid',
+          role: UserType.patient,
+          profileId: 'patient_rb_callable',
+          displayName: 'Rollback Test',
+          email: 'rollback@test.com',
+          mobile: '9876543210',
+        ),
+      );
+      RegistrationOtpService.debugFinalizeRegistrationVerification =
+          (_) async => 'Finalize failed';
+
+      final result = await FirebaseAuthService.instance.registerProfile(
+        role: UserType.patient,
+        email: 'rollback@test.com',
+        password: 'Password1!',
+        profileId: 'patient_rb_callable',
+        displayName: 'Rollback Test',
+        mobile: '9876543210',
+        otpVerificationSessionId: 'sess-callable-first',
+      );
+
+      expect(result.success, isFalse);
+      expect(cleanupCalled, isTrue);
+      verify(() => mockAuth.signOut()).called(1);
     });
 
     test('finalize response lost keeps auth when profile already verified on server',

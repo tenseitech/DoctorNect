@@ -414,6 +414,26 @@ class FirebaseAuthService {
     }
   }
 
+  /// Returns non-null when registration should stop after rollback/sign-out.
+  Future<AuthSignInResult?> _abortPendingRegistrationIfNeeded(
+    User user,
+    String message,
+  ) async {
+    final rollback =
+        await FirestoreService.instance.user.deletePendingAuthUser(user);
+    if (rollback == SupabaseUserRepository.pendingAuthSkippedAlreadyVerified) {
+      return null;
+    }
+    await _auth.signOut();
+    if (rollback == SupabaseUserRepository.pendingAuthFallbackNoRetry) {
+      return AuthSignInResult.fail(
+        '$message Registration cleanup could not reach the server; '
+        'retrying with the same email or mobile may not work.',
+      );
+    }
+    return AuthSignInResult.fail(message);
+  }
+
   Future<AuthSignInResult> registerProfile({
     required UserType role,
     required String email,
@@ -473,9 +493,9 @@ class FirebaseAuthService {
         roleData: data,
       );
       if (validationError != null) {
-        await FirestoreService.instance.user.deletePendingAuthUser(user);
-        await _auth.signOut();
-        return AuthSignInResult.fail(validationError);
+        final aborted =
+            await _abortPendingRegistrationIfNeeded(user, validationError);
+        return aborted ?? AuthSignInResult.fail(validationError);
       }
 
       if (prepareRoleDataAfterAuth != null) {
@@ -486,11 +506,11 @@ class FirebaseAuthService {
           );
           data['ownerUid'] = user.uid;
         } catch (e) {
-          await FirestoreService.instance.user.deletePendingAuthUser(user);
-          await _auth.signOut();
-          return AuthSignInResult.fail(
+          final aborted = await _abortPendingRegistrationIfNeeded(
+            user,
             'Registration failed while uploading verification documents: $e',
           );
+          if (aborted != null) return aborted;
         }
       }
 
@@ -520,11 +540,11 @@ class FirebaseAuthService {
         );
 
         if (saved == null) {
-          await FirestoreService.instance.user.deletePendingAuthUser(user);
-          await _auth.signOut();
-          return AuthSignInResult.fail(
-            'Account created, but profile verification timed out. Please try again.',
-          );
+          const timeoutMsg =
+              'Account created, but profile verification timed out. Please try again.';
+          final aborted = await _abortPendingRegistrationIfNeeded(user, timeoutMsg);
+          if (aborted != null) return aborted;
+          return AuthSignInResult.fail(timeoutMsg);
         }
 
         final normalizedMobile =
@@ -544,15 +564,9 @@ class FirebaseAuthService {
               sessionId,
             );
             if (finalizeError != null) {
-              final rollback =
-                  await FirestoreService.instance.user.deletePendingAuthUser(
-                user,
-              );
-              if (rollback !=
-                  SupabaseUserRepository.pendingAuthSkippedAlreadyVerified) {
-                await _auth.signOut();
-                return AuthSignInResult.fail(finalizeError);
-              }
+              final aborted =
+                  await _abortPendingRegistrationIfNeeded(user, finalizeError);
+              if (aborted != null) return aborted;
               // Finalize persisted server-side; client lost the response — continue.
             }
           }

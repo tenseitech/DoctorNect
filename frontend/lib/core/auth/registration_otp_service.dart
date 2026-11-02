@@ -379,6 +379,30 @@ class RegistrationOtpService {
   static Future<String?> Function(String sessionId)?
       debugFinalizeRegistrationVerification;
 
+  @visibleForTesting
+  static Future<({bool ok, bool cleaned})> Function()?
+      debugCleanupPendingRegistration;
+
+  /// Server-side orphan registration cleanup (service role; RLS-safe).
+  static Future<({bool ok, bool cleaned})> cleanupPendingRegistration() async {
+    final override = debugCleanupPendingRegistration;
+    if (override != null) {
+      return override();
+    }
+    if (!FirebaseBootstrap.isReady) {
+      throw StateError('Firebase is not available.');
+    }
+    await AppCheckService.ensureForCallable();
+    final result = await _functions
+        .httpsCallable('cleanupPendingRegistration')
+        .call<Map<String, dynamic>>({});
+    final data = Map<String, dynamic>.from(result.data);
+    return (
+      ok: data['ok'] == true,
+      cleaned: data['cleaned'] == true,
+    );
+  }
+
   /// Applies a pre-registration OTP session after Firebase Auth signup.
   static Future<String?> finalizeRegistrationVerification(String sessionId) {
     final override = debugFinalizeRegistrationVerification;
