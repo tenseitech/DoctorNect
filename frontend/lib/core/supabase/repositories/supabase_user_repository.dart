@@ -382,9 +382,70 @@ class SupabaseUserRepository {
     }
   }
 
+  static const Duration orphanRegistrationMaxAge = Duration(minutes: 10);
+
+  /// Optional test hook: return value ignored; runs before Firebase Auth delete.
+  @visibleForTesting
+  static Future<void> Function(String uid)? debugDeleteFreshOrphanProfileRows;
+
+  /// Removes a fresh, unverified `public.users` row (and role table row) for [uid].
+  /// Same guards as server orphan rollback: caller uid, created within 10 minutes,
+  /// no mobile/email verified flags.
+  Future<void> deleteFreshOrphanRegistrationProfile(String uid) async {
+    if (uid.isEmpty || !SupabaseBootstrap.isReady) return;
+
+    try {
+      final row = await _client
+          .from('users')
+          .select(
+            'id, profile_id, role, created_at, mobile_verified, email_verified',
+          )
+          .or('id.eq.$uid,firebase_uid.eq.$uid')
+          .maybeSingle();
+      if (row == null) return;
+
+      final mobileVerified = row['mobile_verified'] == true;
+      final emailVerified = row['email_verified'] == true;
+      if (mobileVerified || emailVerified) return;
+
+      final createdRaw = row['created_at'];
+      DateTime? createdAt;
+      if (createdRaw is String) {
+        createdAt = DateTime.tryParse(createdRaw);
+      } else if (createdRaw is DateTime) {
+        createdAt = createdRaw;
+      }
+      if (createdAt == null) return;
+      if (DateTime.now().difference(createdAt) > orphanRegistrationMaxAge) {
+        return;
+      }
+
+      final profileId = (row['profile_id'] as String?)?.trim() ?? '';
+      final role = (row['role'] as String?)?.trim().toLowerCase() ?? '';
+      if (profileId.isNotEmpty && role == 'patient') {
+        await _client.from('patients').delete().eq('patient_id', profileId);
+      } else if (profileId.isNotEmpty && role == 'doctor') {
+        await _client.from('doctors').delete().eq('doctor_id', profileId);
+      }
+      await _client.from('users').delete().eq('id', uid);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[SupabaseUserRepository] deleteFreshOrphanRegistrationProfile failed: $e',
+        );
+      }
+    }
+  }
+
   /// Removes the Firebase Auth user created during an aborted registration attempt.
   /// Caller must still be signed in as [user] (same semantics as legacy Firestore path).
   Future<void> deletePendingAuthUser(User user) async {
+    final uid = user.uid;
+    if (debugDeleteFreshOrphanProfileRows != null) {
+      await debugDeleteFreshOrphanProfileRows!(uid);
+    } else {
+      await deleteFreshOrphanRegistrationProfile(uid);
+    }
     try {
       await user.delete();
     } on FirebaseAuthException catch (e) {
