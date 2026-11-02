@@ -1,0 +1,340 @@
+{
+  "scannedFiles": 1729,
+  "exactDuplicateGroups": 38,
+  "exactDuplicateSample": [
+    {
+      "hash": "445264f31cf6",
+      "paths": [
+        ".artifacts/reports/all_table_policies.json",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/policies.json"
+      ]
+    },
+    {
+      "hash": "64a8ef07d207",
+      "paths": [
+        ".artifacts/reports/baseline_functions.json",
+        "docs/ops/baseline_cloud_functions.json"
+      ]
+    },
+    {
+      "hash": "09cd18804224",
+      "paths": [
+        ".artifacts/reports/security_definer_functions_report.json",
+        "scripts/security_definer_functions_report.json"
+      ]
+    },
+    {
+      "hash": "8008295f5f29",
+      "paths": [
+        ".artifacts/reports/service-account.json",
+        "scripts/service-account.json"
+      ]
+    },
+    {
+      "hash": "e259ceef24c7",
+      "paths": [
+        "backend/supabase/.temp/cli-latest",
+        "supabase/.temp/cli-latest"
+      ]
+    },
+    {
+      "hash": "0ccc180282b2",
+      "paths": [
+        "backend/supabase/.temp/linked-project.json",
+        "supabase/.temp/linked-project.json"
+      ]
+    },
+    {
+      "hash": "e3b0c44298fc",
+      "paths": [
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/private.admin_users.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/private.provisioning_errors.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.abuse_rate_limits.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.admin_audit_logs.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.ambulances.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.ambulance_broadcasts.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.ambulance_invites.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.ambulance_locations.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.ambulance_location_updates.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.ambulance_private_settings.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.ambulance_requests.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.ambulance_trip_contacts.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.appointments.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.community_body_parts.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.community_diagnoses.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.community_lab_tests.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.community_medicines.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.community_radiology.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.doctor_availability.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.doctor_blocked_dates.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.doctor_education.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.doctor_facilities.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.doctor_invites.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.doctor_private.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.facilities.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.family_members.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.health_records.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.in_app_notifications.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.labs.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.lab_bookings.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.lab_catalog_tests.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.lab_connections.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.lab_orders.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.mail_queue.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.medical_directory.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.otp_challenges.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.otp_verification_sessions.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.patients.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.patient_care_team.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.patient_doctor_links.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.pharmacy_connections.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.pharmacy_deliveries.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.pharmacy_delivery_medicines.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.pharmacy_doctor_invites.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.prescriptions.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.prescription_investigations.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.prescription_medicines.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.prescription_referrals.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.promoted_ads.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.razorpay_orders.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.razorpay_payments.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.razorpay_webhook_events.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.referrals.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.reviews.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.review_public.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.review_votes.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.security_events.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.storage_audit_logs.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.super_admins.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.support_tickets.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.support_ticket_messages.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.sync_dead_letter_queue.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.users.ndjson",
+        "backups/staging_logical_2026-10-29T07-41-24-509Z/data/public.user_devices.ndjson",
+        "frontend/assets/images/.gitkeep"
+      ]
+    },
+    {
+      "hash": "018a52175a6e",
+      "paths": [
+        "backups/supabase_2026-10-26T07-38-37-299Z/catalog_exports.json",
+        "backups/supabase_2026-10-26T07-38-59-229Z/catalog_exports.json"
+      ]
+    },
+    {
+      "hash": "96b14dd2f5c0",
+      "paths": [
+        "backups/supabase_2026-10-26T07-38-37-299Z/dashboard_config_checklist.md",
+        "backups/supabase_2026-10-26T07-38-59-229Z/dashboard_config_checklist.md"
+      ]
+    },
+    {
+      "hash": "dad53edad50e",
+      "paths": [
+        "backups/supabase_2026-10-26T07-38-37-299Z/table_classification.md",
+        "backups/supabase_2026-10-26T07-38-59-229Z/table_classification.md"
+      ]
+    },
+    {
+      "hash": "b01a4541a814",
+      "paths": [
+        "frontend/android/app/src/debug/AndroidManifest.xml",
+        "frontend/android/app/src/profile/AndroidManifest.xml"
+      ]
+    },
+    {
+      "hash": "af4be5f33351",
+      "paths": [
+        "frontend/android/app/src/main/res/drawable/background.png",
+        "frontend/android/app/src/main/res/drawable-night/background.png",
+        "frontend/android/app/src/main/res/drawable-night-v21/background.png",
+        "frontend/android/app/src/main/res/drawable-v21/background.png",
+        "frontend/ios/Runner/Assets.xcassets/LaunchBackground.imageset/background.png",
+        "frontend/ios/Runner/Assets.xcassets/LaunchBackground.imageset/darkbackground.png"
+      ]
+    },
+    {
+      "hash": "ebb332328da8",
+      "paths": [
+        "frontend/android/app/src/main/res/drawable/launch_background.xml",
+        "frontend/android/app/src/main/res/drawable-night/launch_background.xml",
+        "frontend/android/app/src/main/res/drawable-night-v21/launch_background.xml",
+        "frontend/android/app/src/main/res/drawable-v21/launch_background.xml"
+      ]
+    },
+    {
+      "hash": "0d9164f1d687",
+      "paths": [
+        "frontend/android/app/src/main/res/drawable-hdpi/android12splash.png",
+        "frontend/android/app/src/main/res/drawable-hdpi/splash.png",
+        "frontend/android/app/src/main/res/drawable-night-hdpi/android12splash.png",
+        "frontend/android/app/src/main/res/drawable-night-hdpi/splash.png"
+      ]
+    },
+    {
+      "hash": "3f1beb935e4a",
+      "paths": [
+        "frontend/android/app/src/main/res/drawable-mdpi/android12splash.png",
+        "frontend/android/app/src/main/res/drawable-mdpi/splash.png",
+        "frontend/android/app/src/main/res/drawable-night-mdpi/android12splash.png",
+        "frontend/android/app/src/main/res/drawable-night-mdpi/splash.png",
+        "frontend/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage.png",
+        "frontend/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImageDark.png"
+      ]
+    },
+    {
+      "hash": "7802bf1cb7b1",
+      "paths": [
+        "frontend/android/app/src/main/res/drawable-night-xhdpi/android12splash.png",
+        "frontend/android/app/src/main/res/drawable-night-xhdpi/splash.png",
+        "frontend/android/app/src/main/res/drawable-xhdpi/android12splash.png",
+        "frontend/android/app/src/main/res/drawable-xhdpi/splash.png",
+        "frontend/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@2x.png",
+        "frontend/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImageDark@2x.png",
+        "frontend/web/icons/Icon-512.png",
+        "frontend/web/icons/Icon-maskable-512.png"
+      ]
+    },
+    {
+      "hash": "42b9031e454c",
+      "paths": [
+        "frontend/android/app/src/main/res/drawable-night-xxhdpi/android12splash.png",
+        "frontend/android/app/src/main/res/drawable-night-xxhdpi/splash.png",
+        "frontend/android/app/src/main/res/drawable-xxhdpi/android12splash.png",
+        "frontend/android/app/src/main/res/drawable-xxhdpi/splash.png",
+        "frontend/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImage@3x.png",
+        "frontend/ios/Runner/Assets.xcassets/LaunchImage.imageset/LaunchImageDark@3x.png"
+      ]
+    },
+    {
+      "hash": "574b79c51fe3",
+      "paths": [
+        "frontend/android/app/src/main/res/drawable-night-xxxhdpi/android12splash.png",
+        "frontend/android/app/src/main/res/drawable-night-xxxhdpi/splash.png",
+        "frontend/android/app/src/main/res/drawable-xxxhdpi/android12splash.png",
+        "frontend/android/app/src/main/res/drawable-xxxhdpi/splash.png",
+        "frontend/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png"
+      ]
+    },
+    {
+      "hash": "06fbf5bf0947",
+      "paths": [
+        "frontend/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+        "frontend/android/app/src/main/res/mipmap-anydpi-v26/launcher_icon.xml"
+      ]
+    },
+    {
+      "hash": "393e2c66cdba",
+      "paths": [
+        "frontend/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+        "frontend/android/app/src/main/res/mipmap-hdpi/launcher_icon.png",
+        "frontend/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-72x72@1x.png"
+      ]
+    },
+    {
+      "hash": "7bde05f35451",
+      "paths": [
+        "frontend/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+        "frontend/android/app/src/main/res/mipmap-mdpi/launcher_icon.png"
+      ]
+    },
+    {
+      "hash": "08182038f4d5",
+      "paths": [
+        "frontend/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+        "frontend/android/app/src/main/res/mipmap-xhdpi/launcher_icon.png"
+      ]
+    },
+    {
+      "hash": "80ad74d4cf07",
+      "paths": [
+        "frontend/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+        "frontend/android/app/src/main/res/mipmap-xxhdpi/launcher_icon.png",
+        "frontend/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-72x72@2x.png"
+      ]
+    },
+    {
+      "hash": "b0806c1cedc6",
+      "paths": [
+        "frontend/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+        "frontend/android/app/src/main/res/mipmap-xxxhdpi/launcher_icon.png",
+        "frontend/web/icons/Icon-192.png",
+        "frontend/web/icons/Icon-maskable-192.png"
+      ]
+    },
+    {
+      "hash": "440ad82a5ff5",
+      "paths": [
+        "frontend/assets/images/app_icon.png",
+        "frontend/assets/images/logo_icon.png",
+        "frontend/assets/images/logo_splash.png",
+        "frontend/assets/images/logo_splash_android12.png",
+        "frontend/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_1024.png",
+        "frontend/web/assets/images/logo.png"
+      ]
+    },
+    {
+      "hash": "ac6c28f5c243",
+      "paths": [
+        "frontend/assets/images/app_icon.webp",
+        "frontend/assets/images/logo_icon.webp",
+        "frontend/assets/images/logo_splash.webp",
+        "frontend/assets/images/logo_splash_android12.webp"
+      ]
+    },
+    {
+      "hash": "32d031ae4601",
+      "paths": [
+        "frontend/assets/images/bone_joint.png",
+        "frontend/assets/images/bone_joint_icon.png"
+      ]
+    },
+    {
+      "hash": "99a8969137c3",
+      "paths": [
+        "frontend/assets/images/bone_joint.webp",
+        "frontend/assets/images/bone_joint_icon.webp"
+      ]
+    },
+    {
+      "hash": "ef831c0176a0",
+      "paths": [
+        "frontend/assets/images/lung_respiratory.png",
+        "frontend/assets/images/urinary_problems.png"
+      ]
+    },
+    {
+      "hash": "50e5198e333c",
+      "paths": [
+        "frontend/assets/images/lung_respiratory.webp",
+        "frontend/assets/images/urinary_problems.webp"
+      ]
+    }
+  ],
+  "suspiciousNameCount": 1,
+  "suspiciousNames": [
+    "docs/archive/verification/SECURITY_AUDIT_v2.md"
+  ],
+  "lockfiles": [
+    "backend/functions/package-lock.json",
+    "backend/package-lock.json",
+    "backend/scripts/package-lock.json",
+    "frontend/pubspec.lock",
+    "services/api-gateway/package-lock.json"
+  ],
+  "firebaseRelatedPaths": [
+    ".firebaserc",
+    ".github/workflows/build-apk.yml",
+    ".github/workflows/flutter-ci.yml",
+    ".github/workflows/gateway_ci.yml",
+    "backend/firestore.indexes.json",
+    "backend/firestore.rules",
+    "backend/storage.rules",
+    "firebase.json",
+    "frontend/analysis_options.yaml",
+    "frontend/android/gradle.properties",
+    "frontend/android/settings.gradle.kts"
+  ],
+  "pubspecAssetEntries": 10,
+  "duplicateAssetHashGroups": []
+}
