@@ -42,6 +42,7 @@ void main() {
     RegistrationOtpService.debugFinalizeRegistrationVerification = null;
     RegistrationOtpService.clearVerificationSession();
     SupabaseUserRepository.debugDeleteFreshOrphanProfileRows = null;
+    SupabaseUserRepository.debugIsRegistrationProfileAlreadyVerified = null;
   });
 
   group('SupabaseUserRepository.deletePendingAuthUser', () {
@@ -53,6 +54,19 @@ void main() {
       await SupabaseUserRepository.instance.deletePendingAuthUser(user);
 
       verify(() => user.delete()).called(1);
+    });
+
+    test('skips auth delete when profile row is already verified', () async {
+      final user = MockUser();
+      when(() => user.uid).thenReturn('verified_skip_uid');
+      SupabaseUserRepository.debugIsRegistrationProfileAlreadyVerified =
+          (_) async => true;
+
+      final outcome =
+          await SupabaseUserRepository.instance.deletePendingAuthUser(user);
+
+      expect(outcome, SupabaseUserRepository.pendingAuthSkippedAlreadyVerified);
+      verifyNever(() => user.delete());
     });
   });
 
@@ -99,7 +113,7 @@ void main() {
           )).thenAnswer((_) async {});
       when(() => mockRepo.deletePendingAuthUser(any())).thenAnswer((invocation) async {
         final pendingUser = invocation.positionalArguments[0] as User;
-        await SupabaseUserRepository.instance.deletePendingAuthUser(pendingUser);
+        return SupabaseUserRepository.instance.deletePendingAuthUser(pendingUser);
       });
     });
 
@@ -224,6 +238,41 @@ void main() {
       );
       expect(retryValidation, isNull);
       verify(() => mockUser.delete()).called(1);
+    });
+
+    test('finalize response lost keeps auth when profile already verified on server',
+        () async {
+      when(() => mockRepo.deletePendingAuthUser(any())).thenAnswer(
+        (_) async => SupabaseUserRepository.pendingAuthSkippedAlreadyVerified,
+      );
+
+      when(() => mockRepo.fetchProfile(any(), preferCache: any(named: 'preferCache')))
+          .thenAnswer(
+        (_) async => DoctorNectUserProfile(
+          uid: 'reg_rollback_uid',
+          role: UserType.patient,
+          profileId: 'patient_rb_verified',
+          displayName: 'Rollback Test',
+          email: 'rollback@test.com',
+          mobile: '9876543210',
+        ),
+      );
+      RegistrationOtpService.debugFinalizeRegistrationVerification =
+          (_) async => 'Network timeout';
+
+      await FirebaseAuthService.instance.registerProfile(
+        role: UserType.patient,
+        email: 'rollback@test.com',
+        password: 'Password1!',
+        profileId: 'patient_rb_verified',
+        displayName: 'Rollback Test',
+        mobile: '9876543210',
+        otpVerificationSessionId: 'sess-response-lost',
+      );
+
+      verify(() => mockRepo.deletePendingAuthUser(mockUser)).called(1);
+      verifyNever(() => mockUser.delete());
+      verifyNever(() => mockAuth.signOut());
     });
   });
 }
