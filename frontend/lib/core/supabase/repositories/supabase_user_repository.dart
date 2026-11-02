@@ -388,21 +388,66 @@ class SupabaseUserRepository {
   @visibleForTesting
   static Future<void> Function(String uid)? debugDeleteFreshOrphanProfileRows;
 
+  /// Outcome of [deletePendingAuthUser] — used when finalize succeeded server-side
+  /// but the client lost the HTTP response.
+  static const pendingAuthDeleted = 'deleted';
+  static const pendingAuthSkippedAlreadyVerified = 'skipped_already_verified';
+
+  /// Reads `public.users` for rollback decisions (no side effects).
+  ///
+  /// Delete guards in [deleteFreshOrphanRegistrationProfile] (all must pass):
+  /// 1. **Uid match:** row `id` or `firebase_uid` equals the signed-in [uid].
+  /// 2. **Verified flags:** `mobile_verified` and `email_verified` are not true
+  ///    (if either is true, row is treated as finalized — no delete).
+  /// 3. **Age:** `created_at` parses and is within [orphanRegistrationMaxAge].
+  /// 4. **Supabase ready:** [SupabaseBootstrap.isReady] and non-empty [uid].
+  @visibleForTesting
+  Future<Map<String, dynamic>?> loadRegistrationProfileRowForRollback(
+    String uid,
+  ) async {
+    if (uid.isEmpty || !SupabaseBootstrap.isReady) return null;
+    try {
+      return await _client
+          .from('users')
+          .select(
+            'id, firebase_uid, profile_id, role, created_at, mobile_verified, email_verified',
+          )
+          .or('id.eq.$uid,firebase_uid.eq.$uid')
+          .maybeSingle();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @visibleForTesting
+  static Future<bool> Function(String uid)?
+      debugIsRegistrationProfileAlreadyVerified;
+
+  /// True when OTP finalize (or equivalent) already persisted on the profile row.
+  Future<bool> isRegistrationProfileAlreadyVerified(String uid) async {
+    if (debugIsRegistrationProfileAlreadyVerified != null) {
+      return debugIsRegistrationProfileAlreadyVerified!(uid);
+    }
+    final row = await loadRegistrationProfileRowForRollback(uid);
+    if (row == null) return false;
+    return row['mobile_verified'] == true || row['email_verified'] == true;
+  }
+
+  bool _registrationProfileRowMatchesUid(String uid, Map<String, dynamic> row) {
+    final rowId = row['id'] as String?;
+    final firebaseUid = row['firebase_uid'] as String?;
+    return rowId == uid || firebaseUid == uid;
+  }
+
   /// Removes a fresh, unverified `public.users` row (and role table row) for [uid].
-  /// Same guards as server orphan rollback: caller uid, created within 10 minutes,
-  /// no mobile/email verified flags.
+  /// See [loadRegistrationProfileRowForRollback] for guard list.
   Future<void> deleteFreshOrphanRegistrationProfile(String uid) async {
     if (uid.isEmpty || !SupabaseBootstrap.isReady) return;
 
     try {
-      final row = await _client
-          .from('users')
-          .select(
-            'id, profile_id, role, created_at, mobile_verified, email_verified',
-          )
-          .or('id.eq.$uid,firebase_uid.eq.$uid')
-          .maybeSingle();
+      final row = await loadRegistrationProfileRowForRollback(uid);
       if (row == null) return;
+      if (!_registrationProfileRowMatchesUid(uid, row)) return;
 
       final mobileVerified = row['mobile_verified'] == true;
       final emailVerified = row['email_verified'] == true;
@@ -439,8 +484,14 @@ class SupabaseUserRepository {
 
   /// Removes the Firebase Auth user created during an aborted registration attempt.
   /// Caller must still be signed in as [user] (same semantics as legacy Firestore path).
-  Future<void> deletePendingAuthUser(User user) async {
+  ///
+  /// Returns [pendingAuthSkippedAlreadyVerified] when the profile row already has
+  /// `mobile_verified` or `email_verified` (e.g. finalize succeeded server-side).
+  Future<String> deletePendingAuthUser(User user) async {
     final uid = user.uid;
+    if (await isRegistrationProfileAlreadyVerified(uid)) {
+      return pendingAuthSkippedAlreadyVerified;
+    }
     if (debugDeleteFreshOrphanProfileRows != null) {
       await debugDeleteFreshOrphanProfileRows!(uid);
     } else {
@@ -456,6 +507,7 @@ class SupabaseUserRepository {
       }
       rethrow;
     }
+    return pendingAuthDeleted;
   }
 
   Future<String?> validateNewRegistration({

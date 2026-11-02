@@ -113,7 +113,7 @@ class UserRepository {
         doctorId: doctorId,
       );
 
-  Future<void> deletePendingAuthUser(User user) =>
+  Future<String> deletePendingAuthUser(User user) =>
       _repo.deletePendingAuthUser(user);
 
   Future<String?> validateNewRegistration({

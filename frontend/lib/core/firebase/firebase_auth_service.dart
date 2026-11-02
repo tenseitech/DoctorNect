@@ -19,6 +19,7 @@ import '../security/client_request_throttle.dart';
 import '../validators/form_validators.dart';
 import '../security/file_encryption_service.dart';
 import '../supabase/supabase_bootstrap.dart';
+import '../supabase/repositories/supabase_user_repository.dart';
 import '../auth/profile_completion_service.dart';
 import '../auth/verification_lifecycle.dart';
 import '../enums/user_type.dart';
@@ -543,9 +544,16 @@ class FirebaseAuthService {
               sessionId,
             );
             if (finalizeError != null) {
-              await FirestoreService.instance.user.deletePendingAuthUser(user);
-              await _auth.signOut();
-              return AuthSignInResult.fail(finalizeError);
+              final rollback =
+                  await FirestoreService.instance.user.deletePendingAuthUser(
+                user,
+              );
+              if (rollback !=
+                  SupabaseUserRepository.pendingAuthSkippedAlreadyVerified) {
+                await _auth.signOut();
+                return AuthSignInResult.fail(finalizeError);
+              }
+              // Finalize persisted server-side; client lost the response — continue.
             }
           }
         }
