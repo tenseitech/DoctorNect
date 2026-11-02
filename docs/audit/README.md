@@ -16,7 +16,7 @@ Generated and maintained during the **dedupe / env consolidation** audit on bran
 | [TEST_ISOLATION.md](./TEST_ISOLATION.md) | Why `.env` merge broke ambulance OTP tests; harness fix |
 | [SUPABASE_SERVICE_KEY_CONCEPT.md](./SUPABASE_SERVICE_KEY_CONCEPT.md) | `SUPABASE_SECRET_KEY` vs `SUPABASE_SERVICE_ROLE_KEY` |
 | `_audit_*.json` | Phase 0 raw snapshots (in this folder) |
-| [baseline_backend_default_npm_test.txt](./baseline_backend_default_npm_test.txt) | Default `npm test`: **474/0/22** (496 total) |
+| [baseline_backend_default_npm_test.txt](./baseline_backend_default_npm_test.txt) | Default `npm test`: **479/0/22** (501 total) |
 | [EMULATOR_TESTS.md](./EMULATOR_TESTS.md) | `npm run test:emulators` (Firestore + Storage) |
 | [DART_JSCPD_CLUSTERS.md](./DART_JSCPD_CLUSTERS.md) | Dart duplicate clusters (document only) |
 | [baseline_failing_tests.txt](./baseline_failing_tests.txt) | Emulator-heavy backend failures (not default `npm test`) |

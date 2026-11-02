@@ -1,5 +1,6 @@
 # Flutter tests failing at safety commit 5c107e9 (pre-dedupe baseline)
-# Full suite: 546 pass / 13 fail (559 executed). Same on chore/dedupe-structure-audit after fff59e4.
+# Full suite (chore/dedupe-structure-audit, post login-role fix): 604 pass / 13 fail (617 executed).
+# Prior: 546 pass / 13 fail (559 executed) before login-role scenario tests.
 # Worktree: ../doctor-safety-baseline (requires local frontend/lib/firebase_options.secrets.dart copy to compile)
 
 auth_flows_test.dart :: Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks) :: (a) profile null after 3 attempts triggers signOut and does NOT call user.delete()

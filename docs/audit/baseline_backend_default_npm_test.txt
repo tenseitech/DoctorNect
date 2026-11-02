@@ -2,16 +2,10 @@
 # Command: cd backend/functions && npm test  (uses test/setup_env.js — does NOT load backend/functions/.env)
 # Node: v24.x (project engines: 22)
 
-474 pass / 0 fail / 22 skip (496 total)
+479 pass / 0 fail / 22 skip (501 total)
 
-Prior baseline: 473 pass / 0 fail / 22 skip (495 total)
+Prior baseline: 477 pass / 0 fail / 22 skip (499 total) — login OTP privacy tests (+2).
 
-+1 test vs 473:
-  - `test/notification_outbox_worker.test.js` → `processNotificationOutboxBatch sends FCM and marks row sent`
-    (added with Postgres-only outbox worker in commit 4dfae67)
-
-Prior +2 vs 471 (env_parity, commit 92a983c):
-  - ENV-01: check_env_parity.js passes (no duplicate S3 concept names in examples)
-  - ENV-01: S3 concept group forbids alias keys in example templates
+Prior: 474 pass / 0 fail / 22 skip (496 total) — audit docs + phase1 scan commit era.
 
 Emulator-gated suites (not in default npm test): see `docs/audit/EMULATOR_TESTS.md` and `npm run test:emulators`.
