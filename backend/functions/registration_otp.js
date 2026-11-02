@@ -2501,6 +2501,13 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
     role,
   });
 
+  const accountSearch = await findUserByMobileDigits(db, digits);
+  const postOtpAccount = postOtpAccountFieldsFromSearch(accountSearch);
+  const sessionRole =
+    otpType === 'auth' && postOtpAccount.exists && postOtpAccount.role
+      ? postOtpAccount.role
+      : role;
+
   const verifiedAt = FieldValue.serverTimestamp();
   const sessionExpiresAt = Timestamp.fromDate(new Date(Date.now() + SESSION_EXPIRY_MS));
   const sessionId = crypto.randomBytes(16).toString('hex');
@@ -2545,7 +2552,7 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
     if (redis && typeof redis.set === 'function') {
       const ttlSec = 900;
       const sessionData = {
-        role,
+        role: sessionRole,
         identifier: isEmail ? emailInput : digits,
         email: isEmail ? emailInput : null,
         mobileDigits: isEmail ? null : digits,
@@ -2559,35 +2566,42 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
       const jsonStr = JSON.stringify(sessionData);
       await withOtpRedisTimeout(redis.set(otpSessionRedisKey(sessionId), jsonStr, 'EX', ttlSec));
       if (!isEmail) {
-        await withOtpRedisTimeout(redis.set(otpSessionRedisKey(mobileHash(role, digits)), jsonStr, 'EX', ttlSec));
+        await withOtpRedisTimeout(
+          redis.set(otpSessionRedisKey(mobileHash(sessionRole, digits)), jsonStr, 'EX', ttlSec),
+        );
       }
     }
   } catch (err) {
     console.warn('[OTP] Redis session write failed', { sessionId, error: err.message });
   }
 
-  // Phone OTP login must establish a real Firebase Auth session.
-  if (otpType === 'login') {
-    const search = await findUserByMobileDigits(db, digits);
+  // Phone OTP login (and generic auth after OTP) must establish a real Firebase Auth session.
+  const shouldCompleteLogin =
+    otpType === 'login' || (otpType === 'auth' && postOtpAccount.exists && accountSearch.uid);
+  if (shouldCompleteLogin) {
+    const search = accountSearch;
+    const loginRole =
+      otpType === 'login' ? role : postOtpAccount.role || role;
     if (!search.found || !search.uid) {
       throw new HttpsError('not-found', 'No account found for this mobile number. Please register first.');
     }
-    if (search.role && normalizeRole(search.role) !== role) {
+    if (search.role && normalizeRole(search.role) !== normalizeRole(loginRole)) {
       console.warn('[verifyUserRegistrationOtp] Login blocked: account type mismatch', {
         mobileSuffix: digits.slice(-4),
-        requestedRole: role,
+        requestedRole: loginRole,
         existingRole: search.role,
       });
       throw new HttpsError('failed-precondition', LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE);
     }
-    if (isDemo && search.uid) {
-      if (role === 'doctor') {
+    const isDemoAccount = await isDemoPhone(digits, loginRole);
+    if (isDemoAccount && search.uid) {
+      if (loginRole === 'doctor') {
         await ensureDoctorFullVerified(db, search.uid, search.data?.profileId, { mobile: digits });
       } else {
-        await ensureRoleFullVerified(db, search.uid, role, search.data?.profileId, { mobile: digits });
+        await ensureRoleFullVerified(db, search.uid, loginRole, search.data?.profileId, { mobile: digits });
       }
     }
-    const claims = supabaseCompatibleCustomClaims(role);
+    const claims = supabaseCompatibleCustomClaims(loginRole);
     try {
       await getAuth().setCustomUserClaims(search.uid, claims);
     } catch (claimErr) {
@@ -2597,8 +2611,9 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
       search.uid,
       claims,
     );
+    const registeredRole = normalizeRole(search.role) || loginRole;
     console.info('[verifyUserRegistrationOtp] Login OTP verified successfully, customToken minted', {
-      role,
+      role: loginRole,
       mobileLast4: digits.slice(-4),
       uid: search.uid,
     });
@@ -2608,6 +2623,8 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
       sessionId,
       customToken,
       uid: search.uid,
+      exists: true,
+      role: registeredRole,
     };
   }
 
@@ -2622,6 +2639,8 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
     mobileVerified: !isEmail,
     emailVerified: isEmail,
     sessionId,
+    exists: postOtpAccount.exists,
+    role: postOtpAccount.role,
   };
 }
 
@@ -2998,7 +3017,9 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
     assertSession: (session) => {
       const sessionRole = normalizeRole(session.role);
       const sessionMobile = normalizeMobileDigits(session.mobileDigits || session.identifier);
-      if (sessionRole !== role || session.mobileVerified !== true) {
+      const roleMatchesSession =
+        sessionRole === role || sessionRole === 'auth';
+      if (!roleMatchesSession || session.mobileVerified !== true) {
         throw new HttpsError('permission-denied', 'OTP verification incomplete.');
       }
       if (!sessionMobile || sessionMobile !== mobileDigits) {
@@ -3042,7 +3063,14 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
     authUid,
     claims,
   );
-  return { ok: true, customToken, uid: authUid };
+  const registeredRole = normalizeRole(search.role) || role;
+  return {
+    ok: true,
+    customToken,
+    uid: authUid,
+    exists: true,
+    role: registeredRole,
+  };
 }
 
 async function assertLoginAllowed(db, data, { clientIp = 'unknown' } = {}) {
@@ -3105,6 +3133,13 @@ async function clearFailedLogins(db, data) {
 const recordLoginFailure = recordFailedLogin;
 const resetLoginAttempts = clearFailedLogins;
 
+/** Post-OTP only: whether mobile maps to an existing account and its role (additive verify/login fields). */
+function postOtpAccountFieldsFromSearch(search) {
+  const exists = Boolean(search?.found);
+  const role = exists && search?.role ? normalizeRole(search.role) : null;
+  return { exists, role };
+}
+
 /** Read-only: whether a mobile conflicts with login/registration intent (no role disclosure). */
 async function lookupMobileRegistration(db, data) {
   const digits = normalizeMobileDigits(data?.mobile);
@@ -3153,6 +3188,7 @@ module.exports = {
   verifyUserRegistrationOtp,
   hashOtp,
   lookupMobileRegistration,
+  postOtpAccountFieldsFromSearch,
   resolveMobileLookupConflict,
   REGISTRATION_MOBILE_EXISTS_MESSAGE,
   LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE,
