@@ -41,11 +41,13 @@ void main() {
     UserRepository.debugSupabaseUserRepository = null;
     RegistrationOtpService.debugFinalizeRegistrationVerification = null;
     RegistrationOtpService.clearVerificationSession();
+    SupabaseUserRepository.debugDeleteFreshOrphanProfileRows = null;
   });
 
   group('SupabaseUserRepository.deletePendingAuthUser', () {
     test('calls Firebase User.delete for the registration attempt user', () async {
       final user = MockUser();
+      when(() => user.uid).thenReturn('delete_pending_uid');
       when(() => user.delete()).thenAnswer((_) async {});
 
       await SupabaseUserRepository.instance.deletePendingAuthUser(user);
@@ -71,6 +73,7 @@ void main() {
 
       when(() => mockUser.uid).thenReturn('reg_rollback_uid');
       when(() => mockUser.email).thenReturn('rollback@test.com');
+      when(() => mockUser.delete()).thenAnswer((_) async {});
       when(() => mockUser.getIdToken(any())).thenAnswer((_) async => 'token');
       when(() => mockCredential.user).thenReturn(mockUser);
       when(() => mockAuth.createUserWithEmailAndPassword(
@@ -94,7 +97,10 @@ void main() {
             mobileVerified: any(named: 'mobileVerified'),
             roleData: any(named: 'roleData'),
           )).thenAnswer((_) async {});
-      when(() => mockRepo.deletePendingAuthUser(any())).thenAnswer((_) async {});
+      when(() => mockRepo.deletePendingAuthUser(any())).thenAnswer((invocation) async {
+        final pendingUser = invocation.positionalArguments[0] as User;
+        await SupabaseUserRepository.instance.deletePendingAuthUser(pendingUser);
+      });
     });
 
     test('profile read timeout deletes pending auth user before sign-out', () async {
@@ -141,6 +147,83 @@ void main() {
       expect(result.success, isFalse);
       verify(() => mockRepo.deletePendingAuthUser(mockUser)).called(1);
       verify(() => mockAuth.signOut()).called(1);
+    });
+
+    test('orphan profile row cleared so same mobile/email pass duplicate check on retry', () async {
+      final orphanProfileRows = <String, Map<String, dynamic>>{};
+      const mobile = '9876543210';
+      const email = 'rollback@test.com';
+
+      SupabaseUserRepository.debugDeleteFreshOrphanProfileRows = (uid) async {
+        orphanProfileRows.remove(uid);
+      };
+
+      when(() => mockRepo.createProfile(
+            user: any(named: 'user'),
+            role: any(named: 'role'),
+            profileId: any(named: 'profileId'),
+            displayName: any(named: 'displayName'),
+            mobile: any(named: 'mobile'),
+            mobileVerified: any(named: 'mobileVerified'),
+            roleData: any(named: 'roleData'),
+          )).thenAnswer((invocation) async {
+        final profileUser = invocation.namedArguments[#user] as User;
+        orphanProfileRows[profileUser.uid] = {
+          'email': email,
+          'mobile': mobile,
+          'created_at': DateTime.now().toIso8601String(),
+          'mobile_verified': false,
+          'email_verified': false,
+        };
+      });
+
+      when(() => mockRepo.validateNewRegistration(
+            role: any(named: 'role'),
+            email: any(named: 'email'),
+            mobile: any(named: 'mobile'),
+            profileId: any(named: 'profileId'),
+            roleData: any(named: 'roleData'),
+          )).thenAnswer((_) async {
+        if (orphanProfileRows.isNotEmpty) {
+          return 'An account with this email or mobile already exists.';
+        }
+        return null;
+      });
+
+      when(() => mockRepo.fetchProfile(any(), preferCache: any(named: 'preferCache')))
+          .thenAnswer(
+        (_) async => DoctorNectUserProfile(
+          uid: 'reg_rollback_uid',
+          role: UserType.patient,
+          profileId: 'patient_rb_retry',
+          displayName: 'Rollback Test',
+          email: email,
+          mobile: mobile,
+        ),
+      );
+      RegistrationOtpService.debugFinalizeRegistrationVerification =
+          (_) async => 'Finalize failed';
+
+      final first = await FirebaseAuthService.instance.registerProfile(
+        role: UserType.patient,
+        email: email,
+        password: 'Password1!',
+        profileId: 'patient_rb_retry',
+        displayName: 'Rollback Test',
+        mobile: mobile,
+        otpVerificationSessionId: 'sess-retry-1',
+      );
+      expect(first.success, isFalse);
+      expect(orphanProfileRows, isEmpty);
+
+      final retryValidation = await mockRepo.validateNewRegistration(
+        role: UserType.patient,
+        email: email,
+        mobile: mobile,
+        profileId: 'patient_rb_retry_2',
+      );
+      expect(retryValidation, isNull);
+      verify(() => mockUser.delete()).called(1);
     });
   });
 }
