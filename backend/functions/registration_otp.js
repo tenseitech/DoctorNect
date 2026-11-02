@@ -2650,30 +2650,98 @@ function hashUidForLog(uid) {
   return crypto.createHash('sha256').update(String(uid || '')).digest('hex').slice(0, 12);
 }
 
-async function authUserHasPersistedProfile(db, uid) {
+async function loadRegistrationProfileSnapshot(db, uid) {
   const firestoreDoc = await readUserProfile(db, uid);
   if (firestoreDoc) {
     const verified =
       firestoreDoc.mobileVerified === true || firestoreDoc.emailVerified === true;
-    return { exists: true, verified };
+    let createdMs = null;
+    const ts = firestoreDoc.createdAt || firestoreDoc.updatedAt;
+    if (ts && typeof ts.toDate === 'function') {
+      createdMs = ts.toDate().getTime();
+    } else if (typeof ts === 'string') {
+      createdMs = Date.parse(ts);
+    }
+    return {
+      exists: true,
+      verified,
+      createdMs,
+      profileId: firestoreDoc.profileId || null,
+      role: firestoreDoc.role || null,
+    };
   }
   if (await isDoctorPatientSupabasePrimary()) {
-    try {
-      const { getDatabaseClient } = require('./src/db/client');
-      const client = getDatabaseClient();
-      const { data } = await client
-        .from('users')
-        .select('id, mobile_verified, email_verified')
-        .or(`id.eq.${uid},firebase_uid.eq.${uid}`)
-        .maybeSingle();
-      if (data) {
-        const verified =
-          data.mobile_verified === true || data.email_verified === true;
-        return { exists: true, verified };
-      }
-    } catch (_) {}
+    const { getDatabaseClient } = require('./src/db/client');
+    const client = getDatabaseClient();
+    const { data, error } = await client
+      .from('users')
+      .select('id, profile_id, role, created_at, mobile_verified, email_verified')
+      .or(`id.eq.${uid},firebase_uid.eq.${uid}`)
+      .maybeSingle();
+    if (error) {
+      throw error;
+    }
+    if (data) {
+      const verified =
+        data.mobile_verified === true || data.email_verified === true;
+      const createdMs = data.created_at ? Date.parse(data.created_at) : null;
+      return {
+        exists: true,
+        verified,
+        createdMs: Number.isFinite(createdMs) ? createdMs : null,
+        profileId: data.profile_id || null,
+        role: data.role || null,
+      };
+    }
   }
-  return { exists: false, verified: false };
+  return {
+    exists: false,
+    verified: false,
+    createdMs: null,
+    profileId: null,
+    role: null,
+  };
+}
+
+function isFreshOrphanRegistrationProfile(snapshot, nowMs) {
+  if (!snapshot?.exists) return false;
+  if (snapshot.verified) return false;
+  if (!Number.isFinite(snapshot.createdMs)) return false;
+  return nowMs - snapshot.createdMs <= ORPHAN_AUTH_MAX_AGE_MS;
+}
+
+async function maybeDeleteFreshOrphanRegistrationProfile(db, uid, { nowMs = Date.now() } = {}) {
+  const snapshot = await loadRegistrationProfileSnapshot(db, uid);
+  if (!isFreshOrphanRegistrationProfile(snapshot, nowMs)) {
+    return { deleted: false, reason: snapshot.exists ? 'profile_not_orphan' : 'no_profile' };
+  }
+
+  if (await isDoctorPatientSupabasePrimary()) {
+    const { getDatabaseClient } = require('./src/db/client');
+    const client = getDatabaseClient();
+    const profileId = String(snapshot.profileId || '').trim();
+    const role = normalizeRole(snapshot.role || '');
+    if (profileId && role === 'patient') {
+      await client.from('patients').delete().eq('patient_id', profileId);
+    } else if (profileId && role === 'doctor') {
+      await client.from('doctors').delete().eq('doctor_id', profileId);
+    }
+    await client.from('users').delete().eq('id', uid);
+  }
+
+  if (db && typeof db.collection === 'function') {
+    await db.collection('users').doc(uid).delete().catch(() => {});
+  }
+
+  console.warn('[registration_rollback] deleted fresh orphan profile rows', {
+    uidHash: hashUidForLog(uid),
+  });
+  return { deleted: true };
+}
+
+async function authUserHasPersistedProfile(db, uid) {
+  const snapshot = await loadRegistrationProfileSnapshot(db, uid);
+  return { exists: snapshot.exists, verified: snapshot.verified };
 }
 
 /**
@@ -2683,7 +2751,11 @@ async function authUserHasPersistedProfile(db, uid) {
 async function maybeDeleteOrphanRegistrationAuthUser(
   auth,
   db,
-  { nowMs = Date.now(), authAdmin = getAuth() } = {},
+  {
+    nowMs = Date.now(),
+    authAdmin = getAuth(),
+    loadProfile = loadRegistrationProfileSnapshot,
+  } = {},
 ) {
   const uid = String(auth?.uid || '').trim();
   if (!uid) {
@@ -2702,12 +2774,30 @@ async function maybeDeleteOrphanRegistrationAuthUser(
     return { deleted: false, reason: 'too_old' };
   }
 
-  const profile = await authUserHasPersistedProfile(db, uid);
-  if (profile.verified) {
+  let snapshot;
+  try {
+    snapshot = await loadProfile(db, uid);
+  } catch (_) {
+    return { deleted: false, reason: 'profile_check_failed' };
+  }
+
+  if (snapshot.verified) {
     return { deleted: false, reason: 'verified_flag_set' };
   }
-  if (profile.exists) {
-    return { deleted: false, reason: 'profile_exists' };
+
+  if (snapshot.exists) {
+    if (!isFreshOrphanRegistrationProfile(snapshot, nowMs)) {
+      return { deleted: false, reason: 'profile_exists' };
+    }
+    try {
+      await maybeDeleteFreshOrphanRegistrationProfile(db, uid, { nowMs });
+    } catch (err) {
+      console.warn('[registration_rollback] orphan profile delete failed', {
+        uidHash: hashUidForLog(uid),
+        error: err?.message || String(err),
+      });
+      return { deleted: false, reason: 'profile_delete_failed' };
+    }
   }
 
   try {
@@ -3278,6 +3368,9 @@ module.exports = {
   lookupMobileRegistration,
   postOtpAccountFieldsFromSearch,
   maybeDeleteOrphanRegistrationAuthUser,
+  maybeDeleteFreshOrphanRegistrationProfile,
+  loadRegistrationProfileSnapshot,
+  isFreshOrphanRegistrationProfile,
   authUserHasPersistedProfile,
   ORPHAN_AUTH_MAX_AGE_MS,
   hashUidForLog,

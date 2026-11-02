@@ -35,6 +35,9 @@ function mockDb(profileByUid = new Map()) {
               const data = profileByUid.get(id);
               return { exists: data != null, data: () => data };
             },
+            async delete() {
+              if (name === 'users') profileByUid.delete(id);
+            },
           };
         },
       };
@@ -161,6 +164,109 @@ test('maybeDeleteOrphanRegistrationAuthUser does not delete when verified flag i
   assert.equal(result.deleted, false);
   assert.equal(result.reason, 'verified_flag_set');
   assert.equal(deleted.length, 0);
+});
+
+test('maybeDeleteOrphanRegistrationAuthUser does not delete when profile check throws', async () => {
+  const uid = 'profile_check_fail_uid';
+  const nowMs = Date.now();
+  const users = new Map([
+    [
+      uid,
+      {
+        uid,
+        metadata: { creationTime: new Date(nowMs - 60_000).toISOString() },
+      },
+    ],
+  ]);
+  const deleted = [];
+  const loadProfile = async () => {
+    throw new Error('supabase timeout');
+  };
+
+  const result = await maybeDeleteOrphanRegistrationAuthUser(
+    { uid },
+    mockDb(new Map()),
+    { nowMs, authAdmin: mockAuthAdmin(users, deleted), loadProfile },
+  );
+
+  assert.equal(result.deleted, false);
+  assert.equal(result.reason, 'profile_check_failed');
+  assert.equal(deleted.length, 0);
+});
+
+test('maybeDeleteOrphanRegistrationAuthUser deletes fresh unverified profile then auth', async () => {
+  const uid = 'fresh_profile_orphan_uid';
+  const nowMs = Date.now();
+  const users = new Map([
+    [
+      uid,
+      {
+        uid,
+        metadata: { creationTime: new Date(nowMs - 60_000).toISOString() },
+      },
+    ],
+  ]);
+  const deleted = [];
+  const profileByUid = new Map([
+    [
+      uid,
+      {
+        role: 'patient',
+        profileId: 'patient_orphan_1',
+        createdAt: { toDate: () => new Date(nowMs - 60_000) },
+      },
+    ],
+  ]);
+  const db = mockDb(profileByUid);
+
+  const result = await maybeDeleteOrphanRegistrationAuthUser(
+    { uid },
+    db,
+    { nowMs, authAdmin: mockAuthAdmin(users, deleted) },
+  );
+
+  assert.equal(result.deleted, true);
+  assert.deepEqual(deleted, [uid]);
+  assert.equal(profileByUid.has(uid), false);
+});
+
+test('retry registration: fresh orphan profile removal clears duplicate guard', async () => {
+  const uid = 'retry_dup_uid';
+  const nowMs = Date.now();
+  const mobile = '9000000001';
+  const profileByUid = new Map([
+    [
+      uid,
+      {
+        role: 'patient',
+        profileId: 'patient_retry_1',
+        mobile,
+        createdAt: { toDate: () => new Date(nowMs - 60_000) },
+      },
+    ],
+  ]);
+  const users = new Map([
+    [
+      uid,
+      {
+        uid,
+        metadata: { creationTime: new Date(nowMs - 60_000).toISOString() },
+      },
+    ],
+  ]);
+  const deleted = [];
+  const db = mockDb(profileByUid);
+
+  assert.ok(profileByUid.has(uid));
+  const result = await maybeDeleteOrphanRegistrationAuthUser(
+    { uid },
+    db,
+    { nowMs, authAdmin: mockAuthAdmin(users, deleted) },
+  );
+
+  assert.equal(result.deleted, true);
+  assert.equal(profileByUid.has(uid), false);
+  assert.deepEqual(deleted, [uid]);
 });
 
 test('maybeDeleteOrphanRegistrationAuthUser only targets authenticated caller uid', async () => {
