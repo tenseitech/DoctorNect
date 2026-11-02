@@ -103,6 +103,7 @@ android/key.properties
 # Generated audit reports and script outputs
 **/scripts/*_audit_results.json
 **/scripts/backfill_profile_claims_report.json
+docs/_*
 docs/_audit_*.json
 docs/audit/_audit_*.json
 docs/audit/_jscpd_features/
