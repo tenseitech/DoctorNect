@@ -14,7 +14,7 @@ const {
 } = require('../registration_otp');
 const { redisKey: envRedisKey } = require('../src/config/redis_keys');
 
-process.env.MSG91_AUTHKEY = 'test_msg91_authkey_pure_redis';
+process.env.MSG91_AUTH_KEY = 'test_msg91_authkey_pure_redis';
 process.env.MSG91_TEMPLATE_ID_REGISTRATION = 'test_template_reg_pure_redis';
 process.env.MSG91_SENDER_ID = 'DRNECT';
 delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
@@ -204,7 +204,7 @@ test('4. Expired OTP: past TTL throws deadline-exceeded', async () => {
     const role = 'patient';
     const testCode = '654321';
 
-    const secret = process.env.MSG91_AUTHKEY;
+    const secret = process.env.MSG91_AUTH_KEY;
     const hashed = crypto.createHmac('sha256', secret).update(mobile).digest('hex');
     const keyNull = envRedisKey(`otp:challenge:${hashed}`);
     const keyRole = envRedisKey(`otp:challenge:${role}:${hashed}`);
@@ -248,7 +248,7 @@ test('5. 5 failed attempts lockout: wrong OTP 5 times locks out and deletes chal
     const correctCode = '654321';
     const wrongCode = '000000';
 
-    const secret = process.env.MSG91_AUTHKEY;
+    const secret = process.env.MSG91_AUTH_KEY;
     const hashed = crypto.createHmac('sha256', secret).update(mobile).digest('hex');
     const keyNull = envRedisKey(`otp:challenge:${hashed}`);
     const keyRole = envRedisKey(`otp:challenge:${role}:${hashed}`);
@@ -330,7 +330,7 @@ test('6. Concurrent verify race: exactly one request succeeds and the other fail
     const role = 'patient';
     const testCode = '654321';
 
-    const secret = process.env.MSG91_AUTHKEY;
+    const secret = process.env.MSG91_AUTH_KEY;
     const hashed = crypto.createHmac('sha256', secret).update(mobile).digest('hex');
     const keyNull = envRedisKey(`otp:challenge:${hashed}`);
     const keyRole = envRedisKey(`otp:challenge:${role}:${hashed}`);

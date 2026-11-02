@@ -9,7 +9,7 @@ const { EventEmitter } = require('events');
 delete process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
 delete process.env.OTP_TEST_MODE;
 delete process.env.OTP_REDIS_MIRROR;
-process.env.MSG91_AUTHKEY = 'unit-test-hmac-key';
+process.env.MSG91_AUTH_KEY = 'unit-test-hmac-key';
 process.env.MSG91_TEMPLATE_ID_REGISTRATION = 'unit-test-template';
 process.env.MSG91_TEMPLATE_ID = 'unit-test-template';
 process.env.MSG91_SENDER_ID = 'DRNECT';

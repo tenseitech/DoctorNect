@@ -6,7 +6,7 @@ const { Timestamp } = require('firebase-admin/firestore');
 const { initializeApp, getApps } = require('firebase-admin/app');
 if (!getApps().length) initializeApp({ projectId: 'test-project' });
 
-process.env.MSG91_AUTHKEY = 'mock_secret_key_123';
+process.env.MSG91_AUTH_KEY = 'mock_secret_key_123';
 process.env.OTP_TEST_MODE = 'true';
 
 const { setRedisClientForTesting } = require('../redis');

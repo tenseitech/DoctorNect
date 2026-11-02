@@ -17,7 +17,7 @@ adminFirestore.getFirestore = () => ({
   }),
 });
 
-process.env.MSG91_AUTHKEY = 'mock_auth_key_123';
+process.env.MSG91_AUTH_KEY = 'mock_auth_key_123';
 process.env.MSG91_TEMPLATE_ID_REGISTRATION = 'mock_dlt_template_reg';
 process.env.MSG91_TEMPLATE_ID = 'mock_dlt_template_shared';
 process.env.MSG91_SENDER_ID = 'DRNECT';
@@ -440,11 +440,9 @@ test('fallback to fresh send works across all roles', async () => {
 test('otpRedisKey returns null when no secret is available, skipping Redis write and read while Firestore continues to work', async () => {
   const origMirror = process.env.OTP_REDIS_MIRROR;
   process.env.OTP_REDIS_MIRROR = 'on';
-  const origKey = process.env.MSG91_AUTHKEY;
-  const origKey2 = process.env.MSG91_AUTH_KEY;
+  const origKey = process.env.MSG91_AUTH_KEY;
   const origAuth = process.env.AUTH_KEY;
 
-  delete process.env.MSG91_AUTHKEY;
   delete process.env.MSG91_AUTH_KEY;
   delete process.env.AUTH_KEY;
 
@@ -494,8 +492,7 @@ test('otpRedisKey returns null when no secret is available, skipping Redis write
     );
   } finally {
     console.warn = origWarn;
-    if (origKey !== undefined) process.env.MSG91_AUTHKEY = origKey;
-    if (origKey2 !== undefined) process.env.MSG91_AUTH_KEY = origKey2;
+    if (origKey !== undefined) process.env.MSG91_AUTH_KEY = origKey;
     if (origAuth !== undefined) process.env.AUTH_KEY = origAuth;
     if (origMirror === undefined) delete process.env.OTP_REDIS_MIRROR;
     else process.env.OTP_REDIS_MIRROR = origMirror;
@@ -504,13 +501,11 @@ test('otpRedisKey returns null when no secret is available, skipping Redis write
 
 test('hashOtp in production project fails challenge creation when HMAC secret is missing, without leaking secrets', async () => {
   const origProj = process.env.GCLOUD_PROJECT;
-  const origKey = process.env.MSG91_AUTHKEY;
-  const origKey2 = process.env.MSG91_AUTH_KEY;
+  const origKey = process.env.MSG91_AUTH_KEY;
   const origAuth = process.env.AUTH_KEY;
   const origEmu = process.env.FUNCTIONS_EMULATOR;
 
   process.env.GCLOUD_PROJECT = 'medibond-45fad';
-  delete process.env.MSG91_AUTHKEY;
   delete process.env.MSG91_AUTH_KEY;
   delete process.env.AUTH_KEY;
   delete process.env.FUNCTIONS_EMULATOR;
@@ -566,8 +561,7 @@ test('hashOtp in production project fails challenge creation when HMAC secret is
     console.error = origError;
     if (origProj !== undefined) process.env.GCLOUD_PROJECT = origProj;
     else delete process.env.GCLOUD_PROJECT;
-    if (origKey !== undefined) process.env.MSG91_AUTHKEY = origKey;
-    if (origKey2 !== undefined) process.env.MSG91_AUTH_KEY = origKey2;
+    if (origKey !== undefined) process.env.MSG91_AUTH_KEY = origKey;
     if (origAuth !== undefined) process.env.AUTH_KEY = origAuth;
     if (origEmu !== undefined) process.env.FUNCTIONS_EMULATOR = origEmu;
   }
@@ -575,12 +569,10 @@ test('hashOtp in production project fails challenge creation when HMAC secret is
 
 test('hashOtp allows fallback outside production or under emulator, and verification of legacy hashes continues to work', async () => {
   const origProj = process.env.GCLOUD_PROJECT;
-  const origKey = process.env.MSG91_AUTHKEY;
-  const origKey2 = process.env.MSG91_AUTH_KEY;
+  const origKey = process.env.MSG91_AUTH_KEY;
   const origAuth = process.env.AUTH_KEY;
 
   process.env.GCLOUD_PROJECT = 'demo-test-project';
-  delete process.env.MSG91_AUTHKEY;
   delete process.env.MSG91_AUTH_KEY;
   delete process.env.AUTH_KEY;
 
@@ -592,7 +584,7 @@ test('hashOtp allows fallback outside production or under emulator, and verifica
     // 2. With an HMAC secret, a legacy hash matches only when the rollback flag is on.
     const previousFlag = process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
     delete process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
-    process.env.MSG91_AUTHKEY = 'unit-test-hmac-key';
+    process.env.MSG91_AUTH_KEY = 'unit-test-hmac-key';
     assert.equal(allowLegacyUnsaltedOtpHash(), false);
     assert.equal(
       verifyChallengeOtpHash('123456', legacyHashOtp('123456'), 'patient', '9876543210'),
@@ -601,14 +593,13 @@ test('hashOtp allows fallback outside production or under emulator, and verifica
     process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH = 'true';
     const valid = verifyChallengeOtpHash('123456', legacyHashOtp('123456'), 'patient', '9876543210');
     assert.equal(valid, true, 'Legacy unsalted OTP hash verification must succeed when the flag is on');
-    delete process.env.MSG91_AUTHKEY;
+    delete process.env.MSG91_AUTH_KEY;
     if (previousFlag === undefined) delete process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
     else process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH = previousFlag;
   } finally {
     if (origProj !== undefined) process.env.GCLOUD_PROJECT = origProj;
     else delete process.env.GCLOUD_PROJECT;
-    if (origKey !== undefined) process.env.MSG91_AUTHKEY = origKey;
-    if (origKey2 !== undefined) process.env.MSG91_AUTH_KEY = origKey2;
+    if (origKey !== undefined) process.env.MSG91_AUTH_KEY = origKey;
     if (origAuth !== undefined) process.env.AUTH_KEY = origAuth;
   }
 });
