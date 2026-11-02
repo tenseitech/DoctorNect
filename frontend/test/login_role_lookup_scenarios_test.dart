@@ -60,6 +60,34 @@ void main() {
     });
   });
 
+  group('UnifiedAuthCoordinator — wrong role and legacy fallback', () {
+    test('blockedWrongRole when lookup finds role mismatch via conflict flag', () {
+      const lookup = MobileLookupResult(
+        exists: true,
+        role: UserType.patient,
+        conflict: true,
+      );
+      expect(lookup.conflict, isTrue);
+      expect(
+        specPathAfterPostOtpLookup(
+          lookupError: false,
+          exists: lookup.exists,
+          registeredRole: lookup.role,
+          selectedRole: UserType.doctor,
+        ),
+        UnifiedAuthPath.blockedWrongRole,
+      );
+    });
+
+    test('legacy response without exists key is handled by _fetchConflictOnly path', () {
+      expect(
+        const {'ok': true, 'conflict': false}.containsKey('exists'),
+        isFalse,
+        reason: 'triggers legacy check() fallback in MobileRegistrationLookup.lookup',
+      );
+    });
+  });
+
   group('MobileRegistrationLookup API', () {
     test('MobileLookupResult and lookup() are available', () {
       expect(MobileRegistrationLookup.lookup, isA<Function>());

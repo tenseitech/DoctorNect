@@ -194,6 +194,8 @@ async function roundTrip({ role, mobile, demo }) {
     }, null, { clientIp: '127.0.0.1' });
     assert.equal(verified.ok, true);
     assert.equal(verified.mobileVerified, true);
+    assert.equal(verified.exists, false);
+    assert.equal(verified.role, null);
     assert.equal(db.docs.get(challengeKey), undefined);
   } finally {
     restoreSms();
