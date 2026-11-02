@@ -2,7 +2,9 @@
 # Command: cd backend/functions && npm test  (uses test/setup_env.js — does NOT load backend/functions/.env)
 # Node: v24.x (project engines: 22)
 
-487 pass / 0 fail / 22 skip (509 total)
+493 pass / 0 fail / 22 skip (515 total)
+
+Prior: 487 pass / 0 fail / 22 skip (509 total) — cleanupPendingRegistration callable tests.
 
 Prior: 484 pass / 0 fail / 22 skip (506 total) — orphan profile row rollback tests.
 

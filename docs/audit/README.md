@@ -16,8 +16,13 @@ Generated and maintained during the **dedupe / env consolidation** audit on bran
 | [TEST_ISOLATION.md](./TEST_ISOLATION.md) | Why `.env` merge broke ambulance OTP tests; harness fix |
 | [SUPABASE_SERVICE_KEY_CONCEPT.md](./SUPABASE_SERVICE_KEY_CONCEPT.md) | `SUPABASE_SECRET_KEY` vs `SUPABASE_SERVICE_ROLE_KEY` |
 | `_audit_*.json` | Phase 0 raw snapshots (in this folder) |
-| [baseline_backend_default_npm_test.txt](./baseline_backend_default_npm_test.txt) | Default `npm test`: **487/0/22** (509 total) |
+| [baseline_backend_default_npm_test.txt](./baseline_backend_default_npm_test.txt) | Default `npm test`: **493/0/22** (515 total) |
+| [REGISTRATION_ROLLBACK_OPTIONS.md](./REGISTRATION_ROLLBACK_OPTIONS.md) | Rollback design + reclaim-on-retry risks (not implemented) |
+| [ENV_EXAMPLE_HISTORY_SCAN.md](./ENV_EXAMPLE_HISTORY_SCAN.md) | Git history heuristic on env example templates (names only) |
 | [COMMIT_NOTES.md](./COMMIT_NOTES.md) | `8342580` / `a947d81` scope vs message (no rewrite) |
+| [DOCKER_RUN.md](./DOCKER_RUN.md) | Docker Postgres + 4 integration tests + `pg_policies` |
+| [ENV_BACKUP_COMMIT_PROPOSAL.md](./ENV_BACKUP_COMMIT_PROPOSAL.md) | `.env*` / `.bak` inventory + pending gitignore/move |
+| [FIREBASE_IGNORE_PROPOSAL.md](./FIREBASE_IGNORE_PROPOSAL.md) | Proposed `firebase.json` functions ignore (not applied) |
 | [EMULATOR_TESTS.md](./EMULATOR_TESTS.md) | `npm run test:emulators` (Firestore + Storage) |
 | [DART_JSCPD_CLUSTERS.md](./DART_JSCPD_CLUSTERS.md) | Dart duplicate clusters (document only) |
 | [baseline_failing_tests.txt](./baseline_failing_tests.txt) | Emulator-heavy backend failures (not default `npm test`) |

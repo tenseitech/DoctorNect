@@ -54,6 +54,16 @@ Counts include the **`npm audit reports no moderate or higher vulnerabilities`**
 
 The **Auth + profile row** orphan cleanup (`maybeDeleteOrphanRegistrationAuthUser`, fresh orphan profile delete, fail-closed profile check) lives in **`finalizePatientOtpVerification`** on branch `chore/dedupe-structure-audit`, **not** in the minimal post-OTP hotfix patch above. Deploy that behavior with a **separate** functions release after review — do not bundle with the first `verifyUserRegistrationOtp` / `completeMobileOtpLogin` canary unless explicitly planned.
 
+### `cleanupPendingRegistration` (new callable — deploy before app)
+
+The Flutter app on this branch calls **`cleanupPendingRegistration`** on registration rollback (RLS blocks client-side row delete). **Deploy order:**
+
+1. **`firebase deploy --only functions:cleanupPendingRegistration --project <FIREBASE_PROJECT_ID>`** from a revision that includes the callable (canary this function alone).
+2. Ship the **app release** that invokes it on finalize failure / profile-read timeout.
+3. **Never** `firebase deploy --only functions` from `chore/dedupe-structure-audit` (drops Oct-era trigger exports).
+
+Same App Check / abuse limits as other registration OTP callables (`ENFORCE_OTP_APP_CHECK`, `enforceAbuseLimit` `api` bucket).
+
 ---
 
 ## Verify deployed code baseline

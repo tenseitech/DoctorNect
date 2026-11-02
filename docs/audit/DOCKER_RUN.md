@@ -43,13 +43,15 @@ node --require ./test/setup_env.js --test `
 
 Each file skips with `Local Docker Postgres unreachable on 127.0.0.1:54322` when Docker is down.
 
-## 3. Registration orphan rollback tests (no Docker)
+## 3. Registration rollback tests (no Docker)
 
-Uses in-memory Firestore mocks and legacy doctor/patient mode — **default `npm test`**, no Postgres:
+In-memory Firestore mocks — **default `npm test`**, no Postgres:
 
 ```powershell
 cd C:\Users\khije\Downloads\DoctorNect\doctor\backend\functions
-node --require ./test/setup_env.js --test test/registration_orphan_rollback.test.js
+node --require ./test/setup_env.js --test `
+  test/registration_orphan_rollback.test.js `
+  test/cleanup_pending_registration.test.js
 ```
 
 ## 4. `pg_policies` diff (DELETE on profile tables)

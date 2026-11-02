@@ -1,6 +1,6 @@
-# Proposed `firebase.json` functions ignore (not applied)
+# `firebase.json` functions ignore (applied in repo)
 
-**Do not edit `firebase.json` until operator confirms** (see `ENV_BACKUP_COMMIT_PROPOSAL.md`).
+**Note:** `firebase.json` `functions.ignore` controls the **upload bundle only**. The Firebase CLI still **loads** `backend/functions/.env` and `.env.<projectId>` from disk at deploy time for Cloud Run env injection ([Configure your environment](https://firebase.google.com/docs/functions/config-env)) — those reads are independent of the ignore list. Keeping `.env.example` tracked in git is fine; broad `**/.env*` in ignore excludes `.env.example` from the **uploaded zip** unless you add negation rules.
 
 ## Current ignore list (`firebase.json` → `functions[0].ignore`)
 
