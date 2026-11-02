@@ -18,7 +18,48 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
-const ENV_PATH = path.resolve(ROOT_DIR, 'backend/functions/.env');
+const FUNCTIONS_DIR = path.resolve(ROOT_DIR, 'backend/functions');
+const ENV_PATH = path.resolve(FUNCTIONS_DIR, '.env');
+
+/** Paths that must never appear in the Cloud Functions upload bundle (see firebase.json ignore). */
+function isForbiddenUploadRelativePath(relPosix) {
+  const p = relPosix.replace(/\\/g, '/');
+  if (p.endsWith('.env.example') || p.endsWith('.secret.local.example')) {
+    return false;
+  }
+  if (p.includes('/node_modules/') || p.startsWith('node_modules/')) {
+    return false;
+  }
+  if (p.includes('.env') && !p.endsWith('.env.example')) {
+    return true;
+  }
+  if (p.includes('.bak')) {
+    return true;
+  }
+  if (p.includes('.secret') && !p.endsWith('.secret.local.example')) {
+    return true;
+  }
+  if (p.includes('service-account')) {
+    return true;
+  }
+  return false;
+}
+
+function listFunctionsSourceFiles(dir, base = '') {
+  const out = [];
+  if (!fs.existsSync(dir)) return out;
+  for (const name of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (name.name === 'node_modules' || name.name === '.git') continue;
+    const rel = base ? `${base}/${name.name}` : name.name;
+    const full = path.join(dir, name.name);
+    if (name.isDirectory()) {
+      out.push(...listFunctionsSourceFiles(full, rel));
+    } else {
+      out.push(rel.replace(/\\/g, '/'));
+    }
+  }
+  return out;
+}
 const STAGING_REF = 'irpkyedfmdsuvapfnrim';
 const PROD_REF = 'rnltknemwnjrjxthtull';
 
@@ -222,6 +263,24 @@ function runCheck(options = {}) {
   const awsInSecretManager = activeSecrets.has('AWS_ACCESS_KEY_ID') && activeSecrets.has('AWS_SECRET_ACCESS_KEY');
   if (awsInSecretManager) {
     console.log('  AWS Credentials: Bound via Secret Manager in code (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)');
+  }
+
+  // ---------------------------------------------------------------------------
+  // Check 6: Forbidden files in functions upload tree
+  // ---------------------------------------------------------------------------
+  console.log('\n--- 6. Functions Upload Bundle Forbidden Files ---');
+  const uploadFiles = listFunctionsSourceFiles(FUNCTIONS_DIR);
+  const forbiddenInTree = uploadFiles.filter(isForbiddenUploadRelativePath);
+  if (forbiddenInTree.length > 0) {
+    forbiddenInTree.forEach((rel) => {
+      errors.push(
+        `Forbidden file would be uploaded with Cloud Functions source: backend/functions/${rel}. ` +
+          'Remove or relocate it (see firebase.json functions.ignore).',
+      );
+    });
+    console.log(`  Found ${forbiddenInTree.length} forbidden path(s) (names only in error list above).`);
+  } else {
+    console.log('  No forbidden backup/env/secret paths under backend/functions/.');
   }
 
   // ---------------------------------------------------------------------------
