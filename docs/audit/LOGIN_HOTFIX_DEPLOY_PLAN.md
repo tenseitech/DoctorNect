@@ -6,6 +6,23 @@
 
 **Prepared worktree:** `../doctor-hotfix` (detached HEAD `9883f00`) with **only** `backend/functions/registration_otp.js` patched (+ local copy of login OTP tests).
 
+**Urgency:** **Not urgent.** The chore-branch **frontend already works** against the **old backend** via legacy `check()` fallback. Schedule backend hotfix together with the **frontend app release** that consumes post-OTP `exists`/`role`.
+
+**Env:** [LOGIN_HOTFIX_ENV_PLAN.md](./LOGIN_HOTFIX_ENV_PLAN.md) — names only, MISSING-VALUE gaps vs today's `.env`.
+
+**Source proof:** [DEPLOYED_SOURCE_CHECK.md](./DEPLOYED_SOURCE_CHECK.md) — operator-run `gcloud` download + hash compare (not run by agent).
+
+---
+
+## Worktree full `npm test` (9883f00 era, isolated)
+
+| State | pass | fail | skip | total |
+|-------|-----:|-----:|-----:|------:|
+| Clean `9883f00` (no patch) | 443 | 6 | 18 | 467 |
+| Additive post-OTP patch only | 445 | 4 | 18 | 467 |
+
+Same test count; **+2 passes**, **−2 failures** (OTP/login scenario tests). Remaining failures are pre-existing at Oct 24 tip (not introduced by patch).
+
 ---
 
 ## Verify deployed code baseline
@@ -54,8 +71,8 @@ Method: `docs/audit/STALE_REDEPLOY_ENV_DIFF.md` (names only, no values).
 
 ## Deploy order
 
-1. **Backend hotfix** (this worktree patch) — canary then full traffic for **two callables only**.
-2. **Frontend release** from `chore/dedupe-structure-audit` (or a release tag) after backend is live — uses post-OTP `exists`/`role` + legacy `check()` fallback.
+1. **Frontend + backend together** in one release window (preferred): backend patch from `..\doctor-hotfix`, then app build from `chore/dedupe-structure-audit`.
+2. If backend must lead by minutes: canary **`verifyUserRegistrationOtp`**, then **`completeMobileOtpLogin`**, then ship frontend — old app remains safe on legacy fallback until step 2 completes.
 
 ---
 

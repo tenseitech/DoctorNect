@@ -1,5 +1,5 @@
 # Flutter tests failing at safety commit 5c107e9 (pre-dedupe baseline)
-# Full suite (chore/dedupe-structure-audit, post login-role fix): 604 pass / 13 fail (617 executed).
+# Full suite (chore/dedupe-structure-audit, post registration rollback tests): 607 pass / 13 fail (620 executed).
 # Prior: 546 pass / 13 fail (559 executed) before login-role scenario tests.
 # Worktree: ../doctor-safety-baseline (requires local frontend/lib/firebase_options.secrets.dart copy to compile)
 
