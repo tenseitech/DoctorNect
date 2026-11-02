@@ -109,8 +109,8 @@ void main() {
     });
   });
 
-  group('registration OTP rollback policy', () {
-    test('finalize failure removes pending Firebase auth user before sign-out', () async {
+  group('registration OTP rollback policy (extra source contract)', () {
+    test('finalize failure block references deletePendingAuthUser', () async {
       final src = await File('lib/core/firebase/firebase_auth_service.dart')
           .readAsString();
       expect(

@@ -1,0 +1,146 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'package:medibond/core/auth/registration_otp_service.dart';
+import 'package:medibond/core/enums/user_type.dart';
+import 'package:medibond/core/firebase/firebase_auth_service.dart';
+import 'package:medibond/core/firebase/firebase_bootstrap.dart';
+import 'package:medibond/core/firebase/models/medibond_user_profile.dart';
+import 'package:medibond/core/firebase/repositories/user_repository.dart';
+import 'package:medibond/core/supabase/repositories/supabase_user_repository.dart';
+import 'package:medibond/core/validation/server_validation_service.dart';
+
+import 'helpers/auth_validation_rules_fixture.dart';
+
+class MockUser extends Mock implements User {}
+
+class MockFirebaseAuth extends Mock implements FirebaseAuth {}
+
+class MockUserCredential extends Mock implements UserCredential {}
+
+class MockSupabaseUserRepository extends Mock implements SupabaseUserRepository {}
+
+class FakeUser extends Fake implements User {}
+
+void main() {
+  setUpAll(() {
+    registerFallbackValue(FakeUser());
+    registerFallbackValue(UserType.patient);
+  });
+
+  setUp(() {
+    ServerValidationService.debugSetRules(authValidationRulesFixture());
+    FirebaseBootstrap.isReady = true;
+  });
+
+  tearDown(() {
+    ServerValidationService.debugReset();
+    FirebaseBootstrap.isReady = false;
+    FirebaseAuthService.debugAuth = null;
+    UserRepository.debugSupabaseUserRepository = null;
+    RegistrationOtpService.debugFinalizeRegistrationVerification = null;
+    RegistrationOtpService.clearVerificationSession();
+  });
+
+  group('SupabaseUserRepository.deletePendingAuthUser', () {
+    test('calls Firebase User.delete for the registration attempt user', () async {
+      final user = MockUser();
+      when(() => user.delete()).thenAnswer((_) async {});
+
+      await SupabaseUserRepository.instance.deletePendingAuthUser(user);
+
+      verify(() => user.delete()).called(1);
+    });
+  });
+
+  group('FirebaseAuthService.registerProfile rollback', () {
+    late MockUser mockUser;
+    late MockFirebaseAuth mockAuth;
+    late MockUserCredential mockCredential;
+    late MockSupabaseUserRepository mockRepo;
+
+    setUp(() {
+      mockUser = MockUser();
+      mockAuth = MockFirebaseAuth();
+      mockCredential = MockUserCredential();
+      mockRepo = MockSupabaseUserRepository();
+
+      FirebaseAuthService.debugAuth = mockAuth;
+      UserRepository.debugSupabaseUserRepository = mockRepo;
+
+      when(() => mockUser.uid).thenReturn('reg_rollback_uid');
+      when(() => mockUser.email).thenReturn('rollback@test.com');
+      when(() => mockUser.getIdToken(any())).thenAnswer((_) async => 'token');
+      when(() => mockCredential.user).thenReturn(mockUser);
+      when(() => mockAuth.createUserWithEmailAndPassword(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          )).thenAnswer((_) async => mockCredential);
+      when(() => mockAuth.signOut()).thenAnswer((_) async {});
+      when(() => mockRepo.validateNewRegistration(
+            role: any(named: 'role'),
+            email: any(named: 'email'),
+            mobile: any(named: 'mobile'),
+            profileId: any(named: 'profileId'),
+            roleData: any(named: 'roleData'),
+          )).thenAnswer((_) async => null);
+      when(() => mockRepo.createProfile(
+            user: any(named: 'user'),
+            role: any(named: 'role'),
+            profileId: any(named: 'profileId'),
+            displayName: any(named: 'displayName'),
+            mobile: any(named: 'mobile'),
+            mobileVerified: any(named: 'mobileVerified'),
+            roleData: any(named: 'roleData'),
+          )).thenAnswer((_) async {});
+      when(() => mockRepo.deletePendingAuthUser(any())).thenAnswer((_) async {});
+    });
+
+    test('profile read timeout deletes pending auth user before sign-out', () async {
+      when(() => mockRepo.fetchProfile(any(), preferCache: any(named: 'preferCache')))
+          .thenAnswer((_) async => null);
+
+      final result = await FirebaseAuthService.instance.registerProfile(
+        role: UserType.patient,
+        email: 'rollback@test.com',
+        password: 'Password1!',
+        profileId: 'patient_rb_1',
+        displayName: 'Rollback Test',
+      );
+
+      expect(result.success, isFalse);
+      verify(() => mockRepo.deletePendingAuthUser(mockUser)).called(1);
+      verify(() => mockAuth.signOut()).called(1);
+    });
+
+    test('finalize OTP failure deletes pending auth user before sign-out', () async {
+      when(() => mockRepo.fetchProfile(any(), preferCache: any(named: 'preferCache')))
+          .thenAnswer(
+        (_) async => DoctorNectUserProfile(
+          uid: 'reg_rollback_uid',
+          role: UserType.patient,
+          profileId: 'patient_rb_2',
+          displayName: 'Rollback Test',
+          email: 'rollback@test.com',
+        ),
+      );
+      RegistrationOtpService.debugFinalizeRegistrationVerification =
+          (_) async => 'Finalize failed';
+
+      final result = await FirebaseAuthService.instance.registerProfile(
+        role: UserType.patient,
+        email: 'rollback@test.com',
+        password: 'Password1!',
+        profileId: 'patient_rb_2',
+        displayName: 'Rollback Test',
+        mobile: '9876543210',
+        otpVerificationSessionId: 'sess-finalize-fail',
+      );
+
+      expect(result.success, isFalse);
+      verify(() => mockRepo.deletePendingAuthUser(mockUser)).called(1);
+      verify(() => mockAuth.signOut()).called(1);
+    });
+  });
+}

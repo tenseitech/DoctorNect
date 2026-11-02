@@ -2644,59 +2644,147 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
   };
 }
 
+const ORPHAN_AUTH_MAX_AGE_MS = 10 * 60 * 1000;
+
+function hashUidForLog(uid) {
+  return crypto.createHash('sha256').update(String(uid || '')).digest('hex').slice(0, 12);
+}
+
+async function authUserHasPersistedProfile(db, uid) {
+  const firestoreDoc = await readUserProfile(db, uid);
+  if (firestoreDoc) {
+    const verified =
+      firestoreDoc.mobileVerified === true || firestoreDoc.emailVerified === true;
+    return { exists: true, verified };
+  }
+  if (await isDoctorPatientSupabasePrimary()) {
+    try {
+      const { getDatabaseClient } = require('./src/db/client');
+      const client = getDatabaseClient();
+      const { data } = await client
+        .from('users')
+        .select('id, mobile_verified, email_verified')
+        .or(`id.eq.${uid},firebase_uid.eq.${uid}`)
+        .maybeSingle();
+      if (data) {
+        const verified =
+          data.mobile_verified === true || data.email_verified === true;
+        return { exists: true, verified };
+      }
+    } catch (_) {}
+  }
+  return { exists: false, verified: false };
+}
+
+/**
+ * Deletes the authenticated caller's Auth user only when it is a fresh orphan
+ * (no profile row, no verification flags, created within ORPHAN_AUTH_MAX_AGE_MS).
+ */
+async function maybeDeleteOrphanRegistrationAuthUser(
+  auth,
+  db,
+  { nowMs = Date.now(), authAdmin = getAuth() } = {},
+) {
+  const uid = String(auth?.uid || '').trim();
+  if (!uid) {
+    return { deleted: false, reason: 'no_auth' };
+  }
+
+  let record;
+  try {
+    record = await authAdmin.getUser(uid);
+  } catch (_) {
+    return { deleted: false, reason: 'auth_user_not_found' };
+  }
+
+  const createdMs = Date.parse(record.metadata?.creationTime || '');
+  if (!Number.isFinite(createdMs) || nowMs - createdMs > ORPHAN_AUTH_MAX_AGE_MS) {
+    return { deleted: false, reason: 'too_old' };
+  }
+
+  const profile = await authUserHasPersistedProfile(db, uid);
+  if (profile.verified) {
+    return { deleted: false, reason: 'verified_flag_set' };
+  }
+  if (profile.exists) {
+    return { deleted: false, reason: 'profile_exists' };
+  }
+
+  try {
+    await authAdmin.deleteUser(uid);
+    console.warn('[registration_rollback] deleted orphan auth user', {
+      uidHash: hashUidForLog(uid),
+    });
+    return { deleted: true };
+  } catch (err) {
+    console.warn('[registration_rollback] delete orphan auth user failed', {
+      uidHash: hashUidForLog(uid),
+      error: err?.message || String(err),
+    });
+    return { deleted: false, reason: 'delete_failed' };
+  }
+}
+
 async function finalizePatientOtpVerification(db, data, auth) {
   if (!auth?.uid) {
     throw new HttpsError('unauthenticated', 'Sign in required to finalize verification.');
   }
 
-  const sessionId = String(data?.sessionId || '').trim();
-  if (!sessionId) {
-    throw new HttpsError('invalid-argument', 'sessionId is required.');
-  }
-
-  const userProfile = await readUserProfile(db, auth.uid);
-  const userRole = normalizeRole(userProfile?.role);
-  if (!userProfile || !['patient', 'doctor', 'lab', 'medicalStore', 'ambulance'].includes(userRole)) {
-    throw new HttpsError('permission-denied', 'Supported account role required.');
-  }
-
-  const profileId = String(userProfile.profileId || '').trim();
-  if (!profileId) {
-    throw new HttpsError('failed-precondition', 'Patient profile not found.');
-  }
-
-  const session = await consumeOtpVerificationSessionAtomically(db, sessionId, {
-    assertSession: (sessionData) => {
-      if (sessionData.role !== userRole || sessionData.mobileVerified !== true) {
-        throw new HttpsError('failed-precondition', 'OTP verification incomplete.');
-      }
-
-      const sessionMobile = normalizeMobileDigits(sessionData.mobileDigits);
-      const profileMobile = normalizeMobileDigits(userProfile.mobile);
-      if (!sessionMobile || !profileMobile || sessionMobile !== profileMobile) {
-        throw new HttpsError(
-          'permission-denied',
-          'Registered mobile does not match OTP verification.',
-        );
-      }
-    },
-  });
-
-  const sessionMobile = normalizeMobileDigits(session.mobileDigits);
-  await markUserMobileVerified(db, {
-    uid: auth.uid,
-    mobileDigits: sessionMobile,
-    role: userRole,
-  });
-
-  const claims = supabaseCompatibleCustomClaims(userRole);
   try {
-    await getAuth().setCustomUserClaims(auth.uid, claims);
-  } catch (claimErr) {
-    console.warn('[finalizePatientOtpVerification] Failed to set custom claims:', claimErr?.message || claimErr);
-  }
+    const sessionId = String(data?.sessionId || '').trim();
+    if (!sessionId) {
+      throw new HttpsError('invalid-argument', 'sessionId is required.');
+    }
 
-  return { ok: true, mobileVerified: true, profileId };
+    const userProfile = await readUserProfile(db, auth.uid);
+    const userRole = normalizeRole(userProfile?.role);
+    if (!userProfile || !['patient', 'doctor', 'lab', 'medicalStore', 'ambulance'].includes(userRole)) {
+      throw new HttpsError('permission-denied', 'Supported account role required.');
+    }
+
+    const profileId = String(userProfile.profileId || '').trim();
+    if (!profileId) {
+      throw new HttpsError('failed-precondition', 'Patient profile not found.');
+    }
+
+    const session = await consumeOtpVerificationSessionAtomically(db, sessionId, {
+      assertSession: (sessionData) => {
+        if (sessionData.role !== userRole || sessionData.mobileVerified !== true) {
+          throw new HttpsError('failed-precondition', 'OTP verification incomplete.');
+        }
+
+        const sessionMobile = normalizeMobileDigits(sessionData.mobileDigits);
+        const profileMobile = normalizeMobileDigits(userProfile.mobile);
+        if (!sessionMobile || !profileMobile || sessionMobile !== profileMobile) {
+          throw new HttpsError(
+            'permission-denied',
+            'Registered mobile does not match OTP verification.',
+          );
+        }
+      },
+    });
+
+    const sessionMobile = normalizeMobileDigits(session.mobileDigits);
+    await markUserMobileVerified(db, {
+      uid: auth.uid,
+      mobileDigits: sessionMobile,
+      role: userRole,
+    });
+
+    const claims = supabaseCompatibleCustomClaims(userRole);
+    try {
+      await getAuth().setCustomUserClaims(auth.uid, claims);
+    } catch (claimErr) {
+      console.warn('[finalizePatientOtpVerification] Failed to set custom claims:', claimErr?.message || claimErr);
+    }
+
+    return { ok: true, mobileVerified: true, profileId };
+  } catch (err) {
+    try {
+      await maybeDeleteOrphanRegistrationAuthUser(auth, db);
+    } catch (_) {}
+    throw err;
+  }
 }
 
 const PIN_RESET_IP_WINDOW_MS = 60 * 60 * 1000;
@@ -3189,6 +3277,10 @@ module.exports = {
   hashOtp,
   lookupMobileRegistration,
   postOtpAccountFieldsFromSearch,
+  maybeDeleteOrphanRegistrationAuthUser,
+  authUserHasPersistedProfile,
+  ORPHAN_AUTH_MAX_AGE_MS,
+  hashUidForLog,
   resolveMobileLookupConflict,
   REGISTRATION_MOBILE_EXISTS_MESSAGE,
   LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE,
