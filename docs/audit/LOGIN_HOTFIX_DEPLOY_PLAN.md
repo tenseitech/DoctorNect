@@ -23,6 +23,37 @@
 
 Same test count; **+2 passes**, **−2 failures** (OTP/login scenario tests). Remaining failures are pre-existing at Oct 24 tip (not introduced by patch).
 
+### Failing test names @ `9883f00` worktree (`npm test`, this machine)
+
+Counts include the **`npm audit reports no moderate or higher vulnerabilities`** subtest (often fails offline or when advisories exist). **OTP patch delta** below excludes that audit row.
+
+| With post-OTP patch only | Without patch (clean `9883f00` `registration_otp.js`) |
+|--------------------------|--------------------------------------------------------|
+| `test/delete_account_schema_reflection.test.js` | Same four integration/schema tests |
+| `test/delete_my_account_docker_integration.test.js` | Same |
+| `test/razorpay_webhook_security.test.js` | Same |
+| `test/s3_supabase_docker_integration.test.js` | Same |
+| — | `postOtpAccountFieldsFromSearch — maps findUserByMobileDigits shape` |
+| — | `verifyUserRegistrationOtp — successful registration OTP returns exists/role only after verify` |
+
+**Classification (no production code changes for env-only rows):**
+
+| Test | Kind | What would make it pass |
+|------|------|-------------------------|
+| `delete_account_schema_reflection.test.js` | **Environment** | Local Docker Postgres on `LOCAL_DOCKER_PG_URL` / `127.0.0.1:54322` (see `connectOrSkip` in file). |
+| `delete_my_account_docker_integration.test.js` | **Environment** | Same Docker Postgres + delete-account harness. |
+| `s3_supabase_docker_integration.test.js` | **Environment** | Docker Postgres + S3/Supabase integration fixtures. |
+| `razorpay_webhook_security.test.js` | **Environment** | Docker Postgres reachable; test uses `LOCAL_DOCKER_PG_URL`. |
+| `postOtpAccountFieldsFromSearch …` | **Real code (fixed by patch)** | Apply worktree `registration_otp.js` post-OTP patch. |
+| `verifyUserRegistrationOtp … exists/role …` | **Real code (fixed by patch)** | Same patch. |
+| `npm audit reports no moderate or higher vulnerabilities` | **Environment / supply chain** | Clean `npm audit` (network, registry, dependency advisories). |
+
+---
+
+## Orphan registration rollback (not in first hotfix)
+
+The **Auth + profile row** orphan cleanup (`maybeDeleteOrphanRegistrationAuthUser`, fresh orphan profile delete, fail-closed profile check) lives in **`finalizePatientOtpVerification`** on branch `chore/dedupe-structure-audit`, **not** in the minimal post-OTP hotfix patch above. Deploy that behavior with a **separate** functions release after review — do not bundle with the first `verifyUserRegistrationOtp` / `completeMobileOtpLogin` canary unless explicitly planned.
+
 ---
 
 ## Verify deployed code baseline
@@ -30,9 +61,9 @@ Same test count; **+2 passes**, **−2 failures** (OTP/login scenario tests). Re
 | Check | Command / expectation |
 |-------|------------------------|
 | Git object at Oct 24 tip | `git cat-file -t 9883f00` → commit |
-| `registration_otp.js` blob at deploy tip | `git show 9883f00:backend/functions/registration_otp.js \| git hash-object --stdin` → **`7805656b85bbb065f13ea446a2d5d5f461686b1c`** |
-| Chore branch blob (do **not** deploy whole tree) | `git hash-object backend/functions/registration_otp.js` on `chore/dedupe-structure-audit` → different hash |
-| Cloud Run provenance | Compare revision build id / source SHA in console to `9883f00` (operator) |
+| `registration_otp.js` blob at deploy tip | Prefer **`git rev-parse 9883f00:backend/functions/registration_otp.js`** (or `git cat-file blob $(git rev-parse 9883f00:backend/functions/registration_otp.js)`) for the deployed blob id. Expected at `9883f00`: **`7805656b85bbb065f13ea446a2d5d5f461686b1c`**. Avoid PowerShell pipe + `git hash-object --stdin` unless you normalize line endings (CRLF vs LF changes the hash). |
+| Chore branch blob (do **not** deploy whole tree) | `git rev-parse HEAD:backend/functions/registration_otp.js` on `chore/dedupe-structure-audit` → different blob than deploy tip. |
+| Cloud Run provenance | Compare revision build id / source SHA in console to `9883f00` (operator). **Deployed source hash check pending operator result** (raw blob vs LF-normalized download). |
 
 **Confidence:** **High** that `9883f00` matches **2026-10-24T06:18Z** functions slice for OTP modules **if** production was built from the Oct 24 redeploy line documented in `DEPLOY_HASH_COHORT.md`. **Medium** without a live `gcloud run revisions describe` source hash. **Not** the Oct 31 postgres-only slice (`4dfae67`).
 

@@ -2,7 +2,9 @@
 # Command: cd backend/functions && npm test  (uses test/setup_env.js — does NOT load backend/functions/.env)
 # Node: v24.x (project engines: 22)
 
-484 pass / 0 fail / 22 skip (506 total)
+487 pass / 0 fail / 22 skip (509 total)
+
+Prior: 484 pass / 0 fail / 22 skip (506 total) — orphan profile row rollback tests.
 
 Prior: 479 pass / 0 fail / 22 skip (501 total) — login OTP privacy tests.
 
