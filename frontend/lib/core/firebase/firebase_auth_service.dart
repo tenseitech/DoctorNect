@@ -263,6 +263,7 @@ class FirebaseAuthService {
     required UserType expectedRole,
     required String mobile,
     required String otpCode,
+    bool skipOtpVerify = false,
   }) async {
     if (!FirebaseBootstrap.isReady) {
       return AuthSignInResult.fail(
@@ -285,15 +286,17 @@ class FirebaseAuthService {
 
     await AppCheckService.ensureForCallable();
 
-    final error = await RegistrationOtpService.verify(
-      digits,
-      otpCode,
-      role: expectedRole,
-      otpType: 'login',
-    );
-    if (error != null) {
-      AuthRateLimiter.recordFailure('otp_login', digits);
-      return AuthSignInResult.fail(error);
+    if (!skipOtpVerify) {
+      final error = await RegistrationOtpService.verify(
+        digits,
+        otpCode,
+        role: expectedRole,
+        otpType: 'login',
+      );
+      if (error != null) {
+        AuthRateLimiter.recordFailure('otp_login', digits);
+        return AuthSignInResult.fail(error);
+      }
     }
 
     try {
@@ -536,6 +539,7 @@ class FirebaseAuthService {
               sessionId,
             );
             if (finalizeError != null) {
+              await FirestoreService.instance.user.deletePendingAuthUser(user);
               await _auth.signOut();
               return AuthSignInResult.fail(finalizeError);
             }

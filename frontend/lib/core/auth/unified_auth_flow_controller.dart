@@ -19,7 +19,6 @@ import '../session/app_session.dart';
 import '../validators/form_validators.dart';
 import '../validators/name_validator.dart';
 import 'demo_auth_config.dart';
-import 'mobile_registration_lookup.dart';
 import 'registration_otp_service.dart';
 import 'unified_auth_coordinator.dart';
 import 'unified_auth_navigation.dart';
@@ -173,6 +172,10 @@ class UnifiedAuthFlowController extends ChangeNotifier {
         AppToast.error(context, UnifiedAuthCoordinator.wrongRoleMessage);
         return;
       }
+      if (path == UnifiedAuthPath.lookupUnavailable) {
+        AppToast.error(context, UnifiedAuthCoordinator.lookupUnavailableMessage);
+        return;
+      }
 
       final res = await RegistrationOtpService.sendOtp(
         digits,
@@ -237,48 +240,34 @@ class UnifiedAuthFlowController extends ChangeNotifier {
         return;
       }
 
-      // Check whether this number is registered across candidate roles
-      final registrationConflict = await MobileRegistrationLookup.check(
+      final verifyError = await RegistrationOtpService.verify(
         digits,
+        _otp,
         role: UserType.patient,
-        intent: MobileLookupIntent.registration,
+        otpType: 'auth',
       );
+      if (!context.mounted) return;
+      if (verifyError != null) {
+        AppToast.error(context, verifyError);
+        return;
+      }
 
-      if (registrationConflict == true) {
-        const candidates = [
-          UserType.doctor,
-          UserType.patient,
-          UserType.medicalStore,
-          UserType.lab,
-          UserType.ambulance,
-        ];
-        final checks = await Future.wait(
-          candidates.map(
-            (r) => MobileRegistrationLookup.check(
-              digits,
-              role: r,
-              intent: MobileLookupIntent.login,
-            ),
-          ),
-        );
-        UserType? found;
-        for (var i = 0; i < candidates.length; i++) {
-          if (checks[i] == false) {
-            found = candidates[i];
-            break;
-          }
-        }
-
-        final targetRole = found ?? UserType.patient;
+      final postVerify = RegistrationOtpService.postVerifyAccountLookup;
+      if (postVerify.exists == true) {
+        final targetRole = postVerify.role ?? UserType.patient;
         _matchedRole = targetRole;
         _authPath = UnifiedAuthPath.login;
-        await _completeLogin(context, digits, _otp, targetRole: targetRole);
-      } else {
-        // Not registered: complete registration OTP verification session, then open role selection
-        _matchedRole = null;
-        _authPath = UnifiedAuthPath.register;
-        await _completeRegistration(context, digits, _otp);
+        await _completeLoginAfterVerifiedOtp(
+          context,
+          digits,
+          targetRole: targetRole,
+        );
+        return;
       }
+
+      _matchedRole = null;
+      _authPath = UnifiedAuthPath.register;
+      await _openRegistrationAfterVerifiedOtp(context, digits);
     } catch (e) {
       if (!context.mounted) return;
       AppToast.error(
@@ -455,6 +444,66 @@ class UnifiedAuthFlowController extends ChangeNotifier {
           builder: (_) => WelcomeScreen(
             verifiedMobile: digits,
             verifiedOtp: otp,
+            isNewUser: true,
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _completeLoginAfterVerifiedOtp(
+    BuildContext context,
+    String digits, {
+    required UserType targetRole,
+  }) async {
+    AppSession.clear();
+
+    if (targetRole == UserType.ambulance) {
+      await completeAmbulanceLogin(context, digits, _otp);
+      return;
+    }
+
+    final result = await FirebaseAuthService.instance.signInWithMobileOtp(
+      expectedRole: targetRole,
+      mobile: digits,
+      otpCode: _otp,
+      skipOtpVerify: true,
+    );
+    if (!context.mounted) return;
+    await UnifiedAuthNavigation.handleSignInResult(
+      context,
+      role: targetRole,
+      result: result,
+    );
+  }
+
+  Future<void> _openRegistrationAfterVerifiedOtp(
+    BuildContext context,
+    String digits,
+  ) async {
+    if (FirebaseAuthService.instance.isSignedIn) {
+      try {
+        await FirebaseAuthService.instance.signOut();
+      } catch (_) {}
+    }
+
+    if (RegistrationOtpService.verificationSessionId == null) {
+      AppToast.error(context, 'OTP session expired. Please request a new OTP.');
+      return;
+    }
+
+    if (role != null) {
+      UnifiedAuthNavigation.openRegistrationForm(
+        context,
+        role: role!,
+        mobileDigits: digits,
+      );
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => WelcomeScreen(
+            verifiedMobile: digits,
+            verifiedOtp: _otp,
             isNewUser: true,
           ),
         ),

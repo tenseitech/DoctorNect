@@ -9,6 +9,7 @@ import '../firebase/firebase_error_messages.dart';
 import '../security/app_check_service.dart';
 import '../security/client_request_throttle.dart';
 import '../validators/form_validators.dart';
+import 'mobile_registration_lookup.dart';
 
 /// Registration / login / reset OTP via Cloud Functions only.
 /// MSG91 credentials never leave the server.
@@ -20,9 +21,15 @@ class RegistrationOtpService {
 
   static String? _verificationSessionId;
   static String? _loginCustomToken;
+  static bool? _postVerifyExists;
+  static UserType? _postVerifyRole;
 
   static String? get verificationSessionId => _verificationSessionId;
   static String? get loginCustomToken => _loginCustomToken;
+
+  /// Populated after successful [verify] when the backend returns post-OTP fields.
+  static ({bool? exists, UserType? role}) get postVerifyAccountLookup =>
+      (exists: _postVerifyExists, role: _postVerifyRole);
 
   static FirebaseFunctions get _functions =>
       FirebaseFunctions.instanceFor(region: 'asia-south1');
@@ -184,6 +191,14 @@ class RegistrationOtpService {
             sessionId != null && sessionId.isNotEmpty ? sessionId : null;
         final token = data['customToken'] as String?;
         _loginCustomToken = token != null && token.isNotEmpty ? token : null;
+        if (data.containsKey('exists')) {
+          _postVerifyExists = data['exists'] == true;
+          _postVerifyRole =
+              MobileRegistrationLookup.parseUserType(data['role'] as String?);
+        } else {
+          _postVerifyExists = null;
+          _postVerifyRole = null;
+        }
         return null;
       }
       return 'Invalid or expired OTP. Please try again.';
@@ -349,6 +364,8 @@ class RegistrationOtpService {
   static void clearVerificationSession() {
     _verificationSessionId = null;
     _loginCustomToken = null;
+    _postVerifyExists = null;
+    _postVerifyRole = null;
   }
 
   static void clearPending(String mobile, {UserType? role}) {
