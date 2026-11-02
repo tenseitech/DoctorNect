@@ -2815,6 +2815,96 @@ async function maybeDeleteOrphanRegistrationAuthUser(
   }
 }
 
+function authTokenHasVerifiedRegistrationClaims(auth) {
+  const token = auth?.token || {};
+  return (
+    token.mobile_verified === true ||
+    token.mobileVerified === true ||
+    token.email_verified === true ||
+    token.emailVerified === true
+  );
+}
+
+/**
+ * Callable entry: caller may clean up their own fresh, unverified registration attempt.
+ * Never reveals whether another account exists — only { ok, cleaned } for the caller.
+ */
+async function cleanupPendingRegistration(
+  db,
+  auth,
+  {
+    nowMs = Date.now(),
+    authAdmin = getAuth(),
+    loadProfile = loadRegistrationProfileSnapshot,
+  } = {},
+) {
+  const uid = String(auth?.uid || '').trim();
+  if (!uid) {
+    throw new HttpsError('unauthenticated', 'Sign in required.');
+  }
+
+  if (authTokenHasVerifiedRegistrationClaims(auth)) {
+    return { ok: true, cleaned: false };
+  }
+
+  let snapshot;
+  try {
+    snapshot = await loadProfile(db, uid);
+  } catch (err) {
+    console.warn('[cleanupPendingRegistration] profile check failed', {
+      uidHash: hashUidForLog(uid),
+      error: err?.message || String(err),
+    });
+    return { ok: true, cleaned: false };
+  }
+
+  if (snapshot.verified) {
+    return { ok: true, cleaned: false };
+  }
+
+  let record;
+  try {
+    record = await authAdmin.getUser(uid);
+  } catch (_) {
+    return { ok: true, cleaned: false };
+  }
+
+  const createdMs = Date.parse(record.metadata?.creationTime || '');
+  if (!Number.isFinite(createdMs) || nowMs - createdMs > ORPHAN_AUTH_MAX_AGE_MS) {
+    return { ok: true, cleaned: false };
+  }
+
+  let cleaned = false;
+
+  if (snapshot.exists && isFreshOrphanRegistrationProfile(snapshot, nowMs)) {
+    try {
+      const profileResult = await maybeDeleteFreshOrphanRegistrationProfile(db, uid, {
+        nowMs,
+      });
+      if (profileResult.deleted) cleaned = true;
+    } catch (err) {
+      console.warn('[cleanupPendingRegistration] profile delete failed', {
+        uidHash: hashUidForLog(uid),
+        error: err?.message || String(err),
+      });
+      return { ok: true, cleaned: false };
+    }
+  }
+
+  const authResult = await maybeDeleteOrphanRegistrationAuthUser(auth, db, {
+    nowMs,
+    authAdmin,
+    loadProfile,
+  });
+  if (authResult.deleted) cleaned = true;
+
+  console.warn('[cleanupPendingRegistration] completed', {
+    uidHash: hashUidForLog(uid),
+    cleaned,
+  });
+  return { ok: true, cleaned };
+}
+
 async function finalizePatientOtpVerification(db, data, auth) {
   if (!auth?.uid) {
     throw new HttpsError('unauthenticated', 'Sign in required to finalize verification.');
@@ -3377,6 +3467,7 @@ module.exports = {
   resolveMobileLookupConflict,
   REGISTRATION_MOBILE_EXISTS_MESSAGE,
   LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE,
+  cleanupPendingRegistration,
   finalizePatientOtpVerification,
   approveUserAccount,
   approvePatientAccount,

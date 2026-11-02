@@ -56,6 +56,7 @@ const {
   hashAmbulancePin,
   ambulancePinMatches,
   lookupMobileRegistration,
+  cleanupPendingRegistration,
 } = require('./registration_otp');
 const {
   createRazorpayOrder,
@@ -559,6 +560,22 @@ exports.finalizePatientOtpVerification = onCall(
     requireAuth(request);
     const firestore = getFirestore();
     return finalizePatientOtpVerification(firestore, request.data || {}, request.auth);
+  }),
+);
+
+/** Removes caller-owned fresh orphan registration rows + Auth user (service role). */
+exports.cleanupPendingRegistration = onCall(
+  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
+  withSecurityLogging('cleanupPendingRegistration', async (request) => {
+    requireAuth(request);
+    if (ENFORCE_OTP_APP_CHECK && !request.app) {
+      throw new HttpsError('failed-precondition', 'App Check verification required.');
+    }
+    const firestore = getFirestore();
+    await enforceAbuseLimit(firestore, request, 'api', {
+      message: 'Too many registration cleanup attempts. Please try again later.',
+    });
+    return cleanupPendingRegistration(firestore, request.auth);
   }),
 );
 
