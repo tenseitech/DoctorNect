@@ -140,6 +140,7 @@ class FirebaseAuthService {
     required User user,
     int maxAttempts = 3,
     Duration Function(int attempt)? delayFn,
+    bool signOutOnFailure = true,
   }) async {
     DoctorNectUserProfile? saved;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -157,7 +158,7 @@ class FirebaseAuthService {
         }
       }
     }
-    if (saved == null) {
+    if (saved == null && signOutOnFailure) {
       await _auth.signOut();
     }
     return saved;
@@ -512,13 +513,16 @@ class FirebaseAuthService {
           }
         }
 
-        final saved = await verifyProfileWithRetry(user: user);
+        final saved = await verifyProfileWithRetry(
+          user: user,
+          signOutOnFailure: false,
+        );
 
         if (saved == null) {
-          // Do NOT delete the user account on read verification timeout.
-          // Sign out cleanly so the user can re-authenticate or retry.
+          await FirestoreService.instance.user.deletePendingAuthUser(user);
+          await _auth.signOut();
           return AuthSignInResult.fail(
-            'Account created, but profile verification timed out. Please sign in to continue.',
+            'Account created, but profile verification timed out. Please try again.',
           );
         }
 

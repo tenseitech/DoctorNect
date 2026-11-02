@@ -382,11 +382,18 @@ class SupabaseUserRepository {
     }
   }
 
+  /// Removes the Firebase Auth user created during an aborted registration attempt.
+  /// Caller must still be signed in as [user] (same semantics as legacy Firestore path).
   Future<void> deletePendingAuthUser(User user) async {
-    if (kDebugMode) {
-      debugPrint(
-        '[SupabaseUserRepository] Pending auth user deletion skipped for ${user.uid}',
-      );
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[SupabaseUserRepository] deletePendingAuthUser failed: ${e.code}',
+        );
+      }
+      rethrow;
     }
   }
 

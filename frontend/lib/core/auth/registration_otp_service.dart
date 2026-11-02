@@ -375,9 +375,18 @@ class RegistrationOtpService {
   /// Local-only sessions are no longer accepted in production paths.
   static bool isLocalVerificationSession(String? sessionId) => false;
 
+  @visibleForTesting
+  static Future<String?> Function(String sessionId)?
+      debugFinalizeRegistrationVerification;
+
   /// Applies a pre-registration OTP session after Firebase Auth signup.
-  static Future<String?> finalizeRegistrationVerification(String sessionId) =>
-      finalizePatientVerification(sessionId);
+  static Future<String?> finalizeRegistrationVerification(String sessionId) {
+    final override = debugFinalizeRegistrationVerification;
+    if (override != null) {
+      return override(sessionId);
+    }
+    return finalizePatientVerification(sessionId);
+  }
 
   static String _roleValue(UserType role) => switch (role) {
         UserType.superAdmin => 'super_admin',
