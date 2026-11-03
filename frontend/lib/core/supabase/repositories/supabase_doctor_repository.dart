@@ -257,6 +257,49 @@ class SupabaseDoctorRepository {
     await _client.from('doctors').upsert(payload, onConflict: 'doctor_id');
   }
 
+  /// Persists doctor profile section saves (Firestore-shaped field names from [DoctorProfileStore]).
+  Future<void> saveDoctorProfileFields(
+    String doctorId,
+    Map<String, dynamic> fields,
+  ) async {
+    if (!SupabaseBootstrap.isReady || doctorId.isEmpty) return;
+
+    final payload = <String, dynamic>{
+      'doctor_id': doctorId,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    };
+
+    void put(String column, dynamic value) {
+      if (value == null) return;
+      payload[column] = value;
+    }
+
+    put('name', fields['name']);
+    put('email', fields['email']);
+    put('mobile', fields['mobile']);
+    put('specialization', fields['specialization']);
+    put('super_specialization', fields['superSpecialization']);
+    put('qualification', fields['qualification'] ?? fields['degree']);
+    put('experience_years', fields['experienceYears']);
+    put('clinic_name', fields['clinicName']);
+    put('city', fields['city']);
+    put('state', fields['state']);
+    put('country', fields['country']);
+    put('pincode', fields['pincode']);
+    put('address_line1', fields['addressLine1']);
+    put('address_line2', fields['addressLine2']);
+    put('state_council', fields['stateCouncil']);
+    put('council_number', fields['councilNumber']);
+    put('maps_link', fields['mapsLink']);
+    put('landmark', fields['landmark']);
+    put('languages', fields['languages']);
+    put('certifications', fields['certifications']);
+    put('awards', fields['awards']);
+    put('publications', fields['publications']);
+
+    await _client.from('doctors').upsert(payload, onConflict: 'doctor_id');
+  }
+
   DoctorListing? _fromRow(String id, Map<String, dynamic> row) {
     final name = (row['name'] as String?)?.trim() ?? '';
     if (name.isEmpty) return null;

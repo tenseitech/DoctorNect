@@ -406,12 +406,24 @@ class DoctorProfileStore extends ChangeNotifier {
         'registrationCertificate': p.registrationCertificate.trim(),
       if (p.idProof.trim().isNotEmpty) 'idProof': p.idProof.trim(),
     };
-    if (FirebaseBootstrap.isReady) {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      await SupabaseDoctorRepository.instance.saveDoctorProfileFields(
+        doctorId,
+        data,
+      );
+      unawaited(
+        ProfileCompletionService.instance.evaluateAndMarkFromRoleDoc(
+          role: UserType.doctor,
+          uid: uid,
+          profileId: doctorId,
+        ),
+      );
+    } else if (FirebaseBootstrap.isReady) {
       await FirebaseFirestore.instance
           .collection(FirestorePaths.doctors)
           .doc(doctorId)
           .set(data, SetOptions(merge: true));
-      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
       unawaited(
         ProfileCompletionService.instance.evaluateAndMarkFromRoleDoc(
           role: UserType.doctor,
