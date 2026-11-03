@@ -11,6 +11,7 @@ class MockS3PresignApi extends S3PresignApi {
 
   int getUploadUrlCalls = 0;
   int confirmUploadCalls = 0;
+  int confirmFailuresBeforeSuccess = 0;
 
   String? lastConfirmedKey;
   String? lastConfirmedPurpose;
@@ -40,6 +41,10 @@ class MockS3PresignApi extends S3PresignApi {
     String? recordId,
   }) async {
     confirmUploadCalls++;
+    if (confirmFailuresBeforeSuccess > 0) {
+      confirmFailuresBeforeSuccess--;
+      throw const StorageException('temporary confirm outage', code: '503');
+    }
     lastConfirmedKey = objectKey;
     lastConfirmedPurpose = purpose;
     lastConfirmedRecordId = recordId;
@@ -142,6 +147,61 @@ void main() {
 
       // Confirm upload should NOT be called if PUT fails
       expect(mockApi.confirmUploadCalls, 0);
+    });
+
+    test('uploadBytes retries confirmUpload then succeeds', () async {
+      final mockApi = MockS3PresignApi()..confirmFailuresBeforeSuccess = 2;
+      S3StorageService.confirmUploadMaxAttempts = 3;
+      S3StorageService.debugConfirmUploadRetryDelay = (_) => Duration.zero;
+
+      final service = S3StorageService(
+        api: mockApi,
+        httpClient: MockHttpClient((request) async => http.Response('', 200)),
+      );
+
+      final bytes = Uint8List.fromList(utf8.encode('PDF content bytes'));
+      final result = await service.uploadBytes(
+        purpose: 'health_records',
+        parentId: 'p1/rec1',
+        fileName: 'report.pdf',
+        contentType: 'application/pdf',
+        bytes: bytes,
+      );
+
+      expect(result.objectKey, isNotEmpty);
+      expect(mockApi.confirmUploadCalls, 3);
+
+      S3StorageService.debugConfirmUploadRetryDelay = null;
+    });
+
+    test('uploadBytes throws StorageException confirm-failed when confirm never succeeds',
+        () async {
+      final mockApi = MockS3PresignApi()
+        ..confirmFailuresBeforeSuccess = 999;
+      S3StorageService.confirmUploadMaxAttempts = 3;
+      S3StorageService.debugConfirmUploadRetryDelay = (_) => Duration.zero;
+
+      final service = S3StorageService(
+        api: mockApi,
+        httpClient: MockHttpClient((request) async => http.Response('', 200)),
+      );
+
+      final bytes = Uint8List.fromList(utf8.encode('PDF content bytes'));
+      await expectLater(
+        service.uploadBytes(
+          purpose: 'health_records',
+          parentId: 'p1/rec1',
+          fileName: 'report.pdf',
+          contentType: 'application/pdf',
+          bytes: bytes,
+        ),
+        throwsA(
+          isA<StorageException>().having((e) => e.code, 'code', 'confirm-failed'),
+        ),
+      );
+
+      expect(mockApi.confirmUploadCalls, 3);
+      S3StorageService.debugConfirmUploadRetryDelay = null;
     });
 
     test('explicit confirmUpload delegates to S3PresignApi', () async {
