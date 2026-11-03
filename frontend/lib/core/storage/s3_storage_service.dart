@@ -81,11 +81,27 @@ class S3StorageService implements StorageService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         onProgress?.call(totalBytes, totalBytes);
 
-        await _confirmUploadWithRetry(
-          objectKey: creds.objectKey,
-          purpose: purpose,
-          recordId: parentId,
-        );
+        try {
+          await _confirmUploadWithRetry(
+            objectKey: creds.objectKey,
+            purpose: purpose,
+            recordId: parentId,
+          );
+        } on StorageException catch (e) {
+          if (e.code == 'confirm-failed') {
+            try {
+              await deleteObject(creds.objectKey);
+            } catch (deleteErr) {
+              if (kDebugMode) {
+                debugPrint(
+                  '[S3StorageService] confirm failed; orphan cleanup failed for '
+                  '${creds.objectKey}: $deleteErr',
+                );
+              }
+            }
+          }
+          rethrow;
+        }
 
         return StorageUploadResult(
           objectKey: creds.objectKey,

@@ -1216,6 +1216,11 @@ async function deleteS3ObjectHandler(data, auth, dbOrOptions) {
  * 5. confirmS3Upload core handler.
  * Verifies object existence, Content-Length, and Content-Type via S3 HEAD before linking s3_key in DB.
  * On failed validation (size/type/missing), deletes the uploaded object and records an audit log.
+ *
+ * Idempotency: safe to call repeatedly with the same objectKey/recordId/purpose — HEAD is re-run and
+ * DB update sets the same columns (Supabase .update / Firestore merge). No row delete or key rotation.
+ * Client orphan cleanup: if PUT succeeds but confirm fails after retries, Flutter deletes via presign
+ * deleteObject; otherwise configure S3 lifecycle on unconfirmed prefixes (see docs/audit/S3_CONFIRM_ORPHANS.md).
  */
 async function confirmS3UploadHandler(data, auth, dbOrOptions) {
   const ctx = await resolveStorageContext(dbOrOptions);

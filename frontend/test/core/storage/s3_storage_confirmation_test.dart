@@ -12,6 +12,15 @@ class MockS3PresignApi extends S3PresignApi {
   int getUploadUrlCalls = 0;
   int confirmUploadCalls = 0;
   int confirmFailuresBeforeSuccess = 0;
+  int deleteObjectCalls = 0;
+  String? lastDeletedKey;
+
+  @override
+  Future<bool> deleteObject({required String objectKey}) async {
+    deleteObjectCalls++;
+    lastDeletedKey = objectKey;
+    return true;
+  }
 
   String? lastConfirmedKey;
   String? lastConfirmedPurpose;
@@ -201,6 +210,8 @@ void main() {
       );
 
       expect(mockApi.confirmUploadCalls, 3);
+      expect(mockApi.deleteObjectCalls, 1);
+      expect(mockApi.lastDeletedKey, 'health_records/p1/rec1/uuid123.pdf');
       S3StorageService.debugConfirmUploadRetryDelay = null;
     });
 

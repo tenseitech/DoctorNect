@@ -1128,6 +1128,37 @@ test('confirmS3Upload verifies S3 HeadObject and persists s3_key in DB', async (
   assert.ok(doc.data().uploadConfirmedAt);
 });
 
+test('confirmS3Upload is idempotent when called twice with same objectKey', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1' },
+    },
+    health_records: {
+      rec_1: { title: 'Blood Report' },
+    },
+  });
+
+  setS3ClientForTesting(createMockS3Client({
+    ContentType: 'application/pdf',
+    ContentLength: 4096,
+  }));
+
+  const auth = { uid: 'uid_p1' };
+  const data = {
+    objectKey: 'health_records/p_1/rec_1/uuid123.pdf',
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  };
+
+  const first = await confirmS3UploadHandler(data, auth, db);
+  const second = await confirmS3UploadHandler(data, auth, db);
+  assert.equal(first.success, true);
+  assert.equal(second.success, true);
+
+  const doc = await db.collection('health_records').doc('rec_1').get();
+  assert.equal(doc.data().s3Key, 'health_records/p_1/rec_1/uuid123.pdf');
+});
+
 test('confirmS3Upload rejects when caller is not the owner (403)', async () => {
   const db = createMockDb({
     users: {
