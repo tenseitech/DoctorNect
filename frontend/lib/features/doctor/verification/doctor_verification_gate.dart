@@ -41,14 +41,15 @@ class DoctorVerificationGate extends StatelessWidget {
         ? FirebaseAuth.instance.currentUser?.phoneNumber
         : null;
 
-    final isDemoDoc = DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        DemoAuthConfig.isDemoDoctorId(doctorId) ||
-        DemoAuthConfig.isDemoDoctorPhone(
-          DoctorProfileStore.instance.profile.mobile,
-        ) ||
-        DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
-        DemoAuthConfig.isDemoDoctorId(DoctorSession.loggedInDoctorId) ||
-        DemoAuthConfig.isDemoDoctorPhone(authPhone);
+    final isDemoDoc = DemoAuthConfig.isDemoAllowed &&
+        (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
+            DemoAuthConfig.isDemoDoctorId(doctorId) ||
+            DemoAuthConfig.isDemoDoctorPhone(
+              DoctorProfileStore.instance.profile.mobile,
+            ) ||
+            DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
+            DemoAuthConfig.isDemoDoctorId(DoctorSession.loggedInDoctorId) ||
+            DemoAuthConfig.isDemoDoctorPhone(authPhone));
 
     if (isDemoDoc) {
       return verifiedChildOverride ??

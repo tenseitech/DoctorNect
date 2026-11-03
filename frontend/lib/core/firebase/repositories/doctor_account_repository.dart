@@ -90,8 +90,9 @@ class DoctorAccountRepository {
   }
 
   Future<bool> isVerified(String doctorId, {bool preferCache = false}) async {
-    if (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        DemoAuthConfig.isDemoDoctorId(doctorId)) {
+    if (DemoAuthConfig.isDemoAllowed &&
+        (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
+            DemoAuthConfig.isDemoDoctorId(doctorId))) {
       return true;
     }
     if (!SupabaseBootstrap.isReady) return false;
@@ -103,7 +104,10 @@ class DoctorAccountRepository {
           .maybeSingle();
       if (res == null) return false;
       final mobile = res['mobile'] as String?;
-      if (DemoAuthConfig.isDemoDoctorPhone(mobile)) return true;
+      if (DemoAuthConfig.isDemoAllowed &&
+          DemoAuthConfig.isDemoDoctorPhone(mobile)) {
+        return true;
+      }
       if (res['verification_status'] == 'verified' ||
           res['status'] == 'approved') {
         return true;
