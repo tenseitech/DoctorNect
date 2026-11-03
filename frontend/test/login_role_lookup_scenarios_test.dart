@@ -109,15 +109,47 @@ void main() {
     });
   });
 
-  group('registration OTP rollback policy (extra source contract)', () {
-    test('finalize failure block references deletePendingAuthUser', () async {
-      final src = await File('lib/core/firebase/firebase_auth_service.dart')
+  group('registration OTP rollback policy (source contract)', () {
+    test('finalize failure calls cleanup via deletePendingAuthUser before sign-out', () async {
+      final authSrc = await File('lib/core/firebase/firebase_auth_service.dart')
           .readAsString();
+      final repoSrc = await File(
+        'lib/core/supabase/repositories/supabase_user_repository.dart',
+      ).readAsString();
+
       expect(
         RegExp(
-          r'if \(finalizeError != null\) \{[\s\S]*deletePendingAuthUser\(user\)',
-        ).hasMatch(src),
+          r'if \(finalizeError != null\) \{[\s\S]*_abortPendingRegistrationIfNeeded\(user, finalizeError\)',
+        ).hasMatch(authSrc),
         isTrue,
+        reason: 'finalize failure must enter guarded rollback helper',
+      );
+      expect(
+        RegExp(
+          r'_abortPendingRegistrationIfNeeded[\s\S]*deletePendingAuthUser\(user\)[\s\S]*signOut\(\)',
+        ).hasMatch(authSrc),
+        isTrue,
+        reason: 'callable cleanup runs before sign-out',
+      );
+      expect(
+        RegExp(
+          r'RegistrationOtpService\.cleanupPendingRegistration\(\)',
+        ).hasMatch(repoSrc),
+        isTrue,
+      );
+      expect(
+        RegExp(
+          r'cleanupPendingRegistration\(\)[\s\S]*user\.delete\(\)',
+        ).hasMatch(repoSrc),
+        isTrue,
+        reason: 'Auth delete only after server cleanup attempt',
+      );
+      expect(
+        RegExp(
+          r'Callable unreachable[\s\S]*user\.delete\(\)',
+        ).hasMatch(repoSrc),
+        isTrue,
+        reason: 'fallback Auth delete when callable unreachable',
       );
     });
   });
