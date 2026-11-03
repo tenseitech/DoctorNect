@@ -18,6 +18,8 @@ Generated and maintained during the **dedupe / env consolidation** audit on bran
 | `_audit_*.json` | Phase 0 raw snapshots (in this folder) |
 | [baseline_backend_default_npm_test.txt](./baseline_backend_default_npm_test.txt) | Default `npm test`: **493/0/22** (515 total) |
 | [REGISTRATION_ROLLBACK_OPTIONS.md](./REGISTRATION_ROLLBACK_OPTIONS.md) | Rollback design + reclaim-on-retry risks (not implemented) |
+| [CLEANUP_CALLABLE_DEPLOY_PLAN.md](./CLEANUP_CALLABLE_DEPLOY_PLAN.md) | `cleanupPendingRegistration` env/deploy canary |
+| [APP_BACKEND_CONTRACT.md](./APP_BACKEND_CONTRACT.md) | Frontend ↔ deployed backend gap matrix (read-only) |
 | [ENV_EXAMPLE_HISTORY_SCAN.md](./ENV_EXAMPLE_HISTORY_SCAN.md) | Git history heuristic on env example templates (names only) |
 | [COMMIT_NOTES.md](./COMMIT_NOTES.md) | `8342580` / `a947d81` scope vs message (no rewrite) |
 | [DOCKER_RUN.md](./DOCKER_RUN.md) | Docker Postgres + 4 integration tests + `pg_policies` |

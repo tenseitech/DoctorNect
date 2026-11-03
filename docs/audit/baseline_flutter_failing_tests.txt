@@ -1,5 +1,6 @@
 # Flutter tests failing at safety commit 5c107e9 (pre-dedupe baseline)
-# Full suite (chore/dedupe-structure-audit, post cleanupPendingRegistration client): 614 pass / 13 fail (627 executed).
+# Full suite (chore/dedupe-structure-audit, cleaned:false verified guard): 615 pass / 13 fail (628 executed).
+# Prior: 614 pass / 13 fail (627 executed) — cleanupPendingRegistration client.
 # Prior: 613 pass / 13 fail (626 executed) — verified-profile rollback guards.
 # Prior: 611 pass / 13 fail (624 executed) — orphan profile row compensation.
 # Prior: 607 pass / 13 fail (620 executed) — registration rollback tests without profile row compensation.
