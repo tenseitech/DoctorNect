@@ -114,13 +114,12 @@ async function deleteOtpRedisKeys(redis, role, digits) {
 // Set ALLOW_LEGACY_UNSALTED_OTP_HASH=true only as an instant rollback.
 
 /**
- * Play Store / App Store reviewer login bypass.
- * Server-side allowlist for fictitious review test accounts.
- * Required env vars:
- *   REVIEW_TEST_NUMBERS (comma-separated 10-digit fictitious numbers)
- *   REVIEW_FIXED_OTP (fixed 6-digit OTP code)
- *   REVIEW_ACCESS_UNTIL (ISO 8601 date string, after which bypass is completely disabled)
- * Production default is OFF (inactive unless all env vars are explicitly set and not expired).
+ * Play Store / App Store reviewer OTP bypass (production-gated).
+ * When REVIEWER_OTP_ENABLED=true:
+ *   REVIEW_{ROLE}_PHONES — comma-separated fictitious 10-digit numbers (max 2 per role)
+ *   REVIEW_FIXED_OTP — fixed 6-digit OTP (never logged; audit uses hashIdentifier only)
+ *   REVIEW_ACCESS_UNTIL — ISO 8601 expiry; bypass disabled after this instant
+ * Rate limits: Redis via abuse_rate_limit.assertBucketRedis (requires REDIS_HOST in production).
  */
 const REVIEW_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const REVIEW_RATE_LIMIT_MAX = 5;
@@ -161,10 +160,7 @@ function getReviewerConfig(role) {
 
   const roleKey = normalizeRole(role);
   const envKey = `REVIEW_${roleKey.toUpperCase()}_PHONES`;
-  let testNumbers = parseReviewerPhoneList(process.env[envKey], 2);
-  if (testNumbers.length === 0) {
-    testNumbers = parseReviewerPhoneList(process.env.REVIEW_TEST_NUMBERS, 2);
-  }
+  const testNumbers = parseReviewerPhoneList(process.env[envKey], 2);
   if (testNumbers.length === 0) {
     return null;
   }
@@ -193,70 +189,20 @@ function setReviewerRedisClientForTesting(client) {
   _testingReviewerRedis = client;
 }
 
-function createInMemoryRedisMock() {
-  const store = new Map();
-  function cleanExpired(key) {
-    const entry = store.get(key);
-    if (!entry) return null;
-    if (entry.expireAt && Date.now() > entry.expireAt) {
-      store.delete(key);
-      return null;
-    }
-    return entry;
-  }
-  return {
-    store,
-    async eval(script, numKeys, key, ...args) {
-      const windowMs = Number(args[0]) || 60000;
-      let entry = cleanExpired(key);
-      if (!entry) {
-        entry = { val: 1, expireAt: Date.now() + windowMs };
-        store.set(key, entry);
-        return 1;
-      }
-      entry.val += 1;
-      return entry.val;
-    },
-    async incr(key) {
-      let entry = cleanExpired(key);
-      if (!entry) {
-        entry = { val: 1, expireAt: null };
-        store.set(key, entry);
-        return 1;
-      }
-      entry.val += 1;
-      return entry.val;
-    },
-    async pexpire(key, ms) {
-      const entry = cleanExpired(key);
-      if (entry) {
-        entry.expireAt = Date.now() + Number(ms);
-      }
-      return 1;
-    },
-    flushall() {
-      store.clear();
-    },
-  };
-}
-
-let _defaultTestRedisMock = null;
-
 function getReviewerRedisClient() {
   if (_testingReviewerRedis !== null) return _testingReviewerRedis;
-  try {
-    const redisModule = require("./redis");
-    if (typeof redisModule.getRedisClient === "function") {
-      if (process.env.REDIS_HOST) {
-        return redisModule.getRedisClient();
-      }
-    }
-  } catch (_) {}
-
-  if (!_defaultTestRedisMock) {
-    _defaultTestRedisMock = createInMemoryRedisMock();
+  if (!process.env.REDIS_HOST) {
+    return null;
   }
-  return _defaultTestRedisMock;
+  try {
+    const redisModule = require('./redis');
+    if (typeof redisModule.getRedisClient === 'function') {
+      return redisModule.getRedisClient();
+    }
+  } catch (_) {
+    return null;
+  }
+  return null;
 }
 async function checkReviewerRateLimit(digits, { redisClient = null } = {}) {
   const client = redisClient || getReviewerRedisClient();
@@ -292,9 +238,6 @@ function resetReviewerRateLimitForTesting() {
     } else if (_testingReviewerRedis.store && typeof _testingReviewerRedis.store.clear === "function") {
       _testingReviewerRedis.store.clear();
     }
-  }
-  if (_defaultTestRedisMock) {
-    _defaultTestRedisMock.flushall();
   }
 }
 

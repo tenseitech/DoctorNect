@@ -18,7 +18,30 @@ const {
   sendUserRegistrationOtp,
   verifyUserRegistrationOtp,
   hashOtp,
+  setReviewerRedisClientForTesting,
+  resetReviewerRateLimitForTesting,
 } = require('../registration_otp');
+
+function createTestRedisMock() {
+  const store = new Map();
+  return {
+    store,
+    async eval(_script, _numKeys, key, windowMsArg) {
+      const windowMs = Number(windowMsArg) || 60000;
+      let entry = store.get(key);
+      if (!entry || (entry.expireAt && Date.now() > entry.expireAt)) {
+        entry = { val: 0, expireAt: Date.now() + windowMs };
+      }
+      entry.val += 1;
+      entry.expireAt = Date.now() + windowMs;
+      store.set(key, entry);
+      return entry.val;
+    },
+    flushall() {
+      store.clear();
+    },
+  };
+}
 
 let origLegacyCutover;
 test.beforeEach(() => {
@@ -150,9 +173,12 @@ async function roundTrip({ role, mobile, demo }) {
   });
   try {
     if (demo) {
-      process.env.REVIEW_TEST_NUMBERS = mobile;
+      process.env.REVIEWER_OTP_ENABLED = 'true';
+      process.env.REVIEW_DOCTOR_PHONES = mobile;
       process.env.REVIEW_FIXED_OTP = '111111';
       process.env.REVIEW_ACCESS_UNTIL = '2099-01-01T00:00:00Z';
+      setReviewerRedisClientForTesting(createTestRedisMock());
+      resetReviewerRateLimitForTesting();
     }
 
     const sent = await sendUserRegistrationOtp(db, {
@@ -199,9 +225,12 @@ async function roundTrip({ role, mobile, demo }) {
     assert.equal(db.docs.get(challengeKey), undefined);
   } finally {
     restoreSms();
-    delete process.env.REVIEW_TEST_NUMBERS;
+    delete process.env.REVIEWER_OTP_ENABLED;
+    delete process.env.REVIEW_DOCTOR_PHONES;
     delete process.env.REVIEW_FIXED_OTP;
     delete process.env.REVIEW_ACCESS_UNTIL;
+    setReviewerRedisClientForTesting(null);
+    resetReviewerRateLimitForTesting();
   }
 }
 
@@ -216,7 +245,9 @@ test('reviewer account send then verify accepts the configured code and rejects 
 });
 
 test.after(() => {
-  delete process.env.REVIEW_TEST_NUMBERS;
+  delete process.env.REVIEWER_OTP_ENABLED;
+  delete process.env.REVIEW_DOCTOR_PHONES;
   delete process.env.REVIEW_FIXED_OTP;
   delete process.env.REVIEW_ACCESS_UNTIL;
+  setReviewerRedisClientForTesting(null);
 });

@@ -12,8 +12,28 @@ const {
   consumeOtpChallengeAtomically,
 } = require('../registration_otp');
 
+function createTestRedisMock() {
+  const store = new Map();
+  return {
+    store,
+    async eval(_script, _numKeys, key, windowMsArg) {
+      const windowMs = Number(windowMsArg) || 60000;
+      let entry = store.get(key);
+      if (!entry || (entry.expireAt && Date.now() > entry.expireAt)) {
+        entry = { val: 0, expireAt: Date.now() + windowMs };
+      }
+      entry.val += 1;
+      entry.expireAt = Date.now() + windowMs;
+      store.set(key, entry);
+      return entry.val;
+    },
+    flushall() {
+      store.clear();
+    },
+  };
+}
+
 test.describe('Play Store Server-Side Reviewer Login Gating', () => {
-  const origReviewNumbers = process.env.REVIEW_TEST_NUMBERS;
   const origReviewOtp = process.env.REVIEW_FIXED_OTP;
   const origReviewUntil = process.env.REVIEW_ACCESS_UNTIL;
   const origReviewerOtpEnabled = process.env.REVIEWER_OTP_ENABLED;
@@ -21,9 +41,6 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
   const origReviewPatientPhones = process.env.REVIEW_PATIENT_PHONES;
 
   test.afterEach(() => {
-    if (origReviewNumbers === undefined) delete process.env.REVIEW_TEST_NUMBERS;
-    else process.env.REVIEW_TEST_NUMBERS = origReviewNumbers;
-
     if (origReviewOtp === undefined) delete process.env.REVIEW_FIXED_OTP;
     else process.env.REVIEW_FIXED_OTP = origReviewOtp;
 
@@ -42,11 +59,12 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
     delete process.env.ENABLE_REVIEW_DEMO;
 
     resetReviewerRateLimitForTesting();
+    setReviewerRedisClientForTesting(null);
   });
 
   test('Case 1: REVIEWER_OTP_ENABLED unset -> fail closed', () => {
     delete process.env.REVIEWER_OTP_ENABLED;
-    process.env.REVIEW_TEST_NUMBERS = '9999900001';
+    process.env.REVIEW_PATIENT_PHONES = '9999900001';
     process.env.REVIEW_FIXED_OTP = '112233';
     process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
 
@@ -116,6 +134,7 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
     process.env.REVIEW_PATIENT_PHONES = '9999900001';
     process.env.REVIEW_FIXED_OTP = '112233';
     process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
+    setReviewerRedisClientForTesting(createTestRedisMock());
 
     const digits = '9999900001';
     for (let i = 1; i <= 5; i++) {
@@ -129,6 +148,7 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
     process.env.REVIEW_PATIENT_PHONES = '9999900001';
     process.env.REVIEW_FIXED_OTP = '654321';
     process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
+    setReviewerRedisClientForTesting(createTestRedisMock());
 
     const challenges = new Map();
     const mockDb = {
