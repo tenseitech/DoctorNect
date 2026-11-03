@@ -524,6 +524,9 @@ class SupabaseUserRepository {
         return pendingAuthServerCleaned;
       }
       if (cleanup.ok && !cleanup.cleaned) {
+        if (await isRegistrationProfileAlreadyVerified(uid)) {
+          return pendingAuthSkippedAlreadyVerified;
+        }
         return pendingAuthServerDeclined;
       }
     } catch (_) {

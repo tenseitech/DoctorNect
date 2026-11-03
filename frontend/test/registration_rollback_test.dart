@@ -280,6 +280,22 @@ void main() {
       verify(() => mockAuth.signOut()).called(1);
     });
 
+    test('cleaned false with verified profile skips auth delete (finalize response lost)',
+        () async {
+      final user = MockUser();
+      when(() => user.uid).thenReturn('verified_cleaned_false_uid');
+      RegistrationOtpService.debugCleanupPendingRegistration =
+          () async => (ok: true, cleaned: false);
+      SupabaseUserRepository.debugIsRegistrationProfileAlreadyVerified =
+          (_) async => true;
+
+      final outcome =
+          await SupabaseUserRepository.instance.deletePendingAuthUser(user);
+
+      expect(outcome, SupabaseUserRepository.pendingAuthSkippedAlreadyVerified);
+      verifyNever(() => user.delete());
+    });
+
     test('finalize response lost keeps auth when profile already verified on server',
         () async {
       when(() => mockRepo.deletePendingAuthUser(any())).thenAnswer(
