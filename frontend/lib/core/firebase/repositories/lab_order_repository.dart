@@ -115,11 +115,14 @@ class LabOrderRepository {
       uploadResult: uploadResult,
       existingReportStorageKey: existingReportStorageKey,
       confirmNewKeyPersistedAfterError: (newKey) =>
-          SupabaseLabRepository.instance.labOrderNotesEqual(orderId, newKey),
+          SupabaseLabRepository.instance.verifyLabOrderReportKey(
+            orderId,
+            newKey,
+          ),
       persistToDatabase: () => SupabaseLabRepository.instance.updateLabOrderStatus(
         orderId: orderId,
         newStatus: 'completed',
-        notes: uploadResult.objectKey,
+        reportStorageKey: uploadResult.objectKey,
       ),
       cacheLocally: () => LabReportFileStore.cacheLocally(
         patientId: patientId,

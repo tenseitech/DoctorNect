@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../storage/storage_service.dart';
 import '../supabase/supabase_bootstrap.dart';
 import 'lab_report_file_store.dart';
+import 'lab_report_persist_verify.dart';
 
 /// Shared S3 + Supabase ordering for lab report submission.
 abstract final class LabReportSubmitFlow {
@@ -11,6 +12,9 @@ abstract final class LabReportSubmitFlow {
 
   static const String persistFailedMessage =
       'Report file uploaded but the lab record could not be updated. Please try again.';
+
+  static const String partialPersistMessage =
+      'Report file uploaded but only some lab records were updated. Please contact support or retry.';
 
   @visibleForTesting
   static Future<void> Function(String objectKey)? debugDeleteS3ReportOverride;
@@ -21,20 +25,13 @@ abstract final class LabReportSubmitFlow {
     }
   }
 
-  /// After [uploadResult] is stored in S3: RPC must succeed, then local cache, then delete prior key.
-  ///
-  /// New S3 object deletion:
-  /// - [persistToDatabase] returns `false` → delete new key, throw [persistFailedMessage].
-  /// - [persistToDatabase] throws → call [confirmNewKeyPersistedAfterError]; if it returns true
-  ///   (DB already references [newKey], e.g. RPC succeeded but response was lost), keep new key
-  ///   and continue; if false, delete new key (best effort) and rethrow.
-  /// After a successful persist, [cacheLocally] / old-key delete failures are logged only.
   static Future<void> finalizeAfterUpload({
     required StorageUploadResult uploadResult,
     required Future<bool> Function() persistToDatabase,
     required Future<void> Function() cacheLocally,
     String? existingReportStorageKey,
-    Future<bool> Function(String newKey)? confirmNewKeyPersistedAfterError,
+    Future<LabReportKeyCheckResult> Function(String newKey)?
+        confirmNewKeyPersistedAfterError,
   }) async {
     final newKey = uploadResult.objectKey;
 
@@ -42,24 +39,32 @@ abstract final class LabReportSubmitFlow {
     try {
       persisted = await persistToDatabase();
     } catch (e, st) {
-      final recovered =
-          await confirmNewKeyPersistedAfterError?.call(newKey) ?? false;
-      if (recovered) {
-        debugPrint(
-          '[LabReportSubmitFlow] persistToDatabase threw but DB already references '
-          '$newKey; keeping S3 object and continuing.',
-        );
-        persisted = true;
-      } else {
-        await _deleteS3ReportBestEffort(
-          newKey,
-          reason: 'persist threw and confirmNewKeyPersistedAfterError was false',
-        );
-        debugPrint(
-          '[LabReportSubmitFlow] persistToDatabase threw and DB does not reference '
-          '$newKey; new object removed (best effort).',
-        );
-        Error.throwWithStackTrace(e, st);
+      final check = await _safeConfirmNewKey(confirmNewKeyPersistedAfterError, newKey);
+      switch (check) {
+        case LabReportKeyCheckResult.allRowsMatch:
+          debugPrint(
+            '[LabReportSubmitFlow] persistToDatabase threw but DB references '
+            '$newKey; keeping S3 object and continuing.',
+          );
+          persisted = true;
+        case LabReportKeyCheckResult.noRowsMatch:
+          await _deleteS3ReportBestEffort(
+            newKey,
+            reason: 'persist threw and DB does not reference newKey',
+          );
+          Error.throwWithStackTrace(e, st);
+        case LabReportKeyCheckResult.partialMatch:
+          debugPrint(
+            '[LabReportSubmitFlow] partial persist after throw: some rows reference '
+            '$newKey, others do not; retaining S3 object.',
+          );
+          throw StateError(partialPersistMessage);
+        case LabReportKeyCheckResult.inconclusive:
+          debugPrint(
+            '[LabReportSubmitFlow] persistToDatabase threw and DB re-read was '
+            'inconclusive; retaining S3 object ($newKey).',
+          );
+          Error.throwWithStackTrace(e, st);
       }
     }
 
@@ -90,6 +95,22 @@ abstract final class LabReportSubmitFlow {
           '(new key $newKey retained): $e\n$st',
         );
       }
+    }
+  }
+
+  static Future<LabReportKeyCheckResult> _safeConfirmNewKey(
+    Future<LabReportKeyCheckResult> Function(String newKey)? confirm,
+    String newKey,
+  ) async {
+    if (confirm == null) return LabReportKeyCheckResult.inconclusive;
+    try {
+      return await confirm(newKey);
+    } catch (e, st) {
+      debugPrint(
+        '[LabReportSubmitFlow] confirmNewKeyPersistedAfterError failed '
+        '(retaining $newKey): $e\n$st',
+      );
+      return LabReportKeyCheckResult.inconclusive;
     }
   }
 

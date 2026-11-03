@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../firebase/models/doctor_lab_order.dart';
 import '../../firebase/models/firestore_page.dart';
+import '../../firebase/lab_report_persist_verify.dart';
 import '../../firebase/repositories/lab_booking_repository.dart';
 import '../../../features/lab/models/lab_connection_models.dart';
 import '../../../features/patient/lab/models/lab_models.dart';
@@ -155,61 +156,125 @@ class SupabaseLabRepository {
   }
 
   @visibleForTesting
-  static Future<String?> Function(String bookingId)? debugLabBookingNotesFetcher;
+  static Future<String?> Function(String bookingId)? debugLabBookingReportKeyFetcher;
 
   @visibleForTesting
-  static Future<String?> Function(String orderId)? debugLabOrderNotesFetcher;
+  static Future<String?> Function(String orderId)? debugLabOrderReportKeyFetcher;
 
-  /// True when [lab_bookings.notes] equals [expectedKey] (used after ambiguous RPC errors).
-  Future<bool> labBookingNotesEqual(String bookingId, String expectedKey) async {
-    if (bookingId.trim().isEmpty || expectedKey.trim().isEmpty) return false;
-    final fetch = debugLabBookingNotesFetcher;
-    final notes = fetch != null
-        ? await fetch(bookingId)
-        : await _fetchLabBookingNotes(bookingId);
-    return notes == expectedKey;
+  static bool looksLikeLabReportStorageKey(String? value) {
+    if (value == null || value.trim().isEmpty) return false;
+    final v = value.trim();
+    return v.startsWith('lab_reports/') && !v.contains('\n');
   }
 
-  Future<String?> _fetchLabBookingNotes(String bookingId) async {
-    if (!SupabaseBootstrap.isReady) return null;
+  static String? resolveReportKeyFromRow(Map<String, dynamic>? row) {
+    if (row == null) return null;
+    for (final key in [
+      'report_storage_key',
+      'report_s3_key',
+      'reportStorageKey',
+    ]) {
+      final v = row[key] as String?;
+      if (looksLikeLabReportStorageKey(v)) return v!.trim();
+    }
+    final notes = row['notes'] as String?;
+    if (looksLikeLabReportStorageKey(notes)) return notes!.trim();
+    return null;
+  }
+
+  LabReportKeyCheckResult checkReportKeyMatches(String? stored, String expectedKey) {
+    if (stored == null) return LabReportKeyCheckResult.noRowsMatch;
+    return stored == expectedKey
+        ? LabReportKeyCheckResult.allRowsMatch
+        : LabReportKeyCheckResult.noRowsMatch;
+  }
+
+  Future<LabReportKeyCheckResult> verifyLinkedLabBookingReportKeys(
+    Iterable<String> bookingIds,
+    String expectedKey,
+  ) async {
+    var anyMatch = false;
+    var anyMiss = false;
+    for (final id in bookingIds.where((id) => id.trim().isNotEmpty)) {
+      try {
+        final fetch = debugLabBookingReportKeyFetcher;
+        final stored = fetch != null
+            ? await fetch(id)
+            : await _fetchLabBookingReportKey(id);
+        if (stored == expectedKey) {
+          anyMatch = true;
+        } else {
+          anyMiss = true;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[SupabaseLab] verifyLinkedLabBookingReportKeys error: $e');
+        }
+        return LabReportKeyCheckResult.inconclusive;
+      }
+    }
+    if (anyMatch && anyMiss) return LabReportKeyCheckResult.partialMatch;
+    if (anyMatch) return LabReportKeyCheckResult.allRowsMatch;
+    if (anyMiss) return LabReportKeyCheckResult.noRowsMatch;
+    return LabReportKeyCheckResult.inconclusive;
+  }
+
+  Future<LabReportKeyCheckResult> verifyLabOrderReportKey(
+    String orderId,
+    String expectedKey,
+  ) async {
     try {
-      final res = await _client
-          .from('lab_bookings')
-          .select('notes')
-          .eq('booking_id', bookingId)
-          .maybeSingle();
-      return res?['notes'] as String?;
+      final fetch = debugLabOrderReportKeyFetcher;
+      final stored = fetch != null
+          ? await fetch(orderId)
+          : await _fetchLabOrderReportKey(orderId);
+      if (stored == expectedKey) return LabReportKeyCheckResult.allRowsMatch;
+      if (stored == null) return LabReportKeyCheckResult.noRowsMatch;
+      return LabReportKeyCheckResult.noRowsMatch;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[SupabaseLab] _fetchLabBookingNotes error: $e');
+        debugPrint('[SupabaseLab] verifyLabOrderReportKey error: $e');
       }
-      return null;
+      return LabReportKeyCheckResult.inconclusive;
     }
   }
 
-  Future<bool> labOrderNotesEqual(String orderId, String expectedKey) async {
-    if (orderId.trim().isEmpty || expectedKey.trim().isEmpty) return false;
-    final fetch = debugLabOrderNotesFetcher;
-    final notes =
-        fetch != null ? await fetch(orderId) : await _fetchLabOrderNotes(orderId);
-    return notes == expectedKey;
+  Future<String?> _fetchLabBookingReportKey(String bookingId) async {
+    if (!SupabaseBootstrap.isReady) return null;
+    final res = await _client
+        .from('lab_bookings')
+        .select('report_storage_key, report_s3_key, notes')
+        .eq('booking_id', bookingId)
+        .maybeSingle();
+    return resolveReportKeyFromRow(res);
   }
 
-  Future<String?> _fetchLabOrderNotes(String orderId) async {
+  Future<String?> _fetchLabOrderReportKey(String orderId) async {
     if (!SupabaseBootstrap.isReady) return null;
-    try {
-      final res = await _client
-          .from('lab_orders')
-          .select('notes')
-          .eq('order_id', orderId)
-          .maybeSingle();
-      return res?['notes'] as String?;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('[SupabaseLab] _fetchLabOrderNotes error: $e');
-      }
-      return null;
-    }
+    final res = await _client
+        .from('lab_orders')
+        .select('report_storage_key, report_s3_key, notes')
+        .eq('order_id', orderId)
+        .maybeSingle();
+    return resolveReportKeyFromRow(res);
+  }
+
+  Future<void> _persistLabBookingReportKey(String bookingId, String key) async {
+    if (!SupabaseBootstrap.isReady || bookingId.isEmpty || key.isEmpty) return;
+    await _client.from('lab_bookings').update({
+      'report_storage_key': key,
+      'report_s3_key': key,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('booking_id', bookingId);
+  }
+
+  Future<void> _persistLabOrderReportKey(String orderId, String key) async {
+    if (!SupabaseBootstrap.isReady || orderId.isEmpty || key.isEmpty) return;
+    await _client.from('lab_orders').update({
+      'report_storage_key': key,
+      'report_s3_key': key,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('order_id', orderId);
   }
 
   /// Updates lab booking status via validated state-machine RPC.
@@ -217,6 +282,7 @@ class SupabaseLabRepository {
     required String bookingId,
     required String newStatus,
     String? notes,
+    String? reportStorageKey,
   }) async {
     final override = debugUpdateLabBookingStatusOverride;
     if (override != null) {
@@ -233,16 +299,20 @@ class SupabaseLabRepository {
         params: {
           'p_booking_id': bookingId,
           'p_new_status': newStatus,
-          'p_notes': notes,
+          if (notes != null) 'p_notes': notes,
         },
       );
       if (res is Map && res['success'] == true) {
+        final key = reportStorageKey?.trim();
+        if (key != null && key.isNotEmpty) {
+          await _persistLabBookingReportKey(bookingId, key);
+        }
         return true;
       }
       return false;
     } catch (e) {
       if (kDebugMode) debugPrint('[SupabaseLab] updateLabBookingStatus error: $e');
-      return false;
+      rethrow;
     }
   }
 
@@ -333,6 +403,7 @@ class SupabaseLabRepository {
     required String orderId,
     required String newStatus,
     String? notes,
+    String? reportStorageKey,
   }) async {
     final override = debugUpdateLabOrderStatusOverride;
     if (override != null) {
@@ -349,16 +420,20 @@ class SupabaseLabRepository {
         params: {
           'p_order_id': orderId,
           'p_new_status': newStatus,
-          'p_notes': notes,
+          if (notes != null) 'p_notes': notes,
         },
       );
       if (res is Map && res['success'] == true) {
+        final key = reportStorageKey?.trim();
+        if (key != null && key.isNotEmpty) {
+          await _persistLabOrderReportKey(orderId, key);
+        }
         return true;
       }
       return false;
     } catch (e) {
       if (kDebugMode) debugPrint('[SupabaseLab] updateLabOrderStatus error: $e');
-      return false;
+      rethrow;
     }
   }
 
