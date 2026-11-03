@@ -14,9 +14,10 @@ function loadNames(path) {
     } catch {
       continue;
     }
-    if (ev.type === 'testStart' && ev.test && ev.test.name) {
-      names.add(`${ev.test.suiteID ?? ''}:${ev.test.name}`);
-    }
+    if (ev.type !== 'testStart' || !ev.test || !ev.test.name) continue;
+    const n = String(ev.test.name).trim();
+    if (n.startsWith('loading ')) continue;
+    names.add(n);
   }
   return names;
 }
@@ -25,4 +26,4 @@ const a = loadNames(process.argv[2]);
 const b = loadNames(process.argv[3]);
 const onlyA = [...a].filter((x) => !b.has(x)).sort();
 const onlyB = [...b].filter((x) => !a.has(x)).sort();
-console.log(JSON.stringify({ countA: a.size, countB: b.size, onlyInA: onlyA, onlyInB: onlyB }, null, 2));
+console.log(JSON.stringify({ countA: a.size, countB: b.size, onlyInOld: onlyA, onlyInNew: onlyB }, null, 2));

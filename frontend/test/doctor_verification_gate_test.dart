@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/core/enums/user_type.dart';
 import 'package:medibond/core/firebase/firebase_bootstrap.dart';
+import 'package:medibond/core/supabase/supabase_bootstrap.dart';
 import 'package:medibond/core/session/doctor_session.dart';
 import 'package:medibond/features/doctor/verification/doctor_verification_gate.dart';
 import 'package:medibond/features/doctor/verification/doctor_verification_pending_screen.dart';
@@ -85,8 +86,8 @@ void main() {
   });
 
   group('DoctorVerificationRepository.watchVerified guards', () {
-    test('returns false when Firebase is unavailable', () async {
-      FirebaseBootstrap.isReady = false;
+    test('returns false when Supabase is unavailable', () async {
+      SupabaseBootstrap.isReady = false;
       final values = await DoctorVerificationRepository.instance
           .watchVerified(doctorId)
           .toList();
@@ -94,10 +95,23 @@ void main() {
     });
 
     test('returns false for empty doctor id', () async {
-      FirebaseBootstrap.isReady = true;
+      SupabaseBootstrap.isReady = true;
       final values = await DoctorVerificationRepository.instance
           .watchVerified('')
           .toList();
+      expect(values, [false]);
+    });
+
+    test('ignores debugWatchVerifiedOverride when release guard is active',
+        () async {
+      DoctorVerificationRepository.debugWatchVerifiedOverride =
+          (_) => Stream.value(true);
+      DoctorVerificationRepository.debugForceReleaseMode = true;
+
+      final values = await DoctorVerificationRepository.instance
+          .watchVerified('')
+          .toList();
+
       expect(values, [false]);
     });
 

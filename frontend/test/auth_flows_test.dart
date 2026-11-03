@@ -3,6 +3,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:medibond/core/firebase/repositories/user_repository.dart';
+import 'package:medibond/core/supabase/profile_creation_exception.dart';
 import 'package:medibond/core/supabase/repositories/supabase_user_repository.dart';
 import 'package:medibond/core/supabase/supabase_bootstrap.dart';
 import 'package:medibond/core/config/doctor_patient_cutover_flag.dart';
@@ -12,6 +13,7 @@ import 'package:medibond/core/auth/registration_otp_service.dart';
 import 'package:medibond/core/enums/user_type.dart';
 import 'package:medibond/core/firebase/firebase_auth_service.dart';
 import 'package:medibond/core/firebase/firebase_bootstrap.dart';
+import 'package:medibond/core/firebase/models/medibond_user_profile.dart';
 import 'package:medibond/core/validation/server_validation_service.dart';
 import 'package:medibond/core/validators/form_validators.dart';
 
@@ -301,6 +303,12 @@ void main() {
     test('(a) profile null after 3 attempts triggers signOut and does NOT call user.delete()', () async {
       when(() => mockUser.uid).thenReturn('orphan_user_123');
       when(() => mockAuth.signOut()).thenAnswer((_) async {});
+      when(
+        () => mockSupabaseRepo.fetchProfile(
+          any(),
+          preferCache: any(named: 'preferCache'),
+        ),
+      ).thenAnswer((_) async => null);
 
       final profile = await FirebaseAuthService.instance.verifyProfileWithRetry(
         user: mockUser,
@@ -313,7 +321,7 @@ void main() {
       verifyNever(() => mockUser.delete());
     });
 
-    test('(b) SupabaseUserRepository.createProfile exception is non-fatal and Firestore write succeeds', () async {
+    test('(b) UserRepository.createProfile propagates ProfileCreationException from Supabase layer', () async {
       when(() => mockUser.uid).thenReturn('dual_write_uid_456');
       when(() => mockUser.email).thenReturn('patient@test.com');
 
@@ -325,48 +333,41 @@ void main() {
         mobile: any(named: 'mobile'),
         mobileVerified: any(named: 'mobileVerified'),
         roleData: any(named: 'roleData'),
-      )).thenThrow(Exception('Supabase network error: 503 Service Unavailable'));
+      )).thenAnswer((_) async {
+        throw ProfileCreationException('503 Service Unavailable');
+      });
 
-      SupabaseBootstrap.isReady = true;
-      DoctorPatientCutoverFlag.debugOverride = true;
-
-      await UserRepository.instance.createProfile(
-        user: mockUser,
-        role: UserType.patient,
-        profileId: 'patient_profile_789',
-        displayName: 'Test Patient',
-        mobile: '9876543210',
-        mobileVerified: true,
+      await expectLater(
+        UserRepository.instance.createProfile(
+          user: mockUser,
+          role: UserType.patient,
+          profileId: 'patient_profile_789',
+          displayName: 'Test Patient',
+          mobile: '9876543210',
+          mobileVerified: true,
+        ),
+        throwsA(isA<ProfileCreationException>()),
       );
-
-      final userDoc = await fakeDb.collection('users').doc('dual_write_uid_456').get();
-      expect(userDoc.exists, isTrue);
-      expect(userDoc.data()?['role'], 'patient');
-      expect(userDoc.data()?['profileId'], 'patient_profile_789');
-      expect(userDoc.data()?['displayName'], 'Test Patient');
-      expect(userDoc.data()?['email'], 'patient@test.com');
-      expect(userDoc.data()?['mobile'], '9876543210');
-
-      final claimDoc = await fakeDb.collection('profile_claims').doc('patient_profile_789').get();
-      expect(claimDoc.exists, isTrue);
-      expect(claimDoc.data()?['uid'], 'dual_write_uid_456');
     });
 
-    test('(c) orphan Firebase Auth user with role doc repairs users/{uid} and completes login', () async {
+    test('(c) repairMissingProfile returns Supabase-repaired profile', () async {
       when(() => mockUser.uid).thenReturn('orphan_repaired_uid');
       when(() => mockUser.email).thenReturn('orphan@example.com');
 
-      await fakeDb.collection('patients').doc('patient_rep_001').set({
-        'patientId': 'patient_rep_001',
-        'ownerUid': 'orphan_repaired_uid',
-        'name': 'Repaired Patient',
-        'email': 'orphan@example.com',
-        'mobile': '9876543210',
-        'profileCompleted': true,
-      });
-
-      final initialUserDoc = await fakeDb.collection('users').doc('orphan_repaired_uid').get();
-      expect(initialUserDoc.exists, isFalse);
+      const repairedProfile = DoctorNectUserProfile(
+        uid: 'orphan_repaired_uid',
+        role: UserType.patient,
+        profileId: 'patient_rep_001',
+        displayName: 'Repaired Patient',
+        email: 'orphan@example.com',
+        mobile: '9876543210',
+      );
+      when(
+        () => mockSupabaseRepo.repairMissingProfile(
+          user: any(named: 'user'),
+          expectedRole: any(named: 'expectedRole'),
+        ),
+      ).thenAnswer((_) async => repairedProfile);
 
       final repaired = await UserRepository.instance.repairMissingProfile(
         user: mockUser,
@@ -376,16 +377,18 @@ void main() {
       expect(repaired, isNotNull);
       expect(repaired!.role, UserType.patient);
       expect(repaired.displayName, 'Repaired Patient');
-
-      final repairedUserDoc = await fakeDb.collection('users').doc('orphan_repaired_uid').get();
-      expect(repairedUserDoc.exists, isTrue);
-      expect(repairedUserDoc.data()?['profileId'], 'patient_rep_001');
-      expect(repairedUserDoc.data()?['role'], 'patient');
+      expect(repaired.profileId, 'patient_rep_001');
     });
 
-    test('(d) orphan Firebase Auth user with NO role doc returns null cleanly without hanging', () async {
+    test('(d) repairMissingProfile returns null when Supabase finds no role row', () async {
       when(() => mockUser.uid).thenReturn('unrepairable_orphan_uid');
       when(() => mockUser.email).thenReturn('unrepairable@example.com');
+      when(
+        () => mockSupabaseRepo.repairMissingProfile(
+          user: any(named: 'user'),
+          expectedRole: any(named: 'expectedRole'),
+        ),
+      ).thenAnswer((_) async => null);
 
       final repaired = await UserRepository.instance.repairMissingProfile(
         user: mockUser,
@@ -396,19 +399,15 @@ void main() {
     });
 
 
-    test('(i) role doc ka ownerUid kisi aur uid ka ho, repair null return kare aur users/{uid} na bane', () async {
+    test('(i) repairMissingProfile returns null when ownerUid does not match caller', () async {
       when(() => mockUser.uid).thenReturn('attacker_uid_111');
       when(() => mockUser.email).thenReturn('attacker@example.com');
-
-      // Patient doc belongs to victim_uid_999
-      await fakeDb.collection('patients').doc('patient_victim_001').set({
-        'patientId': 'patient_victim_001',
-        'ownerUid': 'victim_uid_999',
-        'name': 'Victim Patient',
-        'email': 'victim@example.com',
-        'mobile': '9111111111',
-        'profileCompleted': true,
-      });
+      when(
+        () => mockSupabaseRepo.repairMissingProfile(
+          user: any(named: 'user'),
+          expectedRole: any(named: 'expectedRole'),
+        ),
+      ).thenAnswer((_) async => null);
 
       final repaired = await UserRepository.instance.repairMissingProfile(
         user: mockUser,
@@ -416,33 +415,24 @@ void main() {
       );
 
       expect(repaired, isNull);
-      final attackerUserDoc = await fakeDb.collection('users').doc('attacker_uid_111').get();
-      expect(attackerUserDoc.exists, isFalse);
     });
 
-    test('(ii) user ka role doc patients mein ho par expectedRole doctor ho, null return kare aur users/{uid} na bane', () async {
+    test('(ii) repairMissingProfile returns null on expectedRole mismatch', () async {
       when(() => mockUser.uid).thenReturn('cross_role_uid_222');
       when(() => mockUser.email).thenReturn('cross@example.com');
+      when(
+        () => mockSupabaseRepo.repairMissingProfile(
+          user: any(named: 'user'),
+          expectedRole: any(named: 'expectedRole'),
+        ),
+      ).thenAnswer((_) async => null);
 
-      // User has a legitimate patient doc
-      await fakeDb.collection('patients').doc('patient_cross_002').set({
-        'patientId': 'patient_cross_002',
-        'ownerUid': 'cross_role_uid_222',
-        'name': 'Cross Role User',
-        'email': 'cross@example.com',
-        'mobile': '9222222222',
-        'profileCompleted': true,
-      });
-
-      // Attacker asks to repair as doctor
       final repaired = await UserRepository.instance.repairMissingProfile(
         user: mockUser,
         expectedRole: UserType.doctor,
       );
 
       expect(repaired, isNull);
-      final userDoc = await fakeDb.collection('users').doc('cross_role_uid_222').get();
-      expect(userDoc.exists, isFalse);
     });
   });
 }

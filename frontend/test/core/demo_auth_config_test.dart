@@ -44,6 +44,18 @@ void main() {
       expect(DemoAuthConfig.roleForDemoPhone('9999900005'), equals(UserType.ambulance));
     });
 
+    test('demo doctor auto-verify is disabled when release guard is active', () {
+      DemoAuthConfig.debugReleaseModeOverride = true;
+      expect(DemoAuthConfig.isDemoAllowed, isFalse);
+      expect(
+        DoctorVerificationRepository.parseVerifiedFromDoctorData({
+          'mobile': '9999900002',
+          'verified': false,
+        }),
+        isFalse,
+      );
+    });
+
     test('DoctorVerificationRepository auto-verifies allowlisted reviewer doctor account', () {
       expect(
         DoctorVerificationRepository.parseVerifiedFromDoctorData({

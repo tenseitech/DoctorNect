@@ -22,10 +22,16 @@ That test **passes** and is **not** part of the known-failure baseline list.
 - `git diff --stat -- frontend/test` → **empty** (no added/removed/renamed test files).
 - Per-file `test(` / `testWidgets(` counts → **identical** at `5107d14` and `HEAD`.
 
-**Conclusion:** No tests were removed by accident. The **3** “missing” executions vs the old **628** total are **not** explained by repo diffs on this branch. Likely causes:
+**Git test-name diff (`5107d14` vs `HEAD`):** `node scripts/audit/compare_git_test_names.js 5107d14 HEAD`
 
-1. **Counter / runner variance** between full-suite runs (Flutter version, shard timing, or a prior baseline captured on a slightly different tree state).
-2. **Incomplete JSON compare** — a partial `5107d14` worktree run produced an unusable JSON log (154 vs 716 `testStart` events); do not use that artifact for name diffs.
+| Metric | Value |
+|--------|-------|
+| `test` / `testWidgets` declarations | **567** at both commits |
+| Only in old | **1** — `login_role_lookup_scenarios_test.dart :: finalize failure block references deletePendingAuthUser` |
+| Only in new | **1** — `login_role_lookup_scenarios_test.dart :: finalize failure calls cleanup via deletePendingAuthUser before sign-out` |
+| Classification | **Renamed** (same file, contract update); not deleted, not skipped |
+
+**Conclusion:** No tests were removed by accident. The **3** fewer runtime executions (**628** → **625**) are **not** missing `test()` declarations. Likely **Flutter runner counting** (harness hooks / suite grouping) or a slightly different full-suite snapshot when **615/13** was recorded; do not treat as lost tests.
 
 **Action:** Baseline header updated to **612 pass / 13 fail (625 executed)**. Re-record **628** only after a full `flutter test` on a clean `5107d14` worktree reproduces it.
 
