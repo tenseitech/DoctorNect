@@ -21,9 +21,25 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const FUNCTIONS_DIR = path.resolve(ROOT_DIR, 'backend/functions');
 const ENV_PATH = path.resolve(FUNCTIONS_DIR, '.env');
 
+/** Present on disk for local deploy/emulator; excluded from upload via firebase.json ignore. */
+function isLocalDeployExcluded(relPosix) {
+  const p = relPosix.replace(/\\/g, '/');
+  const exact = new Set([
+    '.env',
+    '.env.local',
+    '.env.production',
+    '.env.medibond-45fad',
+    '.secret.local',
+  ]);
+  if (exact.has(p)) return true;
+  if (/^\.env\.[A-Za-z0-9._-]+$/.test(p) && !p.includes('.bak')) return true;
+  return false;
+}
+
 /** Paths that must never appear in the Cloud Functions upload bundle (see firebase.json ignore). */
 function isForbiddenUploadRelativePath(relPosix) {
   const p = relPosix.replace(/\\/g, '/');
+  if (isLocalDeployExcluded(p)) return false;
   if (p.endsWith('.env.example') || p.endsWith('.secret.local.example')) {
     return false;
   }
