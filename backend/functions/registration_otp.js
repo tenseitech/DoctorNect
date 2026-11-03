@@ -2593,14 +2593,6 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
       });
       throw new HttpsError('failed-precondition', LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE);
     }
-    const isDemoAccount = await isDemoPhone(digits, loginRole);
-    if (isDemoAccount && search.uid) {
-      if (loginRole === 'doctor') {
-        await ensureDoctorFullVerified(db, search.uid, search.data?.profileId, { mobile: digits });
-      } else {
-        await ensureRoleFullVerified(db, search.uid, loginRole, search.data?.profileId, { mobile: digits });
-      }
-    }
     const claims = supabaseCompatibleCustomClaims(loginRole);
     try {
       await getAuth().setCustomUserClaims(search.uid, claims);
