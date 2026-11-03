@@ -114,6 +114,8 @@ class LabOrderRepository {
     await LabReportSubmitFlow.finalizeAfterUpload(
       uploadResult: uploadResult,
       existingReportStorageKey: existingReportStorageKey,
+      confirmNewKeyPersistedAfterError: (newKey) =>
+          SupabaseLabRepository.instance.labOrderNotesEqual(orderId, newKey),
       persistToDatabase: () => SupabaseLabRepository.instance.updateLabOrderStatus(
         orderId: orderId,
         newStatus: 'completed',

@@ -268,6 +268,18 @@ class LabBookingRepository {
     await LabReportSubmitFlow.finalizeAfterUpload(
       uploadResult: uploadResult,
       existingReportStorageKey: existingReportStorageKey,
+      confirmNewKeyPersistedAfterError: (newKey) async {
+        for (final id in {
+          bookingId,
+          ...linkedBookingIds,
+        }.where((id) => id.trim().isNotEmpty)) {
+          if (!await SupabaseLabRepository.instance
+              .labBookingNotesEqual(id, newKey)) {
+            return false;
+          }
+        }
+        return true;
+      },
       persistToDatabase: () async {
         for (final id in {
           bookingId,

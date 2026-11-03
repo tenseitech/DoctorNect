@@ -154,6 +154,64 @@ class SupabaseLabRepository {
     }
   }
 
+  @visibleForTesting
+  static Future<String?> Function(String bookingId)? debugLabBookingNotesFetcher;
+
+  @visibleForTesting
+  static Future<String?> Function(String orderId)? debugLabOrderNotesFetcher;
+
+  /// True when [lab_bookings.notes] equals [expectedKey] (used after ambiguous RPC errors).
+  Future<bool> labBookingNotesEqual(String bookingId, String expectedKey) async {
+    if (bookingId.trim().isEmpty || expectedKey.trim().isEmpty) return false;
+    final fetch = debugLabBookingNotesFetcher;
+    final notes = fetch != null
+        ? await fetch(bookingId)
+        : await _fetchLabBookingNotes(bookingId);
+    return notes == expectedKey;
+  }
+
+  Future<String?> _fetchLabBookingNotes(String bookingId) async {
+    if (!SupabaseBootstrap.isReady) return null;
+    try {
+      final res = await _client
+          .from('lab_bookings')
+          .select('notes')
+          .eq('booking_id', bookingId)
+          .maybeSingle();
+      return res?['notes'] as String?;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[SupabaseLab] _fetchLabBookingNotes error: $e');
+      }
+      return null;
+    }
+  }
+
+  Future<bool> labOrderNotesEqual(String orderId, String expectedKey) async {
+    if (orderId.trim().isEmpty || expectedKey.trim().isEmpty) return false;
+    final fetch = debugLabOrderNotesFetcher;
+    final notes =
+        fetch != null ? await fetch(orderId) : await _fetchLabOrderNotes(orderId);
+    return notes == expectedKey;
+  }
+
+  Future<String?> _fetchLabOrderNotes(String orderId) async {
+    if (!SupabaseBootstrap.isReady) return null;
+    try {
+      final res = await _client
+          .from('lab_orders')
+          .select('notes')
+          .eq('order_id', orderId)
+          .maybeSingle();
+      return res?['notes'] as String?;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[SupabaseLab] _fetchLabOrderNotes error: $e');
+      }
+      return null;
+    }
+  }
+
   /// Updates lab booking status via validated state-machine RPC.
   Future<bool> updateLabBookingStatus({
     required String bookingId,
