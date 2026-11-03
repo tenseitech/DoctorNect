@@ -156,6 +156,10 @@ secrets*.txt
 backups/
 .artifacts/
 
+# Local Flutter JSON test reporter output (not committed)
+docs/audit/_*.jsonl
+docs/audit/_*.err
+
 # Terraform local directory
 .terraform/
 infra/aws/.terraform/
