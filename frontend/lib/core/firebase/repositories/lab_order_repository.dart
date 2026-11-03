@@ -5,9 +5,9 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../../storage/storage_service.dart';
 import '../../supabase/repositories/supabase_lab_repository.dart';
-import '../../supabase/supabase_bootstrap.dart';
 import '../firestore_query_limits.dart';
 import '../lab_report_file_store.dart';
+import '../lab_report_submit_flow.dart';
 import '../models/doctor_lab_order.dart';
 import '../models/firestore_page.dart';
 
@@ -97,6 +97,8 @@ class LabOrderRepository {
       throw ArgumentError('Invalid report file size');
     }
 
+    LabReportSubmitFlow.ensureSupabaseReady();
+
     final uploadResult = await LabReportFileStore.uploadReport(
       patientId: patientId,
       bookingId: orderId,
@@ -109,26 +111,22 @@ class LabOrderRepository {
       );
     }
 
-    await LabReportFileStore.cacheLocally(
-      patientId: patientId,
-      bookingId: orderId,
-      fileName: fileName,
-      bytes: bytes,
-      storageKey: uploadResult.objectKey,
-    );
-
-    if (SupabaseBootstrap.isReady) {
-      await SupabaseLabRepository.instance.updateLabOrderStatus(
+    await LabReportSubmitFlow.finalizeAfterUpload(
+      uploadResult: uploadResult,
+      existingReportStorageKey: existingReportStorageKey,
+      persistToDatabase: () => SupabaseLabRepository.instance.updateLabOrderStatus(
         orderId: orderId,
         newStatus: 'completed',
         notes: uploadResult.objectKey,
-      );
-      if (existingReportStorageKey != null &&
-          existingReportStorageKey.trim().isNotEmpty &&
-          existingReportStorageKey != uploadResult.objectKey) {
-        await LabReportFileStore.deleteS3Report(existingReportStorageKey);
-      }
-    }
+      ),
+      cacheLocally: () => LabReportFileStore.cacheLocally(
+        patientId: patientId,
+        bookingId: orderId,
+        fileName: fileName,
+        bytes: bytes,
+        storageKey: uploadResult.objectKey,
+      ),
+    );
 
     return uploadResult;
   }

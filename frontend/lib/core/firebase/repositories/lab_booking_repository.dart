@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import '../../session/patient_session.dart';
 import '../../storage/storage_service.dart';
 import '../../supabase/repositories/supabase_lab_repository.dart';
-import '../../supabase/supabase_bootstrap.dart';
 import '../../../features/patient/lab/models/lab_models.dart';
 import '../../../features/patient/lab/utils/patient_selected_investigations_mapper.dart';
 import '../lab_report_file_store.dart';
+import '../lab_report_submit_flow.dart';
 
 /// Patient lab booking as seen by the lab operator.
 class LabBookingRecord {
@@ -251,6 +251,8 @@ class LabBookingRepository {
       throw ArgumentError('Report file cannot be empty');
     }
 
+    LabReportSubmitFlow.ensureSupabaseReady();
+
     final uploadResult = await LabReportFileStore.uploadReport(
       patientId: patientId,
       bookingId: bookingId,
@@ -263,31 +265,31 @@ class LabBookingRepository {
       );
     }
 
-    await LabReportFileStore.cacheLocally(
-      patientId: patientId,
-      bookingId: bookingId,
-      fileName: fileName,
-      bytes: bytes,
-      storageKey: uploadResult.objectKey,
+    await LabReportSubmitFlow.finalizeAfterUpload(
+      uploadResult: uploadResult,
+      existingReportStorageKey: existingReportStorageKey,
+      persistToDatabase: () async {
+        for (final id in {
+          bookingId,
+          ...linkedBookingIds,
+        }.where((id) => id.trim().isNotEmpty)) {
+          final ok = await SupabaseLabRepository.instance.updateLabBookingStatus(
+            bookingId: id,
+            newStatus: 'completed',
+            notes: uploadResult.objectKey,
+          );
+          if (!ok) return false;
+        }
+        return true;
+      },
+      cacheLocally: () => LabReportFileStore.cacheLocally(
+        patientId: patientId,
+        bookingId: bookingId,
+        fileName: fileName,
+        bytes: bytes,
+        storageKey: uploadResult.objectKey,
+      ),
     );
-
-    if (SupabaseBootstrap.isReady) {
-      for (final id in {
-        bookingId,
-        ...linkedBookingIds,
-      }.where((id) => id.trim().isNotEmpty)) {
-        await SupabaseLabRepository.instance.updateLabBookingStatus(
-          bookingId: id,
-          newStatus: 'completed',
-          notes: uploadResult.objectKey,
-        );
-      }
-      if (existingReportStorageKey != null &&
-          existingReportStorageKey.trim().isNotEmpty &&
-          existingReportStorageKey != uploadResult.objectKey) {
-        await LabReportFileStore.deleteS3Report(existingReportStorageKey);
-      }
-    }
 
     return uploadResult;
   }

@@ -19,6 +19,26 @@ class SupabaseLabRepository {
 
   static final SupabaseLabRepository instance = SupabaseLabRepository._();
 
+  @visibleForTesting
+  static Future<bool> Function({
+    required String bookingId,
+    required String newStatus,
+    String? notes,
+  })? debugUpdateLabBookingStatusOverride;
+
+  @visibleForTesting
+  static Future<bool> Function({
+    required String orderId,
+    required String newStatus,
+    String? notes,
+  })? debugUpdateLabOrderStatusOverride;
+
+  @visibleForTesting
+  static void debugResetForTesting() {
+    debugUpdateLabBookingStatusOverride = null;
+    debugUpdateLabOrderStatusOverride = null;
+  }
+
   SupabaseClient get _client => SupabaseBootstrap.client;
 
   /// Fetches lab profile by [labId].
@@ -140,6 +160,14 @@ class SupabaseLabRepository {
     required String newStatus,
     String? notes,
   }) async {
+    final override = debugUpdateLabBookingStatusOverride;
+    if (override != null) {
+      return override(
+        bookingId: bookingId,
+        newStatus: newStatus,
+        notes: notes,
+      );
+    }
     if (!SupabaseBootstrap.isReady || bookingId.isEmpty) return false;
     try {
       final res = await _client.rpc(
@@ -248,6 +276,14 @@ class SupabaseLabRepository {
     required String newStatus,
     String? notes,
   }) async {
+    final override = debugUpdateLabOrderStatusOverride;
+    if (override != null) {
+      return override(
+        orderId: orderId,
+        newStatus: newStatus,
+        notes: notes,
+      );
+    }
     if (!SupabaseBootstrap.isReady || orderId.isEmpty) return false;
     try {
       final res = await _client.rpc(
