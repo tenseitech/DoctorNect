@@ -120,9 +120,14 @@ function getActiveBoundSecrets(env) {
   // 3. Redis secrets: only bound if OTP_REDIS_MIRROR is 'on'
   const otpRedisMirrorOn = String(env.OTP_REDIS_MIRROR || '').trim().toLowerCase() === 'on';
   if (otpRedisMirrorOn) {
-    bound.set('REDIS_HOST', ['completeMobileOtpLogin', 'completeAmbulanceMobileOtpLogin']);
-    bound.set('REDIS_PORT', ['completeMobileOtpLogin', 'completeAmbulanceMobileOtpLogin']);
-    bound.set('REDIS_PASSWORD', ['completeMobileOtpLogin', 'completeAmbulanceMobileOtpLogin']);
+    const redisFns = [
+      'sendUserRegistrationOtp',
+      'verifyUserRegistrationOtp',
+      'processNotificationOutboxScheduled',
+    ];
+    bound.set('REDIS_HOST', redisFns);
+    bound.set('REDIS_PORT', redisFns);
+    bound.set('REDIS_PASSWORD', redisFns);
   }
 
   // 4. Supabase sync secrets: only bound if ENABLE_SUPABASE_SYNC is enabled
