@@ -1,5 +1,6 @@
 # Flutter tests failing at safety commit 5c107e9 (pre-dedupe baseline)
-# Full suite (chore/dedupe-structure-audit, cleaned:false verified guard): 615 pass / 13 fail (628 executed).
+# Full suite (chore/dedupe-structure-audit, audit docs pass): 611 pass / 14 fail (625 executed).
+# Prior: 615 pass / 13 fail (628 executed) — cleaned:false verified guard.
 # Prior: 614 pass / 13 fail (627 executed) — cleanupPendingRegistration client.
 # Prior: 613 pass / 13 fail (626 executed) — verified-profile rollback guards.
 # Prior: 611 pass / 13 fail (624 executed) — orphan profile row compensation.
@@ -13,6 +14,7 @@ auth_flows_test.dart :: Real UserRepository & FirebaseAuthService Resilience (Fa
 auth_flows_test.dart :: Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks) :: (d) orphan Firebase Auth user with NO role doc returns null cleanly without hanging
 auth_flows_test.dart :: Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks) :: (i) role doc ka ownerUid kisi aur uid ka ho, repair null return kare aur users/{uid} na bane
 auth_flows_test.dart :: Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks) :: (ii) user ka role doc patients mein ho par expectedRole doctor ho, null return kare aur users/{uid} na bane
+login_role_lookup_scenarios_test.dart :: registration OTP rollback policy (extra source contract) :: finalize failure block references deletePendingAuthUser
 doctor_verification_gate_test.dart :: DoctorVerificationRepository.watchVerified guards :: returns false when Firebase is unavailable
 doctor_verification_gate_test.dart :: DoctorVerificationRepository.watchVerified guards :: returns false for empty doctor id
 doctor_verification_gate_test.dart :: DoctorVerificationRepository.watchVerified guards :: uses debug override stream in tests

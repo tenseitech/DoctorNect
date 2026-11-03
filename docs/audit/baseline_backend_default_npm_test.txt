@@ -2,7 +2,9 @@
 # Command: cd backend/functions && npm test  (uses test/setup_env.js — does NOT load backend/functions/.env)
 # Node: v24.x (project engines: 22)
 
-493 pass / 0 fail / 22 skip (515 total)
+494 pass / 0 fail / 22 skip (516 total)
+
+Prior: 493 pass / 0 fail / 22 skip (515 total) — review_fixed_otp_expired.test.js.
 
 Prior: 487 pass / 0 fail / 22 skip (509 total) — cleanupPendingRegistration callable tests.
 
