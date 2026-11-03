@@ -126,42 +126,42 @@ const REVIEW_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const REVIEW_RATE_LIMIT_MAX = 5;
 let _testingReviewerRedis = null;
 
+function parseReviewerPhoneList(raw, maxCount = 2) {
+  if (!raw) return [];
+  const list = String(raw)
+    .split(',')
+    .map((n) => normalizeMobileDigits(n))
+    .filter(Boolean);
+  return list.slice(0, maxCount);
+}
+
 function getReviewerConfig(role) {
-  const isProd = (process.env.APP_ENV || '').toLowerCase() === 'production';
-  if (isProd) {
-    const enableReviewDemo = String(process.env.ENABLE_REVIEW_DEMO || '').toLowerCase() === 'true';
-    if (!enableReviewDemo) {
-      return null;
-    }
-    if (role && normalizeRole(role) !== 'patient') {
-      return null;
-    }
+  const enabled =
+    String(process.env.REVIEWER_OTP_ENABLED || process.env.ENABLE_REVIEW_DEMO || '')
+      .trim()
+      .toLowerCase() === 'true';
+  if (!enabled) {
+    return null;
   }
 
-  const rawNumbers = String(process.env.REVIEW_TEST_NUMBERS || '').trim();
   const fixedOtp = String(process.env.REVIEW_FIXED_OTP || '').trim();
   const accessUntil = String(process.env.REVIEW_ACCESS_UNTIL || '').trim();
-
-  // Production default is OFF: if any required setting is missing, return null
-  if (!rawNumbers || !fixedOtp || !accessUntil) {
+  if (!fixedOtp || !accessUntil) {
     return null;
   }
 
   const expiryDate = new Date(accessUntil);
-  if (isNaN(expiryDate.getTime())) {
+  if (isNaN(expiryDate.getTime()) || Date.now() > expiryDate.getTime()) {
     return null;
   }
 
-  // Bypass stops working immediately after accessUntil timestamp
-  if (Date.now() > expiryDate.getTime()) {
-    return null;
+  const normalizedRole = role ? normalizeRole(role) : null;
+  const roleKey = normalizedRole || 'patient';
+  const envKey = `REVIEW_${roleKey.toUpperCase()}_PHONES`;
+  let testNumbers = parseReviewerPhoneList(process.env[envKey], 2);
+  if (testNumbers.length === 0) {
+    testNumbers = parseReviewerPhoneList(process.env.REVIEW_TEST_NUMBERS, 2);
   }
-
-  const testNumbers = rawNumbers
-    .split(',')
-    .map((n) => normalizeMobileDigits(n))
-    .filter(Boolean);
-
   if (testNumbers.length === 0) {
     return null;
   }
@@ -170,19 +170,18 @@ function getReviewerConfig(role) {
     testNumbers,
     fixedOtp,
     accessUntil: expiryDate,
+    role: roleKey,
   };
 }
 
 function isReviewerPhone(digits, role) {
   const config = getReviewerConfig(role);
   if (!config) return false;
-  const isProd = (process.env.APP_ENV || '').toLowerCase() === 'production';
-  if (isProd) {
-    const enableReviewDemo = String(process.env.ENABLE_REVIEW_DEMO || '').toLowerCase() === 'true';
-    if (!enableReviewDemo) return false;
-    if (role && normalizeRole(role) !== 'patient') return false;
-  }
   const d = normalizeMobileDigits(digits);
+  if (!d) return false;
+  if (role && config.role && normalizeRole(role) !== config.role) {
+    return false;
+  }
   return config.testNumbers.includes(d);
 }
 

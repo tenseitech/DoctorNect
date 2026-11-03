@@ -18,6 +18,9 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
   const origReviewUntil = process.env.REVIEW_ACCESS_UNTIL;
   const origAppEnv = process.env.APP_ENV;
   const origEnableReviewDemo = process.env.ENABLE_REVIEW_DEMO;
+  const origReviewerOtpEnabled = process.env.REVIEWER_OTP_ENABLED;
+  const origReviewDoctorPhones = process.env.REVIEW_DOCTOR_PHONES;
+  const origReviewPatientPhones = process.env.REVIEW_PATIENT_PHONES;
   let origLegacyCutover;
 
   test.beforeEach(() => {
@@ -54,6 +57,15 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
     if (origEnableReviewDemo === undefined) delete process.env.ENABLE_REVIEW_DEMO;
     else process.env.ENABLE_REVIEW_DEMO = origEnableReviewDemo;
 
+    if (origReviewerOtpEnabled === undefined) delete process.env.REVIEWER_OTP_ENABLED;
+    else process.env.REVIEWER_OTP_ENABLED = origReviewerOtpEnabled;
+
+    if (origReviewDoctorPhones === undefined) delete process.env.REVIEW_DOCTOR_PHONES;
+    else process.env.REVIEW_DOCTOR_PHONES = origReviewDoctorPhones;
+
+    if (origReviewPatientPhones === undefined) delete process.env.REVIEW_PATIENT_PHONES;
+    else process.env.REVIEW_PATIENT_PHONES = origReviewPatientPhones;
+
     resetReviewerRateLimitForTesting();
   });
 
@@ -78,6 +90,7 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
   });
 
   test('Case 3: Active allowlisted numbers recognized before expiry date', () => {
+    process.env.REVIEWER_OTP_ENABLED = 'true';
     process.env.REVIEW_TEST_NUMBERS = '9999900001, 9999900002';
     process.env.REVIEW_FIXED_OTP = '112233';
     // Set expiry in the future
@@ -94,6 +107,7 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
   });
 
   test('Case 4: Non-allowlisted number cannot use fixed OTP bypass', () => {
+    process.env.REVIEWER_OTP_ENABLED = 'true';
     process.env.REVIEW_TEST_NUMBERS = '9999900001';
     process.env.REVIEW_FIXED_OTP = '112233';
     process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
@@ -104,6 +118,7 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
   });
 
   test('Case 5: Reviewer rate limit locks out after exceeding max attempts', async () => {
+    process.env.REVIEWER_OTP_ENABLED = 'true';
     process.env.REVIEW_TEST_NUMBERS = '9999900001';
     process.env.REVIEW_FIXED_OTP = '112233';
     process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
@@ -119,6 +134,7 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
   });
 
   test('Case 6: Full OTP verification flow with reviewer bypass', async () => {
+    process.env.REVIEWER_OTP_ENABLED = 'true';
     process.env.REVIEW_TEST_NUMBERS = '9999900001';
     process.env.REVIEW_FIXED_OTP = '654321';
     process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
@@ -189,6 +205,7 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
   });
 
   test('Case 7: Fail-closed when Redis is unavailable or broken', async () => {
+    process.env.REVIEWER_OTP_ENABLED = 'true';
     process.env.REVIEW_TEST_NUMBERS = '9999900001';
     process.env.REVIEW_FIXED_OTP = '112233';
     process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
@@ -214,37 +231,32 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
     }
   });
 
-  test('Case 8: APP_ENV=production disables reviewer bypass unless ENABLE_REVIEW_DEMO=true', () => {
+  test('Case 8: REVIEWER_OTP_ENABLED=false disables bypass even when numbers configured', () => {
     process.env.APP_ENV = 'production';
-    delete process.env.ENABLE_REVIEW_DEMO;
+    process.env.REVIEWER_OTP_ENABLED = 'false';
     process.env.REVIEW_TEST_NUMBERS = '9999900001';
     process.env.REVIEW_FIXED_OTP = '112233';
     process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
 
-    assert.equal(getReviewerConfig(), null, 'Must return null in production when ENABLE_REVIEW_DEMO is not true');
-    assert.equal(getReviewerConfig('patient'), null);
+    assert.equal(getReviewerConfig(), null);
     assert.equal(isReviewerPhone('9999900001', 'patient'), false);
   });
 
-  test('Case 9: APP_ENV=production with ENABLE_REVIEW_DEMO=true is strictly limited to patient role', () => {
-    process.env.APP_ENV = 'production';
-    process.env.ENABLE_REVIEW_DEMO = 'true';
-    process.env.REVIEW_TEST_NUMBERS = '9999900001';
+  test('Case 9: per-role phone lists (max 2) and role mismatch rejected', () => {
+    process.env.REVIEWER_OTP_ENABLED = 'true';
+    process.env.REVIEW_PATIENT_PHONES = '9999900001,9999900002,9999900003';
+    process.env.REVIEW_DOCTOR_PHONES = '9888800001';
     process.env.REVIEW_FIXED_OTP = '112233';
     process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
 
-    // Patient role should succeed
     const patientCfg = getReviewerConfig('patient');
-    assert.ok(patientCfg, 'Reviewer config must be active for patient role in prod when ENABLE_REVIEW_DEMO=true');
+    assert.deepEqual(patientCfg.testNumbers, ['9999900001', '9999900002']);
     assert.equal(isReviewerPhone('9999900001', 'patient'), true);
-
-    // Doctor or other roles must be blocked
-    assert.equal(getReviewerConfig('doctor'), null, 'Doctor role must be rejected in prod even if ENABLE_REVIEW_DEMO=true');
     assert.equal(isReviewerPhone('9999900001', 'doctor'), false);
-    assert.equal(getReviewerConfig('ambulance'), null, 'Ambulance role must be rejected in prod');
-    assert.equal(isReviewerPhone('9999900001', 'ambulance'), false);
-    assert.equal(getReviewerConfig('medical'), null, 'Medical role must be rejected in prod');
-    assert.equal(isReviewerPhone('9999900001', 'medical'), false);
+
+    const doctorCfg = getReviewerConfig('doctor');
+    assert.deepEqual(doctorCfg.testNumbers, ['9888800001']);
+    assert.equal(isReviewerPhone('9888800001', 'doctor'), true);
   });
 });
 
