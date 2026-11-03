@@ -168,7 +168,12 @@ abstract final class PromotedAdsService {
       'createdAt': FieldValue.serverTimestamp(),
     };
 
-    if (SupabaseBootstrap.isReady && firestoreOverride == null) {
+    if (firestoreOverride == null) {
+      if (!SupabaseBootstrap.isReady) {
+        throw StateError(
+          'Cannot create promoted ad: database connection is not ready.',
+        );
+      }
       final supabasePayload = {
         'ad_id': adId,
         'provider_type': providerType.toLowerCase(),
@@ -205,7 +210,7 @@ abstract final class PromotedAdsService {
       return PromotedAdModel.fromRow(supabasePayload);
     }
 
-    // 2. Firestore write
+    // Test-only Firestore path
     final docRef = _db.collection(_collection).doc(adId);
     await docRef.set(adMap);
 

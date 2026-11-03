@@ -77,40 +77,12 @@ class ProfilePhotoUploader {
         throw StateError('S3 upload returned empty objectKey.');
       }
 
-      // 2. Firestore updates
-      if (FirebaseBootstrap.isReady || firestoreOverride != null) {
-        await _db.collection(FirestorePaths.patients).doc(patientId).set({
-          'hasLocalPhoto': true,
-          'photoKey': newObjectKey,
-          'photoStorage': 's3',
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+      await _persistPatientPhotoMetadata(
+        patientId: patientId,
+        newObjectKey: newObjectKey,
+      );
 
-        await _db.collection(FirestorePaths.users).doc(patientId).set({
-          'photoKey': newObjectKey,
-          'photoStorage': 's3',
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      }
-
-      // 3. Supabase update behind cutover flag
-      if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
-        try {
-          await SupabaseBootstrap.client.from('patients').update({
-            'photo_key': newObjectKey,
-            'photo_storage': 's3',
-            'photo_s3_key': newObjectKey,
-            'photo_storage_provider': 's3',
-            'photo_updated_at': DateTime.now().toUtc().toIso8601String(),
-          }).eq('patient_id', patientId);
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('[ProfilePhotoUploader] Supabase patient update: $e');
-          }
-        }
-      }
-
-      // 4. Delete old S3 object ONLY after both upload and Firestore update succeeded
+      // Delete old S3 object ONLY after upload and metadata persist succeeded
       if (oldPhotoKey != null &&
           oldPhotoKey.trim().isNotEmpty &&
           oldPhotoKey.trim() != newObjectKey) {
@@ -205,40 +177,13 @@ class ProfilePhotoUploader {
         throw StateError('S3 upload returned empty objectKey.');
       }
 
-      // 2. Firestore updates
-      if (FirebaseBootstrap.isReady || firestoreOverride != null) {
-        await _db.collection(FirestorePaths.doctors).doc(doctorId).set({
-          'photoKey': newObjectKey,
-          'photoStorage': 's3',
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+      await _persistDoctorPhotoMetadata(
+        doctorId: doctorId,
+        ownerUid: ownerUid,
+        newObjectKey: newObjectKey,
+      );
 
-        final targetUid = ownerUid ?? doctorId;
-        await _db.collection(FirestorePaths.users).doc(targetUid).set({
-          'photoKey': newObjectKey,
-          'photoStorage': 's3',
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      }
-
-      // 3. Supabase update behind cutover flag
-      if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
-        try {
-          await SupabaseBootstrap.client.from('doctors').update({
-            'photo_key': newObjectKey,
-            'photo_storage': 's3',
-            'photo_s3_key': newObjectKey,
-            'photo_storage_provider': 's3',
-            'photo_updated_at': DateTime.now().toUtc().toIso8601String(),
-          }).eq('doctor_id', doctorId);
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('[ProfilePhotoUploader] Supabase doctor update: $e');
-          }
-        }
-      }
-
-      // 4. Delete old S3 object ONLY after both upload and Firestore update succeeded
+      // Delete old S3 object ONLY after new upload AND metadata persist succeeded
       if (oldPhotoKey != null &&
           oldPhotoKey.trim().isNotEmpty &&
           oldPhotoKey.trim() != newObjectKey) {
@@ -396,6 +341,97 @@ class ProfilePhotoUploader {
       try {
         await _s3.deleteObject(currentPhotoKey.trim());
       } catch (_) {}
+    }
+  }
+
+  Future<void> _persistPatientPhotoMetadata({
+    required String patientId,
+    required String newObjectKey,
+  }) async {
+    final payload = {
+      'photo_key': newObjectKey,
+      'photo_storage': 's3',
+      'photo_s3_key': newObjectKey,
+      'photo_storage_provider': 's3',
+      'photo_updated_at': DateTime.now().toUtc().toIso8601String(),
+    };
+
+    if (firestoreOverride != null) {
+      await _db.collection(FirestorePaths.patients).doc(patientId).set({
+        'hasLocalPhoto': true,
+        'photoKey': newObjectKey,
+        'photoStorage': 's3',
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      await _db.collection(FirestorePaths.users).doc(patientId).set({
+        'photoKey': newObjectKey,
+        'photoStorage': 's3',
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      return;
+    }
+
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError(
+        'Cannot save profile photo: database connection is not ready.',
+      );
+    }
+
+    await SupabaseBootstrap.client
+        .from('patients')
+        .update(payload)
+        .eq('patient_id', patientId);
+    await SupabaseBootstrap.client.from('users').update({
+      'photo_s3_key': newObjectKey,
+      'photo_url': null,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('profile_id', patientId);
+  }
+
+  Future<void> _persistDoctorPhotoMetadata({
+    required String doctorId,
+    required String? ownerUid,
+    required String newObjectKey,
+  }) async {
+    final payload = {
+      'photo_key': newObjectKey,
+      'photo_storage': 's3',
+      'photo_s3_key': newObjectKey,
+      'photo_storage_provider': 's3',
+      'photo_updated_at': DateTime.now().toUtc().toIso8601String(),
+    };
+
+    if (firestoreOverride != null) {
+      await _db.collection(FirestorePaths.doctors).doc(doctorId).set({
+        'photoKey': newObjectKey,
+        'photoStorage': 's3',
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      final targetUid = ownerUid ?? doctorId;
+      await _db.collection(FirestorePaths.users).doc(targetUid).set({
+        'photoKey': newObjectKey,
+        'photoStorage': 's3',
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      return;
+    }
+
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError(
+        'Cannot save profile photo: database connection is not ready.',
+      );
+    }
+
+    await SupabaseBootstrap.client
+        .from('doctors')
+        .update(payload)
+        .eq('doctor_id', doctorId);
+    final uid = ownerUid?.trim();
+    if (uid != null && uid.isNotEmpty) {
+      await SupabaseBootstrap.client.from('users').update({
+        'photo_s3_key': newObjectKey,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', uid);
     }
   }
 }
