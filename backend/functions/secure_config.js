@@ -3,11 +3,10 @@
 /**
  * Centralized secret / config access for Cloud Functions.
  *
- * All secrets are now strictly loaded via `functions/.env` files.
- * Firebase Secret Manager bindings have been removed to resolve overlap crashes.
+ * Runtime values come from `process.env` (local `.env` / `.env.local` or deployed
+ * env + Secret Manager bindings declared in `index.js` via `defineSecret`).
+ * This module does not call `defineSecret`; see `backend/functions/index.js`.
  */
-
-// No more defineSecret
 
 function readSecret(name, { required = false } = {}) {
   const value = String(process.env[name] || '').trim();
