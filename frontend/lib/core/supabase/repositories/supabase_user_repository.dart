@@ -9,6 +9,7 @@ import '../../auth/registration_otp_service.dart';
 import '../../enums/user_type.dart';
 import '../../firebase/models/medibond_user_profile.dart';
 import '../../validators/form_validators.dart';
+import '../profile_creation_exception.dart';
 import '../supabase_bootstrap.dart';
 import '../supabase_stream_table.dart';
 
@@ -19,7 +20,57 @@ class SupabaseUserRepository {
 
   static final SupabaseUserRepository instance = SupabaseUserRepository._();
 
+  @visibleForTesting
+  static int createProfileMaxAttempts = 3;
+
+  @visibleForTesting
+  static Duration Function(int attempt)? debugCreateProfileRetryDelay;
+
+  @visibleForTesting
+  static bool isRetryableProfileWriteError(Object error) {
+    if (error is PostgrestException) {
+      final code = error.code ?? '';
+      if (code == '503' || code == '502' || code == '504') return true;
+      if (error.message.toLowerCase().contains('unavailable')) return true;
+    }
+    if (error is Exception &&
+        error.toString().toLowerCase().contains('503')) {
+      return true;
+    }
+    return false;
+  }
+
   SupabaseClient get _client => SupabaseBootstrap.client;
+
+  @visibleForTesting
+  Future<void> runProfileWriteRetryForTesting(
+    Future<void> Function() operation,
+  ) =>
+      _runWithProfileWriteRetry(operation);
+
+  Future<void> _runWithProfileWriteRetry(Future<void> Function() operation) async {
+    Object? lastError;
+    for (var attempt = 1; attempt <= createProfileMaxAttempts; attempt++) {
+      try {
+        await operation();
+        return;
+      } catch (e) {
+        lastError = e;
+        final canRetry = isRetryableProfileWriteError(e) &&
+            attempt < createProfileMaxAttempts;
+        if (!canRetry) break;
+        final delay = debugCreateProfileRetryDelay?.call(attempt) ??
+            Duration(milliseconds: 250 * attempt);
+        if (delay > Duration.zero) {
+          await Future.delayed(delay);
+        }
+      }
+    }
+    throw ProfileCreationException(
+      'Could not save your profile. Check your connection and try again.',
+      cause: lastError,
+    );
+  }
 
   /// Fetches a user profile from PostgreSQL `public.users` by Firebase UID (`id`).
   Future<DoctorNectUserProfile?> fetchProfile(
@@ -126,38 +177,40 @@ class SupabaseUserRepository {
       'updated_at': DateTime.now().toIso8601String(),
     };
 
-    await _client.from('users').upsert(userPayload, onConflict: 'id');
+    await _runWithProfileWriteRetry(() async {
+      await _client.from('users').upsert(userPayload, onConflict: 'id');
 
-    // Provision corresponding domain role record if payload provided
-    if (roleData != null) {
-      if (role == UserType.doctor) {
-        await _client.from('doctors').upsert({
-          'doctor_id': profileId,
-          'owner_uid': user.uid,
-          'name': displayName,
-          'email': email,
-          'mobile': normalizedMobile ?? '',
-          'specialization': roleData['specialization'] ?? 'General Physician',
-          'qualification': roleData['qualification'] ?? 'MBBS',
-          'verified': false,
-          'profile_completed': isDemoDoctor ? true : false,
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        }, onConflict: 'doctor_id');
-      } else if (role == UserType.patient) {
-        await _client.from('patients').upsert({
-          'patient_id': profileId,
-          'owner_uid': user.uid,
-          'name': displayName,
-          'mobile': normalizedMobile ?? '',
-          'email': email,
-          'profile_completed': isDemoDoctor ? true : false,
-          'verified': true,
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        }, onConflict: 'patient_id');
+      // Provision corresponding domain role record if payload provided
+      if (roleData != null) {
+        if (role == UserType.doctor) {
+          await _client.from('doctors').upsert({
+            'doctor_id': profileId,
+            'owner_uid': user.uid,
+            'name': displayName,
+            'email': email,
+            'mobile': normalizedMobile ?? '',
+            'specialization': roleData['specialization'] ?? 'General Physician',
+            'qualification': roleData['qualification'] ?? 'MBBS',
+            'verified': false,
+            'profile_completed': isDemoDoctor ? true : false,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          }, onConflict: 'doctor_id');
+        } else if (role == UserType.patient) {
+          await _client.from('patients').upsert({
+            'patient_id': profileId,
+            'owner_uid': user.uid,
+            'name': displayName,
+            'mobile': normalizedMobile ?? '',
+            'email': email,
+            'profile_completed': isDemoDoctor ? true : false,
+            'verified': true,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+          }, onConflict: 'patient_id');
+        }
       }
-    }
+    });
   }
 
   /// Updates profile fields in `public.users`.
