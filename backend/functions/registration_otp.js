@@ -137,7 +137,7 @@ function parseReviewerPhoneList(raw, maxCount = 2) {
 
 function getReviewerConfig(role) {
   const enabled =
-    String(process.env.REVIEWER_OTP_ENABLED || process.env.ENABLE_REVIEW_DEMO || '')
+    String(process.env.REVIEWER_OTP_ENABLED || '')
       .trim()
       .toLowerCase() === 'true';
   if (!enabled) {
@@ -155,8 +155,11 @@ function getReviewerConfig(role) {
     return null;
   }
 
-  const normalizedRole = role ? normalizeRole(role) : null;
-  const roleKey = normalizedRole || 'patient';
+  if (!role) {
+    return null;
+  }
+
+  const roleKey = normalizeRole(role);
   const envKey = `REVIEW_${roleKey.toUpperCase()}_PHONES`;
   let testNumbers = parseReviewerPhoneList(process.env[envKey], 2);
   if (testNumbers.length === 0) {
@@ -175,11 +178,12 @@ function getReviewerConfig(role) {
 }
 
 function isReviewerPhone(digits, role) {
+  if (!role) return false;
   const config = getReviewerConfig(role);
   if (!config) return false;
   const d = normalizeMobileDigits(digits);
   if (!d) return false;
-  if (role && config.role && normalizeRole(role) !== config.role) {
+  if (normalizeRole(role) !== config.role) {
     return false;
   }
   return config.testNumbers.includes(d);

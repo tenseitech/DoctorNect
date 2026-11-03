@@ -8,7 +8,7 @@ No Flutter demo flags. Reviewer bypass lives entirely in **`sendUserRegistration
 
 | Variable | Example | Notes |
 |----------|---------|-------|
-| `REVIEWER_OTP_ENABLED` | `true` | **Default OFF** if unset. Also accepts legacy `ENABLE_REVIEW_DEMO=true`. |
+| `REVIEWER_OTP_ENABLED` | `true` | **Default OFF** if unset. |
 | `REVIEW_FIXED_OTP` | `654321` | Fixed 6-digit OTP for allowlisted numbers only. |
 | `REVIEW_ACCESS_UNTIL` | `2026-12-15T23:59:59Z` | ISO instant; bypass stops immediately after. |
 | `REVIEW_PATIENT_PHONES` | `919999900001` | Max **2** comma-separated E.164-ish digits (normalized). |
