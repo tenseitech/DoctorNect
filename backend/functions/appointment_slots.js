@@ -9,6 +9,7 @@ const FIRESTORE_TRIGGER_REGION = 'asia-south2';
 const CALLABLE_REGION = 'asia-south1';
 
 const { enforceAbuseLimit, assertAppCheck } = require('./abuse_rate_limit');
+const { resolveCallerIdentity } = require('./caller_identity');
 
 const ENFORCE_ABUSE_APP_CHECK = String(
   process.env.ENFORCE_ABUSE_APP_CHECK || process.env.ENFORCE_OTP_APP_CHECK || 'true',
@@ -510,16 +511,22 @@ async function bookAppointmentHandler(data, auth, db = getFirestore()) {
     throw new HttpsError('unauthenticated', 'User must be authenticated to book an appointment.');
   }
 
-  // 1. Verify caller is a patient
-  const callerSnap = await db.collection('users').doc(auth.uid).get();
-  if (!callerSnap.exists) {
-    throw new HttpsError('permission-denied', 'User profile not found.');
+  // 1. Verify caller is a patient (Supabase `users` when cutover is primary)
+  let callerData;
+  try {
+    callerData = await resolveCallerIdentity({ db, uid: auth.uid });
+  } catch (err) {
+    if (err instanceof HttpsError && err.code === 'unauthenticated') {
+      throw new HttpsError('permission-denied', 'User profile not found.');
+    }
+    throw err;
   }
-  const callerData = callerSnap.data() || {};
   if (callerData.role !== 'patient') {
     throw new HttpsError('permission-denied', 'Only patients can book appointments.');
   }
-  const patientId = String(callerData.profileId || auth.uid).trim();
+  const patientId = String(
+    callerData.profileId || callerData.profile_id || auth.uid,
+  ).trim();
 
   // 2. Verify doctor exists, verified and not deactivated
   const doctorId = String(data?.doctorId || '').trim();
