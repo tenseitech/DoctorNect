@@ -104,29 +104,18 @@ What still routes to Firestore in **release** when deny-all rules are deployed:
 
 ### Can stay on Firestore temporarily (with tightened rules — **do not deploy without review**)
 
-Only for collections still actively read/written **from the client** during phased cutover. Example **illustrative** rules (NOT deployed):
+Do **not** use `get(/users/$(uid)).profileId` in new Firestore rules. Postgres cutover uses `public.users` / JWT claims for profile identity; Firestore `users/{uid}` docs are **not** reliably written on every login (legacy paths only, e.g. profile photo upload). Rules that depend on that lookup **deny all clients**.
+
+If a collection must stay on Firestore briefly, scope by fields present on the document itself (e.g. `ownerUid == request.auth.uid`) or move reads/writes to Supabase. Example **server-only inbox** pattern (NOT deployed):
 
 ```
-// appointments — patient or assigned doctor only
-match /appointments/{id} {
-  allow read: if request.auth != null && (
-    resource.data.patientId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.profileId
-    || resource.data.doctorId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.profileId
-  );
-  allow create, update: if request.auth != null && (
-    request.resource.data.patientId == get(...).data.profileId
-    || request.resource.data.doctorId == get(...).data.profileId
-  );
-}
-
-// in_app_notifications — ownerUid field required on docs
 match /in_app_notifications/{id} {
   allow read, update: if request.auth != null && resource.data.ownerUid == request.auth.uid;
-  allow create: if false; // server only
+  allow create: if false;
 }
 ```
 
-Prefer **Postgres RLS** over re-opening Firestore for PHI.
+Prefer **Postgres RLS** (`appointments`, `in_app_notifications` in Supabase) over re-opening Firestore for PHI.
 
 ### Server-only Firestore (keep Admin SDK)
 

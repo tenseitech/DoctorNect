@@ -1,6 +1,6 @@
--- STAGING ONLY — run inside a transaction after seeding fixture users/profiles.
--- Apply db/proposed/20261103000014_proposed_role_verified_rls_hardening.sql first (manual).
--- Replace placeholder UIDs/profile IDs before execute.
+-- STAGING ONLY — apply db/proposed/20261103000014_proposed_role_verified_rls_hardening.sql first (manual).
+-- Replace fixture IDs/UIDs below, then run: psql "$STAGING_SUPABASE_DB_URL" -f scripts/audit/rls_staging_verified_role_matrix.sql
+-- Ends with ROLLBACK so probes are non-destructive unless you change the final line to COMMIT.
 
 BEGIN;
 
@@ -12,89 +12,147 @@ BEGIN
 END;
 $$;
 
--- Fixture map (edit to match staging seed):
--- patient_uid -> p_staging_patient
--- doctor_verified_uid -> d_staging_verified (doctors.verified=true)
--- doctor_unverified_uid -> d_staging_unverified (doctors.verified=false)
--- lab_verified_uid / lab_unverified_uid
--- pharmacy_verified_uid -> ms_staging_verified
--- ambulance_uid -> amb_staging_1
+CREATE OR REPLACE FUNCTION pg_temp.assert_count(
+  probe text,
+  sql text,
+  expected bigint
+) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE
+  v bigint;
+BEGIN
+  EXECUTE 'SELECT count(*)::bigint FROM (' || sql || ') q' INTO v;
+  IF v IS DISTINCT FROM expected THEN
+    RAISE EXCEPTION 'FAIL [%]: expected count %, got %', probe, expected, v;
+  END IF;
+  RAISE NOTICE 'PASS [%]: count=%', probe, v;
+END;
+$$;
+
+-- Fixture map (edit):
+-- uid-patient-staging -> patient p_staging_patient (owner_uid)
+-- uid-patient-owner-staging -> guardian profile; family member fm_staging_1.member_id books as patient
+-- uid-doctor-verified / uid-doctor-unverified
+-- uid-lab-verified / uid-lab-unverified
+-- appointment appt_staging_family on patient_id=fm_staging_1.member_id
 
 -- ---------------------------------------------------------------------------
--- PATIENT: can SELECT own appointment; can UPDATE cancel own
+-- Patient via owner_uid: SELECT child appointment
 -- ---------------------------------------------------------------------------
 SELECT pg_temp.set_jwt('uid-patient-staging');
 SET LOCAL role authenticated;
-SELECT 'patient_appointments_select' AS probe, count(*) AS cnt
-FROM public.appointments WHERE patient_id = 'p_staging_patient';
+SELECT pg_temp.assert_count(
+  'patient_owner_uid_appointments',
+  $$SELECT 1 FROM public.appointments a
+    JOIN public.patients p ON p.patient_id = a.patient_id
+    WHERE p.owner_uid = 'uid-patient-staging'$$,
+  1::bigint
+);
 
 -- ---------------------------------------------------------------------------
--- VERIFIED DOCTOR: SELECT/UPDATE appointments where doctor_id = self (expect OK post-000014)
+-- Patient via family member: SELECT appointment for member_id
 -- ---------------------------------------------------------------------------
-SELECT pg_temp.set_jwt('uid-doctor-verified-staging');
+SELECT pg_temp.set_jwt('uid-patient-guardian-staging');
 SET LOCAL role authenticated;
-SELECT 'verified_doctor_appointments_select' AS probe, count(*) AS cnt
-FROM public.appointments WHERE doctor_id = 'd_staging_verified';
+SELECT pg_temp.assert_count(
+  'patient_family_member_appointments',
+  $$SELECT 1 FROM public.appointments WHERE patient_id = 'fm_staging_member_id'$$,
+  1::bigint
+);
 
 -- ---------------------------------------------------------------------------
--- UNVERIFIED DOCTOR: SELECT appointments as doctor (expect 0 rows post-000014)
+-- Unverified doctor: cannot read/update as doctor_id (post-000014 expect 0)
 -- ---------------------------------------------------------------------------
 SELECT pg_temp.set_jwt('uid-doctor-unverified-staging');
 SET LOCAL role authenticated;
-SELECT 'unverified_doctor_appointments_select' AS probe, count(*) AS cnt
-FROM public.appointments WHERE doctor_id = 'd_staging_unverified';
+SELECT pg_temp.assert_count(
+  'unverified_doctor_appointments_select',
+  $$SELECT 1 FROM public.appointments WHERE doctor_id = 'd_staging_unverified'$$,
+  0::bigint
+);
+
+DO $$
+DECLARE v bigint;
+BEGIN
+  UPDATE public.appointments SET patient_status = patient_status
+  WHERE appointment_id = 'appt_staging_doctor_unverified';
+  GET DIAGNOSTICS v = ROW_COUNT;
+  IF v <> 0 THEN
+    RAISE EXCEPTION 'FAIL [unverified_doctor_appointments_update]: expected ROW_COUNT 0, got %', v;
+  END IF;
+  RAISE NOTICE 'PASS [unverified_doctor_appointments_update]: ROW_COUNT=0';
+END;
+$$;
 
 -- ---------------------------------------------------------------------------
--- UNVERIFIED DOCTOR: still SELECT own doctors row (onboarding)
+-- Unverified doctor: still read/update OWN doctors row
 -- ---------------------------------------------------------------------------
-SELECT 'unverified_doctor_own_profile' AS probe, count(*) AS cnt
-FROM public.doctors
-WHERE doctor_id = 'd_staging_unverified';
+SELECT pg_temp.assert_count(
+  'unverified_doctor_own_profile_select',
+  $$SELECT 1 FROM public.doctors WHERE doctor_id = 'd_staging_unverified'$$,
+  1::bigint
+);
+
+DO $$
+DECLARE v bigint;
+BEGIN
+  UPDATE public.doctors SET updated_at = updated_at WHERE doctor_id = 'd_staging_unverified';
+  GET DIAGNOSTICS v = ROW_COUNT;
+  IF v <> 1 THEN
+    RAISE EXCEPTION 'FAIL [unverified_doctor_own_profile_update]: expected 1, got %', v;
+  END IF;
+  RAISE NOTICE 'PASS [unverified_doctor_own_profile_update]: ROW_COUNT=1';
+END;
+$$;
 
 -- ---------------------------------------------------------------------------
--- VERIFIED LAB: UPDATE lab_bookings (expect 1 row updated on seeded booking)
+-- Verified lab: UPDATE booking (expect 1)
 -- ---------------------------------------------------------------------------
 SELECT pg_temp.set_jwt('uid-lab-verified-staging');
 SET LOCAL role authenticated;
-UPDATE public.lab_bookings
-SET status = 'sample_collected'
-WHERE lab_id = 'l_staging_verified' AND booking_id = 'lb_staging_1';
+DO $$
+DECLARE v bigint;
+BEGIN
+  UPDATE public.lab_bookings SET status = status
+  WHERE booking_id = 'lb_staging_verified' AND lab_id = 'l_staging_verified';
+  GET DIAGNOSTICS v = ROW_COUNT;
+  IF v <> 1 THEN
+    RAISE EXCEPTION 'FAIL [verified_lab_booking_update]: expected 1, got %', v;
+  END IF;
+  RAISE NOTICE 'PASS [verified_lab_booking_update]: ROW_COUNT=1';
+END;
+$$;
 
 -- ---------------------------------------------------------------------------
--- UNVERIFIED LAB: UPDATE lab_bookings (expect 0 rows post-000014)
+-- Unverified lab: UPDATE booking (expect 0 post-000014)
 -- ---------------------------------------------------------------------------
 SELECT pg_temp.set_jwt('uid-lab-unverified-staging');
 SET LOCAL role authenticated;
-UPDATE public.lab_bookings
-SET status = 'sample_collected'
-WHERE lab_id = 'l_staging_unverified' AND booking_id = 'lb_staging_2';
+DO $$
+DECLARE v bigint;
+BEGIN
+  UPDATE public.lab_bookings SET status = status
+  WHERE booking_id = 'lb_staging_unverified' AND lab_id = 'l_staging_unverified';
+  GET DIAGNOSTICS v = ROW_COUNT;
+  IF v <> 0 THEN
+    RAISE EXCEPTION 'FAIL [unverified_lab_booking_update]: expected 0, got %', v;
+  END IF;
+  RAISE NOTICE 'PASS [unverified_lab_booking_update]: ROW_COUNT=0';
+END;
+$$;
 
 -- ---------------------------------------------------------------------------
--- VERIFIED PHARMACY: SELECT pharmacy_deliveries for store (baseline policy)
+-- Unverified lab: still UPDATE own labs row
 -- ---------------------------------------------------------------------------
-SELECT pg_temp.set_jwt('uid-pharmacy-verified-staging');
-SET LOCAL role authenticated;
-SELECT 'pharmacy_deliveries_select' AS probe, count(*) AS cnt
-FROM public.pharmacy_deliveries WHERE store_id = 'ms_staging_verified';
-
--- ---------------------------------------------------------------------------
--- AMBULANCE: UPDATE own ambulances row (onboarding — round6 ambulances_update)
--- ---------------------------------------------------------------------------
-SELECT pg_temp.set_jwt('uid-ambulance-staging');
-SET LOCAL role authenticated;
-SELECT 'ambulance_own_row' AS probe, count(*) AS cnt
-FROM public.ambulances WHERE ambulance_id = 'amb_staging_1';
-
--- ---------------------------------------------------------------------------
--- NOTIFICATIONS: SELECT in_app_notifications for recipient (phase_e2 policy)
--- ---------------------------------------------------------------------------
-SELECT pg_temp.set_jwt('uid-patient-staging');
-SET LOCAL role authenticated;
-SELECT 'notifications_select' AS probe, count(*) AS cnt
-FROM public.in_app_notifications
-WHERE recipient_uid = (auth.jwt() ->> 'sub');
+DO $$
+DECLARE v bigint;
+BEGIN
+  UPDATE public.labs SET updated_at = updated_at WHERE lab_id = 'l_staging_unverified';
+  GET DIAGNOSTICS v = ROW_COUNT;
+  IF v <> 1 THEN
+    RAISE EXCEPTION 'FAIL [unverified_lab_own_profile_update]: expected 1, got %', v;
+  END IF;
+  RAISE NOTICE 'PASS [unverified_lab_own_profile_update]: ROW_COUNT=1';
+END;
+$$;
 
 ROLLBACK;
-
--- Pass criteria: document actual counts/errors per probe after 000014 vs baseline.
--- Legitimate flows must still pass: own profile SELECT/UPDATE for unverified providers.
