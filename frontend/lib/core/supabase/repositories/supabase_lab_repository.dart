@@ -35,9 +35,56 @@ class SupabaseLabRepository {
   })? debugUpdateLabOrderStatusOverride;
 
   @visibleForTesting
+  static Future<void> Function(String bookingId, String key)?
+      debugPersistLabBookingReportKeyOverride;
+
+  @visibleForTesting
+  static Future<void> Function(String bookingId)?
+      debugClearLabBookingReportKeyOverride;
+
+  @visibleForTesting
+  static Future<void> Function(String orderId, String key)?
+      debugPersistLabOrderReportKeyOverride;
+
+  @visibleForTesting
+  static Future<void> Function(String orderId)?
+      debugClearLabOrderReportKeyOverride;
+
+  /// Test hook: return `{status, key}` for a booking row.
+  @visibleForTesting
+  static Future<({String? status, String? key})> Function(String bookingId)?
+      debugLabBookingReportStateFetcher;
+
+  @visibleForTesting
+  static Future<({String? status, String? key})> Function(String orderId)?
+      debugLabOrderReportStateFetcher;
+
+  @visibleForTesting
+  static Future<String?> Function(String bookingId)? debugLabBookingReportKeyFetcher;
+
+  @visibleForTesting
+  static Future<String?> Function(String orderId)? debugLabOrderReportKeyFetcher;
+
+  static bool reportPersistIsComplete({
+    required String? status,
+    required String? storedKey,
+    required String expectedKey,
+  }) {
+    return status == 'completed' && storedKey == expectedKey;
+  }
+
+  @visibleForTesting
   static void debugResetForTesting() {
     debugUpdateLabBookingStatusOverride = null;
     debugUpdateLabOrderStatusOverride = null;
+    debugPersistLabBookingReportKeyOverride = null;
+    debugClearLabBookingReportKeyOverride = null;
+    debugPersistLabOrderReportKeyOverride = null;
+    debugClearLabOrderReportKeyOverride = null;
+    debugLabBookingReportStateFetcher = null;
+    debugLabOrderReportStateFetcher = null;
+    debugLabBookingReportKeyFetcher = null;
+    debugLabOrderReportKeyFetcher = null;
   }
 
   SupabaseClient get _client => SupabaseBootstrap.client;
@@ -155,12 +202,6 @@ class SupabaseLabRepository {
     }
   }
 
-  @visibleForTesting
-  static Future<String?> Function(String bookingId)? debugLabBookingReportKeyFetcher;
-
-  @visibleForTesting
-  static Future<String?> Function(String orderId)? debugLabOrderReportKeyFetcher;
-
   static bool looksLikeLabReportStorageKey(String? value) {
     if (value == null || value.trim().isEmpty) return false;
     final v = value.trim();
@@ -197,11 +238,12 @@ class SupabaseLabRepository {
     var anyMiss = false;
     for (final id in bookingIds.where((id) => id.trim().isNotEmpty)) {
       try {
-        final fetch = debugLabBookingReportKeyFetcher;
-        final stored = fetch != null
-            ? await fetch(id)
-            : await _fetchLabBookingReportKey(id);
-        if (stored == expectedKey) {
+        final state = await _fetchLabBookingReportState(id);
+        if (reportPersistIsComplete(
+          status: state.status,
+          storedKey: state.key,
+          expectedKey: expectedKey,
+        )) {
           anyMatch = true;
         } else {
           anyMiss = true;
@@ -224,12 +266,17 @@ class SupabaseLabRepository {
     String expectedKey,
   ) async {
     try {
-      final fetch = debugLabOrderReportKeyFetcher;
-      final stored = fetch != null
-          ? await fetch(orderId)
-          : await _fetchLabOrderReportKey(orderId);
-      if (stored == expectedKey) return LabReportKeyCheckResult.allRowsMatch;
-      if (stored == null) return LabReportKeyCheckResult.noRowsMatch;
+      final state = await _fetchLabOrderReportState(orderId);
+      if (reportPersistIsComplete(
+        status: state.status,
+        storedKey: state.key,
+        expectedKey: expectedKey,
+      )) {
+        return LabReportKeyCheckResult.allRowsMatch;
+      }
+      if (state.key == null && state.status == null) {
+        return LabReportKeyCheckResult.inconclusive;
+      }
       return LabReportKeyCheckResult.noRowsMatch;
     } catch (e) {
       if (kDebugMode) {
@@ -239,28 +286,90 @@ class SupabaseLabRepository {
     }
   }
 
-  Future<String?> _fetchLabBookingReportKey(String bookingId) async {
-    if (!SupabaseBootstrap.isReady) return null;
+  Future<({String? status, String? key})> _fetchLabBookingReportState(
+    String bookingId,
+  ) async {
+    final stateFetch = debugLabBookingReportStateFetcher;
+    if (stateFetch != null) {
+      return stateFetch(bookingId);
+    }
+    if (!SupabaseBootstrap.isReady) {
+      return (status: null, key: null);
+    }
     final res = await _client
         .from('lab_bookings')
-        .select('report_storage_key, report_s3_key, notes')
+        .select('status, report_storage_key, report_s3_key, notes')
         .eq('booking_id', bookingId)
         .maybeSingle();
-    return resolveReportKeyFromRow(res);
+    return (
+      status: res?['status'] as String?,
+      key: resolveReportKeyFromRow(res),
+    );
+  }
+
+  Future<({String? status, String? key})> _fetchLabOrderReportState(
+    String orderId,
+  ) async {
+    final stateFetch = debugLabOrderReportStateFetcher;
+    if (stateFetch != null) {
+      return stateFetch(orderId);
+    }
+    if (!SupabaseBootstrap.isReady) {
+      return (status: null, key: null);
+    }
+    final res = await _client
+        .from('lab_orders')
+        .select('status, report_storage_key, report_s3_key, notes')
+        .eq('order_id', orderId)
+        .maybeSingle();
+    return (
+      status: res?['status'] as String?,
+      key: resolveReportKeyFromRow(res),
+    );
+  }
+
+  Future<String?> _fetchLabBookingReportKey(String bookingId) async {
+    final state = await _fetchLabBookingReportState(bookingId);
+    return state.key;
   }
 
   Future<String?> _fetchLabOrderReportKey(String orderId) async {
-    if (!SupabaseBootstrap.isReady) return null;
-    final res = await _client
-        .from('lab_orders')
-        .select('report_storage_key, report_s3_key, notes')
-        .eq('order_id', orderId)
-        .maybeSingle();
-    return resolveReportKeyFromRow(res);
+    final state = await _fetchLabOrderReportState(orderId);
+    return state.key;
+  }
+
+  Future<void> _rollbackLabBookingReportKeyAfterFailedStatusUpdate(
+    String bookingId,
+    String writtenKey,
+  ) async {
+    try {
+      final state = await _fetchLabBookingReportState(bookingId);
+      if (state.status == 'completed') return;
+      if (state.key == writtenKey) {
+        await _clearLabBookingReportKey(bookingId);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _rollbackLabOrderReportKeyAfterFailedStatusUpdate(
+    String orderId,
+    String writtenKey,
+  ) async {
+    try {
+      final state = await _fetchLabOrderReportState(orderId);
+      if (state.status == 'completed') return;
+      if (state.key == writtenKey) {
+        await _clearLabOrderReportKey(orderId);
+      }
+    } catch (_) {}
   }
 
   Future<void> _persistLabBookingReportKey(String bookingId, String key) async {
     if (!SupabaseBootstrap.isReady || bookingId.isEmpty || key.isEmpty) return;
+    if (debugPersistLabBookingReportKeyOverride != null) {
+      await debugPersistLabBookingReportKeyOverride!(bookingId, key);
+      return;
+    }
     await _client.from('lab_bookings').update({
       'report_storage_key': key,
       'report_s3_key': key,
@@ -268,11 +377,41 @@ class SupabaseLabRepository {
     }).eq('booking_id', bookingId);
   }
 
+  Future<void> _clearLabBookingReportKey(String bookingId) async {
+    if (!SupabaseBootstrap.isReady || bookingId.isEmpty) return;
+    if (debugClearLabBookingReportKeyOverride != null) {
+      await debugClearLabBookingReportKeyOverride!(bookingId);
+      return;
+    }
+    await _client.from('lab_bookings').update({
+      'report_storage_key': null,
+      'report_s3_key': null,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('booking_id', bookingId);
+  }
+
   Future<void> _persistLabOrderReportKey(String orderId, String key) async {
     if (!SupabaseBootstrap.isReady || orderId.isEmpty || key.isEmpty) return;
+    if (debugPersistLabOrderReportKeyOverride != null) {
+      await debugPersistLabOrderReportKeyOverride!(orderId, key);
+      return;
+    }
     await _client.from('lab_orders').update({
       'report_storage_key': key,
       'report_s3_key': key,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('order_id', orderId);
+  }
+
+  Future<void> _clearLabOrderReportKey(String orderId) async {
+    if (!SupabaseBootstrap.isReady || orderId.isEmpty) return;
+    if (debugClearLabOrderReportKeyOverride != null) {
+      await debugClearLabOrderReportKeyOverride!(orderId);
+      return;
+    }
+    await _client.from('lab_orders').update({
+      'report_storage_key': null,
+      'report_s3_key': null,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     }).eq('order_id', orderId);
   }
@@ -284,16 +423,29 @@ class SupabaseLabRepository {
     String? notes,
     String? reportStorageKey,
   }) async {
-    final override = debugUpdateLabBookingStatusOverride;
-    if (override != null) {
-      return override(
-        bookingId: bookingId,
-        newStatus: newStatus,
-        notes: notes,
-      );
-    }
     if (!SupabaseBootstrap.isReady || bookingId.isEmpty) return false;
+    final key = reportStorageKey?.trim();
+    final hasKey = key != null && key.isNotEmpty;
+    if (hasKey) {
+      await _persistLabBookingReportKey(bookingId, key);
+    }
     try {
+      final override = debugUpdateLabBookingStatusOverride;
+      if (override != null) {
+        final ok = await override(
+          bookingId: bookingId,
+          newStatus: newStatus,
+          notes: notes,
+        );
+        if (!ok && hasKey) {
+          await _rollbackLabBookingReportKeyAfterFailedStatusUpdate(
+            bookingId,
+            key,
+          );
+        }
+        return ok;
+      }
+      // Until migration 000015 (RPC sets key atomically): key is persisted above; RPC sets status.
       final res = await _client.rpc(
         'update_lab_booking_status',
         params: {
@@ -302,15 +454,21 @@ class SupabaseLabRepository {
           if (notes != null) 'p_notes': notes,
         },
       );
-      if (res is Map && res['success'] == true) {
-        final key = reportStorageKey?.trim();
-        if (key != null && key.isNotEmpty) {
-          await _persistLabBookingReportKey(bookingId, key);
-        }
-        return true;
+      final ok = res is Map && res['success'] == true;
+      if (!ok && hasKey) {
+        await _rollbackLabBookingReportKeyAfterFailedStatusUpdate(
+          bookingId,
+          key,
+        );
       }
-      return false;
+      return ok;
     } catch (e) {
+      if (hasKey) {
+        await _rollbackLabBookingReportKeyAfterFailedStatusUpdate(
+          bookingId,
+          key,
+        );
+      }
       if (kDebugMode) debugPrint('[SupabaseLab] updateLabBookingStatus error: $e');
       rethrow;
     }
@@ -405,16 +563,28 @@ class SupabaseLabRepository {
     String? notes,
     String? reportStorageKey,
   }) async {
-    final override = debugUpdateLabOrderStatusOverride;
-    if (override != null) {
-      return override(
-        orderId: orderId,
-        newStatus: newStatus,
-        notes: notes,
-      );
-    }
     if (!SupabaseBootstrap.isReady || orderId.isEmpty) return false;
+    final key = reportStorageKey?.trim();
+    final hasKey = key != null && key.isNotEmpty;
+    if (hasKey) {
+      await _persistLabOrderReportKey(orderId, key);
+    }
     try {
+      final override = debugUpdateLabOrderStatusOverride;
+      if (override != null) {
+        final ok = await override(
+          orderId: orderId,
+          newStatus: newStatus,
+          notes: notes,
+        );
+        if (!ok && hasKey) {
+          await _rollbackLabOrderReportKeyAfterFailedStatusUpdate(
+            orderId,
+            key,
+          );
+        }
+        return ok;
+      }
       final res = await _client.rpc(
         'update_lab_order_status',
         params: {
@@ -423,15 +593,21 @@ class SupabaseLabRepository {
           if (notes != null) 'p_notes': notes,
         },
       );
-      if (res is Map && res['success'] == true) {
-        final key = reportStorageKey?.trim();
-        if (key != null && key.isNotEmpty) {
-          await _persistLabOrderReportKey(orderId, key);
-        }
-        return true;
+      final ok = res is Map && res['success'] == true;
+      if (!ok && hasKey) {
+        await _rollbackLabOrderReportKeyAfterFailedStatusUpdate(
+          orderId,
+          key,
+        );
       }
-      return false;
+      return ok;
     } catch (e) {
+      if (hasKey) {
+        await _rollbackLabOrderReportKeyAfterFailedStatusUpdate(
+          orderId,
+          key,
+        );
+      }
       if (kDebugMode) debugPrint('[SupabaseLab] updateLabOrderStatus error: $e');
       rethrow;
     }

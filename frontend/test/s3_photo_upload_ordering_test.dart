@@ -300,6 +300,13 @@ void main() {
   });
 
   group('LabBookingRepository.submitReport ordering', () {
+    setUp(() {
+      SupabaseLabRepository.debugPersistLabBookingReportKeyOverride =
+          (_, __) async {};
+      SupabaseLabRepository.debugClearLabBookingReportKeyOverride =
+          (_) async {};
+    });
+
     const bookingId = 'LAB_BOOK_101';
     const patientId = 'p_789';
     const oldReportKey = 'lab_reports/p_789/LAB_BOOK_101/old_report.pdf';
@@ -378,6 +385,12 @@ void main() {
   });
 
   group('LabOrderRepository.submitReport ordering', () {
+    setUp(() {
+      SupabaseLabRepository.debugPersistLabOrderReportKeyOverride =
+          (_, __) async {};
+      SupabaseLabRepository.debugClearLabOrderReportKeyOverride = (_) async {};
+    });
+
     const orderId = 'ORDER_202';
     const patientId = 'p_888';
     const oldReportKey = 'lab_reports/p_888/ORDER_202/old_order_report.pdf';
