@@ -92,7 +92,11 @@ BEGIN
             RAISE EXCEPTION 'Only the assigned lab or an admin may set report storage key' USING ERRCODE = '42501';
         END IF;
         v_expected_prefix := 'lab_reports/' || v_booking.patient_id || '/' || p_booking_id || '/';
-        IF v_key NOT LIKE v_expected_prefix || '%' OR position(E'\n' in v_key) > 0 OR position(E'\t' in v_key) > 0 THEN
+        IF NOT starts_with(v_key, v_expected_prefix)
+            OR position('..' IN v_key) > 0
+            OR position(E'\\' IN v_key) > 0
+            OR v_key ~ '[[:cntrl:]]'
+        THEN
             RAISE EXCEPTION 'Invalid report_storage_key prefix for booking %', p_booking_id USING ERRCODE = '22023';
         END IF;
     END IF;
@@ -215,7 +219,11 @@ BEGIN
             RAISE EXCEPTION 'Lab order has no patient_id for report key validation' USING ERRCODE = '22023';
         END IF;
         v_expected_prefix := 'lab_reports/' || v_patient_id || '/' || p_order_id || '/';
-        IF v_key NOT LIKE v_expected_prefix || '%' OR position(E'\n' in v_key) > 0 OR position(E'\t' in v_key) > 0 THEN
+        IF NOT starts_with(v_key, v_expected_prefix)
+            OR position('..' IN v_key) > 0
+            OR position(E'\\' IN v_key) > 0
+            OR v_key ~ '[[:cntrl:]]'
+        THEN
             RAISE EXCEPTION 'Invalid report_storage_key prefix for order %', p_order_id USING ERRCODE = '22023';
         END IF;
     END IF;
