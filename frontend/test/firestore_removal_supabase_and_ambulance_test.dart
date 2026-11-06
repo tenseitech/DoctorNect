@@ -24,11 +24,11 @@ void main() {
       SharedAppointmentsStore.instance.clearForSignOut();
       SharedAppointmentsStore.debugPatientSupabaseRefresh = null;
       SharedAppointmentsStore.debugPatientFirestoreRefresh = null;
-      SharedAppointmentsStore.instance.clearForSignOut();
+      SharedAppointmentsStore.debugForceReleaseMode = false;
       SupabaseBootstrap.isReady = false;
     });
 
-    test('merge uses Supabase rows; Firestore only via debugPatientFirestoreRefresh', () async {
+    test('merge uses Supabase rows; extra rows via debugPatientFirestoreRefresh', () async {
       SupabaseBootstrap.isReady = true;
       SharedAppointmentsStore.debugPatientSupabaseRefresh = (_) async {
         return [
@@ -93,6 +93,84 @@ void main() {
       expect(caught, isNotNull);
       expect(SharedAppointmentsStore.instance.lastError, isNotNull);
     });
+
+    test('same id from debugPatientFirestoreRefresh overrides Supabase row', () async {
+      SupabaseBootstrap.isReady = true;
+      SharedAppointmentsStore.debugPatientSupabaseRefresh = (_) async {
+        return [
+          DoctorNectAppointmentRecord(
+            id: 'same',
+            appointmentId: 'ap-s',
+            doctorId: 'd1',
+            doctorName: 'From Supabase',
+            specialization: 'GP',
+            patientName: 'Pat',
+            patientAge: 30,
+            patientGender: 'M',
+            dateTime: DateTime.utc(2026, 1, 1),
+            slotLabel: '10:00',
+            tokenNumber: 1,
+            visitType: AppointmentType.newVisit,
+            patientStatus: PatientBookingStatus.confirmed,
+            doctorStatus: AppointmentStatus.confirmed,
+          ),
+        ];
+      };
+      SharedAppointmentsStore.debugPatientFirestoreRefresh = (_) async {
+        return [
+          DoctorNectAppointmentRecord(
+            id: 'same',
+            appointmentId: 'ap-f',
+            doctorId: 'd1',
+            doctorName: 'From Firestore',
+            specialization: 'GP',
+            patientName: 'Pat',
+            patientAge: 30,
+            patientGender: 'M',
+            dateTime: DateTime.utc(2026, 1, 2),
+            slotLabel: '11:00',
+            tokenNumber: 2,
+            visitType: AppointmentType.newVisit,
+            patientStatus: PatientBookingStatus.confirmed,
+            doctorStatus: AppointmentStatus.confirmed,
+          ),
+        ];
+      };
+
+      await SharedAppointmentsStore.instance.refreshForPatient('p1');
+      expect(
+        SharedAppointmentsStore.instance.records.single.doctorName,
+        'From Firestore',
+      );
+    });
+
+    test('empty Supabase list still merges debugPatientFirestoreRefresh rows', () async {
+      SupabaseBootstrap.isReady = true;
+      SharedAppointmentsStore.debugPatientSupabaseRefresh = (_) async => [];
+      SharedAppointmentsStore.debugPatientFirestoreRefresh = (_) async {
+        return [
+          DoctorNectAppointmentRecord(
+            id: 'fs-1',
+            appointmentId: 'ap-fs-1',
+            doctorId: 'd1',
+            doctorName: 'Dr A',
+            specialization: 'GP',
+            patientName: 'Pat',
+            patientAge: 30,
+            patientGender: 'M',
+            dateTime: DateTime.utc(2026, 1, 1),
+            slotLabel: '10:00',
+            tokenNumber: 1,
+            visitType: AppointmentType.newVisit,
+            patientStatus: PatientBookingStatus.confirmed,
+            doctorStatus: AppointmentStatus.confirmed,
+          ),
+        ];
+      };
+
+      await SharedAppointmentsStore.instance.refreshForPatient('p1');
+      expect(SharedAppointmentsStore.instance.records.single.id, 'fs-1');
+    });
   });
 
   group('InAppNotificationService (Supabase mark-read surface)', () {
@@ -135,15 +213,16 @@ void main() {
 
     setUp(() {
       fakeFs = FakeFirebaseFirestore();
-      ProfileCompletionService.debugFirestoreOverride = () => fakeFs;
       DoctorPatientCutoverFlag.debugOverride = false;
       SupabaseBootstrap.isReady = false;
       FirebaseBootstrap.isReady = true;
       ProfileCompletionService.instance.reset();
+      ProfileCompletionService.debugFirestoreOverride = () => fakeFs;
     });
 
     tearDown(() {
       ProfileCompletionService.debugFirestoreOverride = null;
+      ProfileCompletionService.debugForceReleaseMode = false;
       DoctorPatientCutoverFlag.resetForTesting();
       FirebaseBootstrap.isReady = false;
     });

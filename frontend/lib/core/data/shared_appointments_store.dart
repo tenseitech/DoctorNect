@@ -237,15 +237,58 @@ class SharedAppointmentsStore extends ChangeNotifier {
   static Future<List<DoctorNectAppointmentRecord>> Function(String patientId)?
       debugPatientSupabaseRefresh;
 
-  /// When set, [refreshForPatient] merges these rows (tests only). Release uses Supabase only.
+  static Future<List<DoctorNectAppointmentRecord>> Function(String patientId)?
+      _debugPatientFirestoreRefresh;
+
+  /// When set in tests, merged with Supabase rows (debug/profile only — never in release).
   @visibleForTesting
   static Future<List<DoctorNectAppointmentRecord>> Function(String patientId)?
-      debugPatientFirestoreRefresh;
+      get debugPatientFirestoreRefresh => _debugPatientFirestoreRefresh;
 
-  /// When set, [refreshForDoctor] uses Firestore fetches (tests only). Release uses Supabase only.
+  @visibleForTesting
+  static set debugPatientFirestoreRefresh(
+    Future<List<DoctorNectAppointmentRecord>> Function(String patientId)? value,
+  ) {
+    assert(() {
+      if (value != null && (kReleaseMode || debugForceReleaseMode)) {
+        throw AssertionError(
+          'debugPatientFirestoreRefresh must not be set in release mode',
+        );
+      }
+      return true;
+    }());
+    _debugPatientFirestoreRefresh = value;
+  }
+
+  static Future<List<DoctorNectAppointmentRecord>> Function(String doctorId)?
+      _debugDoctorFirestoreRefresh;
+
+  /// When set in tests, used when Supabase is not ready (debug/profile only).
   @visibleForTesting
   static Future<List<DoctorNectAppointmentRecord>> Function(String doctorId)?
-      debugDoctorFirestoreRefresh;
+      get debugDoctorFirestoreRefresh => _debugDoctorFirestoreRefresh;
+
+  @visibleForTesting
+  static set debugDoctorFirestoreRefresh(
+    Future<List<DoctorNectAppointmentRecord>> Function(String doctorId)? value,
+  ) {
+    assert(() {
+      if (value != null && (kReleaseMode || debugForceReleaseMode)) {
+        throw AssertionError(
+          'debugDoctorFirestoreRefresh must not be set in release mode',
+        );
+      }
+      return true;
+    }());
+    _debugDoctorFirestoreRefresh = value;
+  }
+
+  /// Test-only: treat runtime as release (ignores debug Firestore refresh hooks).
+  @visibleForTesting
+  static bool debugForceReleaseMode = false;
+
+  static bool get _effectiveReleaseMode =>
+      kReleaseMode || debugForceReleaseMode;
 
   /// Last error from a patient/doctor appointment sync. Cleared on success.
   Object? lastError;
@@ -316,8 +359,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
           doctorId,
           preferCache: preferCache,
         );
-      } else if (debugDoctorFirestoreRefresh != null) {
-        remote = await debugDoctorFirestoreRefresh!(doctorId);
+      } else if (!_effectiveReleaseMode && _debugDoctorFirestoreRefresh != null) {
+        remote = await _debugDoctorFirestoreRefresh!(doctorId);
       } else if (kReleaseMode) {
         throw StateError(
           'Appointments require Supabase. Check configuration.',
@@ -355,7 +398,7 @@ class SharedAppointmentsStore extends ChangeNotifier {
             .map((r) => SupabasePatientRepository.instance.toRecord(r))
             .whereType<DoctorNectAppointmentRecord>()
             .toList();
-      } else if (kReleaseMode) {
+      } else if (_effectiveReleaseMode) {
         throw StateError(
           'Appointments require Supabase. Check configuration.',
         );
@@ -372,21 +415,13 @@ class SharedAppointmentsStore extends ChangeNotifier {
           'SharedAppointmentsStore.refreshForPatient failed: $e\n$st',
         );
       }
-      // Tests: allow Firestore-only merge when [debugPatientFirestoreRefresh] is set.
-      if (debugPatientFirestoreRefresh != null && !kReleaseMode) {
-        final fr = await debugPatientFirestoreRefresh!(patientId);
-        mergeFromFirestore(
-          mergePatientRefresh(supabaseRows: const [], firestoreRows: fr),
-        );
-        return;
-      }
       rethrow;
     }
 
     try {
       var firestoreRows = const <DoctorNectAppointmentRecord>[];
-      final firestoreOverride = debugPatientFirestoreRefresh;
-      if (firestoreOverride != null) {
+      final firestoreOverride = _debugPatientFirestoreRefresh;
+      if (firestoreOverride != null && !_effectiveReleaseMode) {
         firestoreRows = await firestoreOverride(patientId);
       }
 

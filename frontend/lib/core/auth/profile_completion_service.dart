@@ -7,6 +7,7 @@ import 'demo_auth_config.dart';
 import 'verification_lifecycle.dart';
 import '../enums/user_type.dart';
 import '../firebase/firebase_bootstrap.dart';
+import '../config/firestore_forbidden_guard.dart';
 import '../firebase/firestore_paths.dart';
 import '../firebase/firestore_read_helper.dart';
 
@@ -29,11 +30,35 @@ class ProfileCompletionService extends ChangeNotifier {
 
   /// When set in tests, Firestore reads/writes for the **legacy** path go through this
   /// callback instead of `FirebaseFirestore.instance` (e.g. fake_cloud_firestore).
-  @visibleForTesting
-  static FirebaseFirestore Function()? debugFirestoreOverride;
+  static FirebaseFirestore Function()? _debugFirestoreOverride;
 
-  FirebaseFirestore _effectiveFirestore() =>
-      debugFirestoreOverride?.call() ?? FirebaseFirestore.instance;
+  @visibleForTesting
+  static FirebaseFirestore Function()? get debugFirestoreOverride =>
+      _debugFirestoreOverride;
+
+  @visibleForTesting
+  static set debugFirestoreOverride(FirebaseFirestore Function()? value) {
+    assert(() {
+      if (value != null && (kReleaseMode || debugForceReleaseMode)) {
+        throw AssertionError(
+          'debugFirestoreOverride must not be set in release mode',
+        );
+      }
+      return true;
+    }());
+    _debugFirestoreOverride = value;
+  }
+
+  /// Test-only: treat runtime as release for debug hook setter assertions.
+  @visibleForTesting
+  static bool debugForceReleaseMode = false;
+
+  FirebaseFirestore _effectiveFirestore() {
+    final o = _debugFirestoreOverride?.call();
+    if (o != null) return o;
+    FirestoreForbiddenGuard.assertNotForbidden('ProfileCompletionService');
+    return FirebaseFirestore.instance;
+  }
 
   Future<void> refreshForUser({
     required UserType role,
@@ -315,6 +340,8 @@ class ProfileCompletionService extends ChangeNotifier {
   void reset() {
     _isComplete = true;
     lastError = null;
+    _debugFirestoreOverride = null;
+    debugForceReleaseMode = false;
     notifyListeners();
   }
 
