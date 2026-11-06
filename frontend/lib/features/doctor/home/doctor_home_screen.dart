@@ -6,6 +6,8 @@ import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/config/ambulance_enabled.dart';
+import '../../../widgets/emergency_hotline_sheet.dart';
 import '../../../core/auth/profile_action_guard.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/shared_appointments_store.dart';
@@ -534,22 +536,23 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         gradient: const [Color(0xFF0891B2), Color(0xFF0E7490)],
         onTap: _openRescheduleWithSearch,
       ),
-      DoctorHomeServiceItem(
-        label: 'Ambulance',
-        shortLabel: 'Ambulance',
-        subtitle: 'Emergency help',
-        icon: Icons.emergency_rounded,
-        assetPath: AssetResolver.resolve('assets/icons/doctor/ambulance.png'),
-        gradient: const [Color(0xFFDC2626), Color(0xFFB91C1C)],
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const AmbulanceBookingScreen(
-              bookedByRole: AmbulanceBookedByRole.doctor,
+      if (AmbulanceEnabled.isOn)
+        DoctorHomeServiceItem(
+          label: 'Ambulance',
+          shortLabel: 'Ambulance',
+          subtitle: 'Emergency help',
+          icon: Icons.emergency_rounded,
+          assetPath: AssetResolver.resolve('assets/icons/doctor/ambulance.png'),
+          gradient: const [Color(0xFFDC2626), Color(0xFFB91C1C)],
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AmbulanceBookingScreen(
+                bookedByRole: AmbulanceBookedByRole.doctor,
+              ),
             ),
           ),
         ),
-      ),
       DoctorHomeServiceItem(
         label: 'Doctor Pass',
         shortLabel: 'Doctor Pass',
@@ -567,7 +570,13 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         subtitle: '24/7 emergency response',
         icon: Icons.emergency_rounded,
         gradient: const [Color(0xFFDC2626), Color(0xFFB91C1C)],
-        onTap: () => EmergencySosSheet.show(context),
+        onTap: () {
+          if (AmbulanceEnabled.isOn) {
+            EmergencySosSheet.show(context);
+          } else {
+            EmergencyHotlineSheet.show(context);
+          }
+        },
       ),
     ];
   }

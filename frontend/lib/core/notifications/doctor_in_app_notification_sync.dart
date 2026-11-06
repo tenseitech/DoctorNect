@@ -1,13 +1,14 @@
-import 'package:medibond/core/firebase/firestore_service.dart';
-
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:medibond/core/firebase/firestore_service.dart';
+
+import 'package:medibond/core/supabase/supabase_bootstrap.dart';
 import 'app_notification.dart';
 import 'in_app_notification_service.dart';
 
-/// Real-time Firestore inbox sync for the signed-in doctor.
+/// In-app inbox sync for the signed-in doctor (Supabase in production).
 abstract final class DoctorInAppNotificationSync {
   static StreamSubscription<List<AppNotification>>? _sub;
   static final Set<String> _knownNotificationIds = {};
@@ -19,11 +20,18 @@ abstract final class DoctorInAppNotificationSync {
     _knownNotificationIds.clear();
     _seededInitialSnapshot = false;
 
+    if (!SupabaseBootstrap.isReady) {
+      if (kDebugMode) {
+        debugPrint('DoctorInAppNotificationSync: Supabase not ready; skip.');
+      }
+      return;
+    }
+
     _sub = FirestoreService.instance.inAppNotification
         .watchForRecipient(recipientUid)
         .listen(
       (notifications) {
-        InAppNotificationService.instance.mergeDoctorFirestoreNotifications(
+        InAppNotificationService.instance.mergeDoctorRemoteNotifications(
           notifications,
         );
 

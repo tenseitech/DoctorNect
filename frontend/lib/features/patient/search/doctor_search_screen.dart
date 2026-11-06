@@ -3,6 +3,9 @@ import '../../../core/firebase/firestore_service.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../../core/config/ambulance_enabled.dart';
+import '../../../core/config/ambulance_entry_points.dart';
+import '../../../core/notifications/app_toast.dart';
 import '../../../core/constants/speciality_mapper.dart';
 import '../../../core/constants/specialty_categories.dart';
 import '../../../core/layout/responsive_layout.dart';
@@ -57,7 +60,7 @@ class DoctorSearchScreen extends StatefulWidget {
   final bool nearYouMode;
   final bool embeddedInShell;
 
-  /// Switches patient shell tabs (2=Labs, 3=Ambulance) without losing bottom nav.
+  /// Switches patient shell tabs (logical: 2=Labs, 3=Ambulance, 4=Profile when Ambulance is on).
   final ValueChanged<int>? onSelectPatientTab;
 
   @override
@@ -113,8 +116,10 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
         _fetchDeviceLocation();
       });
     }
-    AmbulanceStore.instance.addListener(_onAmbulanceStoreChanged);
-    FirestoreService.instance.ambulance.fetchRegisteredAmbulances();
+    if (AmbulanceEnabled.isOn) {
+      AmbulanceStore.instance.addListener(_onAmbulanceStoreChanged);
+      FirestoreService.instance.ambulance.fetchRegisteredAmbulances();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _doctorsStore.startListening();
       if (widget.autofocus) _focusNode.requestFocus();
@@ -148,8 +153,14 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
   }
 
   void _openAmbulanceBooking() {
+    if (!AmbulanceEnabled.isOn) {
+      AppToast.info(context, AmbulanceEntryPoints.patientShellUnavailableMessage);
+      return;
+    }
     if (widget.onSelectPatientTab != null) {
-      widget.onSelectPatientTab!(3);
+      widget.onSelectPatientTab!(
+        AmbulanceEntryPoints.patientShellAmbulanceTabIndex,
+      );
       return;
     }
     Navigator.push(
@@ -200,7 +211,9 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
   @override
   void dispose() {
     _doctorsStore.stopListening();
-    AmbulanceStore.instance.removeListener(_onAmbulanceStoreChanged);
+    if (AmbulanceEnabled.isOn) {
+      AmbulanceStore.instance.removeListener(_onAmbulanceStoreChanged);
+    }
     _focusNode.removeListener(_onSearchFocusChanged);
     _searchController.dispose();
     _focusNode.dispose();
@@ -968,43 +981,49 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
       }
     }
 
-    // 3. Ambulances near you: top 5-10
-    final sourceAmbulances =
-        AmbulanceStore.instance.registeredAmbulances.isNotEmpty
-            ? AmbulanceStore.instance.registeredAmbulances
-            : _defaultAmbulances;
-    final nearbyAmbulances = <RegisteredAmbulance>[];
-    if (userCity.isNotEmpty) {
-      final cityMatches = sourceAmbulances
-          .where(
-            (a) => ambulanceMatchesRequestCity(
-              requestCity: userCity,
-              ambulanceCity: a.city,
-              serviceAreas: a.serviceAreas,
-              baseAddress: a.baseAddress,
-            ),
-          )
-          .toList();
-      cityMatches.sort((a, b) {
-        if (a.available != b.available) return a.available ? -1 : 1;
-        return b.averageRating.compareTo(a.averageRating);
-      });
-      nearbyAmbulances.addAll(cityMatches);
-    }
-    if (nearbyAmbulances.length < 5) {
-      final remaining =
-          sourceAmbulances.where((a) => !nearbyAmbulances.contains(a)).toList();
-      remaining.sort((a, b) {
-        if (a.available != b.available) return a.available ? -1 : 1;
-        return b.averageRating.compareTo(a.averageRating);
-      });
-      for (final a in remaining) {
-        if (nearbyAmbulances.length >= 10) break;
-        nearbyAmbulances.add(a);
+    late final List<RegisteredAmbulance> nearbyAmbulances;
+    if (AmbulanceEnabled.isOn) {
+      // 3. Ambulances near you: top 5-10
+      final sourceAmbulances =
+          AmbulanceStore.instance.registeredAmbulances.isNotEmpty
+              ? AmbulanceStore.instance.registeredAmbulances
+              : _defaultAmbulances;
+      nearbyAmbulances = <RegisteredAmbulance>[];
+      if (userCity.isNotEmpty) {
+        final cityMatches = sourceAmbulances
+            .where(
+              (a) => ambulanceMatchesRequestCity(
+                requestCity: userCity,
+                ambulanceCity: a.city,
+                serviceAreas: a.serviceAreas,
+                baseAddress: a.baseAddress,
+              ),
+            )
+            .toList();
+        cityMatches.sort((a, b) {
+          if (a.available != b.available) return a.available ? -1 : 1;
+          return b.averageRating.compareTo(a.averageRating);
+        });
+        nearbyAmbulances.addAll(cityMatches);
       }
-    }
-    if (nearbyAmbulances.length > 10) {
-      nearbyAmbulances.removeRange(10, nearbyAmbulances.length);
+      if (nearbyAmbulances.length < 5) {
+        final remaining = sourceAmbulances
+            .where((a) => !nearbyAmbulances.contains(a))
+            .toList();
+        remaining.sort((a, b) {
+          if (a.available != b.available) return a.available ? -1 : 1;
+          return b.averageRating.compareTo(a.averageRating);
+        });
+        for (final a in remaining) {
+          if (nearbyAmbulances.length >= 10) break;
+          nearbyAmbulances.add(a);
+        }
+      }
+      if (nearbyAmbulances.length > 10) {
+        nearbyAmbulances.removeRange(10, nearbyAmbulances.length);
+      }
+    } else {
+      nearbyAmbulances = const [];
     }
 
     final rows = <Widget>[];
@@ -1150,31 +1169,34 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
       ],
     );
 
-    // Section 3: Ambulances near you
-    addSection(
-      title: 'Ambulances near you',
-      accent: const Color(0xFFEF4444),
-      count: nearbyAmbulances.length,
-      onViewAll: _openAmbulanceBooking,
-      items: [
-        for (var i = 0; i < nearbyAmbulances.length; i++)
-          LabSearchResultTile(
-            title: nearbyAmbulances[i].serviceName.isNotEmpty
-                ? nearbyAmbulances[i].serviceName
-                : 'Ambulance Service',
-            subtitle: [
-              if (nearbyAmbulances[i].city.isNotEmpty) nearbyAmbulances[i].city,
-              nearbyAmbulances[i].driverName.isNotEmpty
-                  ? nearbyAmbulances[i].driverName
-                  : 'Emergency Driver',
-              nearbyAmbulances[i].available ? 'Available' : 'On call',
-            ].join(' · '),
-            kind: LabSearchResultKind.ambulance,
-            showDivider: i < nearbyAmbulances.length - 1,
-            onTap: _openAmbulanceBooking,
-          ),
-      ],
-    );
+    if (AmbulanceEnabled.isOn) {
+      // Section 3: Ambulances near you
+      addSection(
+        title: 'Ambulances near you',
+        accent: const Color(0xFFEF4444),
+        count: nearbyAmbulances.length,
+        onViewAll: _openAmbulanceBooking,
+        items: [
+          for (var i = 0; i < nearbyAmbulances.length; i++)
+            LabSearchResultTile(
+              title: nearbyAmbulances[i].serviceName.isNotEmpty
+                  ? nearbyAmbulances[i].serviceName
+                  : 'Ambulance Service',
+              subtitle: [
+                if (nearbyAmbulances[i].city.isNotEmpty)
+                  nearbyAmbulances[i].city,
+                nearbyAmbulances[i].driverName.isNotEmpty
+                    ? nearbyAmbulances[i].driverName
+                    : 'Emergency Driver',
+                nearbyAmbulances[i].available ? 'Available' : 'On call',
+              ].join(' · '),
+              kind: LabSearchResultKind.ambulance,
+              showDivider: i < nearbyAmbulances.length - 1,
+              onTap: _openAmbulanceBooking,
+            ),
+        ],
+      );
+    }
 
     return ColoredBox(
       color: AppColors.surfaceOf(context),

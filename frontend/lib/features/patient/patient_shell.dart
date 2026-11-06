@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import '../../core/config/ambulance_enabled.dart';
+import '../../core/config/ambulance_entry_points.dart';
 import '../../core/auth/role_session_guard.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/data/shared_appointments_store.dart';
@@ -250,52 +252,67 @@ class PatientShell extends StatefulWidget {
 class _PatientShellState extends State<PatientShell> {
   int _index = 0;
 
-  static final _tabs = [
-    const PatientTabItem(
-      outlinedIcon: Icons.home_outlined,
-      filledIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    const PatientTabItem(
-      outlinedIcon: Icons.event_outlined,
-      filledIcon: Icons.event_rounded,
-      label: 'Appointment',
-      shortLabel: 'Appointment',
-    ),
-    const PatientTabItem(
-      outlinedIcon: Icons.science_outlined,
-      filledIcon: Icons.science_rounded,
-      label: 'My Labs',
-      shortLabel: 'Labs',
-    ),
-    const PatientTabItem(
-      outlinedIcon: Icons.emergency_rounded,
-      filledIcon: Icons.emergency_rounded,
-      label: 'Ambulance',
-    ),
-    PatientTabItem(
-      outlinedIcon: Icons.person_outline_rounded,
-      filledIcon: Icons.person_rounded,
-      label: 'Profile',
-      customIconBuilder: (context, selected, iconColor, size) =>
-          _PatientProfileTabAvatar(
-        selected: selected,
-        iconColor: iconColor,
-        size: size,
-        fallbackIcon:
-            selected ? Icons.person_rounded : Icons.person_outline_rounded,
+  List<PatientTabItem> get _tabs {
+    final base = <PatientTabItem>[
+      const PatientTabItem(
+        outlinedIcon: Icons.home_outlined,
+        filledIcon: Icons.home_rounded,
+        label: 'Home',
       ),
-    ),
-  ];
+      const PatientTabItem(
+        outlinedIcon: Icons.event_outlined,
+        filledIcon: Icons.event_rounded,
+        label: 'Appointment',
+        shortLabel: 'Appointment',
+      ),
+      const PatientTabItem(
+        outlinedIcon: Icons.science_outlined,
+        filledIcon: Icons.science_rounded,
+        label: 'My Labs',
+        shortLabel: 'Labs',
+      ),
+    ];
+    if (AmbulanceEnabled.isOn) {
+      base.add(
+        const PatientTabItem(
+          outlinedIcon: Icons.emergency_rounded,
+          filledIcon: Icons.emergency_rounded,
+          label: 'Ambulance',
+        ),
+      );
+    }
+    base.add(
+      PatientTabItem(
+        outlinedIcon: Icons.person_outline_rounded,
+        filledIcon: Icons.person_rounded,
+        label: 'Profile',
+        customIconBuilder: (context, selected, iconColor, size) =>
+            _PatientProfileTabAvatar(
+          selected: selected,
+          iconColor: iconColor,
+          size: size,
+          fallbackIcon:
+              selected ? Icons.person_rounded : Icons.person_outline_rounded,
+        ),
+      ),
+    );
+    return base;
+  }
 
   final Set<int> _visitedTabs = {0};
 
-  void _selectTab(int index) {
+  void _selectTab(int logicalIndex) {
     Navigator.of(context).popUntil((route) => route.isFirst);
     if (!mounted) return;
+    final physical = AmbulanceEntryPoints.mapLogicalPatientTabToPhysical(
+      logicalIndex,
+      context: context,
+      showUnavailableToast: true,
+    );
+    if (physical == null) return;
     setState(() {
-      _visitedTabs.add(index);
-      _index = index;
+      _visitedTabs.add(physical);
+      _index = physical;
     });
   }
 
@@ -427,15 +444,24 @@ class _PatientShellState extends State<PatientShell> {
       case 2:
         return const MyLabsScreen(embeddedInShell: true);
       case 3:
-        return const AmbulanceBookingScreen(
-          bookedByRole: AmbulanceBookedByRole.patient,
-          embeddedInShell: true,
-        );
-      case 4:
+        if (AmbulanceEnabled.isOn) {
+          return const AmbulanceBookingScreen(
+            bookedByRole: AmbulanceBookedByRole.patient,
+            embeddedInShell: true,
+          );
+        }
         return PatientProfileScreen(
           embeddedInShell: true,
           onOpenAppointments: () => _selectTab(1),
         );
+      case 4:
+        if (AmbulanceEnabled.isOn) {
+          return PatientProfileScreen(
+            embeddedInShell: true,
+            onOpenAppointments: () => _selectTab(1),
+          );
+        }
+        return const SizedBox.shrink();
       default:
         return const SizedBox.shrink();
     }
@@ -456,10 +482,16 @@ class _PatientShellState extends State<PatientShell> {
               InAppNotificationService.instance.unreadPatientCount > 0;
           // Home tab (index 0) hosts the notification bell — flag it when
           // anything new (appointment, lab, etc.) has been received.
-          final requestDots = [hasUnread, false, false, false, false];
+          final requestDots = List<bool>.generate(
+            _tabs.length,
+            (i) => i == 0 ? hasUnread : false,
+          );
           return PatientAppShell(
             selectedIndex: _index,
-            onDestinationSelected: _selectTab,
+            onDestinationSelected: (i) => setState(() {
+              _visitedTabs.add(i);
+              _index = i;
+            }),
             tabs: _tabs,
             requestDots: requestDots,
             child: IndexedStack(

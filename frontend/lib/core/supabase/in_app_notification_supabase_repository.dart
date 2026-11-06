@@ -21,6 +21,15 @@ class InAppNotificationSupabaseRepository {
     _mockClient = client;
   }
 
+  @visibleForTesting
+  static Future<void> Function(String notificationId)? debugMarkReadOverride;
+
+  @visibleForTesting
+  void clearClientForTesting() => _mockClient = null;
+
+  @visibleForTesting
+  static void resetMarkReadOverrideForTesting() => debugMarkReadOverride = null;
+
   SupabaseClient get _client => _mockClient ?? SupabaseBootstrap.client;
 
   static AppNotification? notificationFromRow(Map<String, dynamic> row) {
@@ -135,6 +144,11 @@ class InAppNotificationSupabaseRepository {
 
   Future<void> markRead(String notificationId) async {
     if (notificationId.isEmpty) return;
+    final o = debugMarkReadOverride;
+    if (!kReleaseMode && o != null) {
+      await o(notificationId);
+      return;
+    }
     await _client.from('in_app_notifications').update({
       'is_read': true,
       'read_at': DateTime.now().toIso8601String(),

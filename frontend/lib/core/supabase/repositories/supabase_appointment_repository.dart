@@ -64,8 +64,11 @@ class SupabaseAppointmentRepository {
           .map(AppointmentSupabaseMapper.fromRow)
           .whereType<DoctorNectAppointmentRecord>()
           .toList();
-    } catch (_) {
-      return const [];
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[SupabaseAppointmentRepository] fetchForDoctor error: $e\n$st');
+      }
+      rethrow;
     }
   }
 
@@ -88,8 +91,11 @@ class SupabaseAppointmentRepository {
           .map(AppointmentSupabaseMapper.fromRow)
           .whereType<DoctorNectAppointmentRecord>()
           .toList();
-    } catch (_) {
-      return const [];
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[SupabaseAppointmentRepository] fetchForPatient error: $e\n$st');
+      }
+      rethrow;
     }
   }
 

@@ -13,6 +13,7 @@ import '../firebase/firebase_auth_service.dart';
 import '../firebase/firebase_bootstrap.dart';
 import '../firebase/firebase_error_messages.dart';
 import '../firebase/firestore_service.dart';
+import '../config/ambulance_enabled.dart';
 import '../notifications/app_toast.dart';
 import '../session/ambulance_session.dart';
 import '../session/app_session.dart';
@@ -291,6 +292,14 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     AppSession.clear();
 
     if (effectiveRole == UserType.ambulance) {
+      if (!AmbulanceEnabled.isOn) {
+        if (!context.mounted) return;
+        AppToast.error(
+          context,
+          'Ambulance sign-in is not available in this build.',
+        );
+        return;
+      }
       await completeAmbulanceLogin(context, digits, otp);
       return;
     }
@@ -459,6 +468,14 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     AppSession.clear();
 
     if (targetRole == UserType.ambulance) {
+      if (!AmbulanceEnabled.isOn) {
+        if (!context.mounted) return;
+        AppToast.error(
+          context,
+          'Ambulance sign-in is not available in this build.',
+        );
+        return;
+      }
       await completeAmbulanceLogin(context, digits, _otp);
       return;
     }

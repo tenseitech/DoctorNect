@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/config/ambulance_enabled.dart';
 import '../core/theme/app_colors.dart';
+import 'emergency_hotline_sheet.dart';
 import '../features/ambulance/ambulance_booking_screen.dart'
     deferred as amb_booking;
 import '../features/ambulance/models/ambulance_models.dart'
@@ -13,6 +15,10 @@ class EmergencySosSheet extends StatelessWidget {
   const EmergencySosSheet({super.key});
 
   static void show(BuildContext context) {
+    if (!AmbulanceEnabled.isOn) {
+      EmergencyHotlineSheet.show(context);
+      return;
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

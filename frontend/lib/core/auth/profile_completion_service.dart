@@ -11,6 +11,9 @@ import '../firebase/firestore_paths.dart';
 import '../firebase/firestore_read_helper.dart';
 
 /// Tracks whether a non-patient user has completed their full profile.
+///
+/// Production path: **Supabase** (`users`, role tables). Firestore is used only
+/// in debug when Supabase is not ready (tests / legacy).
 class ProfileCompletionService extends ChangeNotifier {
   ProfileCompletionService._();
 
@@ -21,18 +24,32 @@ class ProfileCompletionService extends ChangeNotifier {
   /// `true` for patients and legacy accounts missing the field.
   bool get isComplete => _isComplete;
 
+  /// Last profile sync failure (Supabase). Cleared on success.
+  String? lastError;
+
+  /// When set in tests, Firestore reads/writes for the **legacy** path go through this
+  /// callback instead of `FirebaseFirestore.instance` (e.g. fake_cloud_firestore).
+  @visibleForTesting
+  static FirebaseFirestore Function()? debugFirestoreOverride;
+
+  FirebaseFirestore _effectiveFirestore() =>
+      debugFirestoreOverride?.call() ?? FirebaseFirestore.instance;
+
   Future<void> refreshForUser({
     required UserType role,
     required String uid,
     String? profileId,
   }) async {
+    lastError = null;
     if (role.isPatient) {
       _isComplete = true;
       notifyListeners();
       return;
     }
 
-    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady && uid.isNotEmpty) {
+    if (DoctorPatientCutoverFlag.isEnabled &&
+        SupabaseBootstrap.isReady &&
+        uid.isNotEmpty) {
       try {
         final client = SupabaseBootstrap.client;
         final res = await client
@@ -45,18 +62,42 @@ class ProfileCompletionService extends ChangeNotifier {
           notifyListeners();
           return;
         }
-      } catch (e) {
-        if (kDebugMode) debugPrint('[ProfileCompletionService] Supabase error: $e');
+
+        if (role.isAmbulance &&
+            profileId != null &&
+            profileId.isNotEmpty) {
+          final amb = await client
+              .from('ambulances')
+              .select('profile_completed')
+              .eq('ambulance_id', profileId)
+              .maybeSingle();
+          if (amb != null && amb['profile_completed'] is bool) {
+            _isComplete = amb['profile_completed'] as bool;
+            notifyListeners();
+            return;
+          }
+        }
+
+        _isComplete = true;
+        notifyListeners();
+      } catch (e, st) {
+        lastError = e.toString();
+        notifyListeners();
+        if (kDebugMode) {
+          debugPrint('[ProfileCompletionService] Supabase error: $e\n$st');
+        }
+        if (kReleaseMode) rethrow;
       }
+      return;
     }
 
-    if (!FirebaseBootstrap.isReady || uid.isEmpty) {
+    if (!kDebugMode || !FirebaseBootstrap.isReady || uid.isEmpty) {
       return;
     }
 
     try {
       final userSnap = await FirestoreReadHelper.getDocument(
-        reference: FirebaseFirestore.instance
+        reference: _effectiveFirestore()
             .collection(FirestorePaths.users)
             .doc(uid),
         preferCache: false,
@@ -100,6 +141,31 @@ class ProfileCompletionService extends ChangeNotifier {
 
   Future<void> refreshForAmbulance(String ambulanceId) async {
     if (ambulanceId.isEmpty) return;
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      lastError = null;
+      try {
+        final client = SupabaseBootstrap.client;
+        final amb = await client
+            .from('ambulances')
+            .select('profile_completed')
+            .eq('ambulance_id', ambulanceId)
+            .maybeSingle();
+        if (amb != null && amb['profile_completed'] is bool) {
+          _isComplete = amb['profile_completed'] as bool;
+        } else {
+          _isComplete = true;
+        }
+        notifyListeners();
+      } catch (e, st) {
+        lastError = e.toString();
+        notifyListeners();
+        if (kDebugMode) {
+          debugPrint('[ProfileCompletionService] ambulance Supabase: $e\n$st');
+        }
+        if (kReleaseMode) rethrow;
+      }
+      return;
+    }
     await _refreshFromAmbulanceDoc(ambulanceId);
   }
 
@@ -107,7 +173,7 @@ class ProfileCompletionService extends ChangeNotifier {
     if (!FirebaseBootstrap.isReady) return;
     try {
       final snap = await FirestoreReadHelper.getDocument(
-        reference: FirebaseFirestore.instance
+        reference: _effectiveFirestore()
             .collection(FirestorePaths.ambulances)
             .doc(ambulanceId),
         preferCache: false,
@@ -116,9 +182,30 @@ class ProfileCompletionService extends ChangeNotifier {
       _isComplete = flag is bool ? flag : true;
       notifyListeners();
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('ProfileCompletionService ambulance refresh: $e');
+      }
     }
+  }
+
+  String? _roleTable(UserType role) {
+    return switch (role) {
+      UserType.doctor => 'doctors',
+      UserType.medicalStore => 'medical_stores',
+      UserType.lab => 'labs',
+      UserType.ambulance => 'ambulances',
+      _ => null,
+    };
+  }
+
+  String? _rolePkColumn(UserType role) {
+    return switch (role) {
+      UserType.doctor => 'doctor_id',
+      UserType.medicalStore => 'store_id',
+      UserType.lab => 'lab_id',
+      UserType.ambulance => 'ambulance_id',
+      _ => null,
+    };
   }
 
   Future<void> markComplete({
@@ -126,25 +213,43 @@ class ProfileCompletionService extends ChangeNotifier {
     required String uid,
     required String profileId,
   }) async {
+    lastError = null;
     if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
       try {
         final client = SupabaseBootstrap.client;
+        final now = DateTime.now().toUtc().toIso8601String();
         await client.from('users').update({
           'profile_completed': true,
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
+          'updated_at': now,
         }).or('id.eq.$uid,firebase_uid.eq.$uid');
+
+        final table = _roleTable(role);
+        final pk = _rolePkColumn(role);
+        if (table != null && pk != null && profileId.isNotEmpty) {
+          await client.from(table).update({
+            'profile_completed': true,
+            'updated_at': now,
+          }).eq(pk, profileId);
+        }
+
         _isComplete = true;
         notifyListeners();
-      } catch (e) {
-        if (kDebugMode) debugPrint('[ProfileCompletionService] Supabase markComplete error: $e');
+      } catch (e, st) {
+        lastError = e.toString();
+        notifyListeners();
+        if (kDebugMode) {
+          debugPrint('[ProfileCompletionService] Supabase markComplete: $e\n$st');
+        }
+        if (kReleaseMode) rethrow;
       }
       return;
     }
-    if (!FirebaseBootstrap.isReady) return;
 
-    final batch = FirebaseFirestore.instance.batch();
-    final userRef =
-        FirebaseFirestore.instance.collection(FirestorePaths.users).doc(uid);
+    if (!kDebugMode || !FirebaseBootstrap.isReady) return;
+
+    final fs = _effectiveFirestore();
+    final batch = fs.batch();
+    final userRef = fs.collection(FirestorePaths.users).doc(uid);
     batch.set(
         userRef,
         {
@@ -163,7 +268,7 @@ class ProfileCompletionService extends ChangeNotifier {
 
     if (roleCollection != null && profileId.isNotEmpty) {
       batch.set(
-        FirebaseFirestore.instance.collection(roleCollection).doc(profileId),
+        fs.collection(roleCollection).doc(profileId),
         {'profileCompleted': true, 'updatedAt': FieldValue.serverTimestamp()},
         SetOptions(merge: true),
       );
@@ -175,8 +280,28 @@ class ProfileCompletionService extends ChangeNotifier {
   }
 
   Future<void> markAmbulanceComplete(String ambulanceId) async {
-    if (!FirebaseBootstrap.isReady || ambulanceId.isEmpty) return;
-    await FirebaseFirestore.instance
+    if (ambulanceId.isEmpty) return;
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      lastError = null;
+      try {
+        await SupabaseBootstrap.client.from('ambulances').update({
+          'profile_completed': true,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('ambulance_id', ambulanceId);
+        _isComplete = true;
+        notifyListeners();
+      } catch (e, st) {
+        lastError = e.toString();
+        notifyListeners();
+        if (kDebugMode) {
+          debugPrint('[ProfileCompletionService] markAmbulanceComplete: $e\n$st');
+        }
+        if (kReleaseMode) rethrow;
+      }
+      return;
+    }
+    if (!FirebaseBootstrap.isReady) return;
+    await _effectiveFirestore()
         .collection(FirestorePaths.ambulances)
         .doc(ambulanceId)
         .set({
@@ -189,6 +314,7 @@ class ProfileCompletionService extends ChangeNotifier {
 
   void reset() {
     _isComplete = true;
+    lastError = null;
     notifyListeners();
   }
 
@@ -197,7 +323,41 @@ class ProfileCompletionService extends ChangeNotifier {
     required String uid,
     required String profileId,
   }) async {
-    if (_isComplete || !FirebaseBootstrap.isReady || profileId.isEmpty) return;
+    if (_isComplete || profileId.isEmpty) return;
+
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      lastError = null;
+      try {
+        final client = SupabaseBootstrap.client;
+        final table = _roleTable(role);
+        final pk = _rolePkColumn(role);
+        if (table == null || pk == null) return;
+
+        final row = await client
+            .from(table)
+            .select()
+            .eq(pk, profileId)
+            .maybeSingle();
+        if (row == null) return;
+
+        final complete = VerificationRequirementsConfig.isComplete(role, row);
+        if (!complete) return;
+
+        if (role.isAmbulance) {
+          await markAmbulanceComplete(profileId);
+        } else if (uid.isNotEmpty) {
+          await markComplete(role: role, uid: uid, profileId: profileId);
+        }
+      } catch (e, st) {
+        lastError = e.toString();
+        notifyListeners();
+        if (kDebugMode) debugPrint('ProfileCompletionService.evaluate: $e\n$st');
+        if (kReleaseMode) rethrow;
+      }
+      return;
+    }
+
+    if (!kDebugMode || !FirebaseBootstrap.isReady) return;
 
     final collection = switch (role) {
       UserType.doctor => FirestorePaths.doctors,
@@ -210,8 +370,7 @@ class ProfileCompletionService extends ChangeNotifier {
 
     try {
       final snap = await FirestoreReadHelper.getDocument(
-        reference:
-            FirebaseFirestore.instance.collection(collection).doc(profileId),
+        reference: _effectiveFirestore().collection(collection).doc(profileId),
         preferCache: false,
       );
       final data = snap.data();

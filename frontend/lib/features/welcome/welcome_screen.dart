@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/config/ambulance_enabled.dart';
+import '../../core/notifications/app_toast.dart';
 import '../../core/auth/unified_auth_coordinator.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/invite/pending_ambulance_invite_store.dart';
@@ -76,6 +78,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final role = _selectedRole;
     if (role == null) return;
 
+    if (role == UserType.ambulance && !AmbulanceEnabled.isOn) {
+      AppToast.info(context, 'Ambulance sign-in is not available in this build.');
+      return;
+    }
+
     if (widget.isNewUser) {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -144,13 +151,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           color: AppColors.labPurple,
           icon: Icons.biotech_rounded,
         ),
-        _WelcomeRoleOption(
-          role: UserType.ambulance,
-          title: UnifiedAuthCoordinator.roleLabel(UserType.ambulance),
-          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.ambulance),
-          color: const Color(0xFFDC2626),
-          icon: Icons.emergency_rounded,
-        ),
+        if (AmbulanceEnabled.isOn)
+          _WelcomeRoleOption(
+            role: UserType.ambulance,
+            title: UnifiedAuthCoordinator.roleLabel(UserType.ambulance),
+            subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.ambulance),
+            color: const Color(0xFFDC2626),
+            icon: Icons.emergency_rounded,
+          ),
       ];
 
   @override

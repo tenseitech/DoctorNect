@@ -3,6 +3,8 @@ import '../../../core/notifications/app_toast.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../../core/config/ambulance_enabled.dart';
+import '../../../core/config/ambulance_entry_points.dart';
 import '../../../core/notifications/app_notification.dart';
 import '../../../core/notifications/widgets/notification_bell_button.dart';
 import '../../../core/session/patient_session.dart';
@@ -47,7 +49,8 @@ class PatientHomeScreen extends StatefulWidget {
     this.onOpenAppointments,
   });
 
-  /// Switches the patient shell tab (0=Home, 1=Appointment, 2=Labs, 3=Ambulance, 4=Profile).
+  /// Switches the patient shell tab (logical indices: 0=Home, 1=Appointment, 2=Labs, 3=Ambulance, 4=Profile).
+  /// When Ambulance is disabled in release, logical index 3 is ignored and 4 maps to Profile.
   final ValueChanged<int>? onSelectTab;
 
   @Deprecated('Use onSelectTab')
@@ -189,8 +192,12 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       return;
     }
     if (route == 'ambulance') {
+      if (!AmbulanceEnabled.isOn) {
+        AppToast.info(context, AmbulanceEntryPoints.patientShellUnavailableMessage);
+        return;
+      }
       if (widget.onSelectTab != null) {
-        widget.onSelectTab!(3);
+        widget.onSelectTab!(AmbulanceEntryPoints.patientShellAmbulanceTabIndex);
       } else {
         Navigator.push(
           context,
@@ -467,6 +474,10 @@ List<HomeCarouselItem> _buildCarouselItems(
   if (activeAds.isEmpty) return baseItems;
 
   final filteredAds = activeAds.where((ad) {
+    if (!AmbulanceEnabled.isOn &&
+        ad.providerType.toLowerCase() == 'ambulance') {
+      return false;
+    }
     final city = ad.targetCity?.trim().toLowerCase();
     if (city == null || city.isEmpty || city == 'all') return true;
     if (patientCity == null || patientCity.trim().isEmpty) return true;
