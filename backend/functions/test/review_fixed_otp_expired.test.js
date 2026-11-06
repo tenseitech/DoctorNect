@@ -8,7 +8,8 @@ const { consumeOtpChallengeAtomically } = require('../registration_otp');
 test('fixed REVIEW OTP rejected when OTP_TEST_MODE is off and REVIEW_ACCESS_UNTIL is past', async () => {
   delete process.env.OTP_TEST_MODE;
   process.env.OTP_TEST_MODE = 'false';
-  process.env.REVIEW_TEST_NUMBERS = '9999900001';
+  process.env.REVIEWER_OTP_ENABLED = 'true';
+  process.env.REVIEW_PATIENT_PHONES = '9999900001';
   process.env.REVIEW_FIXED_OTP = '112233';
   process.env.REVIEW_ACCESS_UNTIL = '2020-01-01T00:00:00Z';
 

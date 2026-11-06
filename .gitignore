@@ -159,6 +159,8 @@ backups/
 # Local Flutter JSON test reporter output (not committed)
 docs/audit/_*.jsonl
 docs/audit/_*.err
+frontend/flutter_test_out.jsonl
+frontend/flutter_test_err.txt
 
 # Terraform local directory
 .terraform/
