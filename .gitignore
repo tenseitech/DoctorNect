@@ -161,6 +161,7 @@ docs/audit/_*.jsonl
 docs/audit/_*.err
 frontend/flutter_test_out.jsonl
 frontend/flutter_test_err.txt
+frontend/flutter_test*.ndjson
 
 # Terraform local directory
 .terraform/

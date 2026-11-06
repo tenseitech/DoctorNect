@@ -12,10 +12,10 @@ Apply to **staging** Supabase Postgres in this order ( filenames under `db/propo
    - Extends `update_lab_order_status` (and related) with `p_report_storage_key` validation.  
    - **Apply before** clients that pass lab report storage keys to the RPC.
 
-3. **`20261103000016_proposed_ambulance_in_app_notifications_supabase.sql`**  
-   - Extends `in_app_notifications` (columns + index + RLS for select/update).  
-   - Adds ambulance request/broadcast columns and RLS adjustments.  
-   - **Required** for the current Flutter in-app notification inbox (merge/mark-read) and sync paths that read `in_app_notifications` via Supabase.
+3. **`20261103000016_proposed_in_app_notifications_supabase.sql`**  
+   - Extends `in_app_notifications` (columns + index + RLS for select/update + recipient read-only trigger).  
+   - **Required** for the current Flutter in-app notification inbox (merge/mark-read) and sync paths that read `in_app_notifications` via Supabase.  
+   - **Ambulance-related** policy draft: `db/proposed/later/20261103000016_later_ambulance_notifications_policies.sql` (not needed while `AMBULANCE_ENABLED` is off; policies incomplete per file header).
 
 ## App / build dependencies
 
