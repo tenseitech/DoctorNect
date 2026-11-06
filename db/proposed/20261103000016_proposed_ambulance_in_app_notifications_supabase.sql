@@ -1,47 +1,54 @@
--- PROPOSED (do not apply): replace client Firestore for ambulance + in-app notifications.
--- Repository targets: ambulance_repository.dart, in_app_notification_service.dart
+-- PROPOSED (do not apply): Supabase RLS + schema hooks for in-app inbox and ambulance data
+-- (replaces client Firestore where still referenced).
+-- Base in_app_notifications + policies: db/migrations/20261020000001_consolidated_firebase_schema_and_rls.sql,
+--   enhanced policies: db/migrations/20261021000004_phase_e2_support_and_notifications.sql
+-- Base ambulance_requests RLS: db/migrations/20261020000001_consolidated_firebase_schema_and_rls.sql (amb_requests_*)
 
 -- ---------------------------------------------------------------------------
--- In-app notifications (Firestore: in_app_notifications)
+-- In-app notifications: extend EXISTING public.in_app_notifications (recipient_uid, is_read, type, …)
+-- Client maps AppNotification to these columns; do not introduce a second table.
 -- ---------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.in_app_notifications (
-    notification_id TEXT PRIMARY KEY,
-    owner_uid TEXT NOT NULL REFERENCES public.users(uid) ON DELETE CASCADE,
-    owner_profile_id TEXT,
-    role TEXT NOT NULL CHECK (role IN ('patient', 'doctor', 'lab', 'medicalStore', 'ambulance')),
-    title TEXT NOT NULL,
-    body TEXT NOT NULL,
-    category TEXT,
-    deep_link TEXT,
-    read_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+ALTER TABLE public.in_app_notifications
+    ADD COLUMN IF NOT EXISTS category TEXT,
+    ADD COLUMN IF NOT EXISTS deep_link TEXT,
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
 
-CREATE INDEX IF NOT EXISTS idx_in_app_notifications_owner_uid_created
-    ON public.in_app_notifications (owner_uid, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_in_app_notifications_recipient_created
+    ON public.in_app_notifications (recipient_uid, created_at DESC);
 
-ALTER TABLE public.in_app_notifications ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS in_app_notifications_select ON public.in_app_notifications;
-CREATE POLICY in_app_notifications_select ON public.in_app_notifications
+DROP POLICY IF EXISTS "notifications_select" ON public.in_app_notifications;
+CREATE POLICY "notifications_select" ON public.in_app_notifications
     FOR SELECT TO authenticated
     USING (
-        owner_uid = (auth.jwt() ->> 'sub')
+        (recipient_uid = (auth.jwt() ->> 'sub'))
+        OR (recipient_uid = (
+            SELECT u.id::text FROM public.users u WHERE u.firebase_uid = (auth.jwt() ->> 'sub')
+        ))
         OR private.is_super_admin()
     );
 
-DROP POLICY IF EXISTS in_app_notifications_update ON public.in_app_notifications;
-CREATE POLICY in_app_notifications_update ON public.in_app_notifications
+DROP POLICY IF EXISTS "notifications_update" ON public.in_app_notifications;
+CREATE POLICY "notifications_update" ON public.in_app_notifications
     FOR UPDATE TO authenticated
-    USING (owner_uid = (auth.jwt() ->> 'sub'))
-    WITH CHECK (owner_uid = (auth.jwt() ->> 'sub'));
+    USING (
+        (recipient_uid = (auth.jwt() ->> 'sub'))
+        OR (recipient_uid = (
+            SELECT u.id::text FROM public.users u WHERE u.firebase_uid = (auth.jwt() ->> 'sub')
+        ))
+        OR private.is_super_admin()
+    )
+    WITH CHECK (
+        (recipient_uid = (auth.jwt() ->> 'sub'))
+        OR (recipient_uid = (
+            SELECT u.id::text FROM public.users u WHERE u.firebase_uid = (auth.jwt() ->> 'sub')
+        ))
+        OR private.is_super_admin()
+    );
 
--- Inserts server-only (notification_outbox / triggers) — no client INSERT policy.
+-- Inserts remain server-only (FCN/outbox/triggers); no client INSERT policy added here.
 
 -- ---------------------------------------------------------------------------
--- Ambulance broadcasts / requests (Firestore: ambulance_broadcasts, ambulance_requests)
--- Extend existing public.ambulance_* tables if present; add missing columns only.
+-- Ambulance: optional legacy / app columns; RLS uses driver_id (FK to ambulances), not ambulance_id
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.ambulance_requests
     ADD COLUMN IF NOT EXISTS firestore_legacy_id TEXT,
@@ -54,32 +61,21 @@ ALTER TABLE public.ambulance_broadcasts
     ADD COLUMN IF NOT EXISTS payload JSONB,
     ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
 
--- RLS: patient creates request; assigned ambulance updates; verified not required for self ambulance profile row
-DROP POLICY IF EXISTS ambulance_requests_patient_insert ON public.ambulance_requests;
-CREATE POLICY ambulance_requests_patient_insert ON public.ambulance_requests
-    FOR INSERT TO authenticated
-    WITH CHECK (patient_id = private.current_profile_id());
-
-DROP POLICY IF EXISTS ambulance_requests_select ON public.ambulance_requests;
-CREATE POLICY ambulance_requests_select ON public.ambulance_requests
+-- Deployed names: amb_requests_select, amb_requests_update (see consolidated migration)
+DROP POLICY IF EXISTS "amb_requests_select" ON public.ambulance_requests;
+CREATE POLICY "amb_requests_select" ON public.ambulance_requests
     FOR SELECT TO authenticated
     USING (
-        patient_id = private.current_profile_id()
-        OR ambulance_id = private.current_profile_id()
+        driver_id = private.current_profile_id()
+        OR patient_id = private.current_profile_id()
         OR private.is_super_admin()
     );
 
-DROP POLICY IF EXISTS ambulance_requests_update ON public.ambulance_requests;
-CREATE POLICY ambulance_requests_update ON public.ambulance_requests
+DROP POLICY IF EXISTS "amb_requests_update" ON public.ambulance_requests;
+CREATE POLICY "amb_requests_update" ON public.ambulance_requests
     FOR UPDATE TO authenticated
-    USING (
-        ambulance_id = private.current_profile_id()
-        OR patient_id = private.current_profile_id()
-    )
-    WITH CHECK (
-        ambulance_id = private.current_profile_id()
-        OR (patient_id = private.current_profile_id() AND status = 'cancelled')
-    );
+    USING (driver_id = private.current_profile_id() OR private.is_super_admin())
+    WITH CHECK (driver_id = private.current_profile_id() OR private.is_super_admin());
 
--- Flutter: AmbulanceRepository → SupabaseAmbulanceRepository (PostgREST on ambulance_requests/broadcasts/ambulances)
--- Flutter: InAppNotificationService → poll/stream in_app_notifications WHERE owner_uid = jwt.sub
+-- Flutter: AmbulanceRepository → PostgREST on ambulance_requests / ambulance_broadcasts / ambulances
+-- Flutter: InAppNotificationService → Supabase select/update on in_app_notifications WHERE recipient_uid = jwt.sub
