@@ -21,14 +21,39 @@ class InAppNotificationSupabaseRepository {
     _mockClient = client;
   }
 
+  static Future<void> Function(String notificationId)? _debugMarkReadOverride;
+
   @visibleForTesting
-  static Future<void> Function(String notificationId)? debugMarkReadOverride;
+  static Future<void> Function(String notificationId)? get debugMarkReadOverride =>
+      _debugMarkReadOverride;
+
+  @visibleForTesting
+  static set debugMarkReadOverride(
+    Future<void> Function(String notificationId)? value,
+  ) {
+    assert(() {
+      if (value != null && (kReleaseMode || debugForceReleaseMode)) {
+        throw AssertionError(
+          'debugMarkReadOverride must not be set in release mode',
+        );
+      }
+      return true;
+    }());
+    _debugMarkReadOverride = value;
+  }
+
+  /// Test-only: treat runtime as release (ignores [debugMarkReadOverride] in [markRead]).
+  @visibleForTesting
+  static bool debugForceReleaseMode = false;
 
   @visibleForTesting
   void clearClientForTesting() => _mockClient = null;
 
   @visibleForTesting
-  static void resetMarkReadOverrideForTesting() => debugMarkReadOverride = null;
+  static void resetMarkReadOverrideForTesting() {
+    _debugMarkReadOverride = null;
+    debugForceReleaseMode = false;
+  }
 
   SupabaseClient get _client => _mockClient ?? SupabaseBootstrap.client;
 
@@ -144,8 +169,9 @@ class InAppNotificationSupabaseRepository {
 
   Future<void> markRead(String notificationId) async {
     if (notificationId.isEmpty) return;
-    final o = debugMarkReadOverride;
-    if (!kReleaseMode && o != null) {
+    final o = _debugMarkReadOverride;
+    final releaseLike = kReleaseMode || debugForceReleaseMode;
+    if (!releaseLike && o != null) {
       await o(notificationId);
       return;
     }

@@ -176,42 +176,44 @@ class EmergencySosSheet extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 14),
-            // Book Ambulance Quick Dispatch Button
-            OutlinedButton.icon(
-              onPressed: () async {
-                Navigator.pop(context);
-                await amb_booking.loadLibrary();
-                await amb_models.loadLibrary();
-                if (context.mounted) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => amb_booking.AmbulanceBookingScreen(
-                        bookedByRole: amb_models.AmbulanceBookedByRole.patient,
+            if (AmbulanceEnabled.isOn) ...[
+              const SizedBox(height: 14),
+              // Book Ambulance Quick Dispatch Button
+              OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await amb_booking.loadLibrary();
+                  await amb_models.loadLibrary();
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => amb_booking.AmbulanceBookingScreen(
+                          bookedByRole: amb_models.AmbulanceBookedByRole.patient,
+                        ),
                       ),
-                    ),
-                  );
-                }
-              },
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                side: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
-                foregroundColor: const Color(0xFFDC2626),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                    );
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  side: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+                  foregroundColor: const Color(0xFFDC2626),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.airport_shuttle_rounded, size: 20),
+                label: Text(
+                  'Book Nearby ICU Ambulance Dispatcher',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              icon: const Icon(Icons.airport_shuttle_rounded, size: 20),
-              label: Text(
-                'Book Nearby ICU Ambulance Dispatcher',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: AppTypography.bodyMedium,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+            ],
             const SizedBox(height: 20),
             Text(
               'Emergency Trauma Services',

@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../config/ambulance_enabled.dart';
 import '../firebase/firebase_bootstrap.dart';
 import '../../features/ambulance/data/ambulance_booking_sync.dart';
 import '../../features/ambulance/data/ambulance_store.dart';
@@ -30,6 +31,7 @@ abstract final class AmbulancePushService {
 
   static Future<void> initialize() async {
     if (_initialized || kIsWeb) return;
+    if (!AmbulanceEnabled.isOn) return;
     if (!FirebaseBootstrap.isReady) return;
 
     _initialized = true;
@@ -70,6 +72,7 @@ abstract final class AmbulancePushService {
   /// Call after ambulance driver login â€” saves token to Firestore.
   static Future<void> registerDriver(String driverId) async {
     if (driverId.isEmpty || kIsWeb) return;
+    if (!AmbulanceEnabled.isOn) return;
 
     await initialize();
     _activeDriverId = driverId;
@@ -114,6 +117,10 @@ abstract final class AmbulancePushService {
 
   /// Call on ambulance logout â€” removes token from Firestore.
   static Future<void> unregisterDriver() async {
+    if (!AmbulanceEnabled.isOn) {
+      _activeDriverId = null;
+      return;
+    }
     final driverId = _activeDriverId;
     _activeDriverId = null;
     await _tokenRefreshSub?.cancel();
@@ -138,6 +145,7 @@ abstract final class AmbulancePushService {
   }
 
   static void _onForegroundMessage(RemoteMessage message) {
+    if (!AmbulanceEnabled.isOn) return;
     if (message.data['type'] != 'ambulance_request') return;
 
     final driverId = _activeDriverId;
@@ -150,6 +158,7 @@ abstract final class AmbulancePushService {
   }
 
   static void _onMessageOpened(RemoteMessage message) {
+    if (!AmbulanceEnabled.isOn) return;
     _storeOpenTarget(message);
     final driverId = _activeDriverId;
     if (driverId != null && driverId.isNotEmpty) {
@@ -196,6 +205,7 @@ abstract final class AmbulancePushService {
   }
 
   static Future<void> _showLocalNotification(RemoteMessage message) async {
+    if (!AmbulanceEnabled.isOn) return;
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
 
     final notification = message.notification;
