@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/lab_connection_repository.dart';
 
 import 'dart:async';
 
@@ -21,7 +21,7 @@ class LabConnectionStore extends ChangeNotifier {
   final List<LabConnection> _connections = [];
 
   void _persistConnection(LabConnection conn) {
-    unawaited(FirestoreService.instance.labConnection.saveConnection(conn));
+    unawaited(LabConnectionRepository.instance.saveConnection(conn));
   }
 
   List<LabConnection> get all => List.unmodifiable(_connections);
@@ -373,7 +373,7 @@ class LabConnectionStore extends ChangeNotifier {
   }) async {
     switch (role) {
       case UserType.doctor:
-        final doctorPage = await FirestoreService.instance.labConnection
+        final doctorPage = await LabConnectionRepository.instance
             .fetchActiveConnectionsForDoctor(
           profileId,
           preferCache: preferCache,
@@ -381,7 +381,7 @@ class LabConnectionStore extends ChangeNotifier {
         mergeFirestoreConnections(doctorPage.items);
         break;
       case UserType.lab:
-        final labPage = await FirestoreService.instance.labConnection
+        final labPage = await LabConnectionRepository.instance
             .fetchActiveConnectionsForLab(profileId, preferCache: preferCache);
         mergeFirestoreConnections(labPage.items);
       case UserType.medicalStore:

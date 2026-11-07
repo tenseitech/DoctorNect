@@ -1,56 +1,94 @@
 # Launch-critical flows — Firestore reachability (flow-based)
 
-Postgres-primary repos are reached **without** `FirestoreService.instance` when noted **migrated**. Rows still using `FirestoreService` / `FirestoreClient` in release are **LIVE_AND_THROWS** (see `FIRESTORE_REACHABLE_RELEASE.md`).
+Generated against `npm run audit:firestore-reachability` and release smoke in `frontend/test/release_firestore_forbidden_smoke_test.dart`.
 
-## Patient
+**MIGRATED** = entry screen pumps without `FirestoreService` / `FirestoreClient` under `FIRESTORE_FORBIDDEN`.  
+**POST_LAUNCH** = still reaches **LIVE_AND_THROWS** rows (show `FirestoreUi.userMessage` or finish Supabase migration).
 
-| Flow | Entry screen | Call chain (release) | Firestore rows | Status |
-|------|--------------|----------------------|----------------|--------|
-| Login / registration | `welcome_screen.dart` → auth | `FirebaseAuthService` → `UserRepository` (Supabase) | — | **migrated** (this pass) |
-| Home | `patient_home_screen.dart` | `RegisteredDoctorsStore` → `DoctorDirectoryRepository`; ads → Supabase `promoted_ads` | — | **migrated** |
-| Search / nearby | `doctor_search_screen.dart` | `LabCatalogRepository`; `DoctorDirectoryRepository`; ambulance list off when `AMBULANCE_ENABLED=false` | — | **migrated** |
-| Appointment booking | `booking_flow_screen.dart` | `FirestoreService.doctorAvailability` / `doctorProfileDetail` | `booking_flow_screen.dart` (multiple) | **post-launch** (`FirestoreUi` or Supabase availability) |
-| Prescriptions | `patient_prescription_opener.dart` | `FirestoreService.prescription` | LIVE | **post-launch** |
-| Lab order / report | `lab_booking_flow_screen.dart`, `lab_report_submit_flow.dart` | `SupabaseLabRepository` RPC keys | — | **migrated** (RPC skew message in repo) |
-| Pharmacy order | patient pharmacy screens | Supabase pharmacy repos | pharmacy LIVE rows in partner flows | **partial** |
-| Profile | `edit_profile_screen.dart` | `PatientProfileMock` / Supabase profile | `patient_profile_mock.dart` family paths if cutover off | **migrated** when cutover on (default) |
+---
 
-## Doctor
+## Patient module
 
-| Flow | Entry screen | Call chain | Firestore rows | Status |
-|------|--------------|------------|----------------|--------|
-| Login / gate | `doctor_verification_gate.dart` | `DoctorVerificationRepository` | — | **migrated** |
-| Home | `doctor_home_screen.dart` | appointments sync, clinical tools | `doctor_home_screen.dart`, prefetch | **post-launch** |
-| Appointments | doctor shell tabs | `FirestoreScreenSync` → `AppointmentRepository` | — | **migrated** (sync gateway) |
-| Prescriptions | clinical screens | community repos Supabase-primary; some `FirestoreService` in forms | mixed | **partial** |
-| Lab orders | doctor lab screens | Supabase lab + connection repos | connected labs screen orders sub | **partial** |
-| Pharmacy partners | `doctor_connected_stores_screen.dart` | `PharmacyFirestoreRepository`, `MedicalStoreRepository` | — | **migrated** |
-| Profile | doctor profile store | `SupabaseDoctorRepository` | — | **migrated** |
+| Flow | Entry screen | Status | LIVE rows still on path (file:line) |
+|------|--------------|--------|-------------------------------------|
+| Login / registration | `features/welcome/welcome_screen.dart` | **MIGRATED** | `unified_auth_flow_controller.dart:353,380` if user proceeds into full auth wizard |
+| Home | `features/patient/home/patient_home_screen.dart` | **MIGRATED** | none on initial pump (ads → Supabase / empty stream) |
+| Search / nearby | `features/patient/search/doctor_search_screen.dart` | **MIGRATED** | none on initial pump |
+| Appointment booking | `features/patient/booking/booking_flow_screen.dart` | **POST_LAUNCH** | `booking_flow_screen.dart:69,94,1069,1077` |
+| Prescriptions list/detail | `features/patient/appointments/patient_prescription_opener.dart` | **POST_LAUNCH** | `patient_prescription_opener.dart:18` |
+| Lab order | `features/patient/lab/lab_booking_flow_screen.dart` | **MIGRATED** | none ( `LabCatalogRepository` / `LabBookingRepository` ) |
+| Lab report | `core/firebase/lab_report_submit_flow.dart` + lab status RPC | **MIGRATED** | none on patient submit path |
+| My labs hub | `features/patient/lab/my_labs_screen.dart` | **MIGRATED** | none when `PatientSession` empty |
+| Lab browse | `features/patient/lab/lab_home_screen.dart` | **MIGRATED** | none |
+| Pharmacy order | patient pharmacy checkout (no dedicated shell in consumer build) | **POST_LAUNCH** | `pharmacy_firestore_repository.dart` only via gateway elsewhere |
+| Profile | `features/patient/profile/edit_profile_screen.dart` | **MIGRATED** | `profile_photo_uploader.dart` on photo upload only |
 
-## Pharmacy / Lab modules
+---
 
-| Flow | Entry | Firestore in release | Status |
-|------|-------|---------------------|--------|
-| Store onboarding / shell | pharmacy shell | connection + delivery watchers via Supabase repos | **migrated** gateways |
-| Lab worklist | lab shell | `FirestoreScreenSync.attachLabWorklist` → lab order/booking repos | **migrated** |
+## Doctor module
 
-## Shared-core LIVE rows (32) — who calls them
+| Flow | Entry screen | Status | LIVE rows still on path |
+|------|--------------|--------|-------------------------|
+| Login / verification gate | `features/doctor/verification/doctor_verification_gate.dart` | **MIGRATED** | none on gate pump |
+| Pending verification | `features/doctor/verification/doctor_verification_pending_screen.dart` | **MIGRATED** | none |
+| Home | `features/doctor/home/doctor_home_screen.dart` | **POST_LAUNCH** | `firestore_data_prefetch.dart` (multiple), `doctor_home_screen.dart` refresh hooks |
+| Appointments (shell tab) | doctor shell → shared appointment sync | **MIGRATED** | `AppointmentRepository` (no gateway) |
+| Prescriptions (clinical) | clinical prescription form sections | **POST_LAUNCH** | `prescription_form_sections.dart` community + legacy paths |
+| Lab orders (connected labs) | `features/doctor/lab/doctor_connected_labs_screen.dart` | **POST_LAUNCH** | `doctor_connected_labs_screen.dart:204` |
+| Pharmacy partners | `features/doctor/pharmacy/doctor_connected_stores_screen.dart` | **MIGRATED** | none on attach sync |
+| Profile | `features/doctor/profile/data/doctor_profile_store.dart` | **MIGRATED** | Supabase `SupabaseDoctorRepository` |
 
-| Shared-core LIVE file | Called from modules |
-|-----------------------|---------------------|
-| `role_session_guard.dart`, `unified_auth_flow_controller.dart`, `unified_auth_navigation.dart` | auth (all roles) |
-| `firestore_data_prefetch.dart`, `firestore_query_limits.dart` | doctor home / shell prefetch |
-| `firebase_bootstrap.dart` (settings) | app init |
-| `promoted_ads_service.dart` (fallback branch) | patient home carousel when Supabase down |
-| `profile_photo_uploader.dart` | profile flows |
-| FCM token writers on `FirestoreService.patientProfile` / ambulance | notifications |
+---
 
-Full line list: `docs/audit/FIRESTORE_REACHABLE_RELEASE.md` (filter `module = shared-core`, class `LIVE_AND_THROWS`).
+## Pharmacy module
 
-## Admin (consumer build)
+| Flow | Entry screen | Status | LIVE rows still on path |
+|------|--------------|--------|-------------------------|
+| Store shell / dashboard | `features/pharmacy/medical_store_shell.dart` | **MIGRATED** | `role_session_guard` → `UserRepository` (no gateway) |
+| Connections / deliveries | `FirestoreScreenSync` + pharmacy repos | **MIGRATED** | none |
 
-- Routes under `features/admin/*` (e.g. promoted ad review) are **not** in patient/doctor/lab/pharmacy shells; reachable only if super-admin signs in and navigates there → still **LIVE_AND_THROWS** until migrated.
+---
 
-## Smoke coverage
+## Lab module
 
-`frontend/test/release_firestore_forbidden_smoke_test.dart` pumps Welcome, DoctorSearch, PatientHome, DoctorVerificationGate/Pending under `debugForceReleaseMode` and fails on `FIRESTORE_FORBIDDEN` `StateError`.
+| Flow | Entry screen | Status | LIVE rows still on path |
+|------|--------------|--------|-------------------------|
+| Lab shell / worklist | `features/lab/lab_shell.dart` | **MIGRATED** | sync via `LabOrderRepository` / `LabBookingRepository` |
+| Walk-in / dashboard tabs | `features/lab/screens/lab_dashboard_tabs.dart` | **MIGRATED** | report upload sheet still uses gateway on submit only |
+
+---
+
+## Shared-core LIVE (32 rows) — callers
+
+| File | Modules that reach it in release |
+|------|----------------------------------|
+| `role_session_guard.dart` | pharmacy shell, lab shell, ambulance shell |
+| `unified_auth_flow_controller.dart` | welcome → registration/login |
+| `unified_auth_navigation.dart` | auth navigation |
+| `firestore_data_prefetch.dart` | doctor home / shell warm-start |
+| `firestore_query_limits.dart` | ambulance repository scale helpers |
+| `firebase_bootstrap.dart:41` | Firebase settings when misconfigured |
+| `promoted_ads_service.dart` (Firestore fallback) | patient home if Supabase down |
+| `profile_photo_uploader.dart` | profile photo flows |
+| `patient_push_service.dart` | FCM token persist (patient) |
+| `ambulance_push_service.dart` | FCM token persist (ambulance) |
+
+Full inventory: `docs/audit/FIRESTORE_REACHABLE_RELEASE.md`.
+
+---
+
+## Admin (excluded from consumer build)
+
+`features/admin/*` (e.g. `promoted_ad_review_screen.dart`) is **not** linked from patient/doctor/lab/pharmacy shells; reachable only when a super-admin session opens admin routes → **LIVE_AND_THROWS**.
+
+---
+
+## Release smoke coverage
+
+`release_firestore_forbidden_smoke_test.dart` pumps **12 MIGRATED entry screens** (plus 3 guard unit tests = **15** total) with:
+
+- `FirestoreForbiddenGuard.debugForceReleaseMode = true`
+- `SupabaseBootstrap.isReady = true` + `debugTableFetcher` returning empty rows
+- `FirebaseBootstrap.isReady = false`, `AmbulanceEnabled` off
+
+Fails on any `StateError` containing `FIRESTORE_FORBIDDEN`.

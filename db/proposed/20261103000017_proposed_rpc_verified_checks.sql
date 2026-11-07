@@ -303,12 +303,27 @@ BEGIN
             USING ERRCODE = '42501';
     END IF;
 
-    IF NOT v_is_admin AND NOT COALESCE(private.is_verified_doctor(), FALSE) THEN
-        RAISE EXCEPTION 'FORBIDDEN: Verified doctor required' USING ERRCODE = '42501';
-    END IF;
-
     IF v_is_admin AND v_doctor_id IS NULL THEN
         v_doctor_id := trim(payload->>'doctor_id');
+    END IF;
+
+    IF NOT v_is_admin THEN
+        IF NOT COALESCE(private.is_verified_doctor(), FALSE) THEN
+            RAISE EXCEPTION 'FORBIDDEN: Verified doctor required' USING ERRCODE = '42501';
+        END IF;
+    ELSIF v_doctor_id IS NOT NULL AND v_doctor_id <> '' THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM public.doctors d
+            WHERE d.doctor_id = v_doctor_id
+              AND (
+                  d.verified IS TRUE
+                  OR d.verification_status = 'verified'
+                  OR d.status = 'approved'
+              )
+        ) THEN
+            RAISE EXCEPTION 'FORBIDDEN: Doctor "%" is not verified to create prescriptions.', v_doctor_id
+                USING ERRCODE = '42501';
+        END IF;
     END IF;
 
     v_prescription_id := trim(payload->>'prescription_id');

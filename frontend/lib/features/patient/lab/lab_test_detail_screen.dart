@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/lab_repository.dart';
 
 import 'dart:async';
 
@@ -62,7 +62,7 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
   }
 
   Future<void> _loadRegistry() async {
-    final labs = await FirestoreService.instance.lab.fetchVerifiedLabs();
+    final labs = await LabRepository.instance.fetchVerifiedLabs();
     if (!mounted) return;
     setState(() {
       _registryById = {for (final lab in labs) lab.id: lab};

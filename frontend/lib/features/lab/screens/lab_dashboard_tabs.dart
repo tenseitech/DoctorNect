@@ -1,4 +1,5 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/lab_booking_repository.dart';
+import '../../../core/firebase/repositories/lab_order_repository.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
@@ -143,7 +144,7 @@ class _LabOrdersTabState extends State<LabOrdersTab>
         // Update all linked booking docs in Firestore
         await Future.wait(
           allIds.map(
-            (id) => FirestoreService.instance.labBooking.updateBookingStatus(
+            (id) => LabBookingRepository.instance.updateBookingStatus(
               id,
               status,
             ),
@@ -154,7 +155,7 @@ class _LabOrdersTabState extends State<LabOrdersTab>
           status,
         );
       } else {
-        await FirestoreService.instance.labOrder.updateOrderStatus(
+        await LabOrderRepository.instance.updateOrderStatus(
           order.orderId,
           status,
         );
@@ -172,12 +173,12 @@ class _LabOrdersTabState extends State<LabOrdersTab>
   Future<void> _refreshAll() async {
     final labId = LabSession.loggedInLabId;
     if (labId.isEmpty) return;
-    final page = await FirestoreService.instance.labOrder.fetchForLab(
+    final page = await LabOrderRepository.instance.fetchForLab(
       labId,
       preferCache: false,
     );
     LabWorklistStore.instance.mergeOrders(page.items);
-    final bookings = await FirestoreService.instance.labBooking.fetchForLab(
+    final bookings = await LabBookingRepository.instance.fetchForLab(
       labId,
     );
     LabWorklistStore.instance.mergeBookings(bookings);

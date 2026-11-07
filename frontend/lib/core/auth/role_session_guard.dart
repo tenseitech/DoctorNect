@@ -6,7 +6,7 @@ import '../firebase/firebase_auth_service.dart';
 import '../session/ambulance_session.dart';
 import '../session/app_session.dart';
 import '../../features/auth/unified_auth_intro_screen.dart';
-import '../firebase/firestore_service.dart';
+import '../firebase/repositories/user_repository.dart';
 
 /// Safety validator to guarantee that the currently signed-in Firebase user's
 /// Firestore profile matches the role of the dashboard/shell being rendered.
@@ -28,7 +28,7 @@ abstract final class RoleSessionGuard {
     }
 
     try {
-      final profile = await FirestoreService.instance.user.fetchProfile(
+      final profile = await UserRepository.instance.fetchProfile(
         user.uid,
         preferCache: true,
       );

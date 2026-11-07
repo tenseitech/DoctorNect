@@ -62,8 +62,9 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- SECURITY DEFINER: session JWT may still show role=authenticated; trust function owner.
-  IF current_user IN ('postgres', 'supabase_admin') THEN
+  -- Server paths: service_role (Cloud Functions), definer owner, platform roles.
+  IF session_user IN ('service_role', 'postgres', 'supabase_admin')
+     OR current_user IN ('postgres', 'supabase_admin', 'service_role') THEN
     RETURN NEW;
   END IF;
 

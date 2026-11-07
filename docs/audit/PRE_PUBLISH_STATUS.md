@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-07  
 **Branch:** `fix/pre-accept-gate-lab-auth`  
-**Rating:** **6.8 / 10** (up from 6.6; **136** LIVE_AND_THROWS rows remain vs 173; not ≥7 until booking/clinical/prefetch paths migrate or wrap)
+**Rating:** **6.9 / 10** (smoke covers all MIGRATED entry screens; booking/clinical/prefetch POST_LAUNCH paths remain)
 
 ---
 
@@ -10,24 +10,26 @@
 
 | Suite | Result |
 |-------|--------|
-| Flutter `test_results_clean.json` | **760 passed, 0 failed** (guard ON globally; per-file `allowFirestoreInThisTestFile` only) |
-| `backend/functions` `npm test` | **496 pass, 22 skip** (unchanged) |
-| Docker integration (`s3_supabase_docker_integration`, `delete_my_account_docker_integration`) | **skipped** — Docker daemon up but **Postgres :54322 unreachable** |
-| `npm run audit:firestore-reachability` | **136 LIVE_AND_THROWS**, 54 DEAD, 5 TEST_ONLY |
+| Flutter full suite (`flutter test`) | **669 passed, 0 failed** (guard ON globally) |
+| `release_firestore_forbidden_smoke_test.dart` | **15 passed** (12 MIGRATED entry screens pumped + 3 guard/ambulance unit tests) |
+| `backend/functions` `npm test` | **496 pass, 22 skip** |
+| Docker integration (4 files per `DOCKER_RUN.md`) | **24 pass, 5 skip** — Docker daemon down; Postgres **:54322 unreachable** |
+| `npx supabase start` | **FAILED** — `DockerLifecycleInspectError` (Docker Desktop Linux engine pipe missing) |
+| `npm run audit:firestore-reachability` | **136 LIVE_AND_THROWS**, 54 DEAD, 5 TEST_ONLY (last run at `3f8df1a`; re-run after this commit recommended) |
 
 ---
 
 ## Highlights this pass
 
-- Reverted global test Firestore bypass; `test/helpers/firestore_test_access.dart` opt-in only.
-- Launch paths: doctor directory, verification gate, pharmacy connections, auth `UserRepository`, notification sync → Postgres repos without `FirestoreService` gateway.
-- `release_firestore_forbidden_smoke_test.dart` pumps 5 launch entry screens under `debugForceReleaseMode`.
-- Lab RPC schema skew user message; `000016` trigger uses `current_user` for SECURITY DEFINER bypass.
+- **000016** trigger: `service_role` exempt alongside `postgres` / `supabase_admin` (server + SECURITY DEFINER).
+- Staging probes **(a)–(d)** for in-app notification title/read rules.
+- Lab shell/worklist: `LabRepository`, `LabOrderRepository`, `LabBookingRepository`, `LabConnectionRepository` (no gateway on shell pump).
+- Smoke pumps: Welcome, PatientHome, DoctorSearch, MyLabs, LabHome, LabBookingFlow, EditProfile, DoctorVerificationGate/Pending, DoctorConnectedStores, MedicalStoreShell, **LabShell**.
 
 ---
 
 ## Remaining
 
-1. **LIVE_AND_THROWS** on booking, clinical prescription forms, `firestore_data_prefetch`, unified auth edges — see `FIRESTORE_LAUNCH_FLOWS.md`.
+1. **POST_LAUNCH** flows: patient appointment booking, prescription opener, doctor home prefetch, connected labs orders sub, unified auth deep steps — see `FIRESTORE_LAUNCH_FLOWS.md`.
 2. Apply **000014–000018** on staging/RDS per `DEPLOY_ORDER.md`.
-3. Start local Supabase (`npx supabase start`) before Docker integration tests.
+3. Start **Docker Desktop** + `cd backend && npx -y supabase start` before Docker integration tests.

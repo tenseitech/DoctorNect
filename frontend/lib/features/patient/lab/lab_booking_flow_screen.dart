@@ -1,4 +1,5 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/lab_booking_repository.dart';
+import '../../../core/firebase/repositories/lab_catalog_repository.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'dart:async';
@@ -89,7 +90,7 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
 
   Future<void> _initDraft() async {
     try {
-      await FirestoreService.instance.labCatalog.fetchCatalog();
+      await LabCatalogRepository.instance.fetchCatalog();
     } catch (_) {
       if (!mounted) return; // FIXED: mounted check after await
       setState(() {
@@ -303,7 +304,7 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
         if (patientIndex == 0) firstBookingId = bookingId;
         patientIndex++;
 
-        final saved = await FirestoreService.instance.labBooking.save(
+        final saved = await LabBookingRepository.instance.save(
           patientId: patientId,
           tests: widget.tests,
           draft: LabBookingDraft(
