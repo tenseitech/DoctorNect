@@ -115,7 +115,6 @@ BEGIN
     );
 END;
 $$;
-R
 
 
 CREATE OR REPLACE FUNCTION public.update_pharmacy_delivery_status(
@@ -244,7 +243,6 @@ BEGIN
     );
 END;
 $$;
-R
 
 
 CREATE OR REPLACE FUNCTION public.create_prescription_atomic(
@@ -573,7 +571,6 @@ BEGIN
     );
 END;
 $$;
-R
 
 
 CREATE OR REPLACE FUNCTION public.update_lab_booking_status(
