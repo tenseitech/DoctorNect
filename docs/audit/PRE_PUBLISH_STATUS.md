@@ -10,7 +10,7 @@
 
 | Suite | Result |
 |-------|--------|
-| Flutter full suite (`flutter test`) | **670 passed, 0 failed** (guard ON globally; re-run after smoke add) |
+| Flutter full suite (`flutter test`) | **670 passed, 0 failed** (guard ON globally; 669 prior + 1 smoke test) |
 | `release_firestore_forbidden_smoke_test.dart` | **16 passed** (13 MIGRATED entry screens pumped + 3 guard/ambulance unit tests) |
 | `backend/functions` `npm test` | **496 pass, 22 skip** |
 | Docker integration (4 files per `DOCKER_RUN.md`) | **24 pass, 5 skip** — Docker daemon down; Postgres **:54322 unreachable** |
