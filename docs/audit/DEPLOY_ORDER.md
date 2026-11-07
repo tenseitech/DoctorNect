@@ -33,6 +33,18 @@ Apply to **staging** Supabase Postgres in this order ( filenames under `db/propo
 | Stricter multi-role RLS on appointments / labs / prescriptions | **000014** |
 | Lab report upload via RPC `p_report_storage_key` (not PostgREST column patch) | **000015** + **000018** + client that calls RPC |
 | Unverified provider cannot mutate deliveries / lab status / doctor reschedule | **000017** (after **000014**) |
+| Direct PostgREST mutation of lab `report_storage_key` | **000018** (after **000015** columns) |
+
+## Client build ↔ SQL matrix
+
+| Client capability | Minimum SQL on server |
+|-------------------|----------------------|
+| In-app inbox mark-read + columns | **000016** |
+| Lab `p_report_storage_key` on RPC (no PostgREST PATCH) | **000015** + **000017**; **000018** to block PATCH |
+| Verified-only doctor reschedule / rx / store status | **000014** + **000017** |
+| Unverified store/lab can read own connection rows (onboarding) | **000014** (select allows own `store_id` / `lab_id`) |
+
+Staging probes: `scripts/audit/rls_staging_verified_role_matrix.sql`, `in_app_notifications_staging_probes.sql`, `lab_report_key_staging_probes.sql`, `rpc_verified_staging_probes.sql`.
 
 ## If the app ships **before** `000016` is applied
 
