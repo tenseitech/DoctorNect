@@ -3,7 +3,6 @@ import '../../../../core/firebase/firestore_client.dart';
 
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/config/doctor_patient_cutover_flag.dart';
