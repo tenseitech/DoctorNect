@@ -62,6 +62,10 @@ BEGIN
     RETURN NEW;
   END IF;
 
+  IF COALESCE(current_setting('role', true), '') IN ('service_role', 'postgres') THEN
+    RETURN NEW;
+  END IF;
+
   v_sub := NULLIF(auth.jwt() ->> 'sub', '');
   IF v_sub IS NULL THEN
     RETURN NEW;

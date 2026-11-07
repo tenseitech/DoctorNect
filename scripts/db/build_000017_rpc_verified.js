@@ -33,7 +33,6 @@ function patchReschedule(body) {
     END IF;
 
     IF (v_appt.doctor_id IS NOT DISTINCT FROM v_profile_id)
-       AND COALESCE(lower(p_rescheduled_by), '') LIKE 'doctor%'
        AND NOT v_is_admin
        AND NOT COALESCE(private.is_verified_doctor(), FALSE) THEN
         RAISE EXCEPTION 'FORBIDDEN: Verified doctor required' USING ERRCODE = '42501';

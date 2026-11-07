@@ -66,7 +66,6 @@ BEGIN
     END IF;
 
     IF (v_appt.doctor_id IS NOT DISTINCT FROM v_profile_id)
-       AND COALESCE(lower(p_rescheduled_by), '') LIKE 'doctor%'
        AND NOT v_is_admin
        AND NOT COALESCE(private.is_verified_doctor(), FALSE) THEN
         RAISE EXCEPTION 'FORBIDDEN: Verified doctor required' USING ERRCODE = '42501';
@@ -115,6 +114,9 @@ BEGIN
     );
 END;
 $$;
+REVOKE ALL ON FUNCTION public.reschedule_appointment_atomic(VARCHAR, VARCHAR, DATE, VARCHAR, VARCHAR, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.reschedule_appointment_atomic(VARCHAR, VARCHAR, DATE, VARCHAR, VARCHAR, TEXT) TO authenticated, service_role;
+
 
 
 CREATE OR REPLACE FUNCTION public.update_pharmacy_delivery_status(
@@ -243,6 +245,9 @@ BEGIN
     );
 END;
 $$;
+REVOKE ALL ON FUNCTION public.update_pharmacy_delivery_status(VARCHAR, VARCHAR, TEXT, JSONB) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.update_pharmacy_delivery_status(VARCHAR, VARCHAR, TEXT, JSONB) TO authenticated, service_role;
+
 
 
 CREATE OR REPLACE FUNCTION public.create_prescription_atomic(
@@ -571,6 +576,9 @@ BEGIN
     );
 END;
 $$;
+REVOKE ALL ON FUNCTION public.create_prescription_atomic(JSONB) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.create_prescription_atomic(JSONB) TO authenticated, service_role;
+
 
 
 CREATE OR REPLACE FUNCTION public.update_lab_booking_status(

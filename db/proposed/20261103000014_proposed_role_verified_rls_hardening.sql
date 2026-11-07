@@ -176,7 +176,7 @@ CREATE POLICY "pharmacy_connections_select" ON public.pharmacy_connections
     FOR SELECT TO authenticated
     USING (
         (doctor_id = private.current_profile_id() AND private.is_verified_doctor())
-        OR (medical_store_id = private.current_profile_id() AND private.is_verified_medical_store())
+        OR medical_store_id = private.current_profile_id()
         OR private.is_super_admin()
     );
 CREATE POLICY "pharmacy_connections_write" ON public.pharmacy_connections
@@ -202,7 +202,7 @@ CREATE POLICY "lab_connections_select" ON public.lab_connections
     FOR SELECT TO authenticated
     USING (
         (private.is_verified_doctor() AND doctor_id = private.current_profile_id())
-        OR (lab_id = private.current_profile_id() AND private.is_verified_lab())
+        OR lab_id = private.current_profile_id()
         OR private.is_super_admin()
     );
 CREATE POLICY "lab_connections_write" ON public.lab_connections
