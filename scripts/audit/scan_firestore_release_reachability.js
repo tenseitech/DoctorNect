@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 /**
  * Scans frontend/lib for Firestore reachability in release builds.
- * Writes docs/audit/FIRESTORE_REACHABLE_RELEASE.md and exits 1 if
- * FirebaseFirestore.instance appears outside allowlist (CI gate).
+ * Writes docs/audit/FIRESTORE_REACHABLE_RELEASE.md
  */
 const fs = require('fs');
 const path = require('path');
@@ -11,6 +10,14 @@ const ROOT = path.resolve(__dirname, '../..');
 const LIB = path.join(ROOT, 'frontend/lib');
 const OUT = path.join(ROOT, 'docs/audit/FIRESTORE_REACHABLE_RELEASE.md');
 const ALLOWLIST = path.join(__dirname, 'firestore_instance_allowlist.txt');
+
+const SUPABASE_PRIMARY_MARKERS = [
+  'SupabaseLabRepository',
+  'InAppNotificationSupabaseRepository',
+  'SupabasePatientRepository',
+  'SupabaseBootstrap.isReady',
+  'DoctorPatientCutoverFlag',
+];
 
 const PATTERNS = [
   { re: /FirebaseFirestore\.instance/g, kind: 'FirebaseFirestore.instance' },
@@ -31,58 +38,47 @@ function moduleFor(file) {
 }
 
 function featureHint(file) {
-  const base = path.basename(file, '.dart');
-  return base.replace(/_/g, ' ');
+  return path.basename(file, '.dart').replace(/_/g, ' ');
 }
 
-function forbiddenBehavior(file, line, kind) {
-  if (file.includes('firestore_read_helper.dart')) {
-    return 'throws StateError via assertNotForbidden (caller should catch → UI)';
+function releaseClassFor(rel, fileText, kind) {
+  if (rel.includes('/repositories/')) {
+    return {
+      cls: 'DEAD_IN_RELEASE',
+      note: 'Only entered via FirestoreService (throws at gateway in release)',
+    };
   }
-  if (file.includes('firestore_forbidden_guard.dart')) return 'definition only';
-  if (file.includes('firestore_service.dart')) {
-    return 'getter throws StateError if FIRESTORE_FORBIDDEN (caller should catch → UI)';
+  if (rel.includes('/features/ambulance/') || rel.includes('/ambulance/')) {
+    return {
+      cls: 'DEAD_IN_RELEASE',
+      note: 'AMBULANCE_ENABLED=false: routes not mounted',
+    };
   }
-  if (file.includes('profile_completion_service.dart')) {
-    return '_effectiveFirestore: throws or debug override';
+  if (rel.includes('firestore_forbidden_guard.dart') || rel.includes('firestore_client.dart')) {
+    return { cls: 'TEST_ONLY', note: 'guard implementation' };
   }
-  if (file.includes('/repositories/')) {
-    return 'dead in release unless FirestoreService accessed (throws at gateway)';
+  if (rel.includes('firestore_read_helper.dart') || rel.includes('firestore_service.dart')) {
+    return { cls: 'TEST_ONLY', note: 'central gate' };
   }
-  if (file.includes('/ambulance/')) {
-    return 'gated AMBULANCE_ENABLED=false → screen not routed; else throws if reached';
+  const supaPrimary =
+    SUPABASE_PRIMARY_MARKERS.some((m) => fileText.includes(m)) &&
+    !/FirestoreService\.instance/.test(fileText);
+  if (supaPrimary) {
+    return {
+      cls: 'DEAD_IN_RELEASE',
+      note: 'File uses Supabase-primary APIs; Firestore lines are legacy/unreachable in release flow',
+    };
   }
-  if (kind === 'FirestoreService.instance') {
-    return 'throws at FirestoreService gateway unless caught';
+  if (rel.includes('shared_appointments_store.dart')) {
+    return {
+      cls: 'DEAD_IN_RELEASE',
+      note: 'Supabase refresh path; Firestore branch not taken when forbidden (shared_appointments_store.dart)',
+    };
   }
-  if (kind === 'FirebaseFirestore.instance') {
-    return 'throws only if caller wrapped; direct use may throw uncaught — migrate to Supabase';
-  }
-  return 'see FirestoreForbiddenGuard / Supabase primary paths';
-}
-
-function effortFor(file, kind) {
-  if (file.includes('/repositories/')) return 'S';
-  if (kind === 'FirestoreReadHelper') return 'S';
-  if (file.includes('firebase_bootstrap.dart')) return 'S';
-  if (file.includes('doctor_profile_store') || file.includes('community_')) return 'L';
-  if (file.includes('features/patient/')) return 'M';
-  return 'M';
-}
-
-function statusFor(file) {
-  if (file.includes('firestore_forbidden_guard')) return 'n/a';
-  if (file.includes('firestore_read_helper')) return 'gated';
-  if (file.includes('firestore_service.dart')) return 'gated';
-  if (file.includes('ambulance')) return 'gated-off';
-  if (
-    file.includes('shared_appointments_store') ||
-    file.includes('in_app_notification_supabase') ||
-    file.includes('supabase_')
-  ) {
-    return 'migrated';
-  }
-  return 'gated-or-migrate';
+  return {
+    cls: 'LIVE_AND_THROWS',
+    note: 'Reachable in release → StateError unless caught; show FirestoreUi.userMessage',
+  };
 }
 
 function walk(dir, acc = []) {
@@ -114,6 +110,8 @@ function main() {
   const files = walk(LIB);
   const rows = [];
   const violations = [];
+  const counts = {};
+  const byModule = {};
 
   for (const file of files) {
     const text = fs.readFileSync(file, 'utf8');
@@ -123,14 +121,18 @@ function main() {
     for (const { re, kind } of PATTERNS) {
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].match(re)) {
+          const mod = moduleFor(rel);
+          const { cls, note } = releaseClassFor(rel, text, kind);
+          counts[cls] = (counts[cls] || 0) + 1;
+          if (!byModule[mod]) byModule[mod] = {};
+          byModule[mod][cls] = (byModule[mod][cls] || 0) + 1;
           rows.push({
             loc: `${rel}:${i + 1}`,
-            module: moduleFor(rel),
+            module: mod,
             feature: featureHint(file),
-            collection: kind.includes('ReadHelper') ? '(varies via helper)' : '(via repository)',
-            behavior: forbiddenBehavior(rel, i + 1, kind),
-            effort: effortFor(rel, kind),
-            status: statusFor(rel),
+            kind,
+            releaseClass: cls,
+            note,
           });
         }
       }
@@ -144,9 +146,7 @@ function main() {
         rel === 'frontend/lib/core/firebase/firestore_client.dart' ||
         rel === 'frontend/lib/core/auth/profile_completion_service.dart' ||
         rel === 'frontend/lib/core/firebase/firebase_bootstrap.dart';
-      if (!allowed) {
-        violations.push(rel);
-      }
+      if (!allowed) violations.push(rel);
     }
   }
 
@@ -155,39 +155,55 @@ function main() {
   const md = [];
   md.push('# Firestore reachability in release builds');
   md.push('');
-  md.push(
-    'Generated by `node scripts/audit/scan_firestore_release_reachability.js`.',
-  );
-  md.push(
-    'Default `FIRESTORE_FORBIDDEN=true`: client must not read application Firestore; failures must surface in UI.',
-  );
+  md.push('Generated by `node scripts/audit/scan_firestore_release_reachability.js`.');
+  md.push('');
+  md.push('## Allowlist rationale (`scripts/audit/firestore_instance_allowlist.txt`)');
+  md.push('- **profile_completion_service.dart** — guarded `_effectiveFirestore()` + test fake only; release uses Supabase profile paths.');
+  md.push('- **firebase_bootstrap.dart** — touches `settings` only when `!isForbidden` (no data reads).');
+  md.push('- **profile_photo_uploader.dart** — guarded getter; production uploads use Supabase/S3 primary.');
+  md.push('');
+  md.push('## Admin screens in release');
+  md.push('`features/admin/*` (e.g. **promoted_ad_review_screen.dart**) is **reachable** if a super-admin session opens those routes; they still call `FirestoreClient` → **LIVE_AND_THROWS** unless migrated. Not in consumer doctor/patient/lab/pharmacy shells.');
+  md.push('');
+  md.push('## Counts by class');
+  md.push('| class | count |');
+  md.push('|-------|------:|');
+  for (const c of ['DEAD_IN_RELEASE', 'LIVE_AND_THROWS', 'TEST_ONLY']) {
+    md.push(`| ${c} | ${counts[c] || 0} |`);
+  }
+  md.push('');
+  md.push('## Counts by module × class');
+  md.push('| module | DEAD_IN_RELEASE | LIVE_AND_THROWS | TEST_ONLY |');
+  md.push('|--------|----------------:|----------------:|----------:|');
+  for (const mod of Object.keys(byModule).sort()) {
+    const b = byModule[mod];
+    md.push(
+      `| ${mod} | ${b.DEAD_IN_RELEASE || 0} | ${b.LIVE_AND_THROWS || 0} | ${b.TEST_ONLY || 0} |`,
+    );
+  }
   md.push('');
   md.push(
-    '| file:line | module | feature/screen | collection | FIRESTORE_FORBIDDEN=true | effort | status |',
+    '| file:line | module | feature | accessor | release class | note |',
   );
   md.push(
-    '|-----------|--------|----------------|------------|---------------------------|--------|--------|',
+    '|-----------|--------|---------|----------|---------------|------|',
   );
   for (const r of rows) {
     md.push(
-      `| ${r.loc} | ${r.module} | ${r.feature} | ${r.collection} | ${r.behavior} | ${r.effort} | ${r.status} |`,
+      `| ${r.loc} | ${r.module} | ${r.feature} | ${r.kind} | ${r.releaseClass} | ${r.note} |`,
     );
   }
   md.push('');
   md.push(`Total rows: **${rows.length}**`);
   md.push('');
-  md.push('## CI allowlist');
-  md.push(
-    'Direct `FirebaseFirestore.instance` outside `frontend/lib/core/firebase/repositories/` and allowlist → **fail**.',
-  );
+  md.push('CI: `npm run audit:firestore-reachability`');
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, md.join('\n'), 'utf8');
 
-  const uniqueViolations = [...new Set(violations)];
-  if (uniqueViolations.length > 0) {
+  if (violations.length > 0) {
     console.error(
-      'FirebaseFirestore.instance outside allowlist:\n' + uniqueViolations.join('\n'),
+      'FirebaseFirestore.instance outside allowlist:\n' + violations.join('\n'),
     );
     process.exit(1);
   }
