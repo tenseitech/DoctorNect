@@ -426,9 +426,6 @@ class SupabaseLabRepository {
     if (!SupabaseBootstrap.isReady || bookingId.isEmpty) return false;
     final key = reportStorageKey?.trim();
     final hasKey = key != null && key.isNotEmpty;
-    if (hasKey) {
-      await _persistLabBookingReportKey(bookingId, key);
-    }
     try {
       final override = debugUpdateLabBookingStatusOverride;
       if (override != null) {
@@ -445,13 +442,13 @@ class SupabaseLabRepository {
         }
         return ok;
       }
-      // Until migration 000015 (RPC sets key atomically): key is persisted above; RPC sets status.
       final res = await _client.rpc(
         'update_lab_booking_status',
         params: {
           'p_booking_id': bookingId,
           'p_new_status': newStatus,
           if (notes != null) 'p_notes': notes,
+          if (hasKey) 'p_report_storage_key': key,
         },
       );
       final ok = res is Map && res['success'] == true;
@@ -566,9 +563,6 @@ class SupabaseLabRepository {
     if (!SupabaseBootstrap.isReady || orderId.isEmpty) return false;
     final key = reportStorageKey?.trim();
     final hasKey = key != null && key.isNotEmpty;
-    if (hasKey) {
-      await _persistLabOrderReportKey(orderId, key);
-    }
     try {
       final override = debugUpdateLabOrderStatusOverride;
       if (override != null) {
@@ -591,6 +585,7 @@ class SupabaseLabRepository {
           'p_order_id': orderId,
           'p_new_status': newStatus,
           if (notes != null) 'p_notes': notes,
+          if (hasKey) 'p_report_storage_key': key,
         },
       );
       final ok = res is Map && res['success'] == true;
