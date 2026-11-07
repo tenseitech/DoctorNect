@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/pharmacy_firestore_repository.dart';
 
 import 'dart:async';
 
@@ -21,7 +21,7 @@ class PharmacyConnectionStore extends ChangeNotifier {
   static const councilNumbers = <String, String>{};
 
   void _persistConnection(PharmacyConnection conn) {
-    unawaited(FirestoreService.instance.pharmacyFirestore.saveConnection(conn));
+    unawaited(PharmacyFirestoreRepository.instance.saveConnection(conn));
   }
 
   List<PharmacyConnection> get all => List.unmodifiable(_connections);
@@ -453,7 +453,7 @@ class PharmacyConnectionStore extends ChangeNotifier {
   }) async {
     switch (role) {
       case UserType.doctor:
-        final doctorPage = await FirestoreService.instance.pharmacyFirestore
+        final doctorPage = await PharmacyFirestoreRepository.instance
             .fetchActiveConnectionsForDoctor(
           profileId,
           preferCache: preferCache,
@@ -462,7 +462,7 @@ class PharmacyConnectionStore extends ChangeNotifier {
         break;
       case UserType.medicalStore:
       case UserType.medical:
-        final storePage = await FirestoreService.instance.pharmacyFirestore
+        final storePage = await PharmacyFirestoreRepository.instance
             .fetchActiveConnectionsForStore(
           profileId,
           preferCache: preferCache,

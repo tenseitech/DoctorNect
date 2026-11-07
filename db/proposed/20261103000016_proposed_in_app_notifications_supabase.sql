@@ -62,7 +62,8 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  IF COALESCE(current_setting('role', true), '') IN ('service_role', 'postgres') THEN
+  -- SECURITY DEFINER: session JWT may still show role=authenticated; trust function owner.
+  IF current_user IN ('postgres', 'supabase_admin') THEN
     RETURN NEW;
   END IF;
 

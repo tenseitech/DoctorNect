@@ -1,4 +1,6 @@
-import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/repositories/doctor_account_repository.dart';
+import 'package:medibond/core/firebase/repositories/doctor_verification_repository.dart';
+import 'package:medibond/core/firebase/repositories/role_account_repository.dart';
 
 import 'dart:async';
 
@@ -133,10 +135,10 @@ void main() {
     });
   });
 
-  group('FirestoreService.instance.doctorAccount.isVerified guards', () {
+  group('DoctorAccountRepository.isVerified guards', () {
     test('returns false when Firebase is unavailable', () async {
       FirebaseBootstrap.isReady = false;
-      final verified = await FirestoreService.instance.doctorAccount.isVerified(
+      final verified = await DoctorAccountRepository.instance.isVerified(
         doctorId,
       );
       expect(verified, isFalse);
@@ -146,7 +148,7 @@ void main() {
   group('RoleAccountRepository doctor routing', () {
     test('doctor role delegates to DoctorAccountRepository', () async {
       FirebaseBootstrap.isReady = false;
-      final verified = await FirestoreService.instance.roleAccount.isVerified(
+      final verified = await RoleAccountRepository.instance.isVerified(
         UserType.doctor,
         doctorId,
       );

@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 
+import '../config/firestore_forbidden_guard.dart';
 import '../firebase/firebase_bootstrap.dart';
 import '../supabase/supabase_bootstrap.dart';
 import '../supabase/supabase_stream_table.dart';
@@ -17,7 +18,6 @@ import '../storage/s3_storage_service.dart';
 import '../storage/storage_feature_flag.dart';
 
 abstract final class PromotedAdsService {
-  static final _firestore = FirestoreClient.instance;
   static const _collection = 'promotedAds';
 
   static String _generateAdId() {
@@ -32,7 +32,11 @@ abstract final class PromotedAdsService {
 
   @visibleForTesting
   static FirebaseFirestore? firestoreOverride;
-  static FirebaseFirestore get _db => firestoreOverride ?? _firestore;
+  static FirebaseFirestore get _db {
+    if (firestoreOverride != null) return firestoreOverride!;
+    FirestoreForbiddenGuard.assertNotForbidden('PromotedAdsService._db');
+    return FirestoreClient.instance;
+  }
 
   @visibleForTesting
   static S3StorageService? s3Override;

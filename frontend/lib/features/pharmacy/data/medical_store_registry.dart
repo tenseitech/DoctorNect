@@ -2,7 +2,7 @@ import 'dart:async';
 
 import '../../../core/auth/profile_completion_service.dart';
 import '../../../core/enums/user_type.dart';
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/medical_store_repository.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -29,7 +29,7 @@ class MedicalStoreRegistry extends ChangeNotifier {
   }
 
   static Future<void> refreshFromFirestore({bool preferCache = true}) async {
-    final stores = await FirestoreService.instance.medicalStore
+    final stores = await MedicalStoreRepository.instance
         .fetchVerifiedStores(preferCache: preferCache);
     instance._stores
       ..clear()
@@ -39,7 +39,7 @@ class MedicalStoreRegistry extends ChangeNotifier {
 
   static Future<void> ensureStoreLoaded(String storeId) async {
     if (storeId.isEmpty || findById(storeId) != null) return;
-    final remote = await FirestoreService.instance.medicalStore.fetchStoreById(
+    final remote = await MedicalStoreRepository.instance.fetchStoreById(
       storeId,
     );
     if (remote == null) return;
@@ -100,7 +100,7 @@ class MedicalStoreRegistry extends ChangeNotifier {
     var index = instance._stores.indexWhere((s) => s.id == storeId);
     if (index < 0) {
       final remote =
-          await FirestoreService.instance.medicalStore.fetchStoreById(storeId);
+          await MedicalStoreRepository.instance.fetchStoreById(storeId);
       if (remote == null) return 'Store not found';
       instance._stores.add(remote);
       index = instance._stores.length - 1;
@@ -130,7 +130,7 @@ class MedicalStoreRegistry extends ChangeNotifier {
     }
 
     try {
-      await FirestoreService.instance.medicalStore.updateStoreFields(
+      await MedicalStoreRepository.instance.updateStoreFields(
         storeId,
         storeName: storeName,
         ownerName: ownerName,

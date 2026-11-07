@@ -1,4 +1,4 @@
-import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/repositories/lab_booking_repository.dart';
 
 import 'dart:async';
 
@@ -12,8 +12,7 @@ abstract final class PatientLabBookingWatcher {
     if (patientId.isEmpty) return;
     _sub?.cancel();
 
-    _sub = FirestoreService.instance.labBooking
-        .watchForPatient(patientId)
+    _sub = LabBookingRepository.instance.watchForPatient(patientId)
         .listen((bookings) {
       PatientLabBookingStore.instance.mergeFromFirestore(bookings);
     }, onError: (_) {});

@@ -1,4 +1,5 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/ambulance_repository.dart';
+import '../../../core/firebase/repositories/lab_catalog_repository.dart';
 
 import 'dart:async';
 
@@ -74,7 +75,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
   final _focusNode = FocusNode();
   final _doctorsStore = RegisteredDoctorsStore.instance;
   late final Future<LabCatalog> _catalogFuture =
-      FirestoreService.instance.labCatalog.fetchCatalog();
+      LabCatalogRepository.instance.fetchCatalog();
   SearchSort _sort = SearchSort.relevance;
   bool _searchFocused = false;
 
@@ -118,7 +119,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     }
     if (AmbulanceEnabled.isOn) {
       AmbulanceStore.instance.addListener(_onAmbulanceStoreChanged);
-      FirestoreService.instance.ambulance.fetchRegisteredAmbulances();
+      unawaited(AmbulanceRepository.instance.fetchRegisteredAmbulances());
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _doctorsStore.startListening();

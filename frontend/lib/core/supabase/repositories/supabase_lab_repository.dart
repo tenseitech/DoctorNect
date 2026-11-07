@@ -20,6 +20,20 @@ class SupabaseLabRepository {
 
   static final SupabaseLabRepository instance = SupabaseLabRepository._();
 
+  static const labReportRpcSkewMessage =
+      'Lab report submit requires server SQL migrations 000015 and 000017 (report key RPC). '
+      'Ask your administrator to apply the staging database updates, then retry.';
+
+  static String? _labStatusRpcSkewUserMessage(Object e) {
+    final s = e.toString().toLowerCase();
+    if (s.contains('p_report_storage_key') ||
+        s.contains('could not find the function') ||
+        (s.contains('update_lab_') && s.contains('does not exist'))) {
+      return labReportRpcSkewMessage;
+    }
+    return null;
+  }
+
   @visibleForTesting
   static Future<bool> Function({
     required String bookingId,
@@ -467,6 +481,8 @@ class SupabaseLabRepository {
         );
       }
       if (kDebugMode) debugPrint('[SupabaseLab] updateLabBookingStatus error: $e');
+      final skew = _labStatusRpcSkewUserMessage(e);
+      if (skew != null) throw StateError(skew);
       rethrow;
     }
   }
@@ -604,6 +620,8 @@ class SupabaseLabRepository {
         );
       }
       if (kDebugMode) debugPrint('[SupabaseLab] updateLabOrderStatus error: $e');
+      final skew = _labStatusRpcSkewUserMessage(e);
+      if (skew != null) throw StateError(skew);
       rethrow;
     }
   }

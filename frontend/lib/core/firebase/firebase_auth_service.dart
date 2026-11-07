@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'firestore_service.dart';
+import 'repositories/doctor_account_repository.dart';
+import 'repositories/user_repository.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -145,7 +146,7 @@ class FirebaseAuthService {
   }) async {
     DoctorNectUserProfile? saved;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
-      saved = await FirestoreService.instance.user.fetchProfile(
+      saved = await UserRepository.instance.fetchProfile(
         user.uid,
         preferCache: false,
       );
@@ -205,15 +206,15 @@ class FirebaseAuthService {
       );
       final user = credential.user!;
 
-      var profile = await FirestoreService.instance.user.fetchProfile(
+      var profile = await UserRepository.instance.fetchProfile(
         user.uid,
         preferCache: true,
       );
-      profile ??= await FirestoreService.instance.user.fetchProfile(
+      profile ??= await UserRepository.instance.fetchProfile(
         user.uid,
         preferCache: false,
       );
-      profile ??= await FirestoreService.instance.user.repairMissingProfile(
+      profile ??= await UserRepository.instance.repairMissingProfile(
         user: user,
         expectedRole: expectedRole,
       );
@@ -353,11 +354,11 @@ class FirebaseAuthService {
       // Retry profile fetch with backoff (up to 3 attempts) to allow commit propagation
       DoctorNectUserProfile? profile;
       for (var attempt = 1; attempt <= 3; attempt++) {
-        profile = await FirestoreService.instance.user.fetchProfile(
+        profile = await UserRepository.instance.fetchProfile(
           user.uid,
           preferCache: false,
         );
-        profile ??= await FirestoreService.instance.user.findProfileByMobile(
+        profile ??= await UserRepository.instance.findProfileByMobile(
           role: expectedRole,
           mobile: digits,
         );
@@ -366,7 +367,7 @@ class FirebaseAuthService {
           await Future.delayed(Duration(milliseconds: 300 * attempt));
         }
       }
-      profile ??= await FirestoreService.instance.user.repairMissingProfile(
+      profile ??= await UserRepository.instance.repairMissingProfile(
         user: user,
         expectedRole: expectedRole,
       );
@@ -420,7 +421,7 @@ class FirebaseAuthService {
     String message,
   ) async {
     final rollback =
-        await FirestoreService.instance.user.deletePendingAuthUser(user);
+        await UserRepository.instance.deletePendingAuthUser(user);
     if (rollback == SupabaseUserRepository.pendingAuthSkippedAlreadyVerified) {
       return null;
     }
@@ -485,7 +486,7 @@ class FirebaseAuthService {
           : (Map<String, dynamic>.from(roleData)..['ownerUid'] = user.uid);
 
       final validationError =
-          await FirestoreService.instance.user.validateNewRegistration(
+          await UserRepository.instance.validateNewRegistration(
         role: role,
         email: email,
         mobile: mobile,
@@ -515,7 +516,7 @@ class FirebaseAuthService {
       }
 
       try {
-        await FirestoreService.instance.user.createProfile(
+        await UserRepository.instance.createProfile(
           user: user,
           role: role,
           profileId: profileId,
@@ -630,7 +631,7 @@ class FirebaseAuthService {
     }
     final user = currentUser;
     if (user == null) return null;
-    final profile = await FirestoreService.instance.user.fetchProfile(
+    final profile = await UserRepository.instance.fetchProfile(
       user.uid,
       preferCache: true,
     );
@@ -647,7 +648,7 @@ class FirebaseAuthService {
       return profile.role;
     }
     if (profile.role == UserType.doctor) {
-      if (await FirestoreService.instance.doctorAccount.isDeactivated(
+      if (await DoctorAccountRepository.instance.isDeactivated(
         profile.profileId,
         preferCache: true,
       )) {
@@ -799,7 +800,7 @@ class FirebaseAuthService {
           uid: profile.uid,
           profileId: profile.profileId,
         );
-        final doctorVerified = await FirestoreService.instance.doctorAccount
+        final doctorVerified = await DoctorAccountRepository.instance
             .isVerified(profile.profileId);
         skipPrefetch =
             !ProfileCompletionService.instance.isComplete || !doctorVerified;
@@ -873,7 +874,7 @@ class FirebaseAuthService {
     }
 
     try {
-      final profile = await FirestoreService.instance.user.fetchProfile(
+      final profile = await UserRepository.instance.fetchProfile(
         user.uid,
         preferCache: false,
       );
@@ -882,7 +883,7 @@ class FirebaseAuthService {
         return AuthSignInResult.fail('Doctor profile not found.');
       }
 
-      final status = await FirestoreService.instance.doctorAccount
+      final status = await DoctorAccountRepository.instance
           .fetchDeactivationStatus(profile.profileId);
       if (!status.deactivated) {
         await _applyProfile(profile);
@@ -895,7 +896,7 @@ class FirebaseAuthService {
         );
       }
 
-      await FirestoreService.instance.doctorAccount.reactivate(
+      await DoctorAccountRepository.instance.reactivate(
         doctorId: profile.profileId,
         ownerUid: user.uid,
       );
@@ -961,7 +962,7 @@ class FirebaseAuthService {
         return AuthSignInResult.fail('Invalid email or password.');
       }
 
-      final profile = await FirestoreService.instance.user.fetchProfile(
+      final profile = await UserRepository.instance.fetchProfile(
         user.uid,
         preferCache: false,
       );
@@ -1067,7 +1068,7 @@ class FirebaseAuthService {
   }
 
   Future<AuthSignInResult?> _doctorDeactivationResult(String doctorId) async {
-    final status = await FirestoreService.instance.doctorAccount
+    final status = await DoctorAccountRepository.instance
         .fetchDeactivationStatus(doctorId);
     if (!status.deactivated) return null;
     if (status.canReactivate) {

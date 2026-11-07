@@ -1,4 +1,4 @@
-import '../../core/firebase/firestore_service.dart';
+import '../../core/firebase/repositories/ambulance_repository.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -71,7 +71,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
   final _dropController = TextEditingController();
   final _phoneController = TextEditingController();
   final _store = AmbulanceStore.instance;
-  final _repository = FirestoreService.instance.ambulance;
+  final _repository = AmbulanceRepository.instance;
   final _sync = AmbulanceBookingSync.instance;
 
   bool _submitting = false;
@@ -2090,7 +2090,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
     if (driverId == null || driverId.isEmpty) return;
 
     setState(() => _loadingDetails = true);
-    final amb = await FirestoreService.instance.ambulance.fetchAmbulanceById(
+    final amb = await AmbulanceRepository.instance.fetchAmbulanceById(
       driverId,
     );
     if (!mounted) return;
@@ -2199,7 +2199,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                   widget.onDismiss != null)
                 GestureDetector(
                   onTap: () {
-                    FirestoreService.instance.ambulance.rateBroadcast(
+                    AmbulanceRepository.instance.rateBroadcast(
                       broadcastId: booking.id,
                       stars: -1,
                     );

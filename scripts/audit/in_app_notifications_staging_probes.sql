@@ -46,4 +46,31 @@ BEGIN
 END;
 $$;
 
+-- Probe: SECURITY DEFINER (owner postgres) may patch title while invoked under client JWT.
+CREATE OR REPLACE FUNCTION pg_temp.probe_definer_patch_notification_title(p_id text, p_title text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.in_app_notifications SET title = p_title WHERE notification_id = p_id;
+END;
+$$;
+
+ALTER FUNCTION pg_temp.probe_definer_patch_notification_title(text, text) OWNER TO postgres;
+
+SELECT pg_temp.set_jwt('uid_recipient');
+SET LOCAL role authenticated;
+
+DO $$
+BEGIN
+  PERFORM pg_temp.probe_definer_patch_notification_title('n_staging_1', 'definer patch under jwt');
+  RAISE NOTICE 'PASS [security_definer_title_under_client_jwt]';
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE NOTICE 'FAIL [security_definer_title_under_client_jwt]: %', SQLERRM;
+END;
+$$;
+
 ROLLBACK;

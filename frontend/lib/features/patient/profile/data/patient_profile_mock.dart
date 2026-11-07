@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/config/doctor_patient_cutover_flag.dart';
+import '../../../../core/config/firestore_forbidden_guard.dart';
 import '../../../../core/firebase/firebase_bootstrap.dart';
 import '../../../../core/firebase/firestore_paths.dart';
 import '../../../../core/supabase/repositories/supabase_patient_profile_repository.dart';
@@ -117,6 +118,7 @@ class PatientProfileMock {
   }
 
   static Future<void> _loadNotificationPrefs(String patientId) async {
+    if (FirestoreForbiddenGuard.isForbidden) return;
     try {
       final data = await FirestoreService.instance.patientProfile
           .fetchPatientDocument(patientId, preferCache: false);

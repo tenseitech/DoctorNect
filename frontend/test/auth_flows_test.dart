@@ -18,6 +18,7 @@ import 'package:medibond/core/validation/server_validation_service.dart';
 import 'package:medibond/core/validators/form_validators.dart';
 
 import 'helpers/auth_validation_rules_fixture.dart';
+import 'helpers/firestore_test_access.dart';
 
 class MockUser extends Mock implements User {}
 class MockFirebaseAuth extends Mock implements FirebaseAuth {}
@@ -27,8 +28,13 @@ class FakeUser extends Fake implements User {}
 
 void main() {
   setUpAll(() {
+    allowFirestoreInThisTestFile();
     registerFallbackValue(FakeUser());
     registerFallbackValue(UserType.patient);
+  });
+
+  tearDownAll(() {
+    resetFirestoreTestAccess();
   });
   const validMobile = '9876543210';
   const validEmail = 'patient@example.com';

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/repositories/in_app_notification_repository.dart';
 
 import '../../features/patient/profile/data/patient_profile_mock.dart';
 
@@ -44,7 +44,7 @@ abstract final class PatientInAppNotificationSync {
       return;
     }
 
-    _sub = FirestoreService.instance.inAppNotification
+    _sub = InAppNotificationRepository.instance
         .watchForRecipient(recipientUid)
         .listen(
       (notifications) {

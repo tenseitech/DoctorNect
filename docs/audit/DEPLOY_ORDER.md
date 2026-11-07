@@ -57,6 +57,17 @@ Staging probes: `scripts/audit/rls_staging_verified_role_matrix.sql`, `in_app_no
 - RPC calls sending `p_report_storage_key` to an older `update_lab_order_status` signature may **fail** (argument mismatch) or ignore keys.  
 - Lab report linking in UI may **stall** until SQL catches up.
 
+## Since `c16ee08` — lab client sends `p_report_storage_key` only via RPC
+
+| Scenario | Failing call | User-visible behavior |
+|----------|--------------|------------------------|
+| **New app + old DB** (no `000015` / `000017`) | PostgREST `rpc('update_lab_booking_status' \| 'update_lab_order_status', …, p_report_storage_key: …)` | RPC error (unknown parameter / function mismatch). Upload may complete in S3 then **rollback**; UI shows **`SupabaseLabRepository.labReportRpcSkewMessage`** or `LabReportSubmitFlow.persistFailedMessage`. |
+| **New app + DB with 000015 but not 000017** | Same RPC; signature may exist without verified/key guards | May succeed or 42501 depending on role; still risky — apply **000017** before launch. |
+| **000015+000017+000018 applied, old app still live** | Old client PATCHes `report_storage_key` column | **42501** from `000018` trigger; user sees persist failure until app upgrade. |
+| **SQL applied while mixed app versions** | Both patterns | New apps use RPC keys; old apps fail PATCH. Coordinate store rollout after SQL. |
+
+**Pre-release check:** run lab report submit on staging after SQL; confirm RPC accepts `p_report_storage_key`. App surfaces skew message when parameter missing.
+
 ## If the app is **newer** than **000015+000018** (client uses RPC keys, SQL not applied)
 
 - Lab completes upload in S3 but **PostgREST** `report_storage_key` patch may **42501** once **000018** is live without matching RPC client → UI shows persist error (`LabReportSubmitFlow.persistFailedMessage`).  
@@ -66,6 +77,14 @@ Staging probes: `scripts/audit/rls_staging_verified_role_matrix.sql`, `in_app_no
 
 - Old app may still PATCH keys via PostgREST → **rejected** (intended). User must upgrade to RPC-based client.  
 - Download URLs still work when stored key matches (`s3_storage.js` validates prefix + stored key).
+
+## Required order (staging → RDS)
+
+1. **Staging Postgres:** `000014` → `000015` → `000016` → `000017` → `000018` (proposed files under `db/proposed/`).
+2. **Run staging probes:** `rls_staging_verified_role_matrix.sql`, `in_app_notifications_staging_probes.sql`, `lab_report_key_staging_probes.sql`, `rpc_verified_staging_probes.sql`.
+3. **Deploy backend/functions** (S3 validation, FCM) — no strict SQL dep beyond existing migrations.
+4. **Deploy Flutter build** with `FIRESTORE_FORBIDDEN=true` (default) and lab RPC-only client (`c16ee08+`).
+5. **RDS:** replay same SQL bundle in the same order after staging sign-off; verify `update_lab_*_status` accepts `p_report_storage_key`.
 
 ## Rollback
 

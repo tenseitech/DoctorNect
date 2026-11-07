@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/repositories/in_app_notification_repository.dart';
 
 import 'package:medibond/core/supabase/supabase_bootstrap.dart';
 import 'app_notification.dart';
@@ -27,7 +27,7 @@ abstract final class DoctorInAppNotificationSync {
       return;
     }
 
-    _sub = FirestoreService.instance.inAppNotification
+    _sub = InAppNotificationRepository.instance
         .watchForRecipient(recipientUid)
         .listen(
       (notifications) {

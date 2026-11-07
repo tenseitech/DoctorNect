@@ -4,7 +4,7 @@ import '../../../core/auth/demo_auth_config.dart';
 import '../../../core/auth/verification_lifecycle.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/firebase/firebase_bootstrap.dart';
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/doctor_verification_repository.dart';
 
 import 'package:flutter/material.dart';
 
@@ -63,7 +63,7 @@ class DoctorVerificationGate extends StatelessWidget {
       ]),
       builder: (context, _) {
         return StreamBuilder<bool>(
-          stream: FirestoreService.instance.doctorVerification.watchVerified(
+          stream: DoctorVerificationRepository.instance.watchVerified(
             doctorId,
           ),
           builder: (context, snapshot) {
