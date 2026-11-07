@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../core/firebase/firestore_client.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -132,7 +133,7 @@ class _DoctorShellState extends State<DoctorShell> {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null && uid.isNotEmpty) {
-        FirebaseFirestore.instance
+        FirestoreClient.instance
             .collection(FirestorePaths.users)
             .doc(uid)
             .set({
@@ -146,7 +147,7 @@ class _DoctorShellState extends State<DoctorShell> {
           ? DoctorSession.loggedInDoctorId
           : AppSession.doctorId;
       if (doctorId.isNotEmpty) {
-        FirebaseFirestore.instance
+        FirestoreClient.instance
             .collection(FirestorePaths.doctors)
             .doc(doctorId)
             .set({

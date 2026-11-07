@@ -1,4 +1,5 @@
 import 'package:medibond/core/firebase/firestore_service.dart';
+import '../firebase/firestore_client.dart';
 
 import 'dart:math';
 
@@ -87,7 +88,7 @@ abstract final class AmbulanceInviteService {
     );
 
     try {
-      await FirebaseFirestore.instance
+      await FirestoreClient.instance
           .collection(FirestorePaths.ambulanceInvites)
           .doc(inviteId)
           .set({
@@ -168,7 +169,7 @@ abstract final class AmbulanceInviteService {
     }
 
     try {
-      await FirebaseFirestore.instance
+      await FirestoreClient.instance
           .collection(FirestorePaths.ambulanceInvites)
           .doc(inviteId)
           .set({

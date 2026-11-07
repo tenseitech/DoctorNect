@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/firebase/firestore_client.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -22,7 +23,7 @@ abstract final class BookingFlowHelpers {
   /// Firestore auto-id — avoids legacy `APT${timestamp}` collisions (Issue #16).
   static String newAppointmentId() {
     final collection = debugAppointmentsCollection ??
-        FirebaseFirestore.instance.collection('appointments');
+        FirestoreClient.instance.collection('appointments');
     return collection.doc().id;
   }
 

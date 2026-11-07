@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../firebase/firestore_client.dart';
 
 import '../firebase/firebase_bootstrap.dart';
 import '../firebase/firestore_paths.dart';
@@ -79,7 +80,7 @@ abstract final class DoctorInviteService {
   static Future<void> ensureInviteMetadata(String doctorId) async {
     if (!FirebaseBootstrap.isReady || doctorId.isEmpty) return;
 
-    await FirebaseFirestore.instance
+    await FirestoreClient.instance
         .collection(FirestorePaths.doctors)
         .doc(doctorId)
         .set({

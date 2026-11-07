@@ -1,4 +1,5 @@
 import '../../core/firebase/firestore_service.dart';
+import '../../core/firebase/firestore_client.dart';
 import '../../core/config/doctor_patient_cutover_flag.dart';
 import '../../core/notifications/app_toast.dart';
 
@@ -977,10 +978,10 @@ Future<void> submitAmbulanceVerificationBatch({
   required String ambulanceId,
 }) async {
   try {
-    final batch = FirebaseFirestore.instance.batch();
+    final batch = FirestoreClient.instance.batch();
     if (uid.isNotEmpty) {
       final userRef =
-          FirebaseFirestore.instance.collection(FirestorePaths.users).doc(uid);
+          FirestoreClient.instance.collection(FirestorePaths.users).doc(uid);
       batch.set(
         userRef,
         {
@@ -992,7 +993,7 @@ Future<void> submitAmbulanceVerificationBatch({
       );
     }
     if (ambulanceId.isNotEmpty) {
-      final ambRef = FirebaseFirestore.instance
+      final ambRef = FirestoreClient.instance
           .collection(FirestorePaths.ambulances)
           .doc(ambulanceId);
       batch.set(
@@ -1082,7 +1083,7 @@ class _AmbulanceProfileCompletionCardState
         }
 
         return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance
+          stream: FirestoreClient.instance
               .collection(FirestorePaths.users)
               .doc(uid)
               .snapshots(),

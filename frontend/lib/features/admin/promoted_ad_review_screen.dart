@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/firebase/firestore_client.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 
@@ -21,7 +22,7 @@ class _PromotedAdReviewScreenState extends State<PromotedAdReviewScreen> {
 
   Stream<QuerySnapshot<Map<String, dynamic>>>? get _pending {
     if (!FirebaseBootstrap.isReady) return null;
-    return FirebaseFirestore.instance
+    return FirestoreClient.instance
         .collection('promotedAds')
         .where('status', isEqualTo: 'pending_approval')
         .snapshots();

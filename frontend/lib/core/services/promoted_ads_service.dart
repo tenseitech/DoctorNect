@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../firebase/firestore_client.dart';
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -16,7 +17,7 @@ import '../storage/s3_storage_service.dart';
 import '../storage/storage_feature_flag.dart';
 
 abstract final class PromotedAdsService {
-  static final _firestore = FirebaseFirestore.instance;
+  static final _firestore = FirestoreClient.instance;
   static const _collection = 'promotedAds';
 
   static String _generateAdId() {

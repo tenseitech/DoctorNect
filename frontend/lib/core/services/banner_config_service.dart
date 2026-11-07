@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../firebase/firestore_client.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -14,7 +15,7 @@ abstract final class BannerConfigService {
   static const String _configCollection = 'system_config';
   static const String _configDoc = 'promoted_ads';
 
-  static FirebaseFirestore get _db => FirebaseFirestore.instance;
+  static FirebaseFirestore get _db => FirestoreClient.instance;
 
   static Stream<BannerConfigModel> streamConfig() {
     final bool useSupabase = DoctorPatientCutoverFlag.isEnabled ||

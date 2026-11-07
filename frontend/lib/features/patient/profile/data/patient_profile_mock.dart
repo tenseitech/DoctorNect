@@ -1,4 +1,5 @@
 import '../../../../core/firebase/firestore_service.dart';
+import '../../../../core/firebase/firestore_client.dart';
 
 import 'dart:async';
 
@@ -173,7 +174,7 @@ class PatientProfileMock {
     }
 
     if (!FirebaseBootstrap.isReady) return;
-    _patientSub = FirebaseFirestore.instance
+    _patientSub = FirestoreClient.instance
         .collection(FirestorePaths.patients)
         .doc(patientId)
         .snapshots()

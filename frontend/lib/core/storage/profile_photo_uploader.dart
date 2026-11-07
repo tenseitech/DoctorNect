@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../firebase/firestore_client.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -33,7 +34,7 @@ class ProfilePhotoUploader {
 
   @visibleForTesting
   FirebaseFirestore? firestoreOverride;
-  FirebaseFirestore get _db => firestoreOverride ?? FirebaseFirestore.instance;
+  FirebaseFirestore get _db => firestoreOverride ?? FirestoreClient.instance;
 
   @visibleForTesting
   S3StorageService? s3Override;

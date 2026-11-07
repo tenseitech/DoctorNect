@@ -1,4 +1,5 @@
 import '../../../../core/firebase/firestore_service.dart';
+import '../../../../core/firebase/firestore_client.dart';
 
 import 'dart:async';
 
@@ -79,7 +80,7 @@ class DoctorProfileStore extends ChangeNotifier {
     }
 
     if (!FirebaseBootstrap.isReady) return;
-    _doctorSub = FirebaseFirestore.instance
+    _doctorSub = FirestoreClient.instance
         .collection(FirestorePaths.doctors)
         .doc(doctorId)
         .snapshots()
@@ -124,7 +125,7 @@ class DoctorProfileStore extends ChangeNotifier {
 
   Future<void> _loadNotificationPrefs(String doctorId) async {
     try {
-      final ref = FirebaseFirestore.instance
+      final ref = FirestoreClient.instance
           .collection(FirestorePaths.doctors)
           .doc(doctorId);
       final snap = await FirestoreReadHelper.getDocument(
@@ -420,7 +421,7 @@ class DoctorProfileStore extends ChangeNotifier {
         ),
       );
     } else if (FirebaseBootstrap.isReady) {
-      await FirebaseFirestore.instance
+      await FirestoreClient.instance
           .collection(FirestorePaths.doctors)
           .doc(doctorId)
           .set(data, SetOptions(merge: true));
@@ -457,7 +458,7 @@ class DoctorProfileStore extends ChangeNotifier {
         .toList();
 
     try {
-      final ref = FirebaseFirestore.instance
+      final ref = FirestoreClient.instance
           .collection(FirestorePaths.doctors)
           .doc(doctorId);
       final snap = await FirestoreReadHelper.getDocument(
@@ -492,7 +493,7 @@ class DoctorProfileStore extends ChangeNotifier {
     if (reviewId.isEmpty) {
       throw StateError('Missing review id — reply cannot be saved.');
     }
-    await FirebaseFirestore.instance
+    await FirestoreClient.instance
         .collection(FirestorePaths.reviews)
         .doc(reviewId)
         .update({'doctorReply': reply});
@@ -518,7 +519,7 @@ class DoctorProfileStore extends ChangeNotifier {
         }
       }
 
-      final ref = FirebaseFirestore.instance
+      final ref = FirestoreClient.instance
           .collection(FirestorePaths.doctors)
           .doc(doctorId);
       final snap = await FirestoreReadHelper.getDocument(

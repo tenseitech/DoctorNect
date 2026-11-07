@@ -1,3 +1,4 @@
+import '../config/firestore_forbidden_guard.dart';
 import 'repositories/ambulance_repository.dart';
 import 'repositories/appointment_repository.dart';
 import 'repositories/doctor_account_repository.dart';
@@ -56,44 +57,68 @@ export 'repositories/user_repository.dart';
 class FirestoreService {
   FirestoreService._();
 
-  static final FirestoreService instance = FirestoreService._();
+  static final FirestoreService _singleton = FirestoreService._();
 
-  AmbulanceRepository get ambulance => AmbulanceRepository.instance;
-  AppointmentRepository get appointment => AppointmentRepository.instance;
-  DoctorAccountRepository get doctorAccount => DoctorAccountRepository.instance;
-  DoctorAvailabilityRepository get doctorAvailability =>
-      DoctorAvailabilityRepository.instance;
+  static FirestoreService get instance {
+    FirestoreForbiddenGuard.assertNotForbidden('FirestoreService');
+    return _singleton;
+  }
+
+  T _repo<T>(T Function() factory, String label) {
+    FirestoreForbiddenGuard.assertNotForbidden('FirestoreService.$label');
+    return factory();
+  }
+
+  AmbulanceRepository get ambulance =>
+      _repo(() => AmbulanceRepository.instance, 'ambulance');
+  AppointmentRepository get appointment =>
+      _repo(() => AppointmentRepository.instance, 'appointment');
+  DoctorAccountRepository get doctorAccount =>
+      _repo(() => DoctorAccountRepository.instance, 'doctorAccount');
+  DoctorAvailabilityRepository get doctorAvailability => _repo(
+      () => DoctorAvailabilityRepository.instance, 'doctorAvailability');
   DoctorDirectoryRepository get doctorDirectory =>
-      DoctorDirectoryRepository.instance;
-  DoctorProfileDetailRepository get doctorProfileDetail =>
-      DoctorProfileDetailRepository.instance;
-  DoctorProfileRepository get doctorProfile => DoctorProfileRepository.instance;
-  DoctorVerificationRepository get doctorVerification =>
-      DoctorVerificationRepository.instance;
-  FamilyMemberRepository get familyMember => FamilyMemberRepository.instance;
+      _repo(() => DoctorDirectoryRepository.instance, 'doctorDirectory');
+  DoctorProfileDetailRepository get doctorProfileDetail => _repo(
+      () => DoctorProfileDetailRepository.instance, 'doctorProfileDetail');
+  DoctorProfileRepository get doctorProfile =>
+      _repo(() => DoctorProfileRepository.instance, 'doctorProfile');
+  DoctorVerificationRepository get doctorVerification => _repo(
+      () => DoctorVerificationRepository.instance, 'doctorVerification');
+  FamilyMemberRepository get familyMember =>
+      _repo(() => FamilyMemberRepository.instance, 'familyMember');
   InAppNotificationRepository get notification =>
-      InAppNotificationRepository.instance;
+      _repo(() => InAppNotificationRepository.instance, 'notification');
   InAppNotificationRepository get inAppNotification =>
-      InAppNotificationRepository.instance;
-  LabBookingRepository get labBooking => LabBookingRepository.instance;
-  LabCatalogRepository get labCatalog => LabCatalogRepository.instance;
-  LabConnectionRepository get labConnection => LabConnectionRepository.instance;
-  LabOrderRepository get labOrder => LabOrderRepository.instance;
-  LabRepository get lab => LabRepository.instance;
+      _repo(() => InAppNotificationRepository.instance, 'inAppNotification');
+  LabBookingRepository get labBooking =>
+      _repo(() => LabBookingRepository.instance, 'labBooking');
+  LabCatalogRepository get labCatalog =>
+      _repo(() => LabCatalogRepository.instance, 'labCatalog');
+  LabConnectionRepository get labConnection =>
+      _repo(() => LabConnectionRepository.instance, 'labConnection');
+  LabOrderRepository get labOrder =>
+      _repo(() => LabOrderRepository.instance, 'labOrder');
+  LabRepository get lab => _repo(() => LabRepository.instance, 'lab');
   MedicalDirectoryRepository get medicalDirectory =>
-      MedicalDirectoryRepository.instance;
-  MedicalStoreRepository get medicalStore => MedicalStoreRepository.instance;
-  MedicineSuggestionRepository get medicineSuggestion =>
-      MedicineSuggestionRepository.instance;
+      _repo(() => MedicalDirectoryRepository.instance, 'medicalDirectory');
+  MedicalStoreRepository get medicalStore =>
+      _repo(() => MedicalStoreRepository.instance, 'medicalStore');
+  MedicineSuggestionRepository get medicineSuggestion => _repo(
+      () => MedicineSuggestionRepository.instance, 'medicineSuggestion');
   PatientAccountRepository get patientAccount =>
-      PatientAccountRepository.instance;
+      _repo(() => PatientAccountRepository.instance, 'patientAccount');
   PatientProfileRepository get patientProfile =>
-      PatientProfileRepository.instance;
-  PharmacyFirestoreRepository get pharmacyFirestore =>
-      PharmacyFirestoreRepository.instance;
-  PrescriptionRepository get prescription => PrescriptionRepository.instance;
-  ReferralRepository get referral => ReferralRepository.instance;
-  ReviewRepository get review => ReviewRepository.instance;
-  RoleAccountRepository get roleAccount => RoleAccountRepository.instance;
-  UserRepository get user => UserRepository.instance;
+      _repo(() => PatientProfileRepository.instance, 'patientProfile');
+  PharmacyFirestoreRepository get pharmacyFirestore => _repo(
+      () => PharmacyFirestoreRepository.instance, 'pharmacyFirestore');
+  PrescriptionRepository get prescription =>
+      _repo(() => PrescriptionRepository.instance, 'prescription');
+  ReferralRepository get referral =>
+      _repo(() => ReferralRepository.instance, 'referral');
+  ReviewRepository get review =>
+      _repo(() => ReviewRepository.instance, 'review');
+  RoleAccountRepository get roleAccount =>
+      _repo(() => RoleAccountRepository.instance, 'roleAccount');
+  UserRepository get user => _repo(() => UserRepository.instance, 'user');
 }

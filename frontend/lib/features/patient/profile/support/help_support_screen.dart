@@ -1,4 +1,5 @@
 import '../../../../core/notifications/app_toast.dart';
+import '../../../../core/firebase/firestore_client.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +49,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           role: 'patient',
         );
       } else {
-        await FirebaseFirestore.instance.collection('support_tickets').add({
+        await FirestoreClient.instance.collection('support_tickets').add({
           'patientId': PatientSession.loggedInPatientId,
           'issueType': _issueType,
           'message': _issueController.text.trim(),

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/firebase/firestore_client.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -90,7 +91,7 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
 
   Widget _buildFirestoreTickets(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
+      stream: FirestoreClient.instance
           .collection('support_tickets')
           .where('patientId', isEqualTo: PatientSession.loggedInPatientId)
           .snapshots(),

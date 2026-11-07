@@ -1,4 +1,5 @@
 import '../../../../core/config/doctor_patient_cutover_flag.dart';
+import '../../../../core/firebase/firestore_client.dart';
 import '../../../../core/config/firestore_forbidden_guard.dart';
 import '../../../../core/supabase/supabase_bootstrap.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -64,7 +65,7 @@ class CommunityDiagnosisRepository {
 
     if (!FirebaseBootstrap.isReady) return;
     try {
-      final query = FirebaseFirestore.instance
+      final query = FirestoreClient.instance
           .collection(FirestorePaths.communityDiagnoses)
           .orderBy('text')
           .limit(_fetchLimit);
@@ -176,7 +177,7 @@ class CommunityDiagnosisRepository {
       throw StateError('Internet is required to save a custom diagnosis.');
     }
 
-    final doc = await FirebaseFirestore.instance
+    final doc = await FirestoreClient.instance
         .collection(FirestorePaths.communityDiagnoses)
         .add({
       'text': trimmed,
