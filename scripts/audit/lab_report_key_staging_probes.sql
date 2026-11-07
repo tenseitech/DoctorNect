@@ -1,0 +1,4 @@
+-- Staging probes: report_storage_key column guard (000015 + 000018).
+-- 1) Lab PATCH lab_bookings.report_storage_key via PostgREST → 42501.
+-- 2) Lab RPC update_lab_booking_status(..., 'completed', NULL, 'lab_reports/{patient}/{id}/x.pdf') → ok.
+-- 3) Lab tries key for another patient prefix → 22023.

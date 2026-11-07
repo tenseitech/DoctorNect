@@ -1,0 +1,3 @@
+-- Staging probes: in_app_notifications recipient read-only trigger (000016).
+-- Recipient UPDATE is_read=true → ok; UPDATE title/body → 42501.
+-- service_role INSERT + UPDATE non-read columns → ok.
