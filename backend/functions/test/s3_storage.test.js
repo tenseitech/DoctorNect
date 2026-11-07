@@ -1559,7 +1559,13 @@ test('S3 Supabase Primary: assigned lab allowed to upload/download lab report', 
       { id: 'uid_lab1', role: 'lab', profile_id: 'lab_1', email: 'lab@example.com' },
     ],
     lab_bookings: [
-      { booking_id: 'b_100', lab_id: 'lab_1', status: 'confirmed' },
+      {
+        booking_id: 'b_100',
+        lab_id: 'lab_1',
+        patient_id: 'pat_1',
+        status: 'confirmed',
+        report_storage_key: 'lab_reports/pat_1/b_100/report.pdf',
+      },
     ],
   });
 
@@ -1585,6 +1591,41 @@ test('S3 Supabase Primary: assigned lab allowed to upload/download lab report', 
     objectKey: 'lab_reports/pat_1/b_100/report.pdf',
   }, auth, storageOptions);
   assert.ok(dlRes.url);
+});
+
+test('S3 Supabase Primary: lab report download denied when objectKey does not match stored key', async () => {
+  const mockDb = createMockDb();
+  const mockSupabase = createMockSupabase({
+    users: [
+      { id: 'uid_lab1', role: 'lab', profile_id: 'lab_1', email: 'lab@example.com' },
+    ],
+    lab_bookings: [
+      {
+        booking_id: 'b_100',
+        lab_id: 'lab_1',
+        patient_id: 'pat_1',
+        status: 'completed',
+        report_storage_key: 'lab_reports/pat_1/b_100/official.pdf',
+      },
+    ],
+  });
+
+  const auth = { uid: 'uid_lab1' };
+  const storageOptions = {
+    db: mockDb,
+    supabaseClient: mockSupabase,
+    isSupabasePrimary: true,
+  };
+
+  await assert.rejects(
+    async () =>
+      getS3DownloadUrlHandler(
+        { objectKey: 'lab_reports/pat_1/b_100/other.pdf' },
+        auth,
+        storageOptions,
+      ),
+    /You do not have permission to access this file/,
+  );
 });
 
 test('S3 Supabase Primary: confirmS3Upload writes snake_case columns to Supabase and logs to Postgres', async () => {

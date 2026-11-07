@@ -625,6 +625,44 @@ async function getS3UploadUrlHandler(data, auth, dbOrOptions) {
 }
 
 /**
+ * Ensures lab_reports/{patientId}/{recordId}/… matches the booking/order row.
+ */
+async function labReportObjectKeyMatchesRecord(objectKey, supabase) {
+  const parts = objectKey.split('/');
+  if (parts.length < 4 || parts[0] !== 'lab_reports') return false;
+  const patientIdInKey = parts[1];
+  const recordId = parts[2];
+  const expectedPrefix = `lab_reports/${patientIdInKey}/${recordId}/`;
+  if (!objectKey.startsWith(expectedPrefix)) return false;
+
+  const { data: booking } = await supabase
+    .from('lab_bookings')
+    .select('patient_id, report_storage_key, report_s3_key')
+    .eq('booking_id', recordId)
+    .maybeSingle();
+  if (booking) {
+    if (booking.patient_id !== patientIdInKey) return false;
+    const stored = booking.report_storage_key || booking.report_s3_key;
+    if (stored && stored !== objectKey) return false;
+    return true;
+  }
+
+  const { data: order } = await supabase
+    .from('lab_orders')
+    .select('patient_id, report_storage_key, report_s3_key')
+    .eq('order_id', recordId)
+    .maybeSingle();
+  if (order) {
+    if (order.patient_id !== patientIdInKey) return false;
+    const stored = order.report_storage_key || order.report_s3_key;
+    if (stored && stored !== objectKey) return false;
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Authorizes read access to a given objectKey.
  */
 async function authorizeRead(objectKey, caller, auth, db, ctx = {}) {
@@ -761,6 +799,9 @@ async function authorizeRead(objectKey, caller, auth, db, ctx = {}) {
     const bookingId = parts[2];
 
     if (caller.role === 'patient' && caller.profileId === patientId) {
+      if (isSupabase && supabase) {
+        return labReportObjectKeyMatchesRecord(objectKey, supabase);
+      }
       return true;
     }
 
@@ -772,7 +813,7 @@ async function authorizeRead(objectKey, caller, auth, db, ctx = {}) {
           .eq('booking_id', bookingId)
           .maybeSingle();
         if (booking && booking.lab_id === caller.profileId && booking.status !== 'cancelled') {
-          return true;
+          return labReportObjectKeyMatchesRecord(objectKey, supabase);
         }
         const { data: order } = await supabase
           .from('lab_orders')
@@ -780,7 +821,7 @@ async function authorizeRead(objectKey, caller, auth, db, ctx = {}) {
           .eq('order_id', bookingId)
           .maybeSingle();
         if (order && order.lab_id === caller.profileId && order.status !== 'cancelled') {
-          return true;
+          return labReportObjectKeyMatchesRecord(objectKey, supabase);
         }
         return false;
       }
