@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../firebase/firebase_bootstrap.dart';
+import 'default_fcm_channel.dart';
 
 /// Registers FCM for patients and routes push taps to the correct screen.
 abstract final class PatientPushService {
@@ -76,6 +77,14 @@ abstract final class PatientPushService {
           _pharmacyChannelName,
           description: 'Pharmacy pickup updates',
           importance: Importance.high,
+        ),
+      );
+      await androidPlugin?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          DefaultFcmChannel.id,
+          DefaultFcmChannel.name,
+          description: DefaultFcmChannel.description,
+          importance: Importance.defaultImportance,
         ),
       );
     }

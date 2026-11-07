@@ -253,7 +253,7 @@ class _WebDynamicBrandPanel extends StatelessWidget {
   final UserType? selectedRole;
   final Color selectedAccent;
 
-  static const _roleBenefits = <UserType, _RoleBenefitData>{
+  static Map<UserType, _RoleBenefitData> get _roleBenefits => {
     UserType.doctor: _RoleBenefitData(
       icon: Icons.medical_services_rounded,
       headline: 'Run your practice, simply.',
@@ -269,7 +269,9 @@ class _WebDynamicBrandPanel extends StatelessWidget {
       benefits: [
         'Book doctors and lab tests',
         'Keep your prescriptions and records together',
-        'Request an ambulance when it matters',
+        AmbulanceEnabled.isOn
+            ? 'Request an ambulance when it matters'
+            : 'Track appointments and lab results',
       ],
     ),
     UserType.medicalStore: _RoleBenefitData(
@@ -478,7 +480,9 @@ class _WebDynamicBrandPanel extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         Text(
-          'Connect doctors, patients, pharmacies, labs, and ambulances in one seamless healthcare network.',
+          AmbulanceEnabled.isOn
+              ? 'Connect doctors, patients, pharmacies, labs, and ambulances in one seamless healthcare network.'
+              : 'Connect doctors, patients, pharmacies, and labs in one seamless healthcare network.',
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 16,
