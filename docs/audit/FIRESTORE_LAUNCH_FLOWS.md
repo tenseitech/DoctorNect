@@ -85,7 +85,7 @@ Full inventory: `docs/audit/FIRESTORE_REACHABLE_RELEASE.md`.
 
 ## Release smoke coverage
 
-`release_firestore_forbidden_smoke_test.dart` pumps **12 MIGRATED entry screens** (plus 3 guard unit tests = **15** total) with:
+`release_firestore_forbidden_smoke_test.dart` pumps **13 MIGRATED entry screens** (plus 3 guard unit tests = **16** total) with:
 
 - `FirestoreForbiddenGuard.debugForceReleaseMode = true`
 - `SupabaseBootstrap.isReady = true` + `debugTableFetcher` returning empty rows

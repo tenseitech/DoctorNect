@@ -12,6 +12,7 @@ import 'package:medibond/core/supabase/supabase_bootstrap.dart';
 import 'package:medibond/core/supabase/supabase_stream_table.dart';
 import 'package:medibond/core/theme/app_colors.dart';
 import 'package:medibond/core/theme/app_theme.dart';
+import 'package:medibond/features/doctor/appointments/doctor_appointments_screen.dart';
 import 'package:medibond/features/doctor/pharmacy/doctor_connected_stores_screen.dart';
 import 'package:medibond/features/doctor/profile/data/doctor_profile_store.dart';
 import 'package:medibond/features/doctor/models/doctor_models.dart';
@@ -183,6 +184,16 @@ void main() {
       await pumpNoForbidden(
         tester,
         const DoctorVerificationPendingScreen(),
+      );
+    });
+
+    testWidgets('doctor appointments DoctorAppointmentsScreen', (tester) async {
+      await pumpNoForbidden(
+        tester,
+        MaterialApp(
+          theme: AppTheme.light(AppColors.doctorBlue),
+          home: const DoctorAppointmentsScreen(),
+        ),
       );
     });
 

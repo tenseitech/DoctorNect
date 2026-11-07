@@ -10,8 +10,8 @@
 
 | Suite | Result |
 |-------|--------|
-| Flutter full suite (`flutter test`) | **669 passed, 0 failed** (guard ON globally) |
-| `release_firestore_forbidden_smoke_test.dart` | **15 passed** (12 MIGRATED entry screens pumped + 3 guard/ambulance unit tests) |
+| Flutter full suite (`flutter test`) | **670 passed, 0 failed** (guard ON globally; re-run after smoke add) |
+| `release_firestore_forbidden_smoke_test.dart` | **16 passed** (13 MIGRATED entry screens pumped + 3 guard/ambulance unit tests) |
 | `backend/functions` `npm test` | **496 pass, 22 skip** |
 | Docker integration (4 files per `DOCKER_RUN.md`) | **24 pass, 5 skip** — Docker daemon down; Postgres **:54322 unreachable** |
 | `npx supabase start` | **FAILED** — `DockerLifecycleInspectError` (Docker Desktop Linux engine pipe missing) |
@@ -24,7 +24,7 @@
 - **000016** trigger: `service_role` exempt alongside `postgres` / `supabase_admin` (server + SECURITY DEFINER).
 - Staging probes **(a)–(d)** for in-app notification title/read rules.
 - Lab shell/worklist: `LabRepository`, `LabOrderRepository`, `LabBookingRepository`, `LabConnectionRepository` (no gateway on shell pump).
-- Smoke pumps: Welcome, PatientHome, DoctorSearch, MyLabs, LabHome, LabBookingFlow, EditProfile, DoctorVerificationGate/Pending, DoctorConnectedStores, MedicalStoreShell, **LabShell**.
+- Smoke pumps: Welcome, PatientHome, DoctorSearch, MyLabs, LabHome, LabBookingFlow, EditProfile, DoctorVerificationGate/Pending, **DoctorAppointmentsScreen**, DoctorConnectedStores, MedicalStoreShell, **LabShell**.
 
 ---
 
