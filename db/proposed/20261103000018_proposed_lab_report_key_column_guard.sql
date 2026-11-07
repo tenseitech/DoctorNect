@@ -4,7 +4,7 @@
 CREATE OR REPLACE FUNCTION private.lab_report_keys_update_guard()
 RETURNS TRIGGER
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = ''
 AS $$
 DECLARE

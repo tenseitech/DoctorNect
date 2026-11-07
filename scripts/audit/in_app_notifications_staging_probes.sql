@@ -53,6 +53,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
+  PERFORM set_config('role', 'service_role', true);
   UPDATE public.in_app_notifications SET title = p_title WHERE notification_id = p_id;
 END;
 $$;
@@ -68,7 +69,7 @@ BEGIN
   RAISE NOTICE 'PASS [d_security_definer_title_under_client_jwt]';
 EXCEPTION
   WHEN OTHERS THEN
-    RAISE NOTICE 'FAIL [d_security_definer_title_under_client_jwt]: %', SQLERRM;
+    RAISE EXCEPTION 'FAIL [d_security_definer_title_under_client_jwt]: %', SQLERRM;
 END;
 $$;
 

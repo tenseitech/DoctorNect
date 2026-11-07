@@ -86,6 +86,7 @@ String describeFirebaseError(
   // Prefer caller fallback for known Firestore codes so action-specific messages
   // (accept, cancel, reschedule, etc.) reach the user instead of raw codes.
   final useFallback = switch (error.code) {
+    'duplicate-app' => true,
     'permission-denied' ||
     'unavailable' ||
     'unauthenticated' ||

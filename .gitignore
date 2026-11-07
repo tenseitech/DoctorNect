@@ -166,3 +166,9 @@ frontend/flutter_test*.ndjson
 # Terraform local directory
 .terraform/
 infra/aws/.terraform/
+
+# Local RPC diff scratch (regenerate via scripts/db/rpc_proposed_unified_diff.js)
+/_rpc_diff_a.sql
+/_rpc_diff_b.sql
+/rpc_diff_*.txt
+/smoke_out.txt

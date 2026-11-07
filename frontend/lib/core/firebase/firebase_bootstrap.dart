@@ -20,50 +20,108 @@ abstract final class FirebaseBootstrap {
   static bool appCheckReady = false;
   static String? lastInitError;
 
+  static Future<bool>? _initFuture;
+
+  @visibleForTesting
+  static void resetForTesting() {
+    _initFuture = null;
+    isReady = false;
+    appCheckReady = false;
+    lastInitError = null;
+  }
+
   static Future<void> activateAppCheck() => _activateAppCheck();
 
-  static Future<bool> initialize() async {
-    if (isReady) return true;
+  /// Idempotent, concurrent-safe Firebase startup (native auto-init + Dart).
+  static Future<bool> initialize() {
+    if (isReady) return SynchronousFuture(true);
+    final existing = _initFuture;
+    if (existing != null) return existing;
+    _initFuture = _initializeOnce();
+    return _initFuture!;
+  }
+
+  static Future<bool> _initializeOnce() async {
     try {
       lastInitError = null;
+
+      if (Firebase.apps.isNotEmpty) {
+        await _onFirebaseAppReady();
+        return true;
+      }
+
       if (!DefaultFirebaseOptions.isConfigured) {
         isReady = false;
         lastInitError = 'Firebase API keys not configured.';
         return false;
       }
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      if (kIsWeb) {
-        await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
-      }
+
       try {
-        if (!FirestoreForbiddenGuard.isForbidden) FirebaseFirestore.instance.settings = const Settings(
-          persistenceEnabled: true,
-          cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
         );
-      } catch (_) {}
-      isReady = true;
-      if (kDebugMode) {
-        debugPrint('Firebase initialized (${defaultTargetPlatform.name})');
+      } on FirebaseException catch (e) {
+        if (e.code == 'duplicate-app' || Firebase.apps.isNotEmpty) {
+          if (kDebugMode) {
+            debugPrint(
+              'Firebase.initializeApp: ${e.code} — using existing [DEFAULT] app',
+            );
+          }
+        } else {
+          rethrow;
+        }
       }
-      // Non-critical startup tasks: App Check, validation rules, remote config run in background.
-      unawaited(activateAppCheck());
-      unawaited(_loadValidationRules());
-      unawaited(StorageFeatureFlag.initialize());
+
+      if (Firebase.apps.isEmpty) {
+        isReady = false;
+        lastInitError =
+            'Could not start Firebase. Please restart the app and try again.';
+        return false;
+      }
+
+      await _onFirebaseAppReady();
       return true;
     } catch (e, st) {
       isReady = false;
+      if (Firebase.apps.isNotEmpty) {
+        // Another caller or native layer won the race; treat as ready.
+        await _onFirebaseAppReady();
+        return true;
+      }
       lastInitError = describeUserFacingError(
         e,
         fallback:
-            'Could not connect to Firebase. Refresh the page or use Chrome.',
+            'Could not connect to Firebase. Check your network and try again.',
       );
       if (kDebugMode) {
         debugPrint('Firebase init failed: $e\n$st');
       }
       return false;
+    } finally {
+      _initFuture = null;
     }
+  }
+
+  static Future<void> _onFirebaseAppReady() async {
+    if (isReady) return;
+    if (kIsWeb) {
+      await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+    }
+    try {
+      if (!FirestoreForbiddenGuard.isForbidden) {
+        FirebaseFirestore.instance.settings = const Settings(
+          persistenceEnabled: true,
+          cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+        );
+      }
+    } catch (_) {}
+    isReady = true;
+    if (kDebugMode) {
+      debugPrint('Firebase ready (${defaultTargetPlatform.name})');
+    }
+    unawaited(activateAppCheck());
+    unawaited(_loadValidationRules());
+    unawaited(StorageFeatureFlag.initialize());
   }
 }
 

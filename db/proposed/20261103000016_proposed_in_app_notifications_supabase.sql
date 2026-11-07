@@ -52,7 +52,7 @@ DROP TRIGGER IF EXISTS trg_in_app_notifications_recipient_read_only ON public.in
 CREATE OR REPLACE FUNCTION private.in_app_notifications_enforce_recipient_read_only()
 RETURNS TRIGGER
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = ''
 AS $$
 DECLARE
@@ -62,9 +62,8 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- Server paths: service_role (Cloud Functions), definer owner, platform roles.
-  IF session_user IN ('service_role', 'postgres', 'supabase_admin')
-     OR current_user IN ('postgres', 'supabase_admin', 'service_role') THEN
+  -- Backend / platform roles (not definer-owner bypass: use session_user only).
+  IF session_user IN ('service_role', 'postgres', 'supabase_admin') THEN
     RETURN NEW;
   END IF;
 

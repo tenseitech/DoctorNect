@@ -288,15 +288,12 @@ BEGIN
     v_profile_id := private.current_profile_id();
     v_is_admin := COALESCE(private.is_super_admin(), FALSE);
 
-    IF v_profile_id IS NULL AND NOT v_is_admin THEN
-        RAISE EXCEPTION 'FORBIDDEN: Caller has no registered profile.'
-            USING ERRCODE = '42501';
-    END IF;
-
-    -- Resolve doctor_id for caller
-    SELECT doctor_id INTO v_doctor_id 
-    FROM public.doctors 
-    WHERE owner_uid = v_caller_uid OR (v_profile_id IS NOT NULL AND doctor_id = v_profile_id);
+    -- Resolve doctor_id for caller (owner_uid works when current_profile_id() is NULL)
+    SELECT doctor_id INTO v_doctor_id
+    FROM public.doctors
+    WHERE owner_uid::text = v_caller_uid
+       OR (v_profile_id IS NOT NULL AND doctor_id = v_profile_id)
+    LIMIT 1;
 
     IF v_doctor_id IS NULL AND NOT v_is_admin THEN
         RAISE EXCEPTION 'FORBIDDEN: Caller "%" is not a registered doctor.', v_caller_uid
@@ -307,23 +304,20 @@ BEGIN
         v_doctor_id := trim(payload->>'doctor_id');
     END IF;
 
-    IF NOT v_is_admin THEN
-        IF NOT COALESCE(private.is_verified_doctor(), FALSE) THEN
-            RAISE EXCEPTION 'FORBIDDEN: Verified doctor required' USING ERRCODE = '42501';
-        END IF;
-    ELSIF v_doctor_id IS NOT NULL AND v_doctor_id <> '' THEN
-        IF NOT EXISTS (
-            SELECT 1 FROM public.doctors d
-            WHERE d.doctor_id = v_doctor_id
-              AND (
-                  d.verified IS TRUE
-                  OR d.verification_status = 'verified'
-                  OR d.status = 'approved'
-              )
-        ) THEN
-            RAISE EXCEPTION 'FORBIDDEN: Doctor "%" is not verified to create prescriptions.', v_doctor_id
-                USING ERRCODE = '42501';
-        END IF;
+    IF v_doctor_id IS NULL OR v_doctor_id = '' THEN
+        RAISE EXCEPTION 'FORBIDDEN: doctor_id is required.'
+            USING ERRCODE = '42501';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM public.doctors d
+        WHERE d.doctor_id = v_doctor_id
+          AND d.verified IS TRUE
+          AND COALESCE(d.deactivated, FALSE) IS FALSE
+    ) THEN
+        RAISE EXCEPTION 'FORBIDDEN: Doctor "%" is not verified to create prescriptions.', v_doctor_id
+            USING ERRCODE = '42501';
     END IF;
 
     v_prescription_id := trim(payload->>'prescription_id');
