@@ -12,6 +12,29 @@ abstract final class FirestoreForbiddenGuard {
   @visibleForTesting
   static bool? debugOverride;
 
+  /// When true, simulates release: [debugOverride] must not bypass forbidden.
+  @visibleForTesting
+  static bool debugForceReleaseMode = false;
+
+  @visibleForTesting
+  static set debugOverrideForTesting(bool? value) {
+    assert(() {
+      if (value != null && value == false && (kReleaseMode || debugForceReleaseMode)) {
+        throw AssertionError(
+          'FirestoreForbiddenGuard.debugOverride must not disable forbidden in release mode',
+        );
+      }
+      debugOverride = value;
+      return true;
+    }());
+  }
+
+  @visibleForTesting
+  static void resetForTesting() {
+    debugOverride = null;
+    debugForceReleaseMode = false;
+  }
+
   static bool get isForbidden {
     if (debugOverride != null) return debugOverride!;
     if (_fromEnv) return true;

@@ -7,7 +7,7 @@ void main() {
   tearDown(SupabaseLabRepository.debugResetForTesting);
 
   group('SupabaseLabRepository report key + status ordering', () {
-    test('booking: persist key before RPC; rollback when RPC fails (not completed)', () async {
+    test('booking: key via RPC only; rollback clear when RPC fails (not completed)', () async {
       SupabaseBootstrap.isReady = true;
       final sequence = <String>[];
 
@@ -34,7 +34,7 @@ void main() {
       );
 
       expect(ok, isFalse);
-      expect(sequence, ['persist:lab_reports/p1/lb_1/r.pdf', 'rpc', 'clear']);
+      expect(sequence, ['rpc', 'clear']);
     });
 
     test('booking: RPC throw but status completed — do not clear key', () async {
@@ -66,7 +66,7 @@ void main() {
         throwsStateError,
       );
 
-      expect(sequence, ['persist:lab_reports/p1/lb_1/r.pdf', 'rpc']);
+      expect(sequence, ['rpc']);
     });
 
     test('verifyLinkedLabBookingReportKeys requires completed status', () async {
@@ -90,7 +90,7 @@ void main() {
       expect(ok, LabReportKeyCheckResult.allRowsMatch);
     });
 
-    test('order: persist key before RPC; clear key when RPC throws', () async {
+    test('order: key via RPC only; clear key when RPC throws', () async {
       SupabaseBootstrap.isReady = true;
       final sequence = <String>[];
 
@@ -119,7 +119,7 @@ void main() {
         throwsStateError,
       );
 
-      expect(sequence, ['persist:lab_reports/p1/ord_1/r.pdf', 'rpc', 'clear']);
+      expect(sequence, ['rpc', 'clear']);
     });
   });
 }

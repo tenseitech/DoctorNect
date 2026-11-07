@@ -1,6 +1,7 @@
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/core/auth/profile_completion_service.dart';
+import 'package:medibond/core/config/firestore_forbidden_guard.dart';
 import 'package:medibond/core/data/shared_appointments_store.dart';
 import 'package:medibond/core/supabase/in_app_notification_supabase_repository.dart';
 import 'package:medibond/features/doctor/models/doctor_models.dart';
@@ -34,6 +35,8 @@ void main() {
       InAppNotificationSupabaseRepository.resetMarkReadOverrideForTesting();
       InAppNotificationSupabaseRepository.debugForceReleaseMode = false;
       ProfileCompletionService.instance.reset();
+      FirestoreForbiddenGuard.resetForTesting();
+      FirestoreForbiddenGuard.debugOverrideForTesting = false;
     });
 
     test('debugPatientFirestoreRefresh setter throws under debugForceReleaseMode',
@@ -61,6 +64,14 @@ void main() {
       expect(
         () => ProfileCompletionService.debugFirestoreOverride =
             () => FakeFirebaseFirestore(),
+        throwsAssertionError,
+      );
+    });
+
+    test('debugOverrideForTesting setter throws under debugForceReleaseMode', () {
+      FirestoreForbiddenGuard.debugForceReleaseMode = true;
+      expect(
+        () => FirestoreForbiddenGuard.debugOverrideForTesting = false,
         throwsAssertionError,
       );
     });
