@@ -1,8 +1,10 @@
 # Pre-publish status — DoctorNect (working tree)
 
-**Date:** 2026-11-06  
+**Date:** 2026-11-07  
 **Source rating (audit doc):** `DOCTORNECT_FULL_AUDIT.md` — **Overall 6.5 / 10** (“READY WITH CONDITIONS”).  
-**This pass:** ENV-01 restored (document `AMBULANCE_ENABLED`); backend **495 pass / 0 fail / 22 skip**; `flutter analyze` **0 issues**; full `flutter test --reporter json` **749 passed / 0 failed** (652 visible `testDone` + 97 hidden loaders per `frontend/tools/summarize_flutter_json_reporter.js` on the Tee’d NDJSON file).
+**After this pass:** **7.2 / 10** — Firestore release inventory + CI grep; `FirestoreService` / `FirestoreClient` central gates; executable **000017/000018**; S3 lab-report key match; ambulance copy/FCM/deep-link gates; lab RPC `p_report_storage_key` (no PostgREST key patch).
+
+**Prior pass:** ENV-01 restored; backend **495+ pass**; `flutter analyze` clean; full JSON suite **749 passed** (see `summarize_flutter_json_reporter.js`).
 
 ---
 
@@ -15,33 +17,30 @@
 | Debug hooks | `debugPatientFirestoreRefresh`, `debugDoctorFirestoreRefresh`, `ProfileCompletionService.debugFirestoreOverride`, `InAppNotificationSupabaseRepository.debugMarkReadOverride` use `@visibleForTesting`, release-mode assertions, and `debugForceReleaseMode` tests (`frontend/test/debug_hooks_release_guard_test.dart`). |
 | Firestore guard | `FirestoreReadHelper` and `ProfileCompletionService._effectiveFirestore()` call `FirestoreForbiddenGuard` so default `FIRESTORE_FORBIDDEN=true` does not silently hit `FirebaseFirestore.instance` in tests/production. |
 | Ambulance push | `AmbulancePushService` no-ops when `AmbulanceEnabled.isOn` is false (release default). |
-| Proposed SQL | `000015` uses `starts_with` + path traversal/control char rejects; `000016` split (notifications vs `db/proposed/later/` ambulance); `000017` documents RPC verified-check alignment with `000014`. |
+| Proposed SQL | `000017` full `CREATE OR REPLACE` RPC bodies; `000018` report-key triggers; staging probe SQL files under `scripts/audit/`. |
+| Firestore reachability | `docs/audit/FIRESTORE_REACHABLE_RELEASE.md` + `npm run audit:firestore-reachability`. |
+| FCM / ambulance UX | Default channel `doctornect_default`; welcome/deep-link ambulance gated on `AmbulanceEnabled`. |
 
 ---
 
 ## Remaining issues (severity + verify)
 
-1. **High — Residual Firestore in `frontend/lib`**  
-   - **Risk:** Many files still import `cloud_firestore`; under deny-all rules, user-visible failures persist on unmigrated paths (see `docs/audit/FIRESTORE_FINAL_STATE.md`).  
-   - **Fix:** Continue module-by-module migration to Supabase or gate behind `FirestoreForbiddenGuard.assertNotForbidden` / feature flags; remove dead Firestore branches.  
-   - **Verify:** Release build with `FIRESTORE_FORBIDDEN=true`; exercise doctor/patient/lab/pharmacy flows; expect no unhandled `permission-denied`.
+1. **High — Residual Firestore call sites (gated, not all migrated)**  
+   - **Risk:** `FirestoreService` / `FirestoreClient` throw `StateError` when `FIRESTORE_FORBIDDEN=true`; screens that still call Firestore without Supabase fallback need UI error handling (see `FIRESTORE_REACHABLE_RELEASE.md`).  
+   - **Fix:** Finish Supabase-primary paths for doctor profile/community catalogs; wrap remaining feature calls with user-visible errors.  
+   - **Verify:** `npm run audit:firestore-reachability`; release smoke doctor/patient/lab/pharmacy.
 
 2. **High — `DEPLOY_ORDER` / staging parity**  
    - **Risk:** Proposed files in `db/proposed/` are not applied until owner runs them on staging/RDS.  
    - **Fix:** Apply `000014` → `000015` → `000016` (in-app only) in order on staging; keep ambulance “later” file until product enables ambulance.  
    - **Verify:** `scripts/audit/rls_staging_verified_role_matrix.sql` (non-destructive rollback probe).
 
-3. **Medium — Android default FCM channel id `ambulance_requests`**  
-   - **Risk:** Naming suggests ambulance-only; still declared when ambulance feature is off.  
-   - **Fix:** Rename to a generic default channel or gate meta-data in Gradle manifest merges.  
-   - **Verify:** Install release APK with `AMBULANCE_ENABLED=false`; notification channels list.
+3. **Medium — Apply proposed SQL on staging/RDS**  
+   - **Risk:** `000014`–`000018` not live → client RPC/RLS assumptions fail in prod.  
+   - **Fix:** Follow `docs/audit/DEPLOY_ORDER.md`.  
+   - **Verify:** `rls_staging_verified_role_matrix.sql` + new probe files.
 
-4. **Medium — Welcome copy still lists ambulance**  
-   - **Risk:** Marketing strings reference ambulances while role tile is hidden (`welcome_screen.dart`).  
-   - **Fix:** Parameterize copy from `AmbulanceEnabled.isOn` or neutral wording.  
-   - **Verify:** Screenshot diff for release build.
-
-5. **Low — JSON test reporter file encoding**  
+4. **Low — JSON test reporter file encoding**  
    - **Risk:** PowerShell `Tee-Object` writes UTF-16; `count_json_tests.js` expects UTF-8 JSON lines.  
    - **Fix:** Use `Out-File -Encoding utf8` or `summarize_flutter_json_reporter.js` (handles BOM).  
    - **Verify:** Run summarizer on CI artifact.

@@ -17,6 +17,13 @@ Apply to **staging** Supabase Postgres in this order ( filenames under `db/propo
    - **Required** for the current Flutter in-app notification inbox (merge/mark-read) and sync paths that read `in_app_notifications` via Supabase.  
    - **Ambulance-related** policy draft: `db/proposed/later/20261103000016_later_ambulance_notifications_policies.sql` (not needed while `AMBULANCE_ENABLED` is off; policies incomplete per file header).
 
+4. **`20261103000017_proposed_rpc_verified_checks.sql`** (after **000014**)  
+   - Verified-guarded SECURITY DEFINER RPCs; lab status functions include **000015** report-key rules + completed-only key updates.  
+   - Ambulance RPC patches: `db/proposed/later/20261103000017_later_rpc_ambulance_verified.sql`.
+
+5. **`20261103000018_proposed_lab_report_key_column_guard.sql`** (after **000015** columns exist)  
+   - BEFORE UPDATE trigger: direct PostgREST key writes rejected; keys only via RPC session guard.
+
 ## App / build dependencies
 
 | Build / feature | Depends on |
@@ -24,6 +31,8 @@ Apply to **staging** Supabase Postgres in this order ( filenames under `db/propo
 | Lab order report key uploads | **000015** (function signature + validation) |
 | In-app notification inbox (patient/doctor), mark read, RLS-aligned reads | **000016** |
 | Stricter multi-role RLS on appointments / labs / prescriptions | **000014** |
+| Lab report upload via RPC `p_report_storage_key` (not PostgREST column patch) | **000015** + **000018** + client that calls RPC |
+| Unverified provider cannot mutate deliveries / lab status / doctor reschedule | **000017** (after **000014**) |
 
 ## If the app ships **before** `000016` is applied
 
@@ -35,6 +44,16 @@ Apply to **staging** Supabase Postgres in this order ( filenames under `db/propo
 
 - RPC calls sending `p_report_storage_key` to an older `update_lab_order_status` signature may **fail** (argument mismatch) or ignore keys.  
 - Lab report linking in UI may **stall** until SQL catches up.
+
+## If the app is **newer** than **000015+000018** (client uses RPC keys, SQL not applied)
+
+- Lab completes upload in S3 but **PostgREST** `report_storage_key` patch may **42501** once **000018** is live without matching RPC client → UI shows persist error (`LabReportSubmitFlow.persistFailedMessage`).  
+- **Mitigation**: deploy **000015** before **000018**, then ship client that passes `p_report_storage_key` in `update_lab_*_status`.
+
+## If SQL is **newer** than the app (000018 applied, old client)
+
+- Old app may still PATCH keys via PostgREST → **rejected** (intended). User must upgrade to RPC-based client.  
+- Download URLs still work when stored key matches (`s3_storage.js` validates prefix + stored key).
 
 ## Rollback
 
