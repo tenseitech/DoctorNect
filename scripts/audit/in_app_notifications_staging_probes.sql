@@ -9,17 +9,19 @@ BEGIN
 END;
 $$;
 
--- Fixture: notification n_staging_1 recipient_uid = uid_recipient; jwt sub matches
+-- Fixture: notification n_staging_1 recipient_uid = uid_recipient (firebase) or users.id mapping.
 
 RESET role;
 SET LOCAL role service_role;
 
 DO $$
 BEGIN
-  UPDATE public.in_app_notifications
-  SET title = 'server patch', category = 'ops'
-  WHERE notification_id = 'n_staging_1';
-  RAISE NOTICE 'PASS [a_service_role_updates_title]';
+  PERFORM public.patch_in_app_notification_server(
+    p_notification_id := 'n_staging_1',
+    p_title := 'server patch',
+    p_category := 'ops'
+  );
+  RAISE NOTICE 'PASS [a_service_role_patch_rpc]';
 END;
 $$;
 
@@ -46,31 +48,17 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION pg_temp.probe_definer_patch_notification_title(p_id text, p_title text)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  -- JWT may keep current_setting('role') = authenticated; trusted flag marks server patch.
-  PERFORM set_config('app.in_app_notifications_trusted_patch', 'true', true);
-  UPDATE public.in_app_notifications SET title = p_title WHERE notification_id = p_id;
-END;
-$$;
-
-ALTER FUNCTION pg_temp.probe_definer_patch_notification_title(text, text) OWNER TO postgres;
-
-SELECT pg_temp.set_jwt('uid_recipient');
-SET LOCAL role authenticated;
-
 DO $$
 BEGIN
-  PERFORM pg_temp.probe_definer_patch_notification_title('n_staging_1', 'definer patch under jwt');
-  RAISE NOTICE 'PASS [d_security_definer_title_under_client_jwt]';
+  PERFORM public.reconcile_in_app_notification_for_recipient(
+    'n_staging_1',
+    'reconciled under jwt',
+    'body refresh'
+  );
+  RAISE NOTICE 'PASS [d_security_definer_reconcile_under_client_jwt]';
 EXCEPTION
   WHEN OTHERS THEN
-    RAISE EXCEPTION 'FAIL [d_security_definer_title_under_client_jwt]: %', SQLERRM;
+    RAISE EXCEPTION 'FAIL [d_security_definer_reconcile_under_client_jwt]: %', SQLERRM;
 END;
 $$;
 

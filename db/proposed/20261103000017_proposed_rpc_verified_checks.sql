@@ -288,20 +288,20 @@ BEGIN
     v_profile_id := private.current_profile_id();
     v_is_admin := COALESCE(private.is_super_admin(), FALSE);
 
-    -- Resolve doctor_id for caller (owner_uid works when current_profile_id() is NULL)
-    SELECT doctor_id INTO v_doctor_id
-    FROM public.doctors
-    WHERE owner_uid::text = v_caller_uid
-       OR (v_profile_id IS NOT NULL AND doctor_id = v_profile_id)
-    LIMIT 1;
+    IF v_is_admin THEN
+        v_doctor_id := NULLIF(trim(payload->>'doctor_id'), '');
+    ELSE
+        -- Non-admin: resolve doctor from caller only; payload doctor_id is ignored.
+        SELECT doctor_id INTO v_doctor_id
+        FROM public.doctors
+        WHERE owner_uid::text = v_caller_uid
+           OR (v_profile_id IS NOT NULL AND doctor_id = v_profile_id)
+        LIMIT 1;
 
-    IF v_doctor_id IS NULL AND NOT v_is_admin THEN
-        RAISE EXCEPTION 'FORBIDDEN: Caller "%" is not a registered doctor.', v_caller_uid
-            USING ERRCODE = '42501';
-    END IF;
-
-    IF v_is_admin AND v_doctor_id IS NULL THEN
-        v_doctor_id := trim(payload->>'doctor_id');
+        IF v_doctor_id IS NULL THEN
+            RAISE EXCEPTION 'FORBIDDEN: Caller "%" is not a registered doctor.', v_caller_uid
+                USING ERRCODE = '42501';
+        END IF;
     END IF;
 
     IF v_doctor_id IS NULL OR v_doctor_id = '' THEN

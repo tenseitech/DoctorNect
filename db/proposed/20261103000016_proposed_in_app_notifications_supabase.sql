@@ -62,8 +62,8 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- Backend: service_role / platform session, or trusted server patch (SECURITY DEFINER RPC).
-  IF session_user IN ('service_role', 'postgres', 'supabase_admin') THEN
+  -- PostgREST: session_user stays authenticator; current_user is the JWT role (or service_role).
+  IF current_user IN ('service_role', 'postgres', 'supabase_admin') THEN
     RETURN NEW;
   END IF;
 
@@ -73,7 +73,8 @@ BEGIN
 
   v_sub := NULLIF(auth.jwt() ->> 'sub', '');
   IF v_sub IS NULL THEN
-    RETURN NEW;
+    RAISE EXCEPTION 'UNAUTHORIZED: JWT sub required for notification update'
+      USING ERRCODE = '42501';
   END IF;
 
   IF NOT (
@@ -97,6 +98,91 @@ CREATE TRIGGER trg_in_app_notifications_recipient_read_only
   BEFORE UPDATE ON public.in_app_notifications
   FOR EACH ROW
   EXECUTE FUNCTION private.in_app_notifications_enforce_recipient_read_only();
+
+-- Server-only column patches (FCM/outbox reconciliation). Not callable with anon; authenticated
+-- cannot set app.in_app_notifications_trusted_patch (no set_config GRANT on client role).
+CREATE OR REPLACE FUNCTION public.patch_in_app_notification_server(
+  p_notification_id TEXT,
+  p_title TEXT DEFAULT NULL,
+  p_body TEXT DEFAULT NULL,
+  p_category TEXT DEFAULT NULL,
+  p_deep_link TEXT DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF current_user NOT IN ('service_role', 'postgres', 'supabase_admin') THEN
+    RAISE EXCEPTION 'FORBIDDEN: patch_in_app_notification_server is server-only'
+      USING ERRCODE = '42501';
+  END IF;
+
+  PERFORM set_config('app.in_app_notifications_trusted_patch', 'true', true);
+  UPDATE public.in_app_notifications
+  SET
+    title = COALESCE(p_title, title),
+    body = COALESCE(p_body, body),
+    category = COALESCE(p_category, category),
+    deep_link = COALESCE(p_deep_link, deep_link),
+    updated_at = now()
+  WHERE notification_id = p_notification_id;
+  PERFORM set_config('app.in_app_notifications_trusted_patch', 'false', true);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.patch_in_app_notification_server(TEXT, TEXT, TEXT, TEXT, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.patch_in_app_notification_server(TEXT, TEXT, TEXT, TEXT, TEXT) TO service_role;
+
+-- Definer path invoked with the recipient's JWT (gateway/outbox); uses trusted-patch for title/body columns.
+CREATE OR REPLACE FUNCTION public.reconcile_in_app_notification_for_recipient(
+  p_notification_id TEXT,
+  p_title TEXT DEFAULT NULL,
+  p_body TEXT DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_sub TEXT;
+BEGIN
+  v_sub := NULLIF(auth.jwt() ->> 'sub', '');
+  IF v_sub IS NULL THEN
+    RAISE EXCEPTION 'UNAUTHORIZED: JWT sub required'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.in_app_notifications n
+    WHERE n.notification_id = p_notification_id
+      AND (
+        n.recipient_uid = v_sub
+        OR n.recipient_uid = (
+          SELECT u.id::text FROM public.users u WHERE u.firebase_uid = v_sub LIMIT 1
+        )
+      )
+  ) THEN
+    RAISE EXCEPTION 'FORBIDDEN: notification not addressed to caller'
+      USING ERRCODE = '42501';
+  END IF;
+
+  PERFORM set_config('app.in_app_notifications_trusted_patch', 'true', true);
+  UPDATE public.in_app_notifications
+  SET
+    title = COALESCE(p_title, title),
+    body = COALESCE(p_body, body),
+    updated_at = now()
+  WHERE notification_id = p_notification_id;
+  PERFORM set_config('app.in_app_notifications_trusted_patch', 'false', true);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.reconcile_in_app_notification_for_recipient(TEXT, TEXT, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.reconcile_in_app_notification_for_recipient(TEXT, TEXT, TEXT) TO authenticated, service_role;
 
 -- Alternative hardening: column-level GRANT (revoke broad UPDATE, grant only read columns).
 -- Uncomment after confirming no client path needs to patch title/body as the recipient.
