@@ -81,7 +81,8 @@ BEGIN
       OLD.recipient_uid = v_sub
       OR OLD.recipient_uid = (SELECT u.id::text FROM public.users u WHERE u.firebase_uid = v_sub LIMIT 1)
   ) THEN
-    RETURN NEW;
+    RAISE EXCEPTION 'FORBIDDEN: caller is not the notification recipient'
+      USING ERRCODE = '42501';
   END IF;
 
   IF (to_jsonb(NEW) - 'is_read' - 'read_at' - 'updated_at')
@@ -135,11 +136,11 @@ $$;
 REVOKE ALL ON FUNCTION public.patch_in_app_notification_server(TEXT, TEXT, TEXT, TEXT, TEXT) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.patch_in_app_notification_server(TEXT, TEXT, TEXT, TEXT, TEXT) TO service_role;
 
--- Definer path invoked with the recipient's JWT (gateway/outbox); uses trusted-patch for title/body columns.
+-- Definer mark-read for recipient JWT only (is_read / read_at / updated_at — no title/body/recipient).
 CREATE OR REPLACE FUNCTION public.reconcile_in_app_notification_for_recipient(
   p_notification_id TEXT,
-  p_title TEXT DEFAULT NULL,
-  p_body TEXT DEFAULT NULL
+  p_is_read BOOLEAN DEFAULT TRUE,
+  p_read_at TIMESTAMPTZ DEFAULT NULL
 )
 RETURNS VOID
 LANGUAGE plpgsql
@@ -148,6 +149,7 @@ SET search_path = ''
 AS $$
 DECLARE
   v_sub TEXT;
+  v_user_id TEXT;
 BEGIN
   v_sub := NULLIF(auth.jwt() ->> 'sub', '');
   IF v_sub IS NULL THEN
@@ -155,34 +157,31 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1
-    FROM public.in_app_notifications n
-    WHERE n.notification_id = p_notification_id
-      AND (
-        n.recipient_uid = v_sub
-        OR n.recipient_uid = (
-          SELECT u.id::text FROM public.users u WHERE u.firebase_uid = v_sub LIMIT 1
-        )
-      )
-  ) THEN
+  SELECT u.id::text INTO v_user_id
+  FROM public.users u
+  WHERE u.firebase_uid = v_sub
+  LIMIT 1;
+
+  UPDATE public.in_app_notifications n
+  SET
+    is_read = COALESCE(p_is_read, n.is_read),
+    read_at = COALESCE(p_read_at, CASE WHEN COALESCE(p_is_read, n.is_read) THEN now() ELSE n.read_at END),
+    updated_at = now()
+  WHERE n.notification_id = p_notification_id
+    AND (
+      n.recipient_uid = v_sub
+      OR (v_user_id IS NOT NULL AND n.recipient_uid = v_user_id)
+    );
+
+  IF NOT FOUND THEN
     RAISE EXCEPTION 'FORBIDDEN: notification not addressed to caller'
       USING ERRCODE = '42501';
   END IF;
-
-  PERFORM set_config('app.in_app_notifications_trusted_patch', 'true', true);
-  UPDATE public.in_app_notifications
-  SET
-    title = COALESCE(p_title, title),
-    body = COALESCE(p_body, body),
-    updated_at = now()
-  WHERE notification_id = p_notification_id;
-  PERFORM set_config('app.in_app_notifications_trusted_patch', 'false', true);
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.reconcile_in_app_notification_for_recipient(TEXT, TEXT, TEXT) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.reconcile_in_app_notification_for_recipient(TEXT, TEXT, TEXT) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.reconcile_in_app_notification_for_recipient(TEXT, BOOLEAN, TIMESTAMPTZ) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.reconcile_in_app_notification_for_recipient(TEXT, BOOLEAN, TIMESTAMPTZ) TO authenticated, service_role;
 
 -- Alternative hardening: column-level GRANT (revoke broad UPDATE, grant only read columns).
 -- Uncomment after confirming no client path needs to patch title/body as the recipient.

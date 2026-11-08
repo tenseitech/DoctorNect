@@ -51,9 +51,8 @@ $$;
 DO $$
 BEGIN
   PERFORM public.reconcile_in_app_notification_for_recipient(
-    'n_staging_1',
-    'reconciled under jwt',
-    'body refresh'
+    p_notification_id := 'n_staging_1',
+    p_is_read := true
   );
   RAISE NOTICE 'PASS [d_security_definer_reconcile_under_client_jwt]';
 EXCEPTION
