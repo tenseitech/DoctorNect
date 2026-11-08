@@ -1,4 +1,5 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/doctor_availability_repository.dart';
+import '../../../core/firebase/repositories/doctor_profile_detail_repository.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'dart:async';
@@ -66,7 +67,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
   List<FamilyMember> _familyMembers = [];
   ConfirmedBooking? _confirmed;
   DoctorAvailability _schedule = DoctorAvailability.defaults();
-  final _availabilityRepo = FirestoreService.instance.doctorAvailability;
+  final _availabilityRepo = DoctorAvailabilityRepository.instance;
   final _slotShareReasonController = TextEditingController();
 
   TextEditingController _getController(String key) {
@@ -91,7 +92,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
 
   Future<void> _loadDoctor() async {
     try {
-      var doctor = await FirestoreService.instance.doctorProfileDetail
+      var doctor = await DoctorProfileDetailRepository.instance
           .fetch(widget.doctorId)
           .timeout(const Duration(seconds: 12));
       doctor ??= _doctorFromListing(
@@ -1066,7 +1067,7 @@ class _SlotStep extends StatelessWidget {
 
   bool _isHoliday(DateTime date) {
     if (!_isDaySelectable(date)) return false;
-    return FirestoreService.instance.doctorAvailability.isUnavailableDay(
+    return DoctorAvailabilityRepository.instance.isUnavailableDay(
       schedule,
       date,
     );
@@ -1074,7 +1075,7 @@ class _SlotStep extends StatelessWidget {
 
   String? _holidayMessage(DateTime date) {
     if (!_isDaySelectable(date)) return null;
-    return FirestoreService.instance.doctorAvailability.unavailabilityReason(
+    return DoctorAvailabilityRepository.instance.unavailabilityReason(
       schedule,
       date,
     );
