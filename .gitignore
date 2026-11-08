@@ -159,6 +159,7 @@ backups/
 # Local Flutter JSON test reporter output (not committed)
 docs/audit/_*.jsonl
 docs/audit/_*.err
+frontend/flutter_test_out.json
 frontend/flutter_test_out.jsonl
 frontend/flutter_test_err.txt
 frontend/flutter_test*.ndjson

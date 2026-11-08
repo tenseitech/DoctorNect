@@ -20,6 +20,7 @@ import 'package:medibond/features/doctor/profile/models/doctor_profile_data.dart
 import 'package:medibond/features/doctor/verification/doctor_verification_gate.dart';
 import 'package:medibond/features/doctor/verification/doctor_verification_pending_screen.dart';
 import 'package:medibond/features/lab/lab_shell.dart';
+import 'package:medibond/features/patient/booking/booking_flow_screen.dart';
 import 'package:medibond/features/patient/home/patient_home_screen.dart';
 import 'package:medibond/features/patient/lab/lab_booking_flow_screen.dart';
 import 'package:medibond/features/patient/lab/lab_home_screen.dart';
@@ -120,6 +121,15 @@ void main() {
       await pumpNoForbidden(tester, const PatientHomeScreen());
     });
 
+    testWidgets('patient appointment BookingFlowScreen', (tester) async {
+      PatientProfileMock.profileAddress =
+          const PatientAddress(city: 'Mumbai', pincode: '400001');
+      await pumpNoForbidden(
+        tester,
+        const BookingFlowScreen(doctorId: 'doc-smoke-1'),
+      );
+    });
+
     testWidgets('patient search DoctorSearchScreen', (tester) async {
       PatientProfileMock.profileAddress =
           const PatientAddress(city: 'Mumbai', pincode: '400001');
@@ -142,7 +152,7 @@ void main() {
             LabTestItem(
               id: 't-smoke-1',
               name: 'CBC',
-              parameters: const ['Hb'],
+              parameters: ['Hb'],
               fastingRequired: false,
               sampleType: SampleType.blood,
               reportHours: 24,
