@@ -14,7 +14,7 @@ Generated against `npm run audit:firestore-reachability` and release smoke in `f
 | Login / registration | `features/welcome/welcome_screen.dart` | **MIGRATED** | `unified_auth_flow_controller.dart:353,380` if user proceeds into full auth wizard |
 | Home | `features/patient/home/patient_home_screen.dart` | **MIGRATED** | none on initial pump (ads → Supabase / empty stream) |
 | Search / nearby | `features/patient/search/doctor_search_screen.dart` | **MIGRATED** | none on initial pump |
-| Appointment booking | `features/patient/booking/booking_flow_screen.dart` | **POST_LAUNCH** | `booking_flow_screen.dart:69,94,1069,1077` |
+| Appointment booking | `features/patient/booking/booking_flow_screen.dart` | **MIGRATED** (availability + doctor detail; release smoke pumps screen) | no `FirestoreService.instance` on hot path |
 | Prescriptions list/detail | `features/patient/appointments/patient_prescription_opener.dart` | **POST_LAUNCH** | `patient_prescription_opener.dart:18` |
 | Lab order | `features/patient/lab/lab_booking_flow_screen.dart` | **MIGRATED** | none ( `LabCatalogRepository` / `LabBookingRepository` ) |
 | Lab report | `core/firebase/lab_report_submit_flow.dart` + lab status RPC | **MIGRATED** | none on patient submit path |

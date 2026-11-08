@@ -14,6 +14,8 @@ Apply to **staging** Supabase Postgres in this order ( filenames under `db/propo
 
 3. **`20261103000016_proposed_in_app_notifications_supabase.sql`**  
    - Extends `in_app_notifications` (columns + index + RLS for select/update + recipient read-only trigger).  
+   - Trigger uses **`current_user`** (not `session_user`) for PostgREST/service_role exemption; service JWT may omit `sub`.  
+   - Server RPCs: `patch_in_app_notification_server` (service_role only), `reconcile_in_app_notification_for_recipient` (JWT + trusted-patch).  
    - **Required** for the current Flutter in-app notification inbox (merge/mark-read) and sync paths that read `in_app_notifications` via Supabase.  
    - **Ambulance-related** policy draft: `db/proposed/later/20261103000016_later_ambulance_notifications_policies.sql` (not needed while `AMBULANCE_ENABLED` is off; policies incomplete per file header).
 
