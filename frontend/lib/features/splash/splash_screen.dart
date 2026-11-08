@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/enums/user_type.dart';
 import '../../core/firebase/firebase_auth_service.dart';
 import '../../core/firebase/firebase_bootstrap.dart';
 import '../../core/session/ambulance_session.dart';
-import '../../core/theme/app_colors.dart';
-import '../../widgets/mobile_scaffold.dart';
-import '../../widgets/medibond_logo.dart';
+import '../../core/system/edge_to_edge_bootstrap.dart';
+import 'splash_design.dart';
 import '../ambulance/ambulance_shell_auto.dart' deferred as amb_auto;
 import '../ambulance/ambulance_invite_setup_screen.dart' deferred as amb_invite;
 import '../dashboard/dashboard_shell.dart';
@@ -19,6 +19,16 @@ import '../../core/invite/pending_ambulance_invite_store.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  static const splashLogoKey = ValueKey<String>('splash_design_logo');
+  static const _splashOverlayStyle = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    systemNavigationBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarIconBrightness: Brightness.light,
+    systemStatusBarContrastEnforced: false,
+    systemNavigationBarContrastEnforced: false,
+  );
 
   static const _authWait = Duration(milliseconds: 500);
 
@@ -90,6 +100,9 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    if (!kIsWeb) {
+      SystemChrome.setSystemUIOverlayStyle(SplashScreen._splashOverlayStyle);
+    }
     unawaited(_goNext());
   }
 
@@ -98,6 +111,13 @@ class _SplashScreenState extends State<SplashScreen> {
     _disposed = true;
     _timer?.cancel();
     _timer = null;
+    if (!kIsWeb) {
+      final brightness =
+          WidgetsBinding.instance.platformDispatcher.platformBrightness;
+      SystemChrome.setSystemUIOverlayStyle(
+        EdgeToEdgeBootstrap.overlayStyleFor(brightness),
+      );
+    }
     super.dispose();
   }
 
@@ -114,25 +134,8 @@ class _SplashScreenState extends State<SplashScreen> {
       return const Scaffold(body: SizedBox.shrink());
     }
 
-    return MobileScaffold(
-      padding: EdgeInsets.zero,
-      scrollable: true,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const DoctorNectLogo(size: 88),
-          const SizedBox(height: 28),
-          Text(
-            'Your Health, Our Priority',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondaryOf(context),
-                  letterSpacing: 0.2,
-                ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return const Scaffold(
+      body: SplashDesignView(logoKey: SplashScreen.splashLogoKey),
     );
   }
 }

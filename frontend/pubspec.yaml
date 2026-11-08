@@ -81,22 +81,22 @@ flutter_launcher_icons:
     theme_color: "#1D4ED8"
 
 flutter_native_splash:
-  color: "#FFFFFF"
-  image: "assets/images/logo_splash.png"
-  color_dark: "#FFFFFF"
-  image_dark: "assets/images/logo_splash.png"
+  # Pre-12 / iOS: full gradient + centered logo from design SVG.
+  background_image: "assets/splash/splash_background.png"
+  image: "assets/splash/splash_logo.png"
   android: true
   ios: true
   web: false
-  # Android 12+: larger mark (~78% canvas) for circular viewport prominence
+  # Android 12+ splash API cannot render a gradient; solid mid-stop color.
   android_12:
-    image: "assets/images/logo_splash_android12.png"
-    icon_background_color: "#FFFFFF"
-    icon_background_color_dark: "#FFFFFF"
+    color: "#0A51EC"
+    image: "assets/splash/splash_logo.png"
+    icon_background_color: "#0A51EC"
 
 flutter:
   uses-material-design: true
   assets:
+    - assets/splash/
     - assets/images/
     - assets/images/logo_mark_transparent.png
     - assets/images/specialties/
