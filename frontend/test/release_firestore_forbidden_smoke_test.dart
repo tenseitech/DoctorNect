@@ -13,6 +13,8 @@ import 'package:medibond/core/supabase/supabase_stream_table.dart';
 import 'package:medibond/core/theme/app_colors.dart';
 import 'package:medibond/core/theme/app_theme.dart';
 import 'package:medibond/features/doctor/appointments/doctor_appointments_screen.dart';
+import 'package:medibond/features/doctor/home/doctor_home_screen.dart';
+import 'package:medibond/features/doctor/lab/doctor_connected_labs_screen.dart';
 import 'package:medibond/features/doctor/pharmacy/doctor_connected_stores_screen.dart';
 import 'package:medibond/features/doctor/profile/data/doctor_profile_store.dart';
 import 'package:medibond/features/doctor/models/doctor_models.dart';
@@ -194,6 +196,36 @@ void main() {
       await pumpNoForbidden(
         tester,
         const DoctorVerificationPendingScreen(),
+      );
+    });
+
+    testWidgets('doctor home DoctorHomeScreen', (tester) async {
+      DoctorSession.setDoctor(id: 'doc-smoke-1', name: 'Dr Smoke');
+      DoctorProfileStore.instance.profile = DoctorProfileData(
+        fullName: 'Dr Smoke',
+        specialization: 'General',
+        verificationStatus: VerificationStatus.verified,
+        rating: 4.5,
+        reviewCount: 1,
+        city: 'Mumbai',
+      );
+      await pumpNoForbidden(
+        tester,
+        MaterialApp(
+          theme: AppTheme.light(AppColors.doctorBlue),
+          home: const DoctorHomeScreen(),
+        ),
+      );
+    });
+
+    testWidgets('doctor connected labs DoctorConnectedLabsScreen', (tester) async {
+      DoctorSession.setDoctor(id: 'doc-smoke-1', name: 'Dr Smoke');
+      await pumpNoForbidden(
+        tester,
+        MaterialApp(
+          theme: AppTheme.light(AppColors.doctorBlue),
+          home: const DoctorConnectedLabsScreen(showAppBar: false),
+        ),
       );
     });
 
