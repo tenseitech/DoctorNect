@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/referral_repository.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'dart:async';
@@ -108,8 +108,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
     final doctorId = DoctorSession.loggedInDoctorId;
     if (doctorId.isEmpty) return;
     final results = await Future.wait([
-      FirestoreService.instance.referral.fetchSentByDoctor(doctorId),
-      FirestoreService.instance.referral.fetchReceivedByDoctor(doctorId),
+      ReferralRepository.instance.fetchSentByDoctor(doctorId),
+      ReferralRepository.instance.fetchReceivedByDoctor(doctorId),
     ]);
     if (!mounted) return;
     setState(() => _referredCount = results[0].length + results[1].length);

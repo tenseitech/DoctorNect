@@ -1,5 +1,3 @@
-import 'package:medibond/core/firebase/firestore_service.dart';
-
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -8,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../config/ambulance_enabled.dart';
 import '../firebase/firebase_bootstrap.dart';
+import '../firebase/repositories/ambulance_repository.dart';
 import '../../features/ambulance/data/ambulance_booking_sync.dart';
 import '../../features/ambulance/data/ambulance_store.dart';
 import '../../features/ambulance/models/ambulance_models.dart';
@@ -94,10 +93,7 @@ abstract final class AmbulancePushService {
       if (kDebugMode) {
         debugPrint('Ambulance FCM token (copy for Firebase test): [REDACTED]');
       }
-      await FirestoreService.instance.ambulance.saveDriverFcmToken(
-        driverId,
-        token,
-      );
+      await _persistToken(driverId, token);
     } else if (kDebugMode) {
       debugPrint('Ambulance push: FCM token is null or empty');
     }
@@ -108,10 +104,7 @@ abstract final class AmbulancePushService {
       if (kDebugMode) {
         debugPrint('Ambulance FCM token refreshed: [REDACTED]');
       }
-      await FirestoreService.instance.ambulance.saveDriverFcmToken(
-        _activeDriverId!,
-        newToken,
-      );
+      await _persistToken(_activeDriverId!, newToken);
     });
   }
 
@@ -127,9 +120,21 @@ abstract final class AmbulancePushService {
     _tokenRefreshSub = null;
 
     if (driverId == null || driverId.isEmpty) return;
-    await FirestoreService.instance.ambulance.clearDriverFcmToken(driverId);
+    await AmbulanceRepository.instance.clearDriverFcmToken(driverId);
     if (!kIsWeb) {
       await FirebaseMessaging.instance.deleteToken();
+    }
+  }
+
+  static Future<void> _persistToken(String driverId, String token) async {
+    try {
+      await AmbulanceRepository.instance.saveDriverFcmToken(driverId, token);
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint(
+          '[AmbulancePushService] FCM token persist failed (will retry on refresh): $e\n$st',
+        );
+      }
     }
   }
 

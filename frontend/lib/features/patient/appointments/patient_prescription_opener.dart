@@ -1,6 +1,6 @@
-import '../../../core/firebase/firestore_service.dart';
-
 import 'package:flutter/material.dart';
+
+import '../../../core/firebase/repositories/prescription_repository.dart';
 
 import '../../../core/session/patient_session.dart';
 import '../../doctor/clinical/data/clinical_prescription_store.dart';
@@ -15,7 +15,7 @@ abstract final class PatientPrescriptionOpener {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isEmpty) return null;
 
-    final page = await FirestoreService.instance.prescription.fetchForPatient(
+    final page = await PrescriptionRepository.instance.fetchForPatient(
       patientId,
       preferCache: false,
     );

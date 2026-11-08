@@ -1,4 +1,5 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/lab_booking_repository.dart';
+import '../../../core/firebase/repositories/lab_order_repository.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'dart:async';
@@ -228,7 +229,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
       if (widget.booking != null) {
         final b = widget.booking!;
         final uploadResult =
-            await FirestoreService.instance.labBooking.submitReport(
+            await LabBookingRepository.instance.submitReport(
           bookingId: b.bookingId,
           patientId: b.patientId,
           fileName: LabReportFileStore.reportFileNameFor(
@@ -274,7 +275,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
           originalFileName: file.name,
         );
         final uploadResult =
-            await FirestoreService.instance.labOrder.submitReport(
+            await LabOrderRepository.instance.submitReport(
           orderId: o.orderId,
           patientId: o.patientId,
           fileName: reportFileName,

@@ -1,6 +1,12 @@
-import 'firestore_service.dart';
-
 import 'dart:async';
+
+import 'repositories/appointment_repository.dart';
+import 'repositories/lab_booking_repository.dart';
+import 'repositories/lab_connection_repository.dart';
+import 'repositories/lab_order_repository.dart';
+import 'repositories/pharmacy_firestore_repository.dart';
+import 'repositories/patient_profile_repository.dart';
+import 'repositories/prescription_repository.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -48,7 +54,7 @@ abstract final class FirestoreDataPrefetch {
             if (kDebugMode)
               debugPrint('Doctor prescription prefetch failed: $e\n$st');
           }),
-          FirestoreService.instance.pharmacyFirestore
+          PharmacyFirestoreRepository.instance
               .fetchActiveConnectionsForDoctor(profileId, preferCache: true)
               .then(
                 (r) => PharmacyConnectionStore.instance
@@ -58,7 +64,7 @@ abstract final class FirestoreDataPrefetch {
             if (kDebugMode)
               debugPrint('Doctor pharmacy prefetch failed: $e\n$st');
           }),
-          FirestoreService.instance.labConnection
+          LabConnectionRepository.instance
               .fetchActiveConnectionsForDoctor(profileId, preferCache: true)
               .then(
                 (r) => LabConnectionStore.instance.mergeFirestoreConnections(
@@ -107,7 +113,7 @@ abstract final class FirestoreDataPrefetch {
         ]);
       case UserType.patient:
         await Future.wait([
-          FirestoreService.instance.prescription
+          PrescriptionRepository.instance
               .fetchForPatient(profileId, preferCache: false)
               .then(
                 (r) => ClinicalPrescriptionStore.instance.mergeFirestoreRecords(
@@ -122,7 +128,7 @@ abstract final class FirestoreDataPrefetch {
             if (kDebugMode)
               debugPrint('Patient profile prefetch failed: $e\n$st');
           }),
-          FirestoreService.instance.appointment
+          AppointmentRepository.instance
               .fetchForPatient(profileId, preferCache: false)
               .then(
                 (r) => SharedAppointmentsStore.instance.mergeFromFirestore(r),
@@ -131,7 +137,7 @@ abstract final class FirestoreDataPrefetch {
             if (kDebugMode)
               debugPrint('Patient appointments prefetch failed: $e\n$st');
           }),
-          FirestoreService.instance.patientProfile
+          PatientProfileRepository.instance
               .fetchHealthRecords(profileId)
               .then((r) => HealthRecordsMock.applyFromFirestore(r))
               .catchError((e, st) {
@@ -164,7 +170,7 @@ abstract final class FirestoreDataPrefetch {
       case UserType.medicalStore:
       case UserType.medical:
         await Future.wait([
-          FirestoreService.instance.pharmacyFirestore
+          PharmacyFirestoreRepository.instance
               .fetchActiveConnectionsForStore(profileId, preferCache: false)
               .then(
                 (r) => PharmacyConnectionStore.instance
@@ -176,7 +182,7 @@ abstract final class FirestoreDataPrefetch {
                 'Store pharmacy connections prefetch failed: $e\n$st',
               );
           }),
-          FirestoreService.instance.pharmacyFirestore
+          PharmacyFirestoreRepository.instance
               .fetchDeliveriesForStore(profileId)
               .then(
                 (r) => PharmacyPrescriptionStore.instance.mergeFromFirestore(r),
@@ -188,7 +194,7 @@ abstract final class FirestoreDataPrefetch {
         ]);
       case UserType.lab:
         await Future.wait([
-          FirestoreService.instance.labConnection
+          LabConnectionRepository.instance
               .fetchActiveConnectionsForLab(profileId, preferCache: false)
               .then(
                 (r) => LabConnectionStore.instance.mergeFirestoreConnections(
@@ -199,13 +205,13 @@ abstract final class FirestoreDataPrefetch {
             if (kDebugMode)
               debugPrint('Lab connections prefetch failed: $e\n$st');
           }),
-          FirestoreService.instance.labOrder
+          LabOrderRepository.instance
               .fetchForLab(profileId, preferCache: false)
               .then((page) => LabWorklistStore.instance.mergeOrders(page.items))
               .catchError((e, st) {
             if (kDebugMode) debugPrint('Lab orders prefetch failed: $e\n$st');
           }),
-          FirestoreService.instance.labBooking
+          LabBookingRepository.instance
               .fetchForLab(profileId)
               .then(
                 (bookings) => LabWorklistStore.instance.mergeBookings(bookings),

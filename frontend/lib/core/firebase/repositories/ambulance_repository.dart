@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import '../../../features/ambulance/data/ambulance_login_cache.dart';
 import '../../../features/ambulance/data/ambulance_store.dart';
 import '../../../features/ambulance/models/ambulance_models.dart';
+import '../../config/firestore_forbidden_guard.dart';
 import '../../constants/app_constants.dart';
 import '../../notifications/ambulance_notification_emitter.dart'; // FIXED: notify booker on accept
 import '../firebase_bootstrap.dart';
@@ -165,8 +166,12 @@ class AmbulanceRepository {
       return;
     }
 
-    if (!FirebaseBootstrap.isReady || ambulanceId.isEmpty || token.isEmpty)
+    if (!FirebaseBootstrap.isReady ||
+        ambulanceId.isEmpty ||
+        token.isEmpty ||
+        FirestoreForbiddenGuard.isForbidden) {
       return;
+    }
 
     try {
       await FirebaseFirestore.instance
@@ -207,7 +212,11 @@ class AmbulanceRepository {
       return;
     }
 
-    if (!FirebaseBootstrap.isReady || ambulanceId.isEmpty) return;
+    if (!FirebaseBootstrap.isReady ||
+        ambulanceId.isEmpty ||
+        FirestoreForbiddenGuard.isForbidden) {
+      return;
+    }
 
     try {
       await FirebaseFirestore.instance

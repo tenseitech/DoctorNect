@@ -12,7 +12,7 @@ import '../firebase/ambulance_auth_helper.dart';
 import '../firebase/firebase_auth_service.dart';
 import '../firebase/firebase_bootstrap.dart';
 import '../firebase/firebase_error_messages.dart';
-import '../firebase/firestore_service.dart';
+import '../firebase/repositories/ambulance_repository.dart';
 import '../config/ambulance_enabled.dart';
 import '../notifications/app_toast.dart';
 import '../session/ambulance_session.dart';
@@ -350,7 +350,7 @@ class UnifiedAuthFlowController extends ChangeNotifier {
       return;
     }
 
-    final login = await FirestoreService.instance.ambulance
+    final login = await AmbulanceRepository.instance
         .verifyDriverMobileLogin(mobile: digits, sessionId: sessionId);
     RegistrationOtpService.clearVerificationSession();
 
@@ -377,7 +377,7 @@ class UnifiedAuthFlowController extends ChangeNotifier {
       serviceName: match.serviceName,
       driverName: match.driverName,
     );
-    await FirestoreService.instance.ambulance.linkDriverAuth(match.id);
+    await AmbulanceRepository.instance.linkDriverAuth(match.id);
 
     final fresh = AmbulanceStore.instance.findAmbulance(match.id) ?? match;
     final realName = fresh.driverName.trim().isNotEmpty

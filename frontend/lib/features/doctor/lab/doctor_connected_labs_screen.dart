@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/enums/user_type.dart';
 import '../../../core/firebase/firestore_screen_sync.dart';
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/lab_order_repository.dart';
 import '../../../core/firebase/models/doctor_lab_order.dart';
 import '../../../core/location/location_match.dart';
 import '../../../core/session/doctor_session.dart';
@@ -201,7 +201,7 @@ class _DoctorConnectedLabsScreenState extends State<DoctorConnectedLabsScreen> {
           ),
         );
         _ordersSub?.cancel();
-        _ordersSub = FirestoreService.instance.labOrder
+        _ordersSub = LabOrderRepository.instance
             .watchOrdersForDoctor(doctorId)
             .listen(orderStore.mergeFromFirestore);
       },

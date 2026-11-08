@@ -1,6 +1,7 @@
-import '../../../../core/firebase/firestore_service.dart';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../../../core/firebase/repositories/patient_profile_repository.dart';
+import '../../../../core/firebase/repositories/prescription_repository.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -90,7 +91,7 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
   }) async {
     if (!_isDoctorContext) return true;
     if (patientId.isEmpty) return true;
-    return FirestoreService.instance.patientProfile
+    return PatientProfileRepository.instance
         .isPatientSharingClinicalDataWithDoctors(
       patientId,
       preferCache: preferCache,
@@ -166,7 +167,7 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
 
     final isNewRecord = findById(copy.prescriptionId) == null;
 
-    await FirestoreService.instance.prescription.save(
+    await PrescriptionRepository.instance.save(
       copy,
       DoctorSession.loggedInDoctorId,
       isNewRecord: isNewRecord,
@@ -220,7 +221,7 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
   Future<void> loadMoreForDoctor({bool preferCache = true}) async {
     if (!_hasMoreDoctor) return;
 
-    final page = await FirestoreService.instance.prescription.fetchForDoctor(
+    final page = await PrescriptionRepository.instance.fetchForDoctor(
       DoctorSession.loggedInDoctorId,
       startAfter: _lastDoctorPage,
       preferCache: preferCache,
@@ -295,13 +296,13 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
 
     try {
       final page = _isDoctorContext
-          ? await FirestoreService.instance.prescription
+          ? await PrescriptionRepository.instance
               .fetchForPatientForDoctor(
               patientId,
               startAfter: _lastPatientPage,
               preferCache: preferCache,
             )
-          : await FirestoreService.instance.prescription.fetchForPatient(
+          : await PrescriptionRepository.instance.fetchForPatient(
               patientId,
               startAfter: _lastPatientPage,
               preferCache: preferCache,
