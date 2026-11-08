@@ -62,8 +62,12 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- Backend / platform roles (not definer-owner bypass: use session_user only).
+  -- Backend: service_role / platform session, or trusted server patch (SECURITY DEFINER RPC).
   IF session_user IN ('service_role', 'postgres', 'supabase_admin') THEN
+    RETURN NEW;
+  END IF;
+
+  IF current_setting('app.in_app_notifications_trusted_patch', true) = 'true' THEN
     RETURN NEW;
   END IF;
 

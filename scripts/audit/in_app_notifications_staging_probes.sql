@@ -53,7 +53,8 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  PERFORM set_config('role', 'service_role', true);
+  -- JWT may keep current_setting('role') = authenticated; trusted flag marks server patch.
+  PERFORM set_config('app.in_app_notifications_trusted_patch', 'true', true);
   UPDATE public.in_app_notifications SET title = p_title WHERE notification_id = p_id;
 END;
 $$;

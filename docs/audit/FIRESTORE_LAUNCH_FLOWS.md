@@ -58,22 +58,28 @@ Generated against `npm run audit:firestore-reachability` and release smoke in `f
 
 ---
 
-## Shared-core LIVE (32 rows) — callers
+## Shared-core LIVE_AND_THROWS (27 rows, audit `35d9bea+`)
 
-| File | Modules that reach it in release |
-|------|----------------------------------|
-| `role_session_guard.dart` | pharmacy shell, lab shell, ambulance shell |
-| `unified_auth_flow_controller.dart` | welcome → registration/login |
-| `unified_auth_navigation.dart` | auth navigation |
-| `firestore_data_prefetch.dart` | doctor home / shell warm-start |
-| `firestore_query_limits.dart` | ambulance repository scale helpers |
-| `firebase_bootstrap.dart:41` | Firebase settings when misconfigured |
-| `promoted_ads_service.dart` (Firestore fallback) | patient home if Supabase down |
-| `profile_photo_uploader.dart` | profile photo flows |
-| `patient_push_service.dart` | FCM token persist (patient) |
-| `ambulance_push_service.dart` | FCM token persist (ambulance) |
+Aggregated from `npm run audit:firestore-reachability`. Each row throws `StateError` in release unless caught / migrated.
 
-Full inventory: `docs/audit/FIRESTORE_REACHABLE_RELEASE.md`.
+| file:line (feature) | Consumer modules that can reach it |
+|---------------------|------------------------------------|
+| `unified_auth_flow_controller.dart:353,380` | patient/doctor login wizard after Welcome |
+| `unified_auth_navigation.dart:219` | post-auth dashboard routing |
+| `firestore_data_prefetch.dart` (×10) | doctor home / shell warm-start |
+| `firestore_query_limits.dart:17` | legacy pagination helpers (ambulance scale) |
+| `firebase_bootstrap.dart:112` | Firestore settings when `!isForbidden` only |
+| `ambulance_invite_service.dart:152,163` | ambulance invite deep links (`AMBULANCE_ENABLED`) |
+| `ambulance_push_service.dart:97,111,130` | ambulance FCM token persist |
+| `doctor_push_service.dart:87,96,112` | doctor FCM (must not block login) |
+| `patient_push_service.dart:119,128,146` | patient FCM (must not block login) |
+| `app_notification_navigator.dart:311` | notification tap → legacy fetch |
+
+**Migrated off LIVE list:** `role_session_guard.dart` → `UserRepository` (no gateway).
+
+Full row list: `docs/audit/FIRESTORE_REACHABLE_RELEASE.md`.
+
+**Admin (excluded from consumer build):** `features/admin/*` not linked from patient/doctor/lab/pharmacy shells; reachable only with super-admin session → LIVE unless migrated.
 
 ---
 

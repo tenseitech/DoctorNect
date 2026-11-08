@@ -1,8 +1,9 @@
 # Pre-publish status — DoctorNect
 
-**Date:** 2026-11-07  
+**Date:** 2026-11-08  
 **Branch:** `fix/pre-accept-gate-lab-auth`  
-**Rating:** **6.9 / 10** (smoke covers all MIGRATED entry screens; booking/clinical/prefetch POST_LAUNCH paths remain)
+**HEAD:** `35d9bea` (+ pending doc/SQL commit)  
+**Rating:** **7.0 / 10** (Firebase login duplicate-app fixed; **112** LIVE_AND_THROWS; guard ON in tests **772/0**)
 
 ---
 
@@ -10,26 +11,24 @@
 
 | Suite | Result |
 |-------|--------|
-| Flutter full suite (`flutter test`) | **670 passed, 0 failed** (guard ON globally; 669 prior + 1 smoke test) |
-| `release_firestore_forbidden_smoke_test.dart` | **16 passed** (13 MIGRATED entry screens pumped + 3 guard/ambulance unit tests) |
+| Flutter (`flutter test --reporter json` + `summarize_flutter_json_reporter.js`) | **772 passed, 0 failed, 0 skipped** |
+| `FirestoreForbiddenGuard` in tests | **ON by default** (`flutter_test_config.dart`); opt-in `allowFirestoreInThisTestFile()` only in files that need fakes |
+| `release_firestore_forbidden_smoke_test.dart` | **16 passed** (13 MIGRATED entry screens + 3 unit) |
 | `backend/functions` `npm test` | **496 pass, 22 skip** |
-| Docker integration (4 files per `DOCKER_RUN.md`) | **24 pass, 5 skip** — Docker daemon down; Postgres **:54322 unreachable** |
-| `npx supabase start` | **FAILED** — `DockerLifecycleInspectError` (Docker Desktop Linux engine pipe missing) |
-| `npm run audit:firestore-reachability` | **136 LIVE_AND_THROWS**, 54 DEAD, 5 TEST_ONLY (last run at `3f8df1a`; re-run after this commit recommended) |
+| Docker integration (4 files) | **NOT RUN** — Docker Desktop down; Postgres **:54322 unreachable** |
+| `npm run audit:firestore-reachability` | **112 LIVE_AND_THROWS**, 54 DEAD, 5 TEST_ONLY (shared-core: **27** LIVE) |
 
 ---
 
-## Highlights this pass
+## Highlights
 
-- **000016** trigger: `service_role` exempt alongside `postgres` / `supabase_admin` (server + SECURITY DEFINER).
-- Staging probes **(a)–(d)** for in-app notification title/read rules.
-- Lab shell/worklist: `LabRepository`, `LabOrderRepository`, `LabBookingRepository`, `LabConnectionRepository` (no gateway on shell pump).
-- Smoke pumps: Welcome, PatientHome, DoctorSearch, MyLabs, LabHome, LabBookingFlow, EditProfile, DoctorVerificationGate/Pending, **DoctorAppointmentsScreen**, DoctorConnectedStores, MedicalStoreShell, **LabShell**.
+- Idempotent `FirebaseBootstrap.initialize()` (`duplicate-app` + `Firebase.apps` guard) — unblocks OTP Continue on Android auto-init.
+- Flow inventory: `docs/audit/FIRESTORE_LAUNCH_FLOWS.md`; reachability: `FIRESTORE_REACHABLE_RELEASE.md`.
+- Lab report RPC skew user message in `SupabaseLabRepository.labReportRpcSkewMessage`.
+- **000016** trigger: `SECURITY INVOKER` + `session_user` + `app.in_app_notifications_trusted_patch` for definer-under-JWT server patches.
 
 ---
 
-## Remaining
+## Remaining POST_LAUNCH
 
-1. **POST_LAUNCH** flows: patient appointment booking, prescription opener, doctor home prefetch, connected labs orders sub, unified auth deep steps — see `FIRESTORE_LAUNCH_FLOWS.md`.
-2. Apply **000014–000018** on staging/RDS per `DEPLOY_ORDER.md`.
-3. Start **Docker Desktop** + `cd backend && npx -y supabase start` before Docker integration tests.
+Patient booking, prescription opener, doctor home prefetch, unified auth deep steps, doctor connected labs orders sub, clinical prescription forms — see launch flow doc. Apply **000014–000018** on staging/RDS per `DEPLOY_ORDER.md`.
