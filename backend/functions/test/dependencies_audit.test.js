@@ -48,17 +48,32 @@ test('functions package pins patched firebase-admin and firebase-functions relea
   assertAtLeast(readLockVersion('firebase-functions'), '7.3.2');
 });
 
-test('npm audit reports no moderate or higher vulnerabilities', () => {
+test('npm audit reports no moderate or higher vulnerabilities', (t) => {
   const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const output = execFileSync(npmCmd, ['audit', '--json'], {
-    cwd: functionsDir,
-    encoding: 'utf8',
-    shell: process.platform === 'win32',
-    env: {
-      ...process.env,
-      npm_config_devdir: undefined,
-    },
-  });
+  let output;
+  try {
+    output = execFileSync(npmCmd, ['audit', '--json'], {
+      cwd: functionsDir,
+      encoding: 'utf8',
+      shell: process.platform === 'win32',
+      timeout: 45000,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        npm_config_devdir: undefined,
+      },
+    });
+  } catch (err) {
+    if (err.stdout) {
+      output = err.stdout;
+    } else {
+      if (process.env.CI === 'true') {
+        assert.fail(`npm audit failed or timed out in CI: ${err.message}`);
+      }
+      t.skip(`npm audit skipped: ${err.message}`);
+      return;
+    }
+  }
 
   const report = JSON.parse(output);
   const vulnerabilities = Object.values(report.vulnerabilities || {});

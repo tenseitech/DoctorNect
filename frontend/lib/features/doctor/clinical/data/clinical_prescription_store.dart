@@ -1,6 +1,7 @@
-import '../../../../core/firebase/firestore_service.dart';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../../../core/firebase/repositories/patient_profile_repository.dart';
+import '../../../../core/firebase/repositories/prescription_repository.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -14,6 +15,22 @@ import '../../profile/data/doctor_profile_store.dart';
 /// In-memory EMR store for saved prescriptions (single source of truth).
 
 class ClinicalPrescriptionStore extends ChangeNotifier {
+  /// Supabase rows first, then Firestore. The same [PrescriptionDraft.prescriptionId] keeps the Firestore row.
+  @visibleForTesting
+  static List<PrescriptionDraft> mergeByIdFirestoreWins(
+    List<PrescriptionDraft> supabaseRows,
+    List<PrescriptionDraft> firestoreRows,
+  ) {
+    final byId = <String, PrescriptionDraft>{};
+    for (final row in supabaseRows) {
+      byId[row.prescriptionId] = row;
+    }
+    for (final row in firestoreRows) {
+      byId[row.prescriptionId] = row;
+    }
+    return byId.values.toList();
+  }
+
   ClinicalPrescriptionStore._();
 
   static final ClinicalPrescriptionStore instance =
@@ -74,7 +91,7 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
   }) async {
     if (!_isDoctorContext) return true;
     if (patientId.isEmpty) return true;
-    return FirestoreService.instance.patientProfile
+    return PatientProfileRepository.instance
         .isPatientSharingClinicalDataWithDoctors(
       patientId,
       preferCache: preferCache,
@@ -150,7 +167,7 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
 
     final isNewRecord = findById(copy.prescriptionId) == null;
 
-    await FirestoreService.instance.prescription.save(
+    await PrescriptionRepository.instance.save(
       copy,
       DoctorSession.loggedInDoctorId,
       isNewRecord: isNewRecord,
@@ -204,7 +221,7 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
   Future<void> loadMoreForDoctor({bool preferCache = true}) async {
     if (!_hasMoreDoctor) return;
 
-    final page = await FirestoreService.instance.prescription.fetchForDoctor(
+    final page = await PrescriptionRepository.instance.fetchForDoctor(
       DoctorSession.loggedInDoctorId,
       startAfter: _lastDoctorPage,
       preferCache: preferCache,
@@ -256,24 +273,22 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
       return;
     }
 
-    // Patient reading prescriptions in Supabase-first mode:
-    if (!_isDoctorContext && SupabaseBootstrap.isReady) {
+    // Supabase rows are merged with Firestore. Firestore wins on the same id.
+    var supaItems = const <PrescriptionDraft>[];
+    if (!_isDoctorContext &&
+        SupabaseBootstrap.isReady &&
+        _lastPatientPage == null) {
       try {
         final rows = await SupabasePatientRepository.instance
             .fetchPrescriptions(patientId);
-        final supaItems = rows
+        supaItems = rows
             .map((r) => PrescriptionSupabaseMapper.fromRow(r))
             .whereType<PrescriptionDraft>()
             .toList();
-        if (supaItems.isNotEmpty) {
-          mergeFirestoreRecords(supaItems);
-          _hasMorePatient = false;
-          return;
-        }
       } catch (e) {
         if (kDebugMode) {
           debugPrint(
-            'ClinicalPrescriptionStore: Supabase fetch failed, falling back to Firestore: $e',
+            'ClinicalPrescriptionStore: Supabase fetch failed, reading Firestore: $e',
           );
         }
       }
@@ -281,19 +296,21 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
 
     try {
       final page = _isDoctorContext
-          ? await FirestoreService.instance.prescription
+          ? await PrescriptionRepository.instance
               .fetchForPatientForDoctor(
               patientId,
               startAfter: _lastPatientPage,
               preferCache: preferCache,
             )
-          : await FirestoreService.instance.prescription.fetchForPatient(
+          : await PrescriptionRepository.instance.fetchForPatient(
               patientId,
               startAfter: _lastPatientPage,
               preferCache: preferCache,
             );
 
-      mergeFirestoreRecords(page.items);
+      mergeFirestoreRecords(
+        mergeByIdFirestoreWins(supaItems, page.items),
+      );
 
       _lastPatientPage = page.lastDocument;
 

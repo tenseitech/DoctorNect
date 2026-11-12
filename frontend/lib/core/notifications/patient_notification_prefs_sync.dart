@@ -1,32 +1,28 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
-import '../firebase/firebase_bootstrap.dart';
-import '../firebase/firestore_paths.dart';
 import '../../features/patient/profile/data/patient_profile_mock.dart';
+import '../supabase/repositories/supabase_patient_profile_repository.dart';
 
-/// Keeps in-memory notification prefs aligned with Firestore while the patient is signed in.
+/// Keeps in-memory notification prefs aligned with backend while the patient is signed in.
 abstract final class PatientNotificationPrefsSync {
-  static StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _sub;
+  static StreamSubscription<dynamic>? _sub;
   static String? _patientId;
 
   static void start(String patientId) {
-    if (!FirebaseBootstrap.isReady || patientId.isEmpty) return;
+    if (patientId.isEmpty) return;
     if (_patientId == patientId && _sub != null) return;
 
     stop();
     _patientId = patientId;
 
-    _sub = FirebaseFirestore.instance
-        .collection(FirestorePaths.patients)
-        .doc(patientId)
-        .snapshots()
+    _sub = SupabasePatientProfileRepository.instance
+        .watchPatientDocument(patientId)
         .listen(
-      (snapshot) {
-        if (!snapshot.exists) return;
-        final prefs = snapshot.data()?['notificationPrefs'];
+      (data) {
+        if (data == null) return;
+        final prefs = data['notification_prefs'] ?? data['notificationPrefs'];
         if (prefs is! Map<String, dynamic>) return;
         PatientProfileMock.applyNotificationPrefsFromFirestore(prefs);
       },

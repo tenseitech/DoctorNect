@@ -1,12 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../../features/patient/data/registered_doctors_store.dart';
 import '../../../features/patient/doctor_profile/models/doctor_profile_detail.dart';
 import '../../data/doctor_patient_stats_service.dart';
 import '../../session/doctor_session.dart';
-import '../firebase_bootstrap.dart';
-import '../firestore_paths.dart';
-import '../firestore_read_helper.dart';
+import '../../supabase/repositories/supabase_doctor_repository.dart';
 import '../models/doctor_availability.dart';
 import 'doctor_availability_repository.dart';
 import 'review_repository.dart';
@@ -20,18 +16,8 @@ class DoctorProfileDetailRepository {
   Future<DoctorProfileDetail?> fetch(String doctorId) async {
     final listing = RegisteredDoctorsStore.instance.findById(doctorId);
 
-    Map<String, dynamic>? data;
-    if (FirebaseBootstrap.isReady) {
-      try {
-        final snap = await FirestoreReadHelper.getDocument(
-          reference: FirebaseFirestore.instance
-              .collection(FirestorePaths.doctors)
-              .doc(doctorId),
-          preferCache: true,
-        );
-        if (snap.exists) data = snap.data();
-      } catch (_) {}
-    }
+    Map<String, dynamic>? data =
+        await SupabaseDoctorRepository.instance.fetchDoctor(doctorId);
 
     if (data == null && listing == null) return null;
 
@@ -59,39 +45,7 @@ class DoctorProfileDetailRepository {
     final photoKey = data?['photoKey'] as String? ?? listing?.photoKey;
     final photoStorage =
         data?['photoStorage'] as String? ?? listing?.photoStorage;
-    String mobile = data?['mobile'] as String? ?? '';
-    if (mobile.isEmpty && data != null && data['ownerUid'] != null) {
-      try {
-        final userSnap = await FirebaseFirestore.instance
-            .collection(FirestorePaths.users)
-            .doc(data['ownerUid'] as String)
-            .get(const GetOptions(source: Source.cache));
-        final userData = userSnap.data();
-        if (userData != null && userData['mobile'] != null) {
-          final m = userData['mobile'];
-          if (m is String) {
-            mobile = m;
-          } else if (m is Map && m['number'] is String) {
-            mobile = m['number'] as String;
-          }
-        }
-        if (mobile.isEmpty) {
-          final s2 = await FirebaseFirestore.instance
-              .collection(FirestorePaths.users)
-              .doc(data['ownerUid'] as String)
-              .get(const GetOptions(source: Source.server));
-          final d2 = s2.data();
-          if (d2 != null && d2['mobile'] != null) {
-            final m = d2['mobile'];
-            if (m is String) {
-              mobile = m;
-            } else if (m is Map && m['number'] is String) {
-              mobile = m['number'] as String;
-            }
-          }
-        }
-      } catch (_) {}
-    }
+    String mobile = data?['mobile'] as String? ?? data?['phone'] as String? ?? '';
     final clinicName =
         data?['clinicName'] as String? ?? listing?.clinicName ?? '$name Clinic';
     final city = data?['city'] as String? ?? listing?.area ?? '';

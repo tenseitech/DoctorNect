@@ -308,7 +308,6 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                   }
 
                   return ListView.separated(
-                    shrinkWrap: true,
                     itemCount: list.length,
                     separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (context, i) {

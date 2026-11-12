@@ -1,4 +1,6 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/lab_catalog_repository.dart';
+import '../../../core/firebase/repositories/lab_repository.dart';
+import '../../../core/firebase/repositories/patient_profile_repository.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -465,14 +467,14 @@ class PatientFavoritesStore extends ChangeNotifier {
   }
 
   Future<List<SavedLabEntry>> registeredLabsForSearch() async {
-    final registered = await FirestoreService.instance.lab.fetchVerifiedLabs();
+    final registered = await LabRepository.instance.fetchVerifiedLabs();
     if (registered.isNotEmpty) {
       return registered
           .map(SavedLabEntry.fromRegisteredLab)
           .toList(growable: false);
     }
 
-    final catalog = await FirestoreService.instance.labCatalog.fetchCatalog();
+    final catalog = await LabCatalogRepository.instance.fetchCatalog();
     return catalog.partnerLabs
         .map(SavedLabEntry.fromPartnerLab)
         .toList(growable: false);
@@ -481,7 +483,7 @@ class PatientFavoritesStore extends ChangeNotifier {
   Future<void> _persist() async {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isEmpty) return;
-    await FirestoreService.instance.patientProfile.savePatientDocument(
+    await PatientProfileRepository.instance.savePatientDocument(
       patientId,
       {
         'hiddenDoctorIds': _hiddenDoctorIds.toList(),

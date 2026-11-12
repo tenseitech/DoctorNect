@@ -1,4 +1,5 @@
 import '../../doctor_profile/data/review_edit_policy.dart';
+import '../../../doctor/models/doctor_models.dart';
 
 enum PatientBookingStatus { confirmed, pending }
 
@@ -27,6 +28,7 @@ class PatientAppointment {
     this.clinicalNotes,
     this.reasonForVisit,
     this.appointmentId,
+    this.doctorStatus,
   });
 
   final String id;
@@ -52,6 +54,11 @@ class PatientAppointment {
   final List<String> labReports;
   final String? clinicalNotes;
   final String? reasonForVisit;
+  final AppointmentStatus? doctorStatus;
+
+  bool get isCancelled =>
+      doctorStatus == AppointmentStatus.cancelled ||
+      (cancellationReason != null && cancellationReason!.trim().isNotEmpty);
 
   bool get isUpcoming =>
       dateTime.isAfter(DateTime.now().subtract(const Duration(hours: 1)));

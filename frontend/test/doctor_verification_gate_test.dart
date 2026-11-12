@@ -1,4 +1,6 @@
-import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/repositories/doctor_account_repository.dart';
+import 'package:medibond/core/firebase/repositories/doctor_verification_repository.dart';
+import 'package:medibond/core/firebase/repositories/role_account_repository.dart';
 
 import 'dart:async';
 
@@ -6,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/core/enums/user_type.dart';
 import 'package:medibond/core/firebase/firebase_bootstrap.dart';
+import 'package:medibond/core/supabase/supabase_bootstrap.dart';
 import 'package:medibond/core/session/doctor_session.dart';
 import 'package:medibond/features/doctor/verification/doctor_verification_gate.dart';
 import 'package:medibond/features/doctor/verification/doctor_verification_pending_screen.dart';
@@ -67,17 +70,17 @@ void main() {
       );
     });
 
-    test('demo doctor phone 7666892394 is always verified', () {
+    test('demo doctor phone 9999900002 is always verified', () {
       expect(
         DoctorVerificationRepository.parseVerifiedFromDoctorData({
-          'mobile': '7666892394',
+          'mobile': '9999900002',
           'verified': false,
         }),
         isTrue,
       );
       expect(
         DoctorVerificationRepository.parseVerifiedFromDoctorData({
-          'phone': '+917666892394',
+          'phone': '+919999900002',
         }),
         isTrue,
       );
@@ -85,8 +88,8 @@ void main() {
   });
 
   group('DoctorVerificationRepository.watchVerified guards', () {
-    test('returns false when Firebase is unavailable', () async {
-      FirebaseBootstrap.isReady = false;
+    test('returns false when Supabase is unavailable', () async {
+      SupabaseBootstrap.isReady = false;
       final values = await DoctorVerificationRepository.instance
           .watchVerified(doctorId)
           .toList();
@@ -94,10 +97,23 @@ void main() {
     });
 
     test('returns false for empty doctor id', () async {
-      FirebaseBootstrap.isReady = true;
+      SupabaseBootstrap.isReady = true;
       final values = await DoctorVerificationRepository.instance
           .watchVerified('')
           .toList();
+      expect(values, [false]);
+    });
+
+    test('ignores debugWatchVerifiedOverride when release guard is active',
+        () async {
+      DoctorVerificationRepository.debugWatchVerifiedOverride =
+          (_) => Stream.value(true);
+      DoctorVerificationRepository.debugForceReleaseMode = true;
+
+      final values = await DoctorVerificationRepository.instance
+          .watchVerified('')
+          .toList();
+
       expect(values, [false]);
     });
 
@@ -119,10 +135,10 @@ void main() {
     });
   });
 
-  group('FirestoreService.instance.doctorAccount.isVerified guards', () {
+  group('DoctorAccountRepository.isVerified guards', () {
     test('returns false when Firebase is unavailable', () async {
       FirebaseBootstrap.isReady = false;
-      final verified = await FirestoreService.instance.doctorAccount.isVerified(
+      final verified = await DoctorAccountRepository.instance.isVerified(
         doctorId,
       );
       expect(verified, isFalse);
@@ -132,7 +148,7 @@ void main() {
   group('RoleAccountRepository doctor routing', () {
     test('doctor role delegates to DoctorAccountRepository', () async {
       FirebaseBootstrap.isReady = false;
-      final verified = await FirestoreService.instance.roleAccount.isVerified(
+      final verified = await RoleAccountRepository.instance.isVerified(
         UserType.doctor,
         doctorId,
       );

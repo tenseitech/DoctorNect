@@ -1,12 +1,11 @@
 import 'dart:async';
 
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'firestore_service.dart';
+import 'repositories/doctor_account_repository.dart';
+import 'repositories/user_repository.dart';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 
 import 'package:cloud_functions/cloud_functions.dart';
 
@@ -19,7 +18,9 @@ import '../security/app_check_service.dart';
 import '../security/abuse_protection_service.dart';
 import '../security/client_request_throttle.dart';
 import '../validators/form_validators.dart';
+import '../security/file_encryption_service.dart';
 import '../supabase/supabase_bootstrap.dart';
+import '../supabase/repositories/supabase_user_repository.dart';
 import '../auth/profile_completion_service.dart';
 import '../auth/verification_lifecycle.dart';
 import '../enums/user_type.dart';
@@ -127,24 +128,44 @@ class AuthSignInResult {
       const AuthSignInResult._(success: false, cancelled: true);
 }
 
-class GoogleRegistrationProfile {
-  const GoogleRegistrationProfile({
-    required this.displayName,
-    required this.email,
-    this.phoneNumber,
-  });
-
-  final String displayName;
-  final String email;
-  final String? phoneNumber;
-}
-
 class FirebaseAuthService {
   FirebaseAuthService._();
 
   static final FirebaseAuthService instance = FirebaseAuthService._();
 
-  FirebaseAuth get _auth => FirebaseAuth.instance;
+  @visibleForTesting
+  static FirebaseAuth? debugAuth;
+
+  FirebaseAuth get _auth => debugAuth ?? FirebaseAuth.instance;
+  @visibleForTesting
+  Future<DoctorNectUserProfile?> verifyProfileWithRetry({
+    required User user,
+    int maxAttempts = 3,
+    Duration Function(int attempt)? delayFn,
+    bool signOutOnFailure = true,
+  }) async {
+    DoctorNectUserProfile? saved;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      saved = await UserRepository.instance.fetchProfile(
+        user.uid,
+        preferCache: false,
+      );
+      if (saved != null) break;
+      if (attempt < maxAttempts) {
+        final delay = delayFn != null
+            ? delayFn(attempt)
+            : Duration(milliseconds: 300 * attempt);
+        if (delay > Duration.zero) {
+          await Future.delayed(delay);
+        }
+      }
+    }
+    if (saved == null && signOutOnFailure) {
+      await _auth.signOut();
+    }
+    return saved;
+  }
+
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
@@ -185,15 +206,15 @@ class FirebaseAuthService {
       );
       final user = credential.user!;
 
-      var profile = await FirestoreService.instance.user.fetchProfile(
+      var profile = await UserRepository.instance.fetchProfile(
         user.uid,
         preferCache: true,
       );
-      profile ??= await FirestoreService.instance.user.fetchProfile(
+      profile ??= await UserRepository.instance.fetchProfile(
         user.uid,
         preferCache: false,
       );
-      profile ??= await FirestoreService.instance.user.repairMissingProfile(
+      profile ??= await UserRepository.instance.repairMissingProfile(
         user: user,
         expectedRole: expectedRole,
       );
@@ -218,6 +239,7 @@ class FirebaseAuthService {
       await _applyProfile(profile, deferPatientProfile: true);
       await SessionExpiry.markAuthenticated();
       await LastLoginStore.save(expectedRole, cleanEmail);
+      await SupabaseBootstrap.refreshAndVerifySession(forceRefresh: true);
       return AuthSignInResult.ok(profile.role);
     } on FirebaseAuthException catch (e) {
       AuthRateLimiter.recordFailure('email_login', cleanEmail);
@@ -244,6 +266,7 @@ class FirebaseAuthService {
     required UserType expectedRole,
     required String mobile,
     required String otpCode,
+    bool skipOtpVerify = false,
   }) async {
     if (!FirebaseBootstrap.isReady) {
       return AuthSignInResult.fail(
@@ -266,15 +289,17 @@ class FirebaseAuthService {
 
     await AppCheckService.ensureForCallable();
 
-    final error = await RegistrationOtpService.verify(
-      digits,
-      otpCode,
-      role: expectedRole,
-      otpType: 'login',
-    );
-    if (error != null) {
-      AuthRateLimiter.recordFailure('otp_login', digits);
-      return AuthSignInResult.fail(error);
+    if (!skipOtpVerify) {
+      final error = await RegistrationOtpService.verify(
+        digits,
+        otpCode,
+        role: expectedRole,
+        otpType: 'login',
+      );
+      if (error != null) {
+        AuthRateLimiter.recordFailure('otp_login', digits);
+        return AuthSignInResult.fail(error);
+      }
     }
 
     try {
@@ -314,15 +339,37 @@ class FirebaseAuthService {
         );
       }
 
+      // Ensure freshly minted custom claims (role: "authenticated")
+      // are propagated into the cached ID token before profile fetches.
+      try {
+        await user.getIdToken(true);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[FirebaseAuthService] getIdToken refresh warning: $e');
+        }
+      }
+
       RegistrationOtpService.clearVerificationSession();
 
-      var profile = await FirestoreService.instance.user.fetchProfile(
-        user.uid,
-        preferCache: false,
-      );
-      profile ??= await FirestoreService.instance.user.findProfileByMobile(
-        role: expectedRole,
-        mobile: digits,
+      // Retry profile fetch with backoff (up to 3 attempts) to allow commit propagation
+      DoctorNectUserProfile? profile;
+      for (var attempt = 1; attempt <= 3; attempt++) {
+        profile = await UserRepository.instance.fetchProfile(
+          user.uid,
+          preferCache: false,
+        );
+        profile ??= await UserRepository.instance.findProfileByMobile(
+          role: expectedRole,
+          mobile: digits,
+        );
+        if (profile != null) break;
+        if (attempt < 3) {
+          await Future.delayed(Duration(milliseconds: 300 * attempt));
+        }
+      }
+      profile ??= await UserRepository.instance.repairMissingProfile(
+        user: user,
+        expectedRole: expectedRole,
       );
       if (profile == null) {
         await _auth.signOut();
@@ -348,6 +395,7 @@ class FirebaseAuthService {
         expectedRole,
         profile.email.isNotEmpty ? profile.email : mobile,
       );
+      await SupabaseBootstrap.refreshAndVerifySession(forceRefresh: true);
       return AuthSignInResult.ok(profile.role);
     } on FirebaseFunctionsException catch (e) {
       AuthRateLimiter.recordFailure('otp_login', digits);
@@ -365,6 +413,26 @@ class FirebaseAuthService {
         ),
       );
     }
+  }
+
+  /// Returns non-null when registration should stop after rollback/sign-out.
+  Future<AuthSignInResult?> _abortPendingRegistrationIfNeeded(
+    User user,
+    String message,
+  ) async {
+    final rollback =
+        await UserRepository.instance.deletePendingAuthUser(user);
+    if (rollback == SupabaseUserRepository.pendingAuthSkippedAlreadyVerified) {
+      return null;
+    }
+    await _auth.signOut();
+    if (rollback == SupabaseUserRepository.pendingAuthFallbackNoRetry) {
+      return AuthSignInResult.fail(
+        '$message Registration cleanup could not reach the server; '
+        'retrying with the same email or mobile may not work.',
+      );
+    }
+    return AuthSignInResult.fail(message);
   }
 
   Future<AuthSignInResult> registerProfile({
@@ -418,7 +486,7 @@ class FirebaseAuthService {
           : (Map<String, dynamic>.from(roleData)..['ownerUid'] = user.uid);
 
       final validationError =
-          await FirestoreService.instance.user.validateNewRegistration(
+          await UserRepository.instance.validateNewRegistration(
         role: role,
         email: email,
         mobile: mobile,
@@ -426,9 +494,9 @@ class FirebaseAuthService {
         roleData: data,
       );
       if (validationError != null) {
-        await FirestoreService.instance.user.deletePendingAuthUser(user);
-        await _auth.signOut();
-        return AuthSignInResult.fail(validationError);
+        final aborted =
+            await _abortPendingRegistrationIfNeeded(user, validationError);
+        return aborted ?? AuthSignInResult.fail(validationError);
       }
 
       if (prepareRoleDataAfterAuth != null) {
@@ -439,16 +507,16 @@ class FirebaseAuthService {
           );
           data['ownerUid'] = user.uid;
         } catch (e) {
-          await FirestoreService.instance.user.deletePendingAuthUser(user);
-          await _auth.signOut();
-          return AuthSignInResult.fail(
+          final aborted = await _abortPendingRegistrationIfNeeded(
+            user,
             'Registration failed while uploading verification documents: $e',
           );
+          if (aborted != null) return aborted;
         }
       }
 
       try {
-        await FirestoreService.instance.user.createProfile(
+        await UserRepository.instance.createProfile(
           user: user,
           role: role,
           profileId: profileId,
@@ -457,15 +525,27 @@ class FirebaseAuthService {
           mobileVerified: false,
           roleData: data,
         );
-        final saved = await FirestoreService.instance.user.fetchProfile(
-          user.uid,
-          preferCache: false,
+
+        // Ensure newly minted claims are refreshed before profile read
+        try {
+          await user.getIdToken(true);
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[FirebaseAuthService] getIdToken refresh warning: $e');
+          }
+        }
+
+        final saved = await verifyProfileWithRetry(
+          user: user,
+          signOutOnFailure: false,
         );
+
         if (saved == null) {
-          await user.delete();
-          return AuthSignInResult.fail(
-            'Could not save your account profile. Check internet and try again.',
-          );
+          const timeoutMsg =
+              'Account created, but profile verification timed out. Please try again.';
+          final aborted = await _abortPendingRegistrationIfNeeded(user, timeoutMsg);
+          if (aborted != null) return aborted;
+          return AuthSignInResult.fail(timeoutMsg);
         }
 
         final normalizedMobile =
@@ -474,7 +554,7 @@ class FirebaseAuthService {
           final sessionId = otpVerificationSessionId ??
               RegistrationOtpService.verificationSessionId;
           if (sessionId == null || sessionId.isEmpty) {
-            await user.delete();
+            await _auth.signOut();
             return AuthSignInResult.fail(
               'Mobile OTP verification is required before registration.',
             );
@@ -485,15 +565,20 @@ class FirebaseAuthService {
               sessionId,
             );
             if (finalizeError != null) {
-              await user.delete();
-              return AuthSignInResult.fail(finalizeError);
+              final aborted =
+                  await _abortPendingRegistrationIfNeeded(user, finalizeError);
+              if (aborted != null) return aborted;
+              // Finalize persisted server-side; client lost the response — continue.
             }
           }
         }
-      } catch (_) {
-        await user.delete();
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[FirebaseAuthService] Registration error saving profile: $e');
+        }
+        await _auth.signOut();
         return AuthSignInResult.fail(
-          'Registration failed while saving profile. Please try again.',
+          'Registration encountered a network issue while saving profile. Please check your connection and try again.',
         );
       }
 
@@ -515,6 +600,7 @@ class FirebaseAuthService {
       await _applyProfile(profile);
       await SessionExpiry.markAuthenticated();
       await LastLoginStore.save(role, email);
+      await SupabaseBootstrap.refreshAndVerifySession(forceRefresh: true);
       return AuthSignInResult.ok(role);
     } on FirebaseAuthException catch (e) {
       return AuthSignInResult.fail(describeFirebaseAuthError(e));
@@ -536,201 +622,6 @@ class FirebaseAuthService {
     }
   }
 
-  static const String _googleWebClientId =
-      '658118593597-vja8h427vrg37k6os3l9sp0dofs1590v.apps.googleusercontent.com';
-  static const String _googleIosClientId =
-      '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com';
-
-  static GoogleSignIn _getGoogleSignIn() {
-    return GoogleSignIn(
-      clientId: (!kIsWeb &&
-              (defaultTargetPlatform == TargetPlatform.iOS ||
-                  defaultTargetPlatform == TargetPlatform.macOS))
-          ? _googleIosClientId
-          : null,
-      serverClientId: _googleWebClientId,
-      scopes: const ['email', 'profile'],
-    );
-  }
-
-  Future<AuthSignInResult> signInWithGoogle({required UserType role}) async {
-    if (!FirebaseBootstrap.isReady) {
-      final ready = await FirebaseBootstrap.initialize();
-      if (!ready) {
-        return AuthSignInResult.fail(
-          FirebaseBootstrap.lastInitError ??
-              'Firebase is not available on this platform yet.',
-        );
-      }
-    }
-
-    try {
-      UserCredential userCredential;
-      if (kIsWeb) {
-        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
-        googleProvider.addScope('email');
-        googleProvider.addScope('profile');
-        googleProvider.setCustomParameters({'prompt': 'select_account'});
-        try {
-          userCredential = await _auth.signInWithPopup(googleProvider);
-        } on FirebaseAuthException catch (e) {
-          if (e.code == 'popup-blocked' ||
-              e.code == 'popup-closed-by-user' ||
-              e.code == 'cancelled-popup-request') {
-            return AuthSignInResult.fail(
-              'Google sign-in popup was cancelled or blocked by the browser. Please allow popups and try again.',
-            );
-          }
-          rethrow;
-        }
-      } else {
-        final GoogleSignIn googleSignIn = _getGoogleSignIn();
-        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-        if (googleUser == null) {
-          return AuthSignInResult.cancelled();
-        }
-
-        final GoogleSignInAuthentication googleAuth =
-            await googleUser.authentication;
-        if (googleAuth.idToken == null && googleAuth.accessToken == null) {
-          return AuthSignInResult.fail(
-            'Could not obtain Google authentication token. Please verify Google Play Services and try again.',
-          );
-        }
-
-        final OAuthCredential credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-        userCredential = await _auth.signInWithCredential(credential);
-      }
-
-      final User? user = userCredential.user;
-      if (user == null) {
-        return AuthSignInResult.fail(
-          'Could not retrieve user credentials from Google.',
-        );
-      }
-
-      DoctorNectUserProfile? profile = await FirestoreService.instance.user
-          .fetchProfile(user.uid, preferCache: false);
-      if (profile == null) {
-        profile = await FirestoreService.instance.user
-            .relinkOAuthProfileByEmail(user: user, expectedRole: role);
-        if (profile == null) {
-          if (role == UserType.patient) {
-            profile = await FirestoreService.instance.user
-                .createGooglePatientProfile(user: user);
-          }
-          if (profile == null) {
-            await _auth.signOut();
-            return AuthSignInResult.needsRegistration(
-              message:
-                  'No ${_roleLabel(role)} account found for ${user.email ?? "this Google account"}. Please complete registration.',
-            );
-          }
-        }
-      } else if (profile.role != role) {
-        await _auth.signOut();
-        return AuthSignInResult.fail(
-          'An account with this Google email is already registered as a ${_roleLabel(profile.role)}.',
-        );
-      }
-
-      await _applyProfile(profile);
-      await SessionExpiry.markAuthenticated();
-      await LastLoginStore.save(role, profile.email);
-      return AuthSignInResult.ok(role);
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'popup-closed-by-user' ||
-          e.code == 'cancelled-popup-request') {
-        return AuthSignInResult.fail('Sign-in cancelled.');
-      }
-      if (e.code == 'unauthorized-domain') {
-        return AuthSignInResult.fail(
-          'Domain not authorized. Please add this domain to Firebase Console -> Authentication -> Settings -> Authorized domains.',
-        );
-      }
-      if (e.code == 'account-exists-with-different-credential') {
-        return AuthSignInResult.fail(
-          'An account already exists with this email using a different sign-in method. Please log in with your email and password.',
-        );
-      }
-      return AuthSignInResult.fail(describeFirebaseAuthError(e));
-    } on PlatformException catch (e) {
-      if (e.code == 'sign_in_canceled' || e.code == 'popup_closed_by_user') {
-        return AuthSignInResult.cancelled();
-      }
-      if (e.message != null &&
-          (e.message!.contains('10') || e.message!.contains('12500'))) {
-        return AuthSignInResult.fail(
-          'Google Sign-In configuration error: Please verify that the Android SHA-1 fingerprint is registered in Firebase Console.',
-        );
-      }
-      return AuthSignInResult.fail(
-        'Google Sign-In failed (${e.code}): ${e.message}',
-      );
-    } catch (e) {
-      return AuthSignInResult.fail('Google Sign-In failed: $e');
-    }
-  }
-
-  Future<GoogleRegistrationProfile?> fetchGoogleRegistrationProfile({
-    required UserType role,
-  }) async {
-    if (!FirebaseBootstrap.isReady) {
-      final ready = await FirebaseBootstrap.initialize();
-      if (!ready) {
-        throw AuthUpdateException(
-          'Firebase is not available on this platform yet.',
-        );
-      }
-    }
-
-    String? email;
-    String? displayName;
-    String? phoneNumber;
-
-    if (kIsWeb) {
-      try {
-        final googleProvider = GoogleAuthProvider();
-        googleProvider.addScope('email');
-        googleProvider.addScope('profile');
-        googleProvider.setCustomParameters({'prompt': 'select_account'});
-        final cred = await _auth.signInWithPopup(googleProvider);
-        email = cred.user?.email;
-        displayName = cred.user?.displayName;
-        phoneNumber = cred.user?.phoneNumber;
-      } on FirebaseAuthException catch (e) {
-        if (e.code == 'popup-closed-by-user' ||
-            e.code == 'cancelled-popup-request' ||
-            e.code == 'popup-blocked') {
-          return null;
-        }
-        if (e.code == 'unauthorized-domain') {
-          throw AuthUpdateException(
-            'Domain not authorized. Please add this domain to Firebase Console -> Authentication -> Settings -> Authorized domains.',
-          );
-        }
-        throw AuthUpdateException(describeFirebaseAuthError(e));
-      }
-    } else {
-      final googleSignIn = _getGoogleSignIn();
-      final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) return null;
-      email = googleUser.email;
-      displayName = googleUser.displayName;
-    }
-
-    if (email == null || email.isEmpty) return null;
-
-    return GoogleRegistrationProfile(
-      displayName: displayName ?? '',
-      email: email,
-      phoneNumber: phoneNumber,
-    );
-  }
-
   Future<UserType?> restoreSession() async {
     if (!FirebaseBootstrap.isReady) return null;
     await SessionExpiry.restore();
@@ -740,7 +631,7 @@ class FirebaseAuthService {
     }
     final user = currentUser;
     if (user == null) return null;
-    final profile = await FirestoreService.instance.user.fetchProfile(
+    final profile = await UserRepository.instance.fetchProfile(
       user.uid,
       preferCache: true,
     );
@@ -757,7 +648,7 @@ class FirebaseAuthService {
       return profile.role;
     }
     if (profile.role == UserType.doctor) {
-      if (await FirestoreService.instance.doctorAccount.isDeactivated(
+      if (await DoctorAccountRepository.instance.isDeactivated(
         profile.profileId,
         preferCache: true,
       )) {
@@ -795,8 +686,14 @@ class FirebaseAuthService {
     DoctorProfileStore.resetNotificationPrefsSession();
     InAppNotificationService.instance.clearSessionState();
     RoleVerificationController.instance.reset();
+    await FileEncryptionService.clearOnLogout();
     AppSession.clear();
     await SessionExpiry.clear();
+    if (SupabaseBootstrap.isReady) {
+      try {
+        await SupabaseBootstrap.client.auth.signOut();
+      } catch (_) {}
+    }
     if (FirebaseBootstrap.isReady) {
       await _auth.signOut();
     }
@@ -903,7 +800,7 @@ class FirebaseAuthService {
           uid: profile.uid,
           profileId: profile.profileId,
         );
-        final doctorVerified = await FirestoreService.instance.doctorAccount
+        final doctorVerified = await DoctorAccountRepository.instance
             .isVerified(profile.profileId);
         skipPrefetch =
             !ProfileCompletionService.instance.isComplete || !doctorVerified;
@@ -977,7 +874,7 @@ class FirebaseAuthService {
     }
 
     try {
-      final profile = await FirestoreService.instance.user.fetchProfile(
+      final profile = await UserRepository.instance.fetchProfile(
         user.uid,
         preferCache: false,
       );
@@ -986,7 +883,7 @@ class FirebaseAuthService {
         return AuthSignInResult.fail('Doctor profile not found.');
       }
 
-      final status = await FirestoreService.instance.doctorAccount
+      final status = await DoctorAccountRepository.instance
           .fetchDeactivationStatus(profile.profileId);
       if (!status.deactivated) {
         await _applyProfile(profile);
@@ -999,7 +896,7 @@ class FirebaseAuthService {
         );
       }
 
-      await FirestoreService.instance.doctorAccount.reactivate(
+      await DoctorAccountRepository.instance.reactivate(
         doctorId: profile.profileId,
         ownerUid: user.uid,
       );
@@ -1065,7 +962,7 @@ class FirebaseAuthService {
         return AuthSignInResult.fail('Invalid email or password.');
       }
 
-      final profile = await FirestoreService.instance.user.fetchProfile(
+      final profile = await UserRepository.instance.fetchProfile(
         user.uid,
         preferCache: false,
       );
@@ -1171,7 +1068,7 @@ class FirebaseAuthService {
   }
 
   Future<AuthSignInResult?> _doctorDeactivationResult(String doctorId) async {
-    final status = await FirestoreService.instance.doctorAccount
+    final status = await DoctorAccountRepository.instance
         .fetchDeactivationStatus(doctorId);
     if (!status.deactivated) return null;
     if (status.canReactivate) {

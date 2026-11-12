@@ -5,7 +5,25 @@ import '../enums/user_type.dart';
 
 /// Demo mode is disabled for production. Firebase Auth is required.
 abstract final class DemoAuthConfig {
-  static const bool enabled = false;
+  static const bool enabled = bool.fromEnvironment(
+    'ENABLE_DEMO_AUTH',
+    defaultValue: false,
+  );
+
+  /// Compile-time safety guard evaluated at build time.
+  static const DemoAuthReleaseGuard buildTimeGuard = DemoAuthReleaseGuard();
+
+  /// Runtime verification called during main() initialization.
+  static void verifyReleaseBuildSafety() {
+    // Reference const build-time guard
+    const _ = buildTimeGuard;
+    if (kReleaseMode && (enabled || enableDemoSuperAdmin)) {
+      throw StateError(
+        'CRITICAL SECURITY ERROR: Demo auth configuration detected in release mode. '
+        'Release builds must never include demo auth config.',
+      );
+    }
+  }
 
   /// Demo Super Admin flag: enabled only when dev/demo flag is on (defaults to kDebugMode, false in prod release).
   static const bool enableDemoSuperAdmin = bool.fromEnvironment(
@@ -17,11 +35,23 @@ abstract final class DemoAuthConfig {
 
   static String? validateOtp(String? value) => FormValidators.otp(value);
 
-  static const String demoDoctorPhone = '7666892394';
-  static const String demoPatientPhone = '7058809803';
-  static const String demoPharmacyPhone = '9359503874';
-  static const String demoLabPhone = '9409858233';
-  static const String demoAmbulancePhone = '9307583929';
+  /// Injectable flag for testing release mode behavior.
+  /// When true, acts as if running under kReleaseMode.
+  @visibleForTesting
+  static bool? debugReleaseModeOverride;
+
+  /// Returns true only when demo mode is allowed (disabled in release builds).
+  static bool get isDemoAllowed {
+    final isRelease = debugReleaseModeOverride ?? kReleaseMode;
+    if (isRelease) return false;
+    return enabled || kDebugMode;
+  }
+
+  static const String demoDoctorPhone = '9999900002';
+  static const String demoPatientPhone = '9999900001';
+  static const String demoPharmacyPhone = '9999900003';
+  static const String demoLabPhone = '9999900004';
+  static const String demoAmbulancePhone = '9999900005';
   static const String demoSuperAdminPhone = '9999988888';
 
   static bool isDemoDoctorPhone(String? phone) {
@@ -67,6 +97,40 @@ abstract final class DemoAuthConfig {
     return digits == demoSuperAdminPhone;
   }
 
+  /// Safely checks if a profile document ID matches a demo doctor ID.
+  /// Strictly requires exact match (or standard 'd_' prefix).
+  static bool isDemoDoctorId(String? docId) {
+    if (docId == null || docId.isEmpty) return false;
+    final trimmed = docId.trim();
+    return trimmed == demoDoctorPhone ||
+        trimmed == 'd_$demoDoctorPhone' ||
+        trimmed == '+91$demoDoctorPhone';
+  }
+
+  static bool isDemoPharmacyId(String? storeId) {
+    if (storeId == null || storeId.isEmpty) return false;
+    final trimmed = storeId.trim();
+    return trimmed == demoPharmacyPhone ||
+        trimmed == 'm_$demoPharmacyPhone' ||
+        trimmed == '+91$demoPharmacyPhone';
+  }
+
+  static bool isDemoLabId(String? labId) {
+    if (labId == null || labId.isEmpty) return false;
+    final trimmed = labId.trim();
+    return trimmed == demoLabPhone ||
+        trimmed == 'l_$demoLabPhone' ||
+        trimmed == '+91$demoLabPhone';
+  }
+
+  static bool isDemoAmbulanceId(String? ambId) {
+    if (ambId == null || ambId.isEmpty) return false;
+    final trimmed = ambId.trim();
+    return trimmed == demoAmbulancePhone ||
+        trimmed == 'a_$demoAmbulancePhone' ||
+        trimmed == '+91$demoAmbulancePhone';
+  }
+
   static bool isDemoRolePhone(UserType role, String? phone) {
     return switch (role) {
       UserType.doctor => isDemoDoctorPhone(phone),
@@ -107,4 +171,16 @@ abstract final class DemoAuthConfig {
 
   static String trialLoginHint(UserType role) =>
       'Sign in with the email and password you used during registration.';
+}
+
+/// Compile-time guard: In release mode, const constructor assert fails build
+/// if demo authentication or demo super admin is enabled.
+class DemoAuthReleaseGuard {
+  const DemoAuthReleaseGuard()
+      : assert(
+          !kReleaseMode ||
+              (!DemoAuthConfig.enabled && !DemoAuthConfig.enableDemoSuperAdmin),
+          'FATAL: Demo auth is strictly prohibited in release builds! '
+          'Ensure DemoAuthConfig.enabled and ENABLE_DEMO_SUPER_ADMIN are false.',
+        );
 }

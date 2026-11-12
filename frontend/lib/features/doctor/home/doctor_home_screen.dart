@@ -1,12 +1,13 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/referral_repository.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'dart:async';
 
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
+import '../../../core/config/ambulance_enabled.dart';
+import '../../../widgets/emergency_hotline_sheet.dart';
 import '../../../core/auth/profile_action_guard.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/shared_appointments_store.dart';
@@ -107,8 +108,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
     final doctorId = DoctorSession.loggedInDoctorId;
     if (doctorId.isEmpty) return;
     final results = await Future.wait([
-      FirestoreService.instance.referral.fetchSentByDoctor(doctorId),
-      FirestoreService.instance.referral.fetchReceivedByDoctor(doctorId),
+      ReferralRepository.instance.fetchSentByDoctor(doctorId),
+      ReferralRepository.instance.fetchReceivedByDoctor(doctorId),
     ]);
     if (!mounted) return;
     setState(() => _referredCount = results[0].length + results[1].length);
@@ -359,7 +360,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         label: 'Today',
         value: '${stats.todaysAppointments}',
         gradient: const [AppColors.doctorBlue, Color(0xFF0F4A82)],
-        icon: TablerIcons.calendar_event,
+        icon: Icons.event_rounded,
         assetPath: AssetResolver.resolve('assets/icons/doctor/appointment.png'),
         onTap: () {
           Navigator.push(
@@ -377,7 +378,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         label: 'Pending',
         value: '${stats.pending}',
         gradient: const [Color(0xFFEA580C), Color(0xFFC2410C)],
-        icon: TablerIcons.clock,
+        icon: Icons.schedule_rounded,
         assetPath: AssetResolver.resolve('assets/icons/doctor/pending.png'),
         onTap: () {
           Navigator.push(
@@ -395,7 +396,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         label: 'Completed',
         value: '${stats.completed}',
         gradient: const [Color(0xFF16A34A), Color(0xFF15803D)],
-        icon: TablerIcons.circle_check,
+        icon: Icons.check_circle_rounded,
         assetPath: AssetResolver.resolve('assets/icons/doctor/done.png'),
         onTap: () {
           Navigator.push(
@@ -413,7 +414,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         label: 'Refer',
         value: '$_referredCount',
         gradient: const [Color(0xFF7C3AED), Color(0xFF6D28D9)],
-        icon: TablerIcons.share_3,
+        icon: Icons.share_rounded,
         assetPath: AssetResolver.resolve('assets/icons/doctor/refer.png'),
         onTap: _openReferredPatients,
       ),
@@ -430,7 +431,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         label: 'Invite and Connect',
         shortLabel: 'Invite',
         subtitle: 'Grow your network',
-        icon: TablerIcons.users_plus,
+        icon: Icons.group_add_rounded,
         assetPath: AssetResolver.resolve('assets/icons/doctor/invite.png'),
         gradient: const [Color(0xFF2563EB), Color(0xFF1D4ED8)],
         onTap: () => InviteNetworkView.show(context),
@@ -439,7 +440,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         label: 'Promote Practice',
         shortLabel: 'Promote',
         subtitle: 'Banner ads on Patient Home',
-        icon: TablerIcons.speakerphone,
+        icon: Icons.campaign_rounded,
         assetPath: AssetResolver.resolve('assets/icons/doctor/promote.png'),
         gradient: const [Color(0xFF7C3AED), Color(0xFF6D28D9)],
         onTap: () {
@@ -457,7 +458,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         label: 'Add New Patient',
         shortLabel: 'Add Patient',
         subtitle: 'Walk-in registration',
-        icon: TablerIcons.user_plus,
+        icon: Icons.person_add_rounded,
         assetPath: AssetResolver.resolve('assets/icons/doctor/add_patient.png'),
         gradient: const [Color(0xFF0D9488), Color(0xFF0369A1)],
         onTap: _openAddNewPatient,
@@ -466,7 +467,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         label: 'My Reviews',
         shortLabel: 'Reviews',
         subtitle: 'Patient feedback',
-        icon: TablerIcons.star,
+        icon: Icons.star_rounded,
         assetPath: AssetResolver.resolve('assets/icons/doctor/review.png'),
         gradient: const [Color(0xFFCA8A04), Color(0xFFA16207)],
         onTap: _openReviews,
@@ -475,7 +476,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         label: 'Refer a Colleague',
         shortLabel: 'Refer a Colleague',
         subtitle: 'Send a referral',
-        icon: TablerIcons.share_3,
+        icon: Icons.share_rounded,
         assetPath: AssetResolver.resolve('assets/icons/doctor/refer.png'),
         gradient: const [Color(0xFF0F766E), Color(0xFF0D9488)],
         onTap: () => ReferDoctorView.show(context),
@@ -489,7 +490,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         label: 'Set Availability',
         shortLabel: 'Availability',
         subtitle: 'Manage slots',
-        icon: TablerIcons.calendar_time,
+        icon: Icons.schedule_rounded,
         assetPath:
             AssetResolver.resolve('assets/icons/doctor/availability.png'),
         gradient: const [Color(0xFFEA580C), Color(0xFFC2410C)],
@@ -512,7 +513,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         label: 'Order Lab Test',
         shortLabel: 'Lab Test',
         subtitle: 'Send tests for a patient',
-        icon: TablerIcons.flask,
+        icon: Icons.science_outlined,
         assetPath: AssetResolver.resolve('assets/icons/doctor/lab.png'),
         gradient: const [Color(0xFF7C3AED), Color(0xFF6D28D9)],
         onTap: _openLabOrderWithSearch,
@@ -521,7 +522,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         label: 'Today\'s Queue',
         shortLabel: 'Queue',
         subtitle: 'Today\'s patients',
-        icon: TablerIcons.list_check,
+        icon: Icons.checklist_rounded,
         assetPath: AssetResolver.resolve('assets/icons/doctor/today_queue.png'),
         gradient: const [AppColors.doctorBlue, Color(0xFF0F4A82)],
         onTap: () => widget.onOpenAppointments?.call(0),
@@ -535,22 +536,23 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         gradient: const [Color(0xFF0891B2), Color(0xFF0E7490)],
         onTap: _openRescheduleWithSearch,
       ),
-      DoctorHomeServiceItem(
-        label: 'Ambulance',
-        shortLabel: 'Ambulance',
-        subtitle: 'Emergency help',
-        icon: TablerIcons.ambulance,
-        assetPath: AssetResolver.resolve('assets/icons/doctor/ambulance.png'),
-        gradient: const [Color(0xFFDC2626), Color(0xFFB91C1C)],
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const AmbulanceBookingScreen(
-              bookedByRole: AmbulanceBookedByRole.doctor,
+      if (AmbulanceEnabled.isOn)
+        DoctorHomeServiceItem(
+          label: 'Ambulance',
+          shortLabel: 'Ambulance',
+          subtitle: 'Emergency help',
+          icon: Icons.emergency_rounded,
+          assetPath: AssetResolver.resolve('assets/icons/doctor/ambulance.png'),
+          gradient: const [Color(0xFFDC2626), Color(0xFFB91C1C)],
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AmbulanceBookingScreen(
+                bookedByRole: AmbulanceBookedByRole.doctor,
+              ),
             ),
           ),
         ),
-      ),
       DoctorHomeServiceItem(
         label: 'Doctor Pass',
         shortLabel: 'Doctor Pass',
@@ -568,7 +570,13 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         subtitle: '24/7 emergency response',
         icon: Icons.emergency_rounded,
         gradient: const [Color(0xFFDC2626), Color(0xFFB91C1C)],
-        onTap: () => EmergencySosSheet.show(context),
+        onTap: () {
+          if (AmbulanceEnabled.isOn) {
+            EmergencySosSheet.show(context);
+          } else {
+            EmergencyHotlineSheet.show(context);
+          }
+        },
       ),
     ];
   }

@@ -14,7 +14,6 @@ import 'package:medibond/features/doctor/verification/doctor_verification_pendin
 import 'package:medibond/features/patient/lab/lab_booking_confirmed_screen.dart';
 import 'package:medibond/features/patient/lab/models/lab_models.dart';
 import 'package:medibond/features/splash/splash_screen.dart';
-import 'package:medibond/widgets/medibond_logo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ViewportConfig {
@@ -111,7 +110,7 @@ void main() {
           (context) => const SplashScreen(),
           pumpDuration: Duration.zero,
         );
-        expect(find.byType(DoctorNectLogo), findsOneWidget);
+        expect(find.byKey(SplashScreen.splashLogoKey), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
     }

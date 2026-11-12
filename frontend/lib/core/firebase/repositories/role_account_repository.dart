@@ -1,7 +1,8 @@
 import '../../enums/user_type.dart';
+import '../../supabase/supabase_bootstrap.dart';
 import 'doctor_account_repository.dart';
 
-/// Shared admin-approval gate for all email/password account roles.
+/// Shared admin-approval and provider lifecycle gate for all account roles.
 class RoleAccountRepository {
   RoleAccountRepository._();
 
@@ -29,6 +30,44 @@ class RoleAccountRepository {
       UserType.medicalStore || UserType.medical => true,
       UserType.ambulance => true,
     };
+  }
+
+  Future<void> deactivateProvider({
+    required UserType role,
+    required String profileId,
+    required String ownerUid,
+  }) async {
+    if (role == UserType.doctor) {
+      await DoctorAccountRepository.instance.deactivate(
+        doctorId: profileId,
+        ownerUid: ownerUid,
+      );
+      return;
+    }
+
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError('Supabase is not available.');
+    }
+    await SupabaseBootstrap.client.rpc('deactivate_provider_profile');
+  }
+
+  Future<void> reactivateProvider({
+    required UserType role,
+    required String profileId,
+    required String ownerUid,
+  }) async {
+    if (role == UserType.doctor) {
+      await DoctorAccountRepository.instance.reactivate(
+        doctorId: profileId,
+        ownerUid: ownerUid,
+      );
+      return;
+    }
+
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError('Supabase is not available.');
+    }
+    await SupabaseBootstrap.client.rpc('reactivate_provider_profile');
   }
 }
 

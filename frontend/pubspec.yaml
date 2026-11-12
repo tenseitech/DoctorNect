@@ -15,7 +15,7 @@ dependencies:
   image_picker_android: ^0.8.13+19
   image_picker_platform_interface: ^2.11.1
   intl: ^0.20.2
-  flutter_tabler_icons: ^1.43.0
+  cupertino_icons: ^1.0.8
   font_awesome_flutter: ^11.0.0
   flutter_slidable: ^4.0.3
   fl_chart: ^1.2.0
@@ -40,7 +40,6 @@ dependencies:
   screenshot: ^3.0.0
   encrypt: ^5.0.3
   flutter_secure_storage: ^10.3.1
-  google_sign_in: ^6.2.2
   geolocator: ^13.0.2
   geocoding: ^3.0.0
   http: ^1.2.2
@@ -48,16 +47,21 @@ dependencies:
 
   timezone: any
   flutter_native_splash: ^2.4.0
-  sms_autofill: ^2.5.0
   firebase_remote_config: ^6.7.0
+  package_info_plus: ^8.3.0
   cached_network_image: ^3.4.1
+  pinput: 5.0.0
+  smart_auth: ^3.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  path: ^1.9.1
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.3
   fake_cloud_firestore: ^4.2.0
+  fake_async: ^1.3.1
+  mocktail: ^1.0.5
 
 # Icon-only mark (no wordmark) for crisp launcher/favicon at small sizes.
 # Master full logo (icon + DoctorNect text) lives at assets/images/logo.webp.
@@ -78,22 +82,22 @@ flutter_launcher_icons:
     theme_color: "#1D4ED8"
 
 flutter_native_splash:
-  color: "#FFFFFF"
-  image: "assets/images/logo_splash.png"
-  color_dark: "#FFFFFF"
-  image_dark: "assets/images/logo_splash.png"
+  # Pre-12 / iOS: full gradient + centered logo from design SVG.
+  background_image: "assets/splash/splash_background.png"
+  image: "assets/splash/splash_logo.png"
   android: true
   ios: true
   web: false
-  # Android 12+: larger mark (~78% canvas) for circular viewport prominence
+  # Android 12+ splash API cannot render a gradient; solid mid-stop color.
   android_12:
-    image: "assets/images/logo_splash_android12.png"
-    icon_background_color: "#FFFFFF"
-    icon_background_color_dark: "#FFFFFF"
+    color: "#0A51EC"
+    image: "assets/splash/splash_logo.png"
+    icon_background_color: "#0A51EC"
 
 flutter:
   uses-material-design: true
   assets:
+    - assets/splash/
     - assets/images/
     - assets/images/logo_mark_transparent.png
     - assets/images/specialties/
@@ -104,7 +108,6 @@ flutter:
     - assets/data/symptom_lists.json
     - assets/icons/doctor/
     - assets/icons/common/
-    - assets/fonts/
 
   fonts:
     - family: Inter
@@ -125,8 +128,6 @@ flutter:
           style: italic
     - family: Outfit
       fonts:
-        - asset: assets/fonts/Outfit-Bold.ttf
-          weight: 700
         - asset: assets/fonts/Outfit-ExtraBold.ttf
           weight: 800
     - family: NotoSans
@@ -137,9 +138,6 @@ flutter:
           weight: 700
         - asset: assets/fonts/NotoSans-Italic.ttf
           weight: 400
-          style: italic
-        - asset: assets/fonts/NotoSans-BoldItalic.ttf
-          weight: 700
           style: italic
     - family: NotoSansDevanagari
       fonts:

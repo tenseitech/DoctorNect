@@ -1,0 +1,2 @@
+# SHA-256(hostname)[0:8] uppercase — live-legacy Supabase REST (until RDS cutover)
+40D01C23

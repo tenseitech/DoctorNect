@@ -1,3 +1,5 @@
+import '../config/doctor_patient_cutover_flag.dart';
+import '../firebase/firestore_client.dart';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,11 +36,11 @@ class ProfileDraftStore {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_key(role, cleanId), jsonEncode(data));
 
-      // 2. Firestore cloud draft persistence
-      if (FirebaseBootstrap.isReady) {
+      // 2. Firestore cloud draft persistence (only if cutover flag is OFF)
+      if (FirebaseBootstrap.isReady && !DoctorPatientCutoverFlag.isEnabled) {
         final uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null && uid.isNotEmpty) {
-          await FirebaseFirestore.instance
+          await FirestoreClient.instance
               .collection(FirestorePaths.users)
               .doc(uid)
               .set({
@@ -77,7 +79,7 @@ class ProfileDraftStore {
       if (FirebaseBootstrap.isReady) {
         final uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null && uid.isNotEmpty) {
-          final doc = await FirebaseFirestore.instance
+          final doc = await FirestoreClient.instance
               .collection(FirestorePaths.users)
               .doc(uid)
               .get();
@@ -110,7 +112,7 @@ class ProfileDraftStore {
       if (FirebaseBootstrap.isReady) {
         final uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null && uid.isNotEmpty) {
-          await FirebaseFirestore.instance
+          await FirestoreClient.instance
               .collection(FirestorePaths.users)
               .doc(uid)
               .update({

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:medibond/core/config/ambulance_enabled.dart';
 import 'package:medibond/core/enums/user_type.dart';
 import 'package:medibond/core/invite/doctor_invite_service.dart';
 import 'package:medibond/core/invite/ambulance_invite_service.dart';
@@ -15,6 +16,7 @@ void main() {
     PendingDoctorInviteStore.clear();
     PendingPharmacyInviteStore.clear();
     PendingLabInviteStore.clear();
+    AmbulanceEnabled.resetForTesting();
   });
 
   group('invite link URLs use doctornect.com', () {
@@ -121,7 +123,21 @@ void main() {
       );
     });
 
-    test('ambulance join link opens ambulance unified auth', () {
+    test('ambulance join link maps to patient when ambulance disabled', () {
+      AmbulanceEnabled.debugOverride = false;
+      PendingDoctorInviteStore.captureFromUri(
+        Uri.parse(
+          'https://doctornect.com/join?doctor=d1784185736978&role=ambulance',
+        ),
+      );
+      expectUnifiedAuth(
+        UserType.patient,
+        InviteDeepLinkResolver.loginScreenFromPendingInvite(),
+      );
+    });
+
+    test('ambulance join link opens ambulance when enabled', () {
+      AmbulanceEnabled.debugOverride = true;
       PendingDoctorInviteStore.captureFromUri(
         Uri.parse(
           'https://doctornect.com/join?doctor=d1784185736978&role=ambulance',

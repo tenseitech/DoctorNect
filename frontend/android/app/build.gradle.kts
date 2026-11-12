@@ -9,8 +9,6 @@ val hasKeyProperties = keystorePropertiesFile.exists()
 
 if (hasKeyProperties) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-} else {
-    println("WARNING: release build debug key se sign hua hai, Play Store par upload nahi hoga")
 }
 
 plugins {
@@ -53,24 +51,42 @@ android {
         create("release") {
             if (hasKeyProperties) {
                 val storeFilePath = keystoreProperties.getProperty("storeFile")
-                storeFile = if (storeFilePath != null) {
+                val resolvedStoreFile = if (storeFilePath != null) {
                     val f = file(storeFilePath)
                     if (f.exists()) f else rootProject.file(storeFilePath)
                 } else null
-                storePassword = keystoreProperties.getProperty("storePassword")
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
+
+                if (resolvedStoreFile == null || !resolvedStoreFile.exists()) {
+                    gradle.taskGraph.whenReady {
+                        if (allTasks.any { it.name.contains("Release", ignoreCase = true) }) {
+                            throw GradleException(
+                                "FATAL: Release keystore file specified in key.properties was not found. " +
+                                "Release builds must never fall back to debug signing."
+                            )
+                        }
+                    }
+                } else {
+                    storeFile = resolvedStoreFile
+                    storePassword = keystoreProperties.getProperty("storePassword")
+                    keyAlias = keystoreProperties.getProperty("keyAlias")
+                    keyPassword = keystoreProperties.getProperty("keyPassword")
+                }
+            } else {
+                gradle.taskGraph.whenReady {
+                    if (allTasks.any { it.name.contains("Release", ignoreCase = true) }) {
+                        throw GradleException(
+                            "FATAL: key.properties file was not found. " +
+                            "Release builds must be signed with the production release keystore and will not fall back to debug signing."
+                        )
+                    }
+                }
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = if (hasKeyProperties) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

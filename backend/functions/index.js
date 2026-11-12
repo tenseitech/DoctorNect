@@ -1,11 +1,38 @@
+const { resolveCallerIdentity } = require('./caller_identity');
 // Deploy: disable OTP App Check until reCAPTCHA is configured.
-const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require('firebase-functions/v2/firestore');
+require('./firestore_forbidden_guard');
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { initializeApp } = require('firebase-admin/app');
 initializeApp();
 
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { sendFcmIfTokenExists, resolveAmbulanceDriverToken } = require('./fcm_push');
+const crypto = require('crypto');
+const {
+  supabaseDatabaseWebhookHandler,
+  supabaseWebhookSecret,
+} = require('./supabase_database_webhook');
+
+/**
+ * Constant-time string comparison preventing timing attacks on webhook secrets.
+ */
+function safeCompareSecrets(provided, expected) {
+  if (typeof provided !== 'string' || typeof expected !== 'string') return false;
+  const cleanP = provided.trim();
+  const cleanE = expected.trim();
+  if (cleanP.length === 0 || cleanE.length === 0) return false;
+  const pHash = crypto.createHash('sha256').update(cleanP).digest();
+  const eHash = crypto.createHash('sha256').update(cleanE).digest();
+  return crypto.timingSafeEqual(pHash, eHash);
+}
+
+const {
+  isDoctorPatientSupabasePrimary,
+  _resetRemoteConfigCache,
+  _setMockRemoteConfigTemplate,
+} = require('./sync_flags');
+
 const {
   RULES,
   VITAL_THRESHOLDS,
@@ -28,38 +55,19 @@ const {
   clearFailedLogins,
   hashAmbulancePin,
   ambulancePinMatches,
-  isPlayReviewMobileInput,
-  isDemoMobileInput,
   lookupMobileRegistration,
+  cleanupPendingRegistration,
 } = require('./registration_otp');
-const {
-  syncReviewPublicDoc,
-  deleteReviewPublicDoc,
-} = require('./review_public_sync');
-const {
-  resolveDoctorRecipientUid,
-  createInAppNotification,
-  writeInAppNotification,
-  buildDoctorNewAppointmentNotification,
-  buildDoctorReferralReceivedNotification,
-  buildPatientAppointmentStatusNotification,
-  buildPatientLabBookingStatusNotification,
-  buildPatientLabReportReadyNotification,
-  buildPatientLabOrderNotification,
-  buildDoctorLabConnectionNotification,
-  buildDoctorPharmacyConnectionNotification,
-  buildPatientPharmacyDeliveryCreatedNotification,
-  buildDoctorPharmacyDeliveryUpdatedNotifications,
-  buildPatientPharmacyDeliveryUpdatedNotification,
-} = require('./in_app_notifications');
 const {
   createRazorpayOrder,
   verifyRazorpayPayment,
   expirePromotedAds,
+  razorpayWebhook,
+  reviewPromotedAd,
 } = require('./promoted_ads');
 const {
   bookAppointment,
-  reconcileAppointmentSlot,
+  rescheduleAppointment,
 } = require('./appointment_slots');
 
 const {
@@ -101,7 +109,7 @@ const {
   GENERIC_AMBULANCE_LOGIN_FAILED,
   clientFacingHttpsMessage,
 } = require('./public_error_messages');
-const { deleteMyAccountHandler } = require('./delete_my_account');
+const { deleteMyAccountHandler, supabaseServiceRoleKey } = require('./delete_my_account');
 const {
   awsAccessKeyId,
   awsSecretAccessKey,
@@ -110,9 +118,15 @@ const {
 assertProductionSecrets();
 assertProductionOtpSafety();
 
-/** Match deployed regions: Firestore triggers in asia-south2, callables in asia-south1. */
-const FIRESTORE_TRIGGER_REGION = 'asia-south2';
+/** Firestore triggers must run in the Firestore database location (live: asia-south2); callables in asia-south1. */
+const FIRESTORE_TRIGGER_REGION = String(process.env.FIRESTORE_TRIGGER_REGION || 'asia-south2').trim();
 const CALLABLE_REGION = 'asia-south1';
+
+/** Redis secrets are bound to OTP callables only when the OTP Redis mirror is enabled. */
+const OTP_REDIS_MIRROR_ON = String(process.env.OTP_REDIS_MIRROR || '').trim().toLowerCase() === 'on';
+const OTP_REDIS_SECRET_OPTIONS = OTP_REDIS_MIRROR_ON
+  ? { secrets: require('./redis').REDIS_SECRETS }
+  : {};
 
 /** MSG91 callable options (asia-south1) — region + optional VPC connector for static IP egress. */
 const MSG91_VPC_OPTIONS = {
@@ -230,6 +244,47 @@ async function verifyAmbulanceCredentials(db, username, pin) {
     return { ok: false, invalidCredentials: true };
   }
 
+  const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
+  const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
+
+  const useFirestoreDb = db && typeof db.collection === 'function';
+  if (isCutover && !useFirestoreDb) {
+    const { getSupabaseAdminClient } = require('./caller_identity');
+    const sb = getSupabaseAdminClient();
+    if (!sb) return { ok: false, invalidCredentials: true };
+
+    const { data: amb } = await sb
+      .from('ambulances')
+      .select('*')
+      .ilike('username', username.trim().toLowerCase())
+      .maybeSingle();
+
+    if (!amb) {
+      return { ok: false, invalidCredentials: true };
+    }
+
+    const { data: priv } = await sb
+      .from('ambulance_private_settings')
+      .select('pin_hash')
+      .eq('ambulance_id', amb.ambulance_id)
+      .maybeSingle();
+
+    const storedPin = priv?.pin_hash;
+    if (!isAmbulancePinHash(storedPin)) {
+      return { ok: false, invalidCredentials: true, pinUpgradeRequired: !!storedPin };
+    }
+    if (!pinMatches(storedPin, pinNorm)) {
+      return { ok: false, invalidCredentials: true };
+    }
+
+    return {
+      ok: true,
+      driverId: amb.ambulance_id,
+      data: amb,
+      username: amb.username,
+    };
+  }
+
   const found = await findAmbulanceByUsername(db, username);
   if (!found) {
     return { ok: false, invalidCredentials: true };
@@ -302,569 +357,6 @@ function broadcastAlreadyRated(broadcast) {
  * When a patient/doctor books an ambulance, one ambulance_requests doc is
  * created per online driver. Send a high-priority FCM push to that driver.
  */
-exports.notifyAmbulanceDriverOnNewRequest = onDocumentCreated(
-  { document: 'ambulance_requests/{requestId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const data = event.data?.data();
-    if (!data) return;
-
-    if (data.status !== 'pending') return;
-
-    const driverId = data.driverId;
-    if (!driverId) return;
-
-    const db = getFirestore();
-    const patientName = data.patientName || 'Patient';
-    const pickup = data.pickupLocation || 'Pickup location pending';
-    const broadcastId = data.broadcastId || '';
-
-    await sendFcmIfTokenExists(db, {
-      collection: 'ambulances',
-      docId: driverId,
-      title: 'New Ambulance Request',
-      body: `${patientName} · ${pickup}`,
-      data: {
-        type: 'ambulance_request',
-        broadcastId,
-        requestId: event.params.requestId,
-        patientName,
-        pickupLocation: pickup,
-      },
-      androidChannelId: 'ambulance_requests',
-      logLabel: `ambulance driver ${driverId}`,
-      resolveToken: async (firestore) => resolveAmbulanceDriverToken(firestore, driverId),
-    });
-  },
-);
-
-/**
- * When a broadcast is claimed (pending → accepted), mark other drivers' pending
- * request copies as taken. Admin SDK bypasses client list rules on ambulance_requests.
- */
-exports.markAmbulanceSiblingRequestsTakenOnAccept = onDocumentUpdated(
-  { document: 'ambulance_broadcasts/{broadcastId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const before = event.data.before.data();
-    const after = event.data.after.data();
-    if (!before || !after) return;
-
-    const prevStatus = String(before.status || '');
-    const nextStatus = String(after.status || '');
-    if (prevStatus === nextStatus || nextStatus !== 'accepted') return;
-
-    const broadcastId = event.params.broadcastId;
-    const winnerId = String(after.acceptedDriverId || '');
-    if (!winnerId) return;
-
-    const winnerName = String(after.acceptedAmbulanceName || '');
-
-    const db = getFirestore();
-    const snapshot = await db
-      .collection('ambulance_requests')
-      .where('broadcastId', '==', broadcastId)
-      .where('status', '==', 'pending')
-      .get();
-
-    if (snapshot.empty) return;
-
-    const batch = db.batch();
-    let writes = 0;
-    for (const doc of snapshot.docs) {
-      const driverId = String(doc.data().driverId || '');
-      if (driverId === winnerId) continue;
-      batch.update(doc.ref, {
-        status: 'taken',
-        acceptedDriverId: winnerId,
-        acceptedAmbulanceName: winnerName,
-      });
-      writes += 1;
-    }
-
-    if (writes === 0) return;
-    await batch.commit();
-  },
-);
-
-/**
- * When a broadcast is cancelled, mark non-terminal request copies cancelled
- * (driver-initiated: winning driver's copy may be rejected). Admin SDK only.
- */
-exports.markAmbulanceSiblingRequestsOnBroadcastCancelled = onDocumentUpdated(
-  { document: 'ambulance_broadcasts/{broadcastId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const before = event.data.before.data();
-    const after = event.data.after.data();
-    if (!before || !after) return;
-
-    const prevStatus = String(before.status || '');
-    const nextStatus = String(after.status || '');
-    if (prevStatus === nextStatus || nextStatus !== 'cancelled') return;
-
-    const broadcastId = event.params.broadcastId;
-    const cancelledByRole = String(after.cancelledByRole || '');
-    const acceptedDriverId = String(before.acceptedDriverId || '');
-
-    const db = getFirestore();
-    const snapshot = await db
-      .collection('ambulance_requests')
-      .where('broadcastId', '==', broadcastId)
-      .get();
-
-    if (snapshot.empty) return;
-
-    const terminal = new Set(['cancelled', 'rejected', 'completed']);
-    const batch = db.batch();
-    let writes = 0;
-
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
-      const status = String(data.status || '');
-      if (terminal.has(status)) continue;
-
-      const driverId = String(data.driverId || '');
-      const nextRequestStatus =
-        cancelledByRole === 'driver' && acceptedDriverId !== '' && driverId === acceptedDriverId
-          ? 'rejected'
-          : 'cancelled';
-
-      batch.update(doc.ref, { status: nextRequestStatus });
-      writes += 1;
-    }
-
-    if (writes === 0) return;
-    await batch.commit();
-  },
-);
-
-/**
- * Persist a cross-device in-app notification for the doctor when a patient books.
- */
-exports.notifyDoctorOnAppointmentCreated = onDocumentCreated(
-  { document: 'appointments/{appointmentId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const appointment = event.data?.data();
-    if (!appointment) return;
-
-    const payload = buildDoctorNewAppointmentNotification(
-      appointment,
-      event.params.appointmentId,
-    );
-    if (!payload) return;
-
-    const db = getFirestore();
-    const recipientUid = await resolveDoctorRecipientUid(db, payload.recipientProfileId);
-    if (!recipientUid) return;
-
-    try {
-      await createInAppNotification(db, {
-        ...payload,
-        recipientUid,
-      });
-    } catch (err) {
-      console.error(
-        'In-app notification create failed for appointment',
-        event.params.appointmentId,
-        err,
-      );
-    }
-
-    const appointmentId = payload.targetId || event.params.appointmentId;
-    const patientName =
-      String(appointment.patientName || 'Patient').trim() || 'Patient';
-
-    await sendFcmIfTokenExists(db, {
-      collection: 'doctors',
-      docId: payload.recipientProfileId,
-      title: payload.title,
-      body: payload.body,
-      data: {
-        type: 'appointment_new',
-        appointmentId,
-        patientName,
-        doctorTrigger: payload.doctorTrigger || 'newAppointmentBooked',
-      },
-      androidChannelId: 'doctor_appointments',
-      logLabel: `doctor ${payload.recipientProfileId} appointment ${appointmentId}`,
-    });
-  },
-);
-
-/**
- * Notify receiving specialist when another doctor refers a patient to them.
- */
-exports.notifyDoctorOnReferralCreated = onDocumentCreated(
-  { document: 'referrals/{referralId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const referral = event.data?.data();
-    if (!referral) return;
-
-    const payload = buildDoctorReferralReceivedNotification(
-      referral,
-      event.params.referralId,
-    );
-    if (!payload) return;
-
-    const db = getFirestore();
-    const recipientUid = await resolveDoctorRecipientUid(db, payload.recipientProfileId);
-    if (!recipientUid) return;
-
-    try {
-      await createInAppNotification(db, {
-        ...payload,
-        recipientUid,
-      });
-    } catch (err) {
-      console.error(
-        'In-app notification create failed for referral',
-        event.params.referralId,
-        err,
-      );
-    }
-
-    await sendFcmIfTokenExists(db, {
-      collection: 'doctors',
-      docId: payload.recipientProfileId,
-      title: payload.title,
-      body: payload.body,
-      data: {
-        type: 'referral_received',
-        referralId: payload.targetId || event.params.referralId,
-        doctorTrigger: payload.doctorTrigger || 'patientReferredToMe',
-      },
-      androidChannelId: 'doctor_appointments',
-      logLabel: `doctor ${payload.recipientProfileId} referral ${event.params.referralId}`,
-    });
-  },
-);
-
-/**
- * Notify patient when a doctor accepts or declines a pending appointment request.
- */
-exports.notifyPatientOnAppointmentStatusChanged = onDocumentUpdated(
-  { document: 'appointments/{appointmentId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const before = event.data?.before?.data();
-    const after = event.data?.after?.data();
-    if (!before || !after) return;
-    if (before.doctorStatus === after.doctorStatus) return;
-
-    const db = getFirestore();
-    const inAppPayload = buildPatientAppointmentStatusNotification(
-      before,
-      after,
-      event.params.appointmentId,
-    );
-    if (!inAppPayload) return;
-
-    const patientId = inAppPayload.recipientProfileId;
-    await writeInAppNotification(db, 'appointment.status_updated', inAppPayload, {
-      appointmentId: event.params.appointmentId,
-      patientId,
-      recipientProfileId: patientId,
-    });
-
-    const appointmentId = inAppPayload.targetId || event.params.appointmentId;
-    const status = after.doctorStatus === 'confirmed' ? 'confirmed' : 'cancelled';
-
-    await sendFcmIfTokenExists(db, {
-      collection: 'patients',
-      docId: patientId,
-      title: inAppPayload.title,
-      body: inAppPayload.body,
-      data: {
-        type: 'appointment_status_update',
-        appointmentId,
-        status,
-        doctorName: after.doctorName || 'Doctor',
-        patientTrigger: inAppPayload.patientTrigger,
-      },
-      androidChannelId: 'patient_appointments',
-      logLabel: `patient ${patientId} appointment ${appointmentId}`,
-    });
-  },
-);
-
-/**
- * Notify patient when a lab accepts or declines their booking request.
- */
-exports.notifyPatientOnLabBookingUpdate = onDocumentUpdated(
-  { document: 'lab_bookings/{bookingId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const before = event.data?.before?.data();
-    const after = event.data?.after?.data();
-    if (!before || !after) return;
-    if (before.status === after.status) return;
-    if (after.status !== 'confirmed' && after.status !== 'declined') return;
-    if (before.status !== 'requested') return;
-
-    const patientId = after.patientId;
-    if (!patientId) return;
-
-    const db = getFirestore();
-    const inAppPayload = buildPatientLabBookingStatusNotification(
-      after,
-      event.params.bookingId,
-    );
-    await writeInAppNotification(
-      db,
-      'lab_booking.status_updated',
-      inAppPayload,
-      {
-        bookingId: event.params.bookingId,
-        patientId,
-        recipientProfileId: inAppPayload?.recipientProfileId,
-      },
-    );
-
-    const labName = after.partnerLab || 'Lab';
-    const testName = after.testName || 'lab test';
-    const accepted = after.status === 'confirmed';
-    const title = accepted ? 'Lab booking accepted' : 'Lab booking declined';
-    const body = accepted
-      ? `${labName} confirmed your ${testName} booking.`
-      : `${labName} could not accept your ${testName} booking.`;
-
-    await sendFcmIfTokenExists(db, {
-      collection: 'patients',
-      docId: patientId,
-      title,
-      body,
-      data: {
-        type: 'lab_booking_update',
-        bookingId: event.params.bookingId,
-        status: after.status,
-        labName,
-        testName,
-      },
-      androidChannelId: 'patient_lab_bookings',
-      logLabel: `patient ${patientId} lab booking`,
-    });
-  },
-);
-
-/**
- * Notify patient when a lab uploads and submits a report.
- */
-exports.notifyPatientOnLabReportReady = onDocumentUpdated(
-  { document: 'lab_bookings/{bookingId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const before = event.data?.before?.data();
-    const after = event.data?.after?.data();
-    if (!before || !after) return;
-
-    const hadReport = Boolean(before.reportFileName || before.reportStorageUrl);
-    const hasReport = Boolean(after.reportFileName || after.reportStorageUrl);
-    if (!hasReport || hadReport) return;
-    if (after.status !== 'completed') return;
-
-    const patientId = after.patientId;
-    if (!patientId) return;
-
-    const db = getFirestore();
-    const inAppPayload = buildPatientLabReportReadyNotification(
-      after,
-      event.params.bookingId,
-    );
-    await writeInAppNotification(
-      db,
-      'lab_booking.report_ready',
-      inAppPayload,
-      {
-        bookingId: event.params.bookingId,
-        patientId,
-        recipientProfileId: inAppPayload?.recipientProfileId,
-      },
-    );
-
-    const labName = after.partnerLab || 'Lab';
-    const testName = after.testName || 'lab test';
-    const title = 'Lab report ready';
-    const body = `${labName} shared your ${testName} report.`;
-
-    await sendFcmIfTokenExists(db, {
-      collection: 'patients',
-      docId: patientId,
-      title,
-      body,
-      data: {
-        type: 'lab_report_ready',
-        bookingId: event.params.bookingId,
-        status: after.status,
-        labName,
-        testName,
-      },
-      androidChannelId: 'patient_lab_bookings',
-      logLabel: `patient ${patientId} lab report`,
-    });
-  },
-);
-
-/**
- * Notify patient when a doctor creates a lab order.
- */
-exports.notifyPatientOnLabOrderCreated = onDocumentCreated(
-  { document: 'lab_orders/{orderId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const order = event.data?.data();
-    if (!order) return;
-
-    const patientId = order.patientId;
-    if (!patientId) return;
-
-    const db = getFirestore();
-    const inAppPayload = buildPatientLabOrderNotification(order, event.params.orderId);
-    await writeInAppNotification(db, 'lab_order.created', inAppPayload, {
-      orderId: event.params.orderId,
-      patientId,
-      recipientProfileId: inAppPayload?.recipientProfileId,
-    });
-  },
-);
-
-/**
- * Notify doctor on lab connection request / approval / rejection.
- */
-exports.notifyDoctorOnLabConnectionChanged = onDocumentWritten(
-  { document: 'lab_connections/{connectionId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const before = event.data?.before?.data();
-    const after = event.data?.after?.data();
-    if (!after) return;
-
-    const db = getFirestore();
-    const inAppPayload = buildDoctorLabConnectionNotification(
-      before,
-      after,
-      event.params.connectionId,
-    );
-    await writeInAppNotification(db, 'lab_connection.changed', inAppPayload, {
-      connectionId: event.params.connectionId,
-      doctorId: after.doctorId,
-      recipientProfileId: inAppPayload?.recipientProfileId,
-    });
-  },
-);
-
-/**
- * Notify doctor on pharmacy connection request / approval / rejection.
- */
-exports.notifyDoctorOnPharmacyConnectionChanged = onDocumentWritten(
-  { document: 'pharmacy_connections/{connectionId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const before = event.data?.before?.data();
-    const after = event.data?.after?.data();
-    if (!after) return;
-
-    const db = getFirestore();
-    const inAppPayload = buildDoctorPharmacyConnectionNotification(
-      before,
-      after,
-      event.params.connectionId,
-    );
-    await writeInAppNotification(db, 'pharmacy_connection.changed', inAppPayload, {
-      connectionId: event.params.connectionId,
-      doctorId: after.doctorId,
-      recipientProfileId: inAppPayload?.recipientProfileId,
-    });
-  },
-);
-
-/**
- * Notify patient when a prescription is sent to a pharmacy.
- */
-exports.notifyPatientOnPharmacyDeliveryCreated = onDocumentCreated(
-  { document: 'pharmacy_deliveries/{deliveryId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const delivery = event.data?.data();
-    if (!delivery) return;
-
-    const patientId = delivery.patientId;
-    if (!patientId) return;
-
-    const db = getFirestore();
-    const inAppPayload = buildPatientPharmacyDeliveryCreatedNotification(
-      delivery,
-      event.params.deliveryId,
-    );
-    await writeInAppNotification(db, 'pharmacy_delivery.created', inAppPayload, {
-      deliveryId: event.params.deliveryId,
-      patientId,
-      recipientProfileId: inAppPayload?.recipientProfileId,
-    });
-  },
-);
-
-/**
- * Notify doctor when a pharmacy views, marks OOS, or dispenses a delivery.
- */
-exports.notifyDoctorOnPharmacyDeliveryUpdated = onDocumentUpdated(
-  { document: 'pharmacy_deliveries/{deliveryId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const before = event.data?.before?.data();
-    const after = event.data?.after?.data();
-    if (!before || !after) return;
-
-    const db = getFirestore();
-    const payloads = buildDoctorPharmacyDeliveryUpdatedNotifications(
-      before,
-      after,
-      event.params.deliveryId,
-    );
-    for (const payload of payloads) {
-      await writeInAppNotification(db, 'pharmacy_delivery.updated', payload, {
-        deliveryId: event.params.deliveryId,
-        doctorId: after.doctorId,
-        recipientProfileId: payload?.recipientProfileId,
-      });
-    }
-  },
-);
-
-/**
- * Notify patient when medicines are dispensed or partially dispensed.
- */
-exports.notifyPatientOnPharmacyDeliveryUpdated = onDocumentUpdated(
-  { document: 'pharmacy_deliveries/{deliveryId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const before = event.data?.before?.data();
-    const after = event.data?.after?.data();
-    if (!before || !after) return;
-
-    const db = getFirestore();
-    const inAppPayload = buildPatientPharmacyDeliveryUpdatedNotification(
-      before,
-      after,
-      event.params.deliveryId,
-    );
-    await writeInAppNotification(db, 'pharmacy_delivery.updated', inAppPayload, {
-      deliveryId: event.params.deliveryId,
-      patientId: after.patientId,
-      recipientProfileId: inAppPayload?.recipientProfileId,
-    });
-
-    if (!inAppPayload) return;
-
-    const prescriptionId = inAppPayload.targetId || event.params.deliveryId;
-    const partial = after.status === 'partiallyDispensed';
-
-    await sendFcmIfTokenExists(db, {
-      collection: 'patients',
-      docId: after.patientId,
-      title: inAppPayload.title,
-      body: inAppPayload.body,
-      data: {
-        type: 'pharmacy_delivery_update',
-        prescriptionId,
-        deliveryId: event.params.deliveryId,
-        partial: partial ? 'true' : 'false',
-        storeName: after.storeName || 'Pharmacy',
-        patientTrigger: inAppPayload.patientTrigger,
-      },
-      androidChannelId: 'patient_pharmacy',
-      logLabel: `patient ${after.patientId} pharmacy ${event.params.deliveryId}`,
-    });
-  },
-);
 
 /** Returns declarative validation rules for the client engine (pre-login; rules are not secret). */
 exports.getValidationRules = onCall(
@@ -940,7 +432,6 @@ async function enforceSendUserRegistrationOtpRateLimit(firestore, request) {
   const otpType = String(request.data?.otpType || 'registration').trim();
   const mobile = request.data?.mobile || request.data?.email || request.data?.identifier;
   const role = String(request.data?.role || 'patient').trim();
-  if (!(await isDemoMobileInput(mobile, role))) {
     const digits10 = String(mobile || '').replace(/\D/g, '').slice(-10);
     const identifier = digits10 || mobile;
     if (otpType === 'registration') {
@@ -956,12 +447,16 @@ async function enforceSendUserRegistrationOtpRateLimit(firestore, request) {
     } else {
       await enforceAbuseLimit(firestore, request, 'api');
     }
-  }
 }
 
 /** Sends registration OTP (server-side storage; SMS optional). */
 exports.sendUserRegistrationOtp = onCall(
-  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
+  {
+    ...MSG91_VPC_OPTIONS,
+    ...OTP_REDIS_SECRET_OPTIONS,
+    enforceAppCheck: ENFORCE_OTP_APP_CHECK,
+    secrets: [...(OTP_REDIS_SECRET_OPTIONS.secrets || []), supabaseServiceRoleKey],
+  },
   withSecurityLogging('sendUserRegistrationOtp', async (request) => {
   try {
     console.info('[sendUserRegistrationOtp] request', {
@@ -990,9 +485,10 @@ exports.enforceSendUserRegistrationOtpRateLimit = enforceSendUserRegistrationOtp
 
 /** Returns whether a mobile number conflicts with login/registration intent (no role disclosure). */
 exports.lookupMobileRegistration = onCall(
-  { region: 'asia-south1' },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('lookupMobileRegistration', async (request) => {
     try {
+      assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
       const firestore = getFirestore();
       await enforceAbuseLimit(firestore, request, 'api', {
         message: 'Too many requests. Please try again later.',
@@ -1008,7 +504,12 @@ exports.lookupMobileRegistration = onCall(
 
 /** Verifies registration OTP. */
 exports.verifyUserRegistrationOtp = onCall(
-  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
+  {
+    ...MSG91_VPC_OPTIONS,
+    ...OTP_REDIS_SECRET_OPTIONS,
+    enforceAppCheck: ENFORCE_OTP_APP_CHECK,
+    secrets: [...(OTP_REDIS_SECRET_OPTIONS.secrets || []), supabaseServiceRoleKey],
+  },
   withSecurityLogging('verifyUserRegistrationOtp', async (request) => {
     const mobileLast4 = String(request.data?.mobile || request.data?.identifier || '')
       .replace(/\D/g, '')
@@ -1062,6 +563,22 @@ exports.finalizePatientOtpVerification = onCall(
   }),
 );
 
+/** Removes caller-owned fresh orphan registration rows + Auth user (service role). */
+exports.cleanupPendingRegistration = onCall(
+  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
+  withSecurityLogging('cleanupPendingRegistration', async (request) => {
+    requireAuth(request);
+    if (ENFORCE_OTP_APP_CHECK && !request.app) {
+      throw new HttpsError('failed-precondition', 'App Check verification required.');
+    }
+    const firestore = getFirestore();
+    await enforceAbuseLimit(firestore, request, 'api', {
+      message: 'Too many registration cleanup attempts. Please try again later.',
+    });
+    return cleanupPendingRegistration(firestore, request.auth);
+  }),
+);
+
 /** Resets ambulance driver PIN after OTP verification (Admin SDK write to private/settings). */
 exports.resetAmbulanceDriverPin = onCall(
   { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
@@ -1084,7 +601,7 @@ exports.resetAmbulanceDriverPin = onCall(
 
 /** Resets user password after OTP verification using Admin SDK. */
 exports.resetUserPasswordWithOtp = onCall(
-  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
+  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('resetUserPasswordWithOtp', async (request) => {
     try {
       const firestore = getFirestore();
@@ -1117,7 +634,7 @@ exports.resetUserPasswordWithOtp = onCall(
 
 /** Exchanges a verified mobile OTP session for a Firebase custom auth token. */
 exports.completeMobileOtpLogin = onCall(
-  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
+  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('completeMobileOtpLogin', async (request) => {
     try {
       const firestore = getFirestore();
@@ -1150,7 +667,7 @@ exports.completeMobileOtpLogin = onCall(
 
 /** Pre-login rate-limit gate for email/password and admin sign-in. */
 exports.assertLoginAllowed = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('assertLoginAllowed', async (request) => {
   const firestore = getFirestore();
   await enforceAbuseLimit(firestore, request, 'login', {
@@ -1177,7 +694,7 @@ exports.assertLoginAllowed = onCall(
 
 /** Records a failed email/password login for rate limiting. */
 exports.recordFailedLogin = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   protectCallable('recordFailedLogin', { category: 'api' }, async (request) => {
   const firestore = getFirestore();
   logAuthAttempt(request, {
@@ -1211,7 +728,7 @@ exports.clearFailedLogins = onCall(
  * Replaces anonymous Firestore get-by-id (IDOR on timestamp invite IDs).
  */
 exports.getAmbulanceInvite = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('getAmbulanceInvite', async (request) => {
   assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
   await enforceAbuseLimit(getFirestore(), request, 'api');
@@ -1220,6 +737,37 @@ exports.getAmbulanceInvite = onCall(
   }
   const inviteId = requireDocId(request.data?.inviteId, 'inviteId');
   const token = requireInviteToken(request.data?.token, 'token');
+
+  const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
+  const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
+
+  if (isCutover) {
+    const { getSupabaseAdminClient } = require('./caller_identity');
+    const sb = getSupabaseAdminClient();
+    if (!sb) throw new HttpsError('internal', 'Supabase admin client not configured.');
+
+    const { data: inv, error } = await sb
+      .from('ambulance_invites')
+      .select('*')
+      .eq('invite_id', inviteId)
+      .maybeSingle();
+
+    if (error || !inv) {
+      throw new HttpsError('not-found', 'Invite not found.');
+    }
+    if (String(inv.token || '') !== token) {
+      logUnusualTraffic(request, {
+        pattern: 'forbidden_resource',
+        detail: 'ambulance_invite_token_mismatch',
+        identifier: inviteId,
+      });
+      throw new HttpsError('permission-denied', 'Invalid invite link.');
+    }
+    if (String(inv.status || '') !== 'pending') {
+      throw new HttpsError('failed-precondition', 'This invite has already been used.');
+    }
+    return { ok: true, inviteId: inv.invite_id, invite: inv };
+  }
 
   const firestore = getFirestore();
   const snap = await firestore.collection('ambulance_invites').doc(inviteId).get();
@@ -1249,7 +797,7 @@ exports.getAmbulanceInvite = onCall(
 
 /** Developer/admin approval: sets role profile verified = true for any account role. */
 exports.approveUserAccount = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   protectCallable('approveUserAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
     const firestore = getFirestore();
@@ -1259,7 +807,7 @@ exports.approveUserAccount = onCall(
 
 /** Backward-compatible alias for patient approval. */
 exports.approvePatientAccount = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   protectCallable('approvePatientAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
     const firestore = getFirestore();
@@ -1412,7 +960,7 @@ async function runVerifyAmbulanceDriverLogin(firestore, payload, { clientIp, req
  * client links an anonymous Firebase session after success for Firestore access.
  */
 exports.verifyAmbulanceDriverLogin = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public' },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public', secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('verifyAmbulanceDriverLogin', async (request) => {
   try {
   const firestore = getFirestore();
@@ -1435,11 +983,12 @@ exports.verifyAmbulanceDriverLogin = onCall(
 
 /**
  * Web-friendly HTTP entry for ambulance username/PIN login.
- * CORS is restricted to hosted app origins; App Check is optional until
- * ENFORCE_AMBULANCE_HTTP_APP_CHECK=true (client must send X-Firebase-AppCheck).
+ * CORS is restricted to hosted app origins. App Check is required only when
+ * ENFORCE_AMBULANCE_HTTP_APP_CHECK=true. The flag defaults to false, and the
+ * PIN check still runs in that default path.
  */
 exports.verifyAmbulanceDriverLoginHttp = onRequest(
-  { region: CALLABLE_REGION, cors: false, invoker: 'public' },
+  { region: CALLABLE_REGION, cors: false, invoker: 'public', secrets: [supabaseServiceRoleKey] },
   async (req, res) => {
     const allowedOrigins = AMBULANCE_HTTP_ALLOWED_ORIGINS;
     if (handleAmbulanceHttpPreflight(req, res, allowedOrigins)) return;
@@ -1520,7 +1069,7 @@ exports.completeAmbulanceMobileOtpLogin = onCall(
  * duplicate ratings, and atomically updates ambulance rating aggregates.
  */
 exports.submitAmbulanceRating = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   protectCallable('submitAmbulanceRating', { category: 'api' }, async (request) => {
   requireAuth(request);
 
@@ -1532,11 +1081,7 @@ exports.submitAmbulanceRating = onCall(
   const db = getFirestore();
   const uid = request.auth.uid;
 
-  const userSnap = await db.collection('users').doc(uid).get();
-  if (!userSnap.exists) {
-    throw new HttpsError('permission-denied', 'Unauthorized.');
-  }
-  const profile = userSnap.data() || {};
+  const profile = await resolveCallerIdentity({ db, uid });
 
   const broadcastRef = db.collection('ambulance_broadcasts').doc(broadcastId);
   const ambRef = db.collection('ambulances').doc(ambulanceId);
@@ -1622,7 +1167,7 @@ exports.submitAmbulanceRating = onCall(
  * verification so stale authUid values can be reclaimed without opening hijack.
  */
 exports.resyncAmbulanceAuthUid = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public' },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public', secrets: [supabaseServiceRoleKey] },
   protectCallable('resyncAmbulanceAuthUid', {
     category: 'login',
     identifierFromRequest: (request) =>
@@ -1659,68 +1204,6 @@ exports.resyncAmbulanceAuthUid = onCall(
 );
 
 /** Recompute doctor rating aggregates when a review is created or updated. */
-exports.aggregateDoctorRatingOnReviewWrite = onDocumentWritten(
-  { document: 'reviews/{reviewId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const before = event.data?.before?.data() || null;
-    const after = event.data?.after?.data() || null;
-    const reviewId = String(event.params?.reviewId || '').trim();
-    const doctorId = String((after || before)?.doctorId || '').trim();
-    if (!doctorId) return;
-
-    const db = getFirestore();
-    if (!after) {
-      await deleteReviewPublicDoc(db, reviewId);
-    } else {
-      await syncReviewPublicDoc(db, reviewId, after);
-    }
-    const doctorRef = db.collection('doctors').doc(doctorId);
-    const reviewsSnap = await db.collection('reviews').where('doctorId', '==', doctorId).get();
-
-    let total = 0;
-    let count = 0;
-    for (const doc of reviewsSnap.docs) {
-      const rating = Number(doc.data()?.rating);
-      if (Number.isNaN(rating)) continue;
-      total += rating;
-      count += 1;
-    }
-    const avg = count === 0 ? 0 : Number((total / count).toFixed(2));
-
-    await doctorRef.set({
-      rating: avg,
-      reviewCount: count,
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
-  },
-);
-
-/** @deprecated Prefer aggregateDoctorRatingOnReviewWrite — kept temporarily for deploy compatibility. */
-exports.aggregateDoctorRatingOnReviewCreate = onDocumentCreated(
-  { document: 'reviews/{reviewId}', region: FIRESTORE_TRIGGER_REGION },
-  async () => {
-    // No-op: full recompute handled by aggregateDoctorRatingOnReviewWrite.
-  },
-);
-
-/** Keep helpfulCount in sync with vote subcollection writes. */
-exports.syncReviewHelpfulCount = onDocumentWritten(
-  { document: 'reviews/{reviewId}/votes/{voterId}', region: FIRESTORE_TRIGGER_REGION },
-  async (event) => {
-    const reviewRef = event.data.after?.ref.parent.parent;
-    if (!reviewRef) return;
-
-    const db = getFirestore();
-    const votesSnap = await reviewRef.collection('votes').count().get();
-    const count = votesSnap.data().count || 0;
-    await reviewRef.update({ helpfulCount: count });
-    const publicRef = db.collection('review_public').doc(reviewRef.id);
-    const publicSnap = await publicRef.get();
-    if (publicSnap.exists) {
-      await publicRef.update({ helpfulCount: count });
-    }
-  },
-);
 
 /**
  * One-time migration: grant careTeamDoctorIds from historical appointments.
@@ -1794,9 +1277,12 @@ exports.backfillPatientCareTeams = onCall(
 
 exports.createRazorpayOrder = createRazorpayOrder;
 exports.verifyRazorpayPayment = verifyRazorpayPayment;
+exports.reviewPromotedAd = reviewPromotedAd;
 exports.expirePromotedAds = expirePromotedAds;
+exports.razorpayWebhook = razorpayWebhook;
 exports.bookAppointment = bookAppointment;
-exports.reconcileAppointmentSlot = reconcileAppointmentSlot;
+exports.rescheduleAppointment = rescheduleAppointment;
+// Slot reconciliation: Postgres book_appointment_atomic / triggers (no Firestore onDocumentWritten export).
 
 const { sendMsg91Email } = require('./msg91_email');
 
@@ -1804,67 +1290,13 @@ const { sendMsg91Email } = require('./msg91_email');
  * Triggered whenever an email is queued into the `mail` collection in Firestore.
  * Automatically dispatches the email via MSG91 Email API v5.
  */
-exports.processMailQueueMsg91 = onDocumentCreated(
-  {
-    document: 'mail/{mailId}',
-    region: FIRESTORE_TRIGGER_REGION,
-  },
-  async (event) => {
-    const snap = event.data;
-    if (!snap) return;
-    const data = snap.data();
-    const to = Array.isArray(data.to) ? data.to[0] : (data.to || data.toEmail);
-    if (!to) return;
-
-    const templateId = data.templateId ||
-      data.template_id ||
-      (data.type === 'verification_approval' ? process.env.MSG91_TEMPLATE_ID_APPROVAL : null) ||
-      (data.type === 'verification_rejection' ? process.env.MSG91_TEMPLATE_ID_REJECTION : null) ||
-      process.env.MSG91_TEMPLATE_ID ||
-      '';
-
-    const message = data.message || {};
-    const subject = message.subject || data.subject || 'DoctorNect Notification';
-    const html = message.html || data.html || data.body || '';
-
-    const variables = data.variables || {
-      NAME: data.recipientName || 'User',
-      ROLE: data.providerType || 'Provider',
-      REASON: data.rejectionReason || data.reason || '',
-    };
-
-    const result = await sendMsg91Email({
-      toEmail: to,
-      recipientName: data.recipientName || 'User',
-      templateId: templateId || undefined,
-      subject: subject,
-      html: html,
-      variables: variables,
-      fromEmail: data.fromEmail || process.env.MSG91_FROM_EMAIL || 'no-reply@mail.doctornect.com',
-      domain: data.domain || process.env.MSG91_EMAIL_DOMAIN || 'mail.doctornect.com',
-    });
-
-    await snap.ref.set(
-      {
-        delivery: {
-          state: result.success ? 'SUCCESS' : 'ERROR',
-          attempts: 1,
-          endTime: FieldValue.serverTimestamp(),
-          error: result.error || null,
-          msg91Response: result.data || null,
-        },
-      },
-      { merge: true }
-    );
-  }
-);
 
 /** Permanently deletes the caller's Firestore, Storage, and Auth data. */
 exports.deleteMyAccount = onCall(
   {
     region: CALLABLE_REGION,
     enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
-    secrets: [awsAccessKeyId, awsSecretAccessKey],
+    secrets: [awsAccessKeyId, awsSecretAccessKey, supabaseServiceRoleKey],
   },
   protectCallable('deleteMyAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
@@ -1922,169 +1354,50 @@ exports.sendMsg91EmailCallable = onCall(
 }),
 );
 
-// ----------------------------------------------------------------------------
-// CROSS-ROLE STAGED SYNC BRIDGE (Doctor/Firestore -> Patient/Supabase)
-// ----------------------------------------------------------------------------
-const {
-  syncFirestoreAppointmentToSupabase,
-  syncFirestorePrescriptionToSupabase,
-  syncFirestoreDoctorToSupabase,
-  syncFirestoreDoctorAvailabilityToSupabase,
-  syncFirestoreDoctorBlockedDatesToSupabase,
-  syncFirestoreMedicalStoreToSupabase,
-  syncFirestorePharmacyConnectionToSupabase,
-  syncFirestorePharmacyDeliveryToSupabase,
-  syncFirestoreLabToSupabase,
-  syncFirestoreLabCatalogTestToSupabase,
-  syncFirestoreLabBookingToSupabase,
-  syncFirestoreLabOrderToSupabase,
-  syncFirestoreLabConnectionToSupabase,
-  syncFirestoreAmbulanceToSupabase,
-  syncFirestoreAmbulancePrivateSettingsToSupabase,
-  syncFirestoreAmbulanceBroadcastToSupabase,
-  syncFirestoreAmbulanceRequestToSupabase,
-  syncFirestoreAmbulanceInviteToSupabase,
-} = require('./cross_role_sync');
+const { processMailQueue } = require('./mail_dispatcher');
+const { getDatabaseClient } = require('./src/db/client');
 
-const SYNC_SECRETS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+/** Drain public.mail_queue (Postgres-only; replaces Firestore mail/{id} trigger). */
+exports.processMailQueueScheduled = onSchedule(
+  {
+    schedule: 'every 5 minutes',
+    region: CALLABLE_REGION,
+    secrets: [supabaseServiceRoleKey],
+  },
+  async () => {
+    const supabase = getDatabaseClient();
+    await processMailQueue({ supabase });
+  },
+);
 
-exports.syncAppointmentToSupabase = onDocumentWritten({
-  document: 'appointments/{appointmentId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreAppointmentToSupabase);
+const { processNotificationOutboxBatch } = require('./notification_outbox_worker');
 
-exports.syncPrescriptionToSupabase = onDocumentWritten({
-  document: 'prescriptions/{prescriptionId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestorePrescriptionToSupabase);
+/** Poll notification_outbox → FCM (RDS + staging; same path as SQL triggers). */
+exports.processNotificationOutboxScheduled = onSchedule(
+  {
+    schedule: 'every 1 minutes',
+    region: CALLABLE_REGION,
+    secrets: [supabaseServiceRoleKey, ...(OTP_REDIS_MIRROR_ON ? require('./redis').REDIS_SECRETS : [])],
+  },
+  async () => {
+    await processNotificationOutboxBatch();
+  },
+);
 
-// ----------------------------------------------------------------------------
-// AWS S3 STORAGE INTEGRATION (asia-south1, onCall v2)
-// ----------------------------------------------------------------------------
-const {
-  getS3UploadUrl,
-  getS3DownloadUrl,
-  getS3DownloadUrls,
-  deleteS3Object,
-} = require('./s3_storage');
+/** HTTPS webhook: Postgres change events → FCM (see supabase_database_webhook.js). */
+exports.supabaseDatabaseWebhook = onRequest(
+  {
+    region: CALLABLE_REGION,
+    secrets: [supabaseWebhookSecret, supabaseServiceRoleKey],
+  },
+  supabaseDatabaseWebhookHandler,
+);
 
-exports.getS3UploadUrl = getS3UploadUrl;
-exports.getS3DownloadUrl = getS3DownloadUrl;
-exports.getS3DownloadUrls = getS3DownloadUrls;
-exports.deleteS3Object = deleteS3Object;
+// Helpers exported for unit testing
+exports._safeCompareSecrets = safeCompareSecrets;
+exports._isDoctorPatientSupabasePrimary = isDoctorPatientSupabasePrimary;
+exports._resetRemoteConfigCache = _resetRemoteConfigCache;
+exports._setMockRemoteConfigTemplate = _setMockRemoteConfigTemplate;
+exports._supabaseDatabaseWebhookHandler = supabaseDatabaseWebhookHandler;
 
-exports.syncDoctorToSupabase = onDocumentWritten({
-  document: 'doctors/{doctorId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreDoctorToSupabase);
 
-exports.syncDoctorAvailabilityToSupabase = onDocumentWritten({
-  document: 'doctor_availability/{doctorId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreDoctorAvailabilityToSupabase);
-
-exports.syncDoctorBlockedDatesToSupabase = onDocumentWritten({
-  document: 'doctor_blocked_dates/{docId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreDoctorBlockedDatesToSupabase);
-
-exports.syncMedicalStoreToSupabase = onDocumentWritten({
-  document: 'medical_stores/{storeId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreMedicalStoreToSupabase);
-
-exports.syncPharmacyConnectionToSupabase = onDocumentWritten({
-  document: 'pharmacy_connections/{connectionId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestorePharmacyConnectionToSupabase);
-
-exports.syncPharmacyDeliveryToSupabase = onDocumentWritten({
-  document: 'pharmacy_deliveries/{deliveryId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestorePharmacyDeliveryToSupabase);
-
-exports.syncLabToSupabase = onDocumentWritten({
-  document: 'labs/{labId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreLabToSupabase);
-
-exports.syncLabCatalogTestToSupabase = onDocumentWritten({
-  document: 'lab_catalog/{testId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreLabCatalogTestToSupabase);
-
-exports.syncLabBookingToSupabase = onDocumentWritten({
-  document: 'lab_bookings/{bookingId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreLabBookingToSupabase);
-
-exports.syncLabOrderToSupabase = onDocumentWritten({
-  document: 'lab_orders/{orderId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreLabOrderToSupabase);
-
-exports.syncLabConnectionToSupabase = onDocumentWritten({
-  document: 'lab_connections/{connectionId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreLabConnectionToSupabase);
-
-exports.syncAmbulanceToSupabase = onDocumentWritten({
-  document: 'ambulances/{ambulanceId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreAmbulanceToSupabase);
-
-exports.syncAmbulancePrivateSettingsToSupabase = onDocumentWritten({
-  document: 'ambulance_private_settings/{ambulanceId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreAmbulancePrivateSettingsToSupabase);
-
-exports.syncAmbulanceBroadcastToSupabase = onDocumentWritten({
-  document: 'ambulance_broadcasts/{broadcastId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreAmbulanceBroadcastToSupabase);
-
-exports.syncAmbulanceRequestToSupabase = onDocumentWritten({
-  document: 'ambulance_requests/{requestId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreAmbulanceRequestToSupabase);
-
-exports.syncAmbulanceInviteToSupabase = onDocumentWritten({
-  document: 'ambulance_invites/{inviteId}',
-  region: 'asia-south2',
-  retry: true,
-  secrets: SYNC_SECRETS,
-}, syncFirestoreAmbulanceInviteToSupabase);

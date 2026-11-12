@@ -2,8 +2,9 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
+import '../../core/config/ambulance_enabled.dart';
+import '../../core/config/ambulance_entry_points.dart';
 import '../../core/auth/role_session_guard.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/data/shared_appointments_store.dart';
@@ -251,54 +252,76 @@ class PatientShell extends StatefulWidget {
 class _PatientShellState extends State<PatientShell> {
   int _index = 0;
 
-  static final _tabs = [
-    const PatientTabItem(
-      outlinedIcon: Icons.home_outlined,
-      filledIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    const PatientTabItem(
-      outlinedIcon: Icons.event_outlined,
-      filledIcon: Icons.event_rounded,
-      label: 'Appointment',
-      shortLabel: 'Appointment',
-    ),
-    const PatientTabItem(
-      outlinedIcon: TablerIcons.flask,
-      filledIcon: TablerIcons.flask_filled,
-      label: 'My Labs',
-      shortLabel: 'Labs',
-    ),
-    const PatientTabItem(
-      outlinedIcon: TablerIcons.ambulance,
-      filledIcon: TablerIcons.ambulance,
-      label: 'Ambulance',
-    ),
-    PatientTabItem(
-      outlinedIcon: Icons.person_outline_rounded,
-      filledIcon: Icons.person_rounded,
-      label: 'Profile',
-      customIconBuilder: (context, selected, iconColor, size) =>
-          _PatientProfileTabAvatar(
-        selected: selected,
-        iconColor: iconColor,
-        size: size,
-        fallbackIcon:
-            selected ? Icons.person_rounded : Icons.person_outline_rounded,
+  List<PatientTabItem> get _tabs {
+    final base = <PatientTabItem>[
+      const PatientTabItem(
+        outlinedIcon: Icons.home_outlined,
+        filledIcon: Icons.home_rounded,
+        label: 'Home',
       ),
-    ),
-  ];
+      const PatientTabItem(
+        outlinedIcon: Icons.event_outlined,
+        filledIcon: Icons.event_rounded,
+        label: 'Appointment',
+        shortLabel: 'Appointment',
+      ),
+      const PatientTabItem(
+        outlinedIcon: Icons.science_outlined,
+        filledIcon: Icons.science_rounded,
+        label: 'My Labs',
+        shortLabel: 'Labs',
+      ),
+    ];
+    if (AmbulanceEnabled.isOn) {
+      base.add(
+        const PatientTabItem(
+          outlinedIcon: Icons.emergency_rounded,
+          filledIcon: Icons.emergency_rounded,
+          label: 'Ambulance',
+        ),
+      );
+    }
+    base.add(
+      PatientTabItem(
+        outlinedIcon: Icons.person_outline_rounded,
+        filledIcon: Icons.person_rounded,
+        label: 'Profile',
+        customIconBuilder: (context, selected, iconColor, size) =>
+            _PatientProfileTabAvatar(
+          selected: selected,
+          iconColor: iconColor,
+          size: size,
+          fallbackIcon:
+              selected ? Icons.person_rounded : Icons.person_outline_rounded,
+        ),
+      ),
+    );
+    return base;
+  }
 
-  void _selectTab(int index) {
+  final Set<int> _visitedTabs = {0};
+
+  void _selectTab(int logicalIndex) {
     Navigator.of(context).popUntil((route) => route.isFirst);
     if (!mounted) return;
-    setState(() => _index = index);
+    final physical = AmbulanceEntryPoints.mapLogicalPatientTabToPhysical(
+      logicalIndex,
+      context: context,
+      showUnavailableToast: true,
+    );
+    if (physical == null) return;
+    setState(() {
+      _visitedTabs.add(physical);
+      _index = physical;
+    });
   }
 
   @override
   void initState() {
     super.initState();
+    _visitedTabs.add(_index);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!FirebaseBootstrap.isReady) return;
       RoleSessionGuard.verifyRole(context, UserType.patient);
       unawaited(_startPatientNotifications());
     });
@@ -307,9 +330,6 @@ class _PatientShellState extends State<PatientShell> {
   Future<void> _startPatientNotifications() async {
     final patientId = PatientSession.loggedInPatientId;
     final uid = FirebaseAuthService.instance.currentUser?.uid;
-    if (uid != null && uid.isNotEmpty) {
-      await PatientInAppNotificationSync.start(uid);
-    }
     if (patientId.isNotEmpty) {
       PatientNotificationPrefsSync.start(patientId);
     }
@@ -317,7 +337,13 @@ class _PatientShellState extends State<PatientShell> {
     PatientNotificationScheduler.instance.start();
     PatientPushService.onAppointmentPushOpened = _handleAppointmentPushOpen;
     PatientPushService.onPrescriptionPushOpened = _handlePrescriptionPushOpen;
-    await _refreshSessionData();
+
+    await Future.wait([
+      if (uid != null && uid.isNotEmpty)
+        PatientInAppNotificationSync.start(uid),
+      _refreshSessionData(),
+    ]);
+
     if (patientId.isNotEmpty) {
       await PatientPushService.registerPatient(patientId);
       PatientLabBookingWatcher.start(patientId);
@@ -329,11 +355,13 @@ class _PatientShellState extends State<PatientShell> {
   Future<void> _refreshSessionData() async {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isEmpty) return;
-    await SharedAppointmentsStore.instance.refreshForPatient(patientId);
-    await PatientLabBookingStore.instance.refreshForPatient(
-      patientId,
-      preferCache: true,
-    );
+    await Future.wait([
+      SharedAppointmentsStore.instance.refreshForPatient(patientId),
+      PatientLabBookingStore.instance.refreshForPatient(
+        patientId,
+        preferCache: true,
+      ),
+    ]);
   }
 
   void _openFromPushIfNeeded() {
@@ -404,19 +432,40 @@ class _PatientShellState extends State<PatientShell> {
     super.dispose();
   }
 
-  List<Widget> _buildPages() => [
-        PatientHomeScreen(onSelectTab: _selectTab),
-        const PatientAppointmentsScreen(),
-        const MyLabsScreen(embeddedInShell: true),
-        const AmbulanceBookingScreen(
-          bookedByRole: AmbulanceBookedByRole.patient,
-          embeddedInShell: true,
-        ),
-        PatientProfileScreen(
+  Widget _lazyTab(int index) {
+    if (!_visitedTabs.contains(index)) {
+      return const SizedBox.shrink();
+    }
+    switch (index) {
+      case 0:
+        return PatientHomeScreen(onSelectTab: _selectTab);
+      case 1:
+        return const PatientAppointmentsScreen();
+      case 2:
+        return const MyLabsScreen(embeddedInShell: true);
+      case 3:
+        if (AmbulanceEnabled.isOn) {
+          return const AmbulanceBookingScreen(
+            bookedByRole: AmbulanceBookedByRole.patient,
+            embeddedInShell: true,
+          );
+        }
+        return PatientProfileScreen(
           embeddedInShell: true,
           onOpenAppointments: () => _selectTab(1),
-        ),
-      ];
+        );
+      case 4:
+        if (AmbulanceEnabled.isOn) {
+          return PatientProfileScreen(
+            embeddedInShell: true,
+            onOpenAppointments: () => _selectTab(1),
+          );
+        }
+        return const SizedBox.shrink();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -433,13 +482,22 @@ class _PatientShellState extends State<PatientShell> {
               InAppNotificationService.instance.unreadPatientCount > 0;
           // Home tab (index 0) hosts the notification bell — flag it when
           // anything new (appointment, lab, etc.) has been received.
-          final requestDots = [hasUnread, false, false, false, false];
+          final requestDots = List<bool>.generate(
+            _tabs.length,
+            (i) => i == 0 ? hasUnread : false,
+          );
           return PatientAppShell(
             selectedIndex: _index,
-            onDestinationSelected: _selectTab,
+            onDestinationSelected: (i) => setState(() {
+              _visitedTabs.add(i);
+              _index = i;
+            }),
             tabs: _tabs,
             requestDots: requestDots,
-            child: IndexedStack(index: _index, children: _buildPages()),
+            child: IndexedStack(
+              index: _index,
+              children: List.generate(_tabs.length, _lazyTab),
+            ),
           );
         },
       ),

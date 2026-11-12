@@ -213,6 +213,7 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                     DropdownButtonFormField<int>(
                       key: ValueKey(year),
                       initialValue: year,
+                      isExpanded: true,
                       decoration: InputDecoration(
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 12,
@@ -237,6 +238,7 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                               value: y,
                               child: Text(
                                 '$y',
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontFamily: 'Inter',
                                   fontSize: AppTypography.bodyMedium,

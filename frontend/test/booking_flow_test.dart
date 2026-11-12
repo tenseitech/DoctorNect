@@ -1,4 +1,4 @@
-import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/repositories/doctor_availability_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
@@ -128,7 +128,7 @@ void main() {
 
     test('weekly off returns reason', () {
       final saturday = DateTime(2026, 8, 1);
-      final reason = FirestoreService.instance.doctorAvailability
+      final reason = DoctorAvailabilityRepository.instance
           .unavailabilityReason(schedule, saturday);
       expect(reason, contains('weekly off'));
     });
@@ -136,7 +136,7 @@ void main() {
     test('blocked date returns holiday reason', () {
       final blockedDay = DateTime(2026, 8, 4);
       final custom = schedule.copyWith(blockedDates: {blockedDay});
-      final reason = FirestoreService.instance.doctorAvailability
+      final reason = DoctorAvailabilityRepository.instance
           .unavailabilityReason(custom, blockedDay);
       expect(reason, contains('holiday'));
     });
@@ -147,21 +147,21 @@ void main() {
         leaveStart: DateTime(2026, 8, 4),
         leaveEnd: DateTime(2026, 8, 6),
       );
-      final reason = FirestoreService.instance.doctorAvailability
+      final reason = DoctorAvailabilityRepository.instance
           .unavailabilityReason(custom, leaveDay);
       expect(reason, contains('leave'));
     });
 
     test('bookable weekday has no reason', () {
       expect(
-        FirestoreService.instance.doctorAvailability.unavailabilityReason(
+        DoctorAvailabilityRepository.instance.unavailabilityReason(
           schedule,
           kBookingTestMonday,
         ),
         isNull,
       );
       expect(
-        FirestoreService.instance.doctorAvailability.isUnavailableDay(
+        DoctorAvailabilityRepository.instance.isUnavailableDay(
           schedule,
           kBookingTestMonday,
         ),
@@ -170,7 +170,7 @@ void main() {
     });
   });
 
-  group('FirestoreService.instance.doctorAvailability.normalizeTimeLabel', () {
+  group('DoctorAvailabilityRepository.instance.normalizeTimeLabel', () {
     test('parse and format is idempotent for slot keys', () {
       final normalized = DoctorAvailabilityRepository.normalizeTimeLabel(
         '10:00 AM',
@@ -187,10 +187,10 @@ void main() {
     });
   });
 
-  group('FirestoreService.instance.doctorAvailability.slotsForDate', () {
+  group('DoctorAvailabilityRepository.instance.slotsForDate', () {
     test('generates morning and evening slots on a working day', () async {
       final slots =
-          await FirestoreService.instance.doctorAvailability.slotsForDate(
+          await DoctorAvailabilityRepository.instance.slotsForDate(
         doctorId: 'doc_test',
         date: kBookingTestMonday,
         existingAppointments: const [],
@@ -220,7 +220,7 @@ void main() {
       );
 
       final slots =
-          await FirestoreService.instance.doctorAvailability.slotsForDate(
+          await DoctorAvailabilityRepository.instance.slotsForDate(
         doctorId: 'doc_test',
         date: kBookingTestMonday,
         existingAppointments: existing,
@@ -243,7 +243,7 @@ void main() {
       final existing = [bookingRecord(id: 'rec1', slotLabel: '10:00 AM')];
 
       final slots =
-          await FirestoreService.instance.doctorAvailability.slotsForDate(
+          await DoctorAvailabilityRepository.instance.slotsForDate(
         doctorId: 'doc_test',
         date: kBookingTestMonday,
         existingAppointments: existing,
@@ -264,7 +264,7 @@ void main() {
 
     test('returns empty list on weekly off', () async {
       final slots =
-          await FirestoreService.instance.doctorAvailability.slotsForDate(
+          await DoctorAvailabilityRepository.instance.slotsForDate(
         doctorId: 'doc_test',
         date: DateTime(2026, 8, 1),
         existingAppointments: const [],
@@ -414,6 +414,46 @@ void main() {
         expect(id.length, greaterThan(10));
       }
       expect(BookingFlowHelpers.isLegacyAppointmentId('APT12345'), isTrue);
+    });
+  });
+
+  group('resolvePatientId', () {
+    test('rejects empty and pat-default placeholders', () {
+      expect(
+        BookingFlowHelpers.resolvePatientId(sessionPatientId: ''),
+        isNull,
+      );
+      expect(
+        BookingFlowHelpers.resolvePatientId(sessionPatientId: 'pat-default'),
+        isNull,
+      );
+      expect(
+        BookingFlowHelpers.resolvePatientId(
+          sessionPatientId: '  pat-default  ',
+        ),
+        isNull,
+      );
+    });
+
+    test('prefers a real appointment patient id over session fallback', () {
+      expect(
+        BookingFlowHelpers.resolvePatientId(
+          sessionPatientId: 'pat_session',
+          appointmentPatientId: 'pat_from_record',
+        ),
+        'pat_from_record',
+      );
+      expect(
+        BookingFlowHelpers.resolvePatientId(
+          sessionPatientId: 'pat_session',
+          appointmentPatientId: 'pat-default',
+        ),
+        'pat_session',
+      );
+      expect(
+        BookingFlowHelpers.resolvePatientId(sessionPatientId: 'pat_123'),
+        'pat_123',
+      );
     });
   });
 }

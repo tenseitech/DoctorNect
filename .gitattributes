@@ -1,0 +1,5 @@
+* text=auto
+*.dart text eol=lf
+frontend/lib/** text eol=lf
+db/migrations/*.sql text eol=lf
+db/rds_bootstrap/*.sql text eol=lf

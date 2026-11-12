@@ -1,11 +1,10 @@
-import 'package:medibond/core/firebase/firestore_service.dart';
-
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
 import '../../features/doctor/profile/data/doctor_profile_store.dart';
 import '../../features/patient/profile/data/patient_profile_mock.dart';
+import '../supabase/in_app_notification_supabase_repository.dart';
 import '../session/doctor_session.dart';
 import '../session/patient_session.dart';
 import 'app_notification.dart';
@@ -35,11 +34,14 @@ class InAppNotificationService extends ChangeNotifier {
 
   final Set<String> _patientReadKeys = {};
 
-  final Set<String> _doctorFirestoreIds = {};
+  final Set<String> _doctorRemoteIds = {};
 
-  final Set<String> _patientFirestoreIds = {};
+  final Set<String> _patientRemoteIds = {};
 
-  List<AppNotification>? _lastPatientFirestoreSnapshot;
+  List<AppNotification>? _lastPatientRemoteSnapshot;
+
+  /// Set when a Supabase read/write for the inbox fails (e.g. mark read). Cleared on success.
+  Object? lastRemoteError;
 
   NotificationListener? onDoctorNotificationArrived;
 
@@ -52,9 +54,10 @@ class InAppNotificationService extends ChangeNotifier {
     _patientDedupeKeys.clear();
     _doctorReadKeys.clear();
     _patientReadKeys.clear();
-    _doctorFirestoreIds.clear();
-    _patientFirestoreIds.clear();
-    _lastPatientFirestoreSnapshot = null;
+    _doctorRemoteIds.clear();
+    _patientRemoteIds.clear();
+    _lastPatientRemoteSnapshot = null;
+    lastRemoteError = null;
     notifyListeners();
   }
 
@@ -86,24 +89,25 @@ class InAppNotificationService extends ChangeNotifier {
     _patientDedupeKeys.clear();
     _doctorReadKeys.clear();
     _patientReadKeys.clear();
-    _doctorFirestoreIds.clear();
-    _patientFirestoreIds.clear();
-    _lastPatientFirestoreSnapshot = null;
+    _doctorRemoteIds.clear();
+    _patientRemoteIds.clear();
+    _lastPatientRemoteSnapshot = null;
+    lastRemoteError = null;
     notifyListeners();
   }
 
   /// Re-evaluates patient inbox items when notification preferences change.
   void onPatientNotificationPrefsChanged() {
-    if (_lastPatientFirestoreSnapshot != null) {
-      mergePatientFirestoreNotifications(
-        List<AppNotification>.from(_lastPatientFirestoreSnapshot!),
+    if (_lastPatientRemoteSnapshot != null) {
+      mergePatientRemoteNotifications(
+        List<AppNotification>.from(_lastPatientRemoteSnapshot!),
       );
     }
     refilterPatientLocalInbox();
   }
 
-  void rememberPatientFirestoreSnapshot(List<AppNotification> snapshot) {
-    _lastPatientFirestoreSnapshot = List<AppNotification>.from(snapshot);
+  void rememberPatientRemoteSnapshot(List<AppNotification> snapshot) {
+    _lastPatientRemoteSnapshot = List<AppNotification>.from(snapshot);
   }
 
   /// Removes local-only patient notifications disallowed by current prefs.
@@ -111,7 +115,7 @@ class InAppNotificationService extends ChangeNotifier {
     var changed = false;
     for (var i = _patient.length - 1; i >= 0; i--) {
       final notification = _patient[i];
-      if (_patientFirestoreIds.contains(notification.id)) continue;
+      if (_patientRemoteIds.contains(notification.id)) continue;
       if (_shouldHidePatientNotification(notification)) {
         _patient.removeAt(i);
         _patientDedupeKeys.remove(_storageKey(notification));
@@ -290,23 +294,23 @@ class InAppNotificationService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Replaces Firestore-backed doctor inbox items with the latest remote snapshot.
-  void mergeDoctorFirestoreNotifications(List<AppNotification> fromFirestore) {
-    for (final id in _doctorFirestoreIds) {
+  /// Replaces server-backed doctor inbox items (Supabase) with the latest snapshot.
+  void mergeDoctorRemoteNotifications(List<AppNotification> fromRemote) {
+    for (final id in _doctorRemoteIds) {
       final index = _doctor.indexWhere((n) => n.id == id);
       if (index < 0) continue;
       final removed = _doctor.removeAt(index);
       _doctorDedupeKeys.remove(_storageKey(removed));
     }
-    _doctorFirestoreIds.clear();
+    _doctorRemoteIds.clear();
 
-    for (final notification in fromFirestore) {
+    for (final notification in fromRemote) {
       if (notification.doctorTrigger != null &&
           !_allowsDoctor(notification.doctorTrigger!)) {
         continue;
       }
 
-      _doctorFirestoreIds.add(notification.id);
+      _doctorRemoteIds.add(notification.id);
       _doctorDedupeKeys.add(_storageKey(notification));
       _doctor.add(notification);
     }
@@ -315,26 +319,34 @@ class InAppNotificationService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Replaces Firestore-backed patient inbox items with the latest remote snapshot.
-  void mergePatientFirestoreNotifications(List<AppNotification> fromFirestore) {
-    rememberPatientFirestoreSnapshot(fromFirestore);
+  @Deprecated('Use mergePatientRemoteNotifications')
+  void mergePatientFirestoreNotifications(List<AppNotification> n) =>
+      mergePatientRemoteNotifications(n);
 
-    for (final id in _patientFirestoreIds) {
+  @Deprecated('Use mergeDoctorRemoteNotifications')
+  void mergeDoctorFirestoreNotifications(List<AppNotification> n) =>
+      mergeDoctorRemoteNotifications(n);
+
+  /// Replaces server-backed patient inbox items with the latest remote snapshot.
+  void mergePatientRemoteNotifications(List<AppNotification> fromRemote) {
+    rememberPatientRemoteSnapshot(fromRemote);
+
+    for (final id in _patientRemoteIds) {
       final index = _patient.indexWhere((n) => n.id == id);
       if (index < 0) continue;
       final removed = _patient.removeAt(index);
       _patientDedupeKeys.remove(_storageKey(removed));
     }
-    _patientFirestoreIds.clear();
+    _patientRemoteIds.clear();
 
-    for (final notification in fromFirestore) {
+    for (final notification in fromRemote) {
       if (_isPrescriptionExpiringAlert(notification)) continue;
       if (notification.patientTrigger != null &&
           !_allowsPatient(notification.patientTrigger!)) {
         continue;
       }
 
-      _patientFirestoreIds.add(notification.id);
+      _patientRemoteIds.add(notification.id);
       _patientDedupeKeys.add(_storageKey(notification));
       _patient.add(notification);
     }
@@ -378,7 +390,7 @@ class InAppNotificationService extends ChangeNotifier {
         _doctor.where((n) => !n.isRead && _storageKey(n) == readKey).toList();
     if (matching.isEmpty) return;
 
-    final firestoreUnreadIds = <String>[];
+    final remoteUnreadIds = <String>[];
     final updatedMatching = <AppNotification>[];
 
     for (final notification in matching) {
@@ -387,19 +399,27 @@ class InAppNotificationService extends ChangeNotifier {
       final updated = _doctor[i].copyWith(isRead: true);
       _doctor[i] = updated;
       updatedMatching.add(updated);
-      if (_doctorFirestoreIds.contains(updated.id)) {
-        firestoreUnreadIds.add(updated.id);
+      if (_doctorRemoteIds.contains(updated.id)) {
+        remoteUnreadIds.add(updated.id);
       }
     }
 
-    if (firestoreUnreadIds.length == 1) {
-      await FirestoreService.instance.inAppNotification.markRead(
-        firestoreUnreadIds.first,
-      );
-    } else if (firestoreUnreadIds.isNotEmpty) {
-      await FirestoreService.instance.inAppNotification.markAllRead(
-        firestoreUnreadIds,
-      );
+    lastRemoteError = null;
+    try {
+      if (remoteUnreadIds.length == 1) {
+        await InAppNotificationSupabaseRepository.instance
+            .markRead(remoteUnreadIds.first);
+      } else if (remoteUnreadIds.isNotEmpty) {
+        await InAppNotificationSupabaseRepository.instance
+            .markAllRead(remoteUnreadIds);
+      }
+    } catch (e, st) {
+      lastRemoteError = e;
+      notifyListeners();
+      if (kDebugMode) {
+        debugPrint('markDoctorRead Supabase failed: $e\n$st');
+      }
+      rethrow;
     }
     if (updatedMatching.isNotEmpty) {
       await _persistAllRead(NotificationAudience.doctor, updatedMatching);
@@ -410,7 +430,7 @@ class InAppNotificationService extends ChangeNotifier {
 
   Future<void> markAllDoctorRead() async {
     var changed = false;
-    final firestoreUnreadIds = <String>[];
+    final remoteUnreadIds = <String>[];
     final updatedUnread = <AppNotification>[];
 
     for (var i = 0; i < _doctor.length; i++) {
@@ -419,17 +439,26 @@ class InAppNotificationService extends ChangeNotifier {
       _doctor[i] = updated;
       changed = true;
       updatedUnread.add(updated);
-      if (_doctorFirestoreIds.contains(updated.id)) {
-        firestoreUnreadIds.add(updated.id);
+      if (_doctorRemoteIds.contains(updated.id)) {
+        remoteUnreadIds.add(updated.id);
       }
     }
 
     if (!changed) return;
 
-    if (firestoreUnreadIds.isNotEmpty) {
-      await FirestoreService.instance.inAppNotification.markAllRead(
-        firestoreUnreadIds,
-      );
+    lastRemoteError = null;
+    try {
+      if (remoteUnreadIds.isNotEmpty) {
+        await InAppNotificationSupabaseRepository.instance
+            .markAllRead(remoteUnreadIds);
+      }
+    } catch (e, st) {
+      lastRemoteError = e;
+      notifyListeners();
+      if (kDebugMode) {
+        debugPrint('markAllDoctorRead Supabase failed: $e\n$st');
+      }
+      rethrow;
     }
     if (updatedUnread.isNotEmpty) {
       await _persistAllRead(NotificationAudience.doctor, updatedUnread);
@@ -446,7 +475,7 @@ class InAppNotificationService extends ChangeNotifier {
         _patient.where((n) => !n.isRead && _storageKey(n) == readKey).toList();
     if (matching.isEmpty) return;
 
-    final firestoreUnreadIds = <String>[];
+    final remoteUnreadIds = <String>[];
     final updatedMatching = <AppNotification>[];
 
     for (final notification in matching) {
@@ -455,19 +484,27 @@ class InAppNotificationService extends ChangeNotifier {
       final updated = _patient[i].copyWith(isRead: true);
       _patient[i] = updated;
       updatedMatching.add(updated);
-      if (_patientFirestoreIds.contains(updated.id)) {
-        firestoreUnreadIds.add(updated.id);
+      if (_patientRemoteIds.contains(updated.id)) {
+        remoteUnreadIds.add(updated.id);
       }
     }
 
-    if (firestoreUnreadIds.length == 1) {
-      await FirestoreService.instance.inAppNotification.markRead(
-        firestoreUnreadIds.first,
-      );
-    } else if (firestoreUnreadIds.isNotEmpty) {
-      await FirestoreService.instance.inAppNotification.markAllRead(
-        firestoreUnreadIds,
-      );
+    lastRemoteError = null;
+    try {
+      if (remoteUnreadIds.length == 1) {
+        await InAppNotificationSupabaseRepository.instance
+            .markRead(remoteUnreadIds.first);
+      } else if (remoteUnreadIds.isNotEmpty) {
+        await InAppNotificationSupabaseRepository.instance
+            .markAllRead(remoteUnreadIds);
+      }
+    } catch (e, st) {
+      lastRemoteError = e;
+      notifyListeners();
+      if (kDebugMode) {
+        debugPrint('markPatientRead Supabase failed: $e\n$st');
+      }
+      rethrow;
     }
     if (updatedMatching.isNotEmpty) {
       await _persistAllRead(NotificationAudience.patient, updatedMatching);
@@ -478,7 +515,7 @@ class InAppNotificationService extends ChangeNotifier {
 
   Future<void> markAllPatientRead() async {
     var changed = false;
-    final firestoreUnreadIds = <String>[];
+    final remoteUnreadIds = <String>[];
     final updatedUnread = <AppNotification>[];
 
     for (var i = 0; i < _patient.length; i++) {
@@ -487,17 +524,26 @@ class InAppNotificationService extends ChangeNotifier {
       _patient[i] = updated;
       changed = true;
       updatedUnread.add(updated);
-      if (_patientFirestoreIds.contains(updated.id)) {
-        firestoreUnreadIds.add(updated.id);
+      if (_patientRemoteIds.contains(updated.id)) {
+        remoteUnreadIds.add(updated.id);
       }
     }
 
     if (!changed) return;
 
-    if (firestoreUnreadIds.isNotEmpty) {
-      await FirestoreService.instance.inAppNotification.markAllRead(
-        firestoreUnreadIds,
-      );
+    lastRemoteError = null;
+    try {
+      if (remoteUnreadIds.isNotEmpty) {
+        await InAppNotificationSupabaseRepository.instance
+            .markAllRead(remoteUnreadIds);
+      }
+    } catch (e, st) {
+      lastRemoteError = e;
+      notifyListeners();
+      if (kDebugMode) {
+        debugPrint('markAllPatientRead Supabase failed: $e\n$st');
+      }
+      rethrow;
     }
     if (updatedUnread.isNotEmpty) {
       await _persistAllRead(NotificationAudience.patient, updatedUnread);

@@ -1,4 +1,5 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/config/doctor_patient_cutover_flag.dart';
+import '../../../core/firebase/repositories/doctor_directory_repository.dart';
 
 import 'dart:async';
 
@@ -65,8 +66,8 @@ class RegisteredDoctorsStore extends ChangeNotifier {
   void _attachStream() {
     if (_streamActive) return;
 
-    if (!FirebaseBootstrap.isReady) {
-      // Firebase not initialised yet — retry after a short delay.
+    if (!FirebaseBootstrap.isReady && !DoctorPatientCutoverFlag.isEnabled) {
+      // Legacy Firestore path only: retry after Firebase init.
       Future.delayed(const Duration(seconds: 2), () {
         if (_listenerCount > 0 && !_streamActive) {
           _attachStream();
@@ -92,7 +93,7 @@ class RegisteredDoctorsStore extends ChangeNotifier {
     _streamSub?.cancel();
     _streamActive = true;
 
-    _streamSub = FirestoreService.instance.doctorDirectory
+    _streamSub = DoctorDirectoryRepository.instance
         .streamAllDoctors(verifiedOnly: true)
         .listen(
       (doctors) {
@@ -134,7 +135,7 @@ class RegisteredDoctorsStore extends ChangeNotifier {
   /// One-time fetch fallback (also used as initial fast-path).
   Future<void> refreshFromFirestore({bool verifiedOnly = true}) async {
     try {
-      final doctors = await FirestoreService.instance.doctorDirectory
+      final doctors = await DoctorDirectoryRepository.instance
           .fetchAllDoctors(verifiedOnly: verifiedOnly);
       if (doctors.isNotEmpty) {
         _registered

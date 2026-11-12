@@ -177,45 +177,6 @@ class AboutScreen extends StatelessWidget {
                     context: context,
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: const Icon(
-                        Icons.chat_outlined,
-                        color: Color(0xFF25D366),
-                      ),
-                      title: Text('WhatsApp Support'),
-                      subtitle: Text(PatientProfileMock.supportWhatsApp),
-                      trailing: Icon(
-                        Icons.chevron_right,
-                        color: AppColors.textSecondaryOf(context),
-                      ),
-                      onTap: () => ExternalLauncher.shareViaWhatsApp(
-                        text:
-                            'Hello DoctorNect Support, I have a query about the app.',
-                        phone: PatientProfileMock.supportWhatsApp,
-                        context: context,
-                      ),
-                    ),
-                  ),
-                  PatientProfileFormStyles.settingsRowCard(
-                    context: context,
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.phone_outlined, color: accentColor),
-                      title: Text('Call Helpline'),
-                      subtitle: Text(PatientProfileMock.supportPhone),
-                      trailing: Icon(
-                        Icons.chevron_right,
-                        color: AppColors.textSecondaryOf(context),
-                      ),
-                      onTap: () => ExternalLauncher.callPhone(
-                        PatientProfileMock.supportPhone,
-                        context: context,
-                      ),
-                    ),
-                  ),
-                  PatientProfileFormStyles.settingsRowCard(
-                    context: context,
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
                       leading: Icon(
                         Icons.language_outlined,
                         color: accentColor,

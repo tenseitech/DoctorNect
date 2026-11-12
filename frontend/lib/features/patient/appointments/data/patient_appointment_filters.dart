@@ -5,7 +5,7 @@ abstract final class PatientAppointmentFilters {
   static List<PatientAppointment> upcoming(List<PatientAppointment> all) => all
       .where(
         (a) =>
-            a.cancellationReason == null &&
+            !a.isCancelled &&
             a.dateTime.isAfter(
               DateTime.now().subtract(const Duration(hours: 1)),
             ),
@@ -16,7 +16,7 @@ abstract final class PatientAppointmentFilters {
   static List<PatientAppointment> completed(List<PatientAppointment> all) => all
       .where(
         (a) =>
-            a.cancellationReason == null &&
+            !a.isCancelled &&
             a.dateTime.isBefore(
               DateTime.now().subtract(const Duration(hours: 1)),
             ),
@@ -25,6 +25,6 @@ abstract final class PatientAppointmentFilters {
     ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
 
   static List<PatientAppointment> cancelled(List<PatientAppointment> all) =>
-      all.where((a) => a.cancellationReason != null).toList()
+      all.where((a) => a.isCancelled).toList()
         ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
 }

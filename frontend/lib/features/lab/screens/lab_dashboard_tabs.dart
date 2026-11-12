@@ -1,8 +1,8 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/lab_booking_repository.dart';
+import '../../../core/firebase/repositories/lab_order_repository.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/auth/profile_action_guard.dart';
@@ -144,7 +144,7 @@ class _LabOrdersTabState extends State<LabOrdersTab>
         // Update all linked booking docs in Firestore
         await Future.wait(
           allIds.map(
-            (id) => FirestoreService.instance.labBooking.updateBookingStatus(
+            (id) => LabBookingRepository.instance.updateBookingStatus(
               id,
               status,
             ),
@@ -155,7 +155,7 @@ class _LabOrdersTabState extends State<LabOrdersTab>
           status,
         );
       } else {
-        await FirestoreService.instance.labOrder.updateOrderStatus(
+        await LabOrderRepository.instance.updateOrderStatus(
           order.orderId,
           status,
         );
@@ -173,12 +173,12 @@ class _LabOrdersTabState extends State<LabOrdersTab>
   Future<void> _refreshAll() async {
     final labId = LabSession.loggedInLabId;
     if (labId.isEmpty) return;
-    final page = await FirestoreService.instance.labOrder.fetchForLab(
+    final page = await LabOrderRepository.instance.fetchForLab(
       labId,
       preferCache: false,
     );
     LabWorklistStore.instance.mergeOrders(page.items);
-    final bookings = await FirestoreService.instance.labBooking.fetchForLab(
+    final bookings = await LabBookingRepository.instance.fetchForLab(
       labId,
     );
     LabWorklistStore.instance.mergeBookings(bookings);
@@ -353,7 +353,7 @@ class _LabDayStatsHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                _buildStatBadge(TablerIcons.flask, '$newCount New'),
+                _buildStatBadge(Icons.science_outlined, '$newCount New'),
                 const SizedBox(width: 8),
                 _buildStatBadge(Icons.check_circle_outline, '$doneCount Done'),
                 const Spacer(),
@@ -502,7 +502,7 @@ class _LabDayStatsHeader extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildStatBadge(TablerIcons.flask, '$newCount New'),
+                    _buildStatBadge(Icons.science_outlined, '$newCount New'),
                     const SizedBox(width: 8),
                     _buildStatBadge(
                       Icons.check_circle_outline,

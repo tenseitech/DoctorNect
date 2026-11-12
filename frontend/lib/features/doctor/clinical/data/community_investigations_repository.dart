@@ -1,3 +1,7 @@
+import '../../../../core/config/doctor_patient_cutover_flag.dart';
+import '../../../../core/firebase/firestore_client.dart';
+import '../../../../core/config/firestore_forbidden_guard.dart';
+import '../../../../core/supabase/supabase_bootstrap.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -66,6 +70,49 @@ class CommunityInvestigationsRepository {
       List.unmodifiable(_bodyPartCache);
 
   Future<void> fetchAll() async {
+    final bool useSupabase = DoctorPatientCutoverFlag.isEnabled ||
+        FirestoreForbiddenGuard.isForbidden;
+    if (useSupabase) {
+      if (SupabaseBootstrap.isReady) {
+        try {
+          final results = await Future.wait([
+            SupabaseBootstrap.client.from('community_lab_tests').select('id, name, group_name, added_by_doctor_id').order('name', ascending: true).limit(_fetchLimit),
+            SupabaseBootstrap.client.from('community_radiology').select('id, name, group_name, added_by_doctor_id').order('name', ascending: true).limit(_fetchLimit),
+            SupabaseBootstrap.client.from('community_body_parts').select('id, name, added_by_doctor_id').order('name', ascending: true).limit(_fetchLimit),
+          ]);
+          _labCache
+            ..clear()
+            ..addAll((results[0] as List).map((row) => CommunityLabTest(
+                  id: row['id']?.toString() ?? '',
+                  name: row['name']?.toString() ?? '',
+                  group: row['group_name']?.toString() ?? '',
+                  addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
+                )));
+          _radiologyCache
+            ..clear()
+            ..addAll((results[1] as List).map((row) => CommunityRadiologyTest(
+                  id: row['id']?.toString() ?? '',
+                  name: row['name']?.toString() ?? '',
+                  group: row['group_name']?.toString() ?? '',
+                  addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
+                )));
+          _bodyPartCache
+            ..clear()
+            ..addAll((results[2] as List).map((row) => CommunityBodyPart(
+                  id: row['id']?.toString() ?? '',
+                  name: row['name']?.toString() ?? '',
+                  addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
+                )));
+          return;
+        } catch (e, st) {
+          if (kDebugMode) {
+            debugPrint('CommunityInvestigationsRepository.fetchAll Supabase failed: $e\n$st');
+          }
+        }
+      }
+      return;
+    }
+
     if (!FirebaseBootstrap.isReady) return;
     await Future.wait([
       _fetchLabTests(),
@@ -76,7 +123,7 @@ class CommunityInvestigationsRepository {
 
   Future<void> _fetchLabTests() async {
     try {
-      final query = FirebaseFirestore.instance
+      final query = FirestoreClient.instance
           .collection(FirestorePaths.communityLabTests)
           .orderBy('name')
           .limit(_fetchLimit);
@@ -98,7 +145,7 @@ class CommunityInvestigationsRepository {
 
   Future<void> _fetchRadiologyTests() async {
     try {
-      final query = FirebaseFirestore.instance
+      final query = FirestoreClient.instance
           .collection(FirestorePaths.communityRadiology)
           .orderBy('name')
           .limit(_fetchLimit);
@@ -120,7 +167,7 @@ class CommunityInvestigationsRepository {
 
   Future<void> _fetchBodyParts() async {
     try {
-      final query = FirebaseFirestore.instance
+      final query = FirestoreClient.instance
           .collection(FirestorePaths.communityBodyParts)
           .orderBy('name')
           .limit(_fetchLimit);
@@ -206,7 +253,7 @@ class CommunityInvestigationsRepository {
       throw StateError('Internet is required to add a community lab test.');
     }
 
-    final docRef = await FirebaseFirestore.instance
+    final docRef = await FirestoreClient.instance
         .collection(FirestorePaths.communityLabTests)
         .add({
       'name': trimmed,
@@ -245,7 +292,7 @@ class CommunityInvestigationsRepository {
       );
     }
 
-    final docRef = await FirebaseFirestore.instance
+    final docRef = await FirestoreClient.instance
         .collection(FirestorePaths.communityRadiology)
         .add({
       'name': trimmed,
@@ -281,7 +328,7 @@ class CommunityInvestigationsRepository {
       throw StateError('Internet is required to add a community body part.');
     }
 
-    final doc = await FirebaseFirestore.instance
+    final doc = await FirestoreClient.instance
         .collection(FirestorePaths.communityBodyParts)
         .add({
       'name': trimmed,

@@ -1,9 +1,8 @@
-import '../../core/firebase/firestore_service.dart';
+import '../../core/firebase/repositories/ambulance_repository.dart';
 
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,15 +11,14 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
-import '../../core/constants/ambulance_icons.dart';
-import '../../core/firebase/firebase_bootstrap.dart';
-import '../../core/firebase/firestore_paths.dart';
+import '../../core/supabase/supabase_bootstrap.dart';
+import '../../core/supabase/supabase_stream_table.dart';
 import '../../core/layout/responsive_layout.dart';
-import '../../core/location/location_match.dart';
 import '../../core/notifications/ambulance_notification_emitter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/external_launcher.dart';
 import '../../core/constants/country_phone_codes.dart';
+import '../../core/constants/ambulance_icons.dart';
 import '../../core/validators/form_validators.dart';
 import '../../widgets/phone_number_field.dart';
 import '../../core/auth/patient_details_guard.dart';
@@ -46,6 +44,22 @@ class AmbulanceBookingScreen extends StatefulWidget {
   final String? initialContactPhone;
   final bool embeddedInShell;
 
+  @visibleForTesting
+  static Stream<List<Map<String, dynamic>>> watchRejectedRequestsStream(String broadcastId) {
+    return SupabaseBootstrap.isProduction
+        ? streamTable(
+            table: 'ambulance_requests',
+            primaryKey: ['request_id'],
+            filterColumn: 'broadcast_id',
+            filterValue: broadcastId,
+            isHighFrequency: true,
+          )
+        : SupabaseBootstrap.client
+            .from('ambulance_requests')
+            .stream(primaryKey: ['request_id'])
+            .eq('broadcast_id', broadcastId);
+  }
+
   @override
   State<AmbulanceBookingScreen> createState() => _AmbulanceBookingScreenState();
 }
@@ -57,7 +71,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
   final _dropController = TextEditingController();
   final _phoneController = TextEditingController();
   final _store = AmbulanceStore.instance;
-  final _repository = FirestoreService.instance.ambulance;
+  final _repository = AmbulanceRepository.instance;
   final _sync = AmbulanceBookingSync.instance;
 
   bool _submitting = false;
@@ -254,16 +268,18 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
           ? null
           : PatientProfileMock.profileCity.trim();
     } else if (widget.bookedByRole == AmbulanceBookedByRole.doctor) {
-      if (!FirebaseBootstrap.isReady) return null;
-      try {
-        final doc = await FirebaseFirestore.instance
-            .collection(FirestorePaths.doctors)
-            .doc(bookerId)
-            .get();
-        if (doc.exists && doc.data() != null) {
-          return readNestedAddressCity(doc.data()!);
-        }
-      } catch (_) {}
+      if (SupabaseBootstrap.isReady) {
+        try {
+          final res = await SupabaseBootstrap.client
+              .from('doctors')
+              .select('city')
+              .eq('doctor_id', bookerId)
+              .maybeSingle();
+          if (res != null && res['city'] != null) {
+            return res['city'].toString();
+          }
+        } catch (_) {}
+      }
     }
     return null;
   }
@@ -2007,7 +2023,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
   bool _loadingDetails = false;
   int _rejectedCount = 0;
   int _totalNotified = 0;
-  StreamSubscription<QuerySnapshot>? _rejectedSub;
+  StreamSubscription? _rejectedSub;
 
   AmbulanceBooking get booking => widget.booking;
 
@@ -2019,25 +2035,22 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
   }
 
   void _subscribeRejectedCount() {
-    if (!FirebaseBootstrap.isReady) return;
     final broadcastId = booking.id;
     if (broadcastId.isEmpty) return;
     _rejectedSub?.cancel();
-    _rejectedSub = FirebaseFirestore.instance
-        .collection(FirestorePaths.ambulanceRequests)
-        .where('broadcastId', isEqualTo: broadcastId)
-        .snapshots()
-        .listen((snap) {
-      if (!mounted) return;
-      final total = snap.docs.length;
-      final rejected = snap.docs
-          .where((d) => (d.data()['status'] as String?) == 'rejected')
-          .length;
-      setState(() {
-        _totalNotified = total;
-        _rejectedCount = rejected;
+    if (SupabaseBootstrap.isReady) {
+      final stream = AmbulanceBookingScreen.watchRejectedRequestsStream(broadcastId);
+
+      _rejectedSub = stream.listen((rows) {
+        if (!mounted) return;
+        final total = rows.length;
+        final rejected = rows.where((r) => r['status'] == 'rejected').length;
+        setState(() {
+          _totalNotified = total;
+          _rejectedCount = rejected;
+        });
       });
-    });
+    }
   }
 
   @override
@@ -2077,7 +2090,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
     if (driverId == null || driverId.isEmpty) return;
 
     setState(() => _loadingDetails = true);
-    final amb = await FirestoreService.instance.ambulance.fetchAmbulanceById(
+    final amb = await AmbulanceRepository.instance.fetchAmbulanceById(
       driverId,
     );
     if (!mounted) return;
@@ -2186,7 +2199,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                   widget.onDismiss != null)
                 GestureDetector(
                   onTap: () {
-                    FirestoreService.instance.ambulance.rateBroadcast(
+                    AmbulanceRepository.instance.rateBroadcast(
                       broadcastId: booking.id,
                       stars: -1,
                     );

@@ -1,0 +1,47 @@
+--- 20261021000002_phase_d_pharmacy_lab_ambulance.sql	(update_lab_booking_status)
++++ 20261026000001_rpc_null_safe_authz.sql	(update_lab_booking_status)
+@@ -16,5 +16,9 @@
+     v_is_patient BOOLEAN;
+     v_is_admin BOOLEAN;
+ BEGIN
++    v_caller_uid := NULLIF(COALESCE(
++        auth.jwt() ->> 'sub',
++        auth.jwt() ->> 'uid',
++        current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
++    ), '');
+-    v_caller_uid := auth.jwt() ->> 'sub';
+     IF v_caller_uid IS NULL THEN
+@@ -22,5 +26,9 @@
+     END IF;
+ 
+     v_profile_id := private.current_profile_id();
++    v_is_admin := COALESCE(private.is_super_admin(), FALSE);
++
++    IF v_profile_id IS NULL AND NOT v_is_admin THEN
++        RAISE EXCEPTION 'FORBIDDEN: Caller has no registered profile.' USING ERRCODE = '42501';
++    END IF;
+-    v_is_admin := private.is_super_admin();
+ 
+@@ -33,12 +41,12 @@
+         RAISE EXCEPTION 'Lab booking % not found', p_booking_id USING ERRCODE = 'P0002';
+     END IF;
+ 
++    v_is_lab := (v_booking.lab_id IS NOT DISTINCT FROM v_profile_id) OR EXISTS (
+-    v_is_lab := (v_booking.lab_id = v_profile_id) OR EXISTS (
+         SELECT 1 FROM public.labs l WHERE l.lab_id = v_booking.lab_id AND l.owner_uid = v_caller_uid
+     );
++    v_is_patient := (v_booking.patient_id IS NOT DISTINCT FROM v_profile_id) OR EXISTS (
+-    v_is_patient := (v_booking.patient_id = v_profile_id) OR EXISTS (
+         SELECT 1 FROM public.patients p WHERE p.patient_id = v_booking.patient_id AND p.owner_uid = v_caller_uid
+     );
+ 
++    IF NOT (COALESCE(v_is_lab, FALSE) OR COALESCE(v_is_patient, FALSE) OR v_is_admin) THEN
+-    IF NOT (v_is_lab OR v_is_patient OR v_is_admin) THEN
+         RAISE EXCEPTION 'Unauthorized to update lab booking' USING ERRCODE = '42501';
+@@ -49,5 +57,5 @@
+         IF p_new_status != 'cancelled' THEN
+             RAISE EXCEPTION 'Patients can only cancel lab bookings' USING ERRCODE = '42501';
+         END IF;
++        IF v_booking.status IS DISTINCT FROM 'confirmed' THEN
+-        IF v_booking.status != 'confirmed' THEN
+             RAISE EXCEPTION 'Patient cannot cancel after sample collection (status: %)', v_booking.status

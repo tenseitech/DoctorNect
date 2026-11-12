@@ -68,6 +68,10 @@ class StorageException implements Exception {
 /// All other services and screens interact exclusively through [S3StorageService] / [StorageService].
 class S3PresignApi {
   S3PresignApi._();
+
+  @visibleForTesting
+  S3PresignApi.testable();
+
   static final S3PresignApi instance = S3PresignApi._();
 
   static const String region = 'asia-south1';
@@ -207,6 +211,44 @@ class S3PresignApi {
         debugPrint('[S3PresignApi] deleteObject error: $e');
       }
       return false;
+    }
+  }
+
+  /// Confirms direct-to-S3 upload via backend HeadObject check and updates DB.
+  Future<Map<String, dynamic>> confirmUpload({
+    required String objectKey,
+    required String purpose,
+    String? recordId,
+  }) async {
+    await AppCheckService.ensureForCallable();
+
+    try {
+      final callable = _functions.httpsCallable('confirmS3Upload');
+      final response = await callable.call<Map<dynamic, dynamic>>({
+        'objectKey': objectKey,
+        'purpose': purpose,
+        if (recordId != null && recordId.isNotEmpty) 'recordId': recordId,
+      });
+
+      final rawData = response.data;
+      return rawData.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+    } on FirebaseFunctionsException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+            '[S3PresignApi] confirmUpload failed: ${e.code} - ${e.message}');
+      }
+      throw StorageException(
+        e.message ?? 'Failed to confirm file upload.',
+        code: e.code,
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[S3PresignApi] confirmUpload unexpected error: $e');
+      }
+      throw StorageException('Could not connect to storage backend.',
+          code: 'network-error');
     }
   }
 }

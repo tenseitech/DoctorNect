@@ -13,7 +13,10 @@ import 'package:medibond/core/security/file_encryption_service.dart';
 import 'package:medibond/core/storage/profile_photo_uploader.dart';
 import 'package:medibond/core/storage/s3_storage_service.dart';
 import 'package:medibond/core/storage/storage_feature_flag.dart';
+import 'package:medibond/core/firebase/lab_report_submit_flow.dart';
 import 'package:medibond/core/storage/storage_service.dart';
+import 'package:medibond/core/supabase/repositories/supabase_lab_repository.dart';
+import 'package:medibond/core/supabase/supabase_bootstrap.dart';
 
 class FailingFirestore extends FakeFirebaseFirestore {
   bool failOperations = false;
@@ -113,6 +116,8 @@ void main() {
     LabBookingRepository.instance.firestoreOverride = null;
     LabOrderRepository.instance.firestoreOverride = null;
     LabReportFileStore.s3Override = null;
+    SupabaseLabRepository.debugResetForTesting();
+    SupabaseBootstrap.isReady = false;
 
     StorageFeatureFlag.debugOverride = null;
     FileEncryptionService.resetForTesting();
@@ -295,23 +300,74 @@ void main() {
   });
 
   group('LabBookingRepository.submitReport ordering', () {
+    setUp(() {
+      SupabaseLabRepository.debugPersistLabBookingReportKeyOverride =
+          (_, __) async {};
+      SupabaseLabRepository.debugClearLabBookingReportKeyOverride =
+          (_) async {};
+    });
+
     const bookingId = 'LAB_BOOK_101';
     const patientId = 'p_789';
     const oldReportKey = 'lab_reports/p_789/LAB_BOOK_101/old_report.pdf';
     final pdfBytes =
         Uint8List.fromList([37, 80, 68, 70, 45, 49, 46, 52]); // %PDF-1.4
 
-    test('Success: S3 upload -> Firestore update -> Old S3 report deleted',
+    test('throws before upload when Supabase is not ready', () async {
+      SupabaseBootstrap.isReady = false;
+
+      await expectLater(
+        LabBookingRepository.instance.submitReport(
+          bookingId: bookingId,
+          patientId: patientId,
+          fileName: 'blood_test.pdf',
+          bytes: pdfBytes,
+          existingReportStorageKey: oldReportKey,
+        ),
+        throwsA(
+          predicate(
+            (e) =>
+                e is StateError &&
+                e.message == LabReportSubmitFlow.notReadyMessage,
+          ),
+        ),
+      );
+
+      expect(testS3.uploadCallCount, 0);
+    });
+
+    test('RPC failure after upload deletes new object and keeps old key',
         () async {
-      // Seed existing booking document in Firestore
-      await fakeFirestore
-          .collection(FirestorePaths.labBookings)
-          .doc(bookingId)
-          .set({
-        'bookingId': bookingId,
-        'patientId': patientId,
-        'status': 'confirmed',
-      });
+      SupabaseBootstrap.isReady = true;
+      SupabaseLabRepository.debugUpdateLabBookingStatusOverride =
+          ({required bookingId, required newStatus, notes}) async => false;
+
+      await expectLater(
+        LabBookingRepository.instance.submitReport(
+          bookingId: bookingId,
+          patientId: patientId,
+          fileName: 'blood_test.pdf',
+          bytes: pdfBytes,
+          existingReportStorageKey: oldReportKey,
+        ),
+        throwsA(
+          predicate(
+            (e) =>
+                e is StateError &&
+                e.message == LabReportSubmitFlow.persistFailedMessage,
+          ),
+        ),
+      );
+
+      expect(testS3.uploadCallCount, 1);
+      expect(testS3.deleteCallCount, 1);
+      expect(testS3.deletedKeys, isNot(contains(oldReportKey)));
+    });
+
+    test('success deletes old report only after RPC succeeds', () async {
+      SupabaseBootstrap.isReady = true;
+      SupabaseLabRepository.debugUpdateLabBookingStatusOverride =
+          ({required bookingId, required newStatus, notes}) async => true;
 
       final result = await LabBookingRepository.instance.submitReport(
         bookingId: bookingId,
@@ -325,89 +381,77 @@ void main() {
       expect(testS3.uploadCallCount, 1);
       expect(testS3.deleteCallCount, 1);
       expect(testS3.deletedKeys, contains(oldReportKey));
-
-      final updatedDoc = await fakeFirestore
-          .collection(FirestorePaths.labBookings)
-          .doc(bookingId)
-          .get();
-      expect(updatedDoc.data()?['status'], 'completed');
-      expect(updatedDoc.data()?['reportStorageKey'], result.objectKey);
-      expect(updatedDoc.data()?['reportStorageProvider'], 's3');
-    });
-
-    test('Firestore fails -> Old S3 report is NOT deleted', () async {
-      // Intentionally do NOT seed the booking document so doc.update() throws FirebaseException (not found)
-      await expectLater(
-        LabBookingRepository.instance.submitReport(
-          bookingId: bookingId,
-          patientId: patientId,
-          fileName: 'blood_test.pdf',
-          bytes: pdfBytes,
-          existingReportStorageKey: oldReportKey,
-        ),
-        throwsA(isA<FirebaseException>()),
-      );
-
-      // S3 upload succeeded, but Firestore update threw, so old S3 report must NOT be deleted!
-      expect(testS3.uploadCallCount, 1);
-      expect(testS3.deleteCallCount, 0);
-      expect(testS3.deletedKeys, isEmpty);
-    });
-
-    test(
-        'S3 upload fails -> Firestore not updated, Old S3 report is NOT deleted',
-        () async {
-      testS3.shouldFailUpload = true;
-
-      await fakeFirestore
-          .collection(FirestorePaths.labBookings)
-          .doc(bookingId)
-          .set({
-        'bookingId': bookingId,
-        'patientId': patientId,
-        'status': 'confirmed',
-      });
-
-      await expectLater(
-        LabBookingRepository.instance.submitReport(
-          bookingId: bookingId,
-          patientId: patientId,
-          fileName: 'blood_test.pdf',
-          bytes: pdfBytes,
-          existingReportStorageKey: oldReportKey,
-        ),
-        throwsA(isA<StateError>()),
-      );
-
-      expect(testS3.uploadCallCount, 1);
-      expect(testS3.deleteCallCount, 0);
-
-      final doc = await fakeFirestore
-          .collection(FirestorePaths.labBookings)
-          .doc(bookingId)
-          .get();
-      expect(doc.data()?['status'], 'confirmed');
     });
   });
 
   group('LabOrderRepository.submitReport ordering', () {
+    setUp(() {
+      SupabaseLabRepository.debugPersistLabOrderReportKeyOverride =
+          (_, __) async {};
+      SupabaseLabRepository.debugClearLabOrderReportKeyOverride = (_) async {};
+    });
+
     const orderId = 'ORDER_202';
     const patientId = 'p_888';
     const oldReportKey = 'lab_reports/p_888/ORDER_202/old_order_report.pdf';
     final pdfBytes =
         Uint8List.fromList([37, 80, 68, 70, 45, 49, 46, 52]); // %PDF-1.4
 
-    test('Success: S3 upload -> Firestore update -> Old S3 report deleted',
+    test('throws before upload when Supabase is not ready', () async {
+      SupabaseBootstrap.isReady = false;
+
+      await expectLater(
+        LabOrderRepository.instance.submitReport(
+          orderId: orderId,
+          patientId: patientId,
+          fileName: 'urine_culture.pdf',
+          bytes: pdfBytes,
+          existingReportStorageKey: oldReportKey,
+        ),
+        throwsA(
+          predicate(
+            (e) =>
+                e is StateError &&
+                e.message == LabReportSubmitFlow.notReadyMessage,
+          ),
+        ),
+      );
+
+      expect(testS3.uploadCallCount, 0);
+    });
+
+    test('RPC failure after upload deletes new object and keeps old key',
         () async {
-      // Seed existing order document in Firestore
-      await fakeFirestore
-          .collection(FirestorePaths.labOrders)
-          .doc(orderId)
-          .set({
-        'orderId': orderId,
-        'patientId': patientId,
-        'status': 'ordered',
-      });
+      SupabaseBootstrap.isReady = true;
+      SupabaseLabRepository.debugUpdateLabOrderStatusOverride =
+          ({required orderId, required newStatus, notes}) async => false;
+
+      await expectLater(
+        LabOrderRepository.instance.submitReport(
+          orderId: orderId,
+          patientId: patientId,
+          fileName: 'urine_culture.pdf',
+          bytes: pdfBytes,
+          existingReportStorageKey: oldReportKey,
+        ),
+        throwsA(
+          predicate(
+            (e) =>
+                e is StateError &&
+                e.message == LabReportSubmitFlow.persistFailedMessage,
+          ),
+        ),
+      );
+
+      expect(testS3.uploadCallCount, 1);
+      expect(testS3.deleteCallCount, 1);
+      expect(testS3.deletedKeys, isNot(contains(oldReportKey)));
+    });
+
+    test('success deletes old report only after RPC succeeds', () async {
+      SupabaseBootstrap.isReady = true;
+      SupabaseLabRepository.debugUpdateLabOrderStatusOverride =
+          ({required orderId, required newStatus, notes}) async => true;
 
       final result = await LabOrderRepository.instance.submitReport(
         orderId: orderId,
@@ -421,67 +465,6 @@ void main() {
       expect(testS3.uploadCallCount, 1);
       expect(testS3.deleteCallCount, 1);
       expect(testS3.deletedKeys, contains(oldReportKey));
-
-      final updatedDoc = await fakeFirestore
-          .collection(FirestorePaths.labOrders)
-          .doc(orderId)
-          .get();
-      expect(updatedDoc.data()?['status'], 'completed');
-      expect(updatedDoc.data()?['reportStorageKey'], result.objectKey);
-      expect(updatedDoc.data()?['reportStorageProvider'], 's3');
-    });
-
-    test('Firestore fails -> Old S3 report is NOT deleted', () async {
-      // Do NOT seed the order doc, so doc.update() throws FirebaseException
-      await expectLater(
-        LabOrderRepository.instance.submitReport(
-          orderId: orderId,
-          patientId: patientId,
-          fileName: 'urine_culture.pdf',
-          bytes: pdfBytes,
-          existingReportStorageKey: oldReportKey,
-        ),
-        throwsA(isA<FirebaseException>()),
-      );
-
-      expect(testS3.uploadCallCount, 1);
-      expect(testS3.deleteCallCount, 0);
-      expect(testS3.deletedKeys, isEmpty);
-    });
-
-    test(
-        'S3 upload fails -> Firestore not updated, Old S3 report is NOT deleted',
-        () async {
-      testS3.shouldFailUpload = true;
-
-      await fakeFirestore
-          .collection(FirestorePaths.labOrders)
-          .doc(orderId)
-          .set({
-        'orderId': orderId,
-        'patientId': patientId,
-        'status': 'ordered',
-      });
-
-      await expectLater(
-        LabOrderRepository.instance.submitReport(
-          orderId: orderId,
-          patientId: patientId,
-          fileName: 'urine_culture.pdf',
-          bytes: pdfBytes,
-          existingReportStorageKey: oldReportKey,
-        ),
-        throwsA(isA<StateError>()),
-      );
-
-      expect(testS3.uploadCallCount, 1);
-      expect(testS3.deleteCallCount, 0);
-
-      final doc = await fakeFirestore
-          .collection(FirestorePaths.labOrders)
-          .doc(orderId)
-          .get();
-      expect(doc.data()?['status'], 'ordered');
     });
   });
 }

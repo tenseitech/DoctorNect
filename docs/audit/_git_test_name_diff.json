@@ -1,0 +1,19 @@
+﻿node : [eval]:8
+At line:1 char:50
++ cd "c:\Users\khije\Downloads\DoctorNect\doctor"; node -e "
++                                                  ~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([eval]:8:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    for(const m of src.matchAll(/\btest(?:Widgets)?\s*\(\s*['\]([^'\]+)['\]/g)) 
+set.add(f.replace(/^frontend\/test\//,'')+' :: '+m[1]);
+                                ^
+Unterminated regexp literal
+
+SyntaxError: Invalid regular expression: missing /
+    at makeContextifyScript (node:internal/vm:194:14)
+    at compileScript (node:internal/process/execution:388:10)
+    at evalTypeScript (node:internal/process/execution:260:22)
+    at node:internal/main/eval_string:71:3
+
+Node.js v24.19.0

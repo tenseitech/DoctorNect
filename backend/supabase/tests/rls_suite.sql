@@ -28,6 +28,9 @@ DECLARE
     v_auth_pat_b UUID := '55555555-5555-4555-8555-555555555555';
     v_auth_pat_incomp UUID := '66666666-6666-4666-8666-666666666666';
     v_auth_pharma UUID := '77777777-7777-4777-8777-777777777777';
+    v_auth_pat_fb UUID := '88888888-8888-4888-8888-888888888888';
+    v_pat_fb_id TEXT := 'test-pat-fb-synth';
+    v_pat_firebase_sub TEXT := 'firebase_user_patient_non_uuid_xyz';
 
     v_count INT;
     v_has_doc_a BOOLEAN;
@@ -48,7 +51,8 @@ BEGIN
       (v_auth_pat_a, v_auth_pat_a::text, 'patient', v_pat_a_id, 'Test Patient A', 'pat_a@synth.com', '1111111111', TRUE, TRUE, 'approved'),
       (v_auth_pat_b, v_auth_pat_b::text, 'patient', v_pat_b_id, 'Test Patient B', 'pat_b@synth.com', '2222222222', TRUE, TRUE, 'approved'),
       (v_auth_pat_incomp, v_auth_pat_incomp::text, 'patient', v_pat_incomp_id, 'Test Pat Incomp', 'pat_incomp@synth.com', '3333333333', FALSE, FALSE, 'approved'),
-      (v_auth_pharma, v_auth_pharma::text, 'medicalStore', v_pharma_id, 'Test Pharmacy', 'pharma@synth.com', '4444444444', TRUE, TRUE, 'approved')
+      (v_auth_pharma, v_auth_pharma::text, 'medicalStore', v_pharma_id, 'Test Pharmacy', 'pharma@synth.com', '4444444444', TRUE, TRUE, 'approved'),
+      (v_auth_pat_fb, v_pat_firebase_sub, 'patient', v_pat_fb_id, 'Test Firebase Patient', 'pat_fb@synth.com', '5555555555', TRUE, TRUE, 'approved')
     ON CONFLICT (id) DO NOTHING;
 
     -- Seed doctors
@@ -64,14 +68,16 @@ BEGIN
     VALUES 
       (v_pat_a_id, v_auth_pat_a, 'Test Patient A', '1111111111', TRUE, TRUE, TRUE),
       (v_pat_b_id, v_auth_pat_b, 'Test Patient B', '2222222222', TRUE, TRUE, TRUE),
-      (v_pat_incomp_id, v_auth_pat_incomp, 'Test Patient Incomplete', '3333333333', TRUE, FALSE, FALSE)
+      (v_pat_incomp_id, v_auth_pat_incomp, 'Test Patient Incomplete', '3333333333', TRUE, FALSE, FALSE),
+      (v_pat_fb_id, v_auth_pat_fb, 'Test Firebase Patient', '5555555555', TRUE, TRUE, TRUE)
     ON CONFLICT (patient_id) DO NOTHING;
 
     -- Seed appointments
     INSERT INTO appointments (appointment_id, doctor_id, patient_id, doctor_name, specialization, patient_name, patient_age, patient_gender, date_time, slot_label, visit_type, patient_status, doctor_status)
     VALUES 
       ('apt-synth-a', v_doc_a_id, v_pat_a_id, 'Test Doctor A', 'General Medicine', 'Test Patient A', 30, 'Male', NOW(), '10:00 AM', 'newVisit', 'confirmed', 'confirmed'),
-      ('apt-synth-b', v_doc_b_id, v_pat_b_id, 'Test Doctor B', 'Cardiology', 'Test Patient B', 45, 'Female', NOW(), '11:00 AM', 'newVisit', 'confirmed', 'confirmed')
+      ('apt-synth-b', v_doc_b_id, v_pat_b_id, 'Test Doctor B', 'Cardiology', 'Test Patient B', 45, 'Female', NOW(), '11:00 AM', 'newVisit', 'confirmed', 'confirmed'),
+      ('apt-synth-fb', v_doc_a_id, v_pat_fb_id, 'Test Doctor A', 'General Medicine', 'Test Firebase Patient', 28, 'Female', NOW(), '11:30 AM', 'newVisit', 'confirmed', 'confirmed')
     ON CONFLICT (appointment_id) DO NOTHING;
 
     -- Seed prescriptions
@@ -200,6 +206,24 @@ SELECT 6,
        CASE WHEN total_cnt = 0 THEN 'PASS' ELSE 'FAIL' END
 FROM incomp_data;
 
+-- ------------------------------------------------------------------------
+-- TEST 7: Firebase Identity Non-UUID Sub (Patient reads own appointment)
+-- ------------------------------------------------------------------------
+RESET ROLE;
+SELECT set_config('request.jwt.claims', '{"sub": "firebase_user_patient_non_uuid_xyz", "role": "authenticated"}', true);
+SELECT set_config('request.jwt.claim.sub', 'firebase_user_patient_non_uuid_xyz', true);
+SELECT set_config('request.jwt.claim.role', 'authenticated', true);
+SET LOCAL ROLE authenticated;
+
+INSERT INTO test_results
+SELECT 7,
+       'Firebase Identity Non-UUID Sub (Patient reads own appointment)',
+       'Sees own appointment apt-synth-fb; cannot see other appointments',
+       'Appointments returned: [' || COALESCE(string_agg(appointment_id, ', '), 'NONE') || ']',
+       CASE WHEN bool_and(appointment_id = 'apt-synth-fb') AND NOT bool_or(appointment_id IN ('apt-synth-a', 'apt-synth-b')) THEN 'PASS' ELSE 'FAIL' END
+FROM appointments
+WHERE appointment_id IN ('apt-synth-fb', 'apt-synth-a', 'apt-synth-b');
+
 RESET ROLE;
 
 -- Display Results Table
@@ -207,8 +231,8 @@ SELECT test_num, test_name, expected, actual, status FROM test_results ORDER BY 
 
 -- Cleanup synthetic test fixtures
 DELETE FROM prescriptions WHERE prescription_id IN ('rx-synth-a', 'rx-synth-b');
-DELETE FROM appointments WHERE appointment_id IN ('apt-synth-a', 'apt-synth-b');
-DELETE FROM patients WHERE patient_id IN ('test-pat-a-synth', 'test-pat-b-synth', 'test-pat-incomp-synth');
+DELETE FROM appointments WHERE appointment_id IN ('apt-synth-a', 'apt-synth-b', 'apt-synth-fb');
+DELETE FROM patients WHERE patient_id IN ('test-pat-a-synth', 'test-pat-b-synth', 'test-pat-incomp-synth', 'test-pat-fb-synth');
 DELETE FROM doctors WHERE doctor_id IN ('test-doc-a-synth', 'test-doc-b-synth', 'test-doc-unver-synth');
 DELETE FROM users WHERE id IN (
   '11111111-1111-4111-8111-111111111111',
@@ -217,7 +241,8 @@ DELETE FROM users WHERE id IN (
   '44444444-4444-4444-8444-444444444444',
   '55555555-5555-4555-8555-555555555555',
   '66666666-6666-4666-8666-666666666666',
-  '77777777-7777-4777-8777-777777777777'
+  '77777777-7777-4777-8777-777777777777',
+  '88888888-8888-4888-8888-888888888888'
 );
 
 -- Restore FK constraint

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/firebase/firebase_bootstrap.dart';
 import '../../../core/firebase/firestore_screen_sync.dart';
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/pharmacy_firestore_repository.dart';
 import '../../../core/location/location_match.dart';
 import '../../../core/session/doctor_session.dart';
 import '../../../core/theme/app_colors.dart';
@@ -185,7 +185,7 @@ class _DoctorConnectedStoresScreenState
           );
         }
         _deliverySub?.cancel();
-        _deliverySub = FirestoreService.instance.pharmacyFirestore
+        _deliverySub = PharmacyFirestoreRepository.instance
             .watchDeliveriesForDoctor(doctorId)
             .listen(prescStore.mergeFromFirestore);
       },

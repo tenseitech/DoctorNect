@@ -38,21 +38,34 @@ def format_bytes(bytes_count: int) -> str:
 
 
 def convert_png(src: Path, dst: Path) -> tuple[int, int, bool]:
-    """Convert PNG to WebP with lossless=True, quality=100, method=6. Preserves alpha."""
+    """Convert PNG to WebP with quality=85, method=6. Preserves alpha and resizes oversized icons."""
     src_size = src.stat().st_size
     with Image.open(src) as img:
-        # Save as lossless WebP to preserve exact pixel quality & alpha transparency
-        img.save(dst, format="WEBP", lossless=True, quality=100, method=6)
+        w, h = img.size
+        max_dim = max(w, h)
+        src_str = str(src).replace('\\', '/')
+        if max_dim > 512 and ('icons' in src_str or 'specialties' in src_str or 'services' in src_str):
+            scale = 512.0 / max_dim
+            new_size = (max(1, int(w * scale)), max(1, int(h * scale)))
+            img_to_save = img.resize(new_size, Image.Resampling.LANCZOS)
+            try:
+                img_to_save.save(src, format="PNG", optimize=True)
+                src_size = src.stat().st_size
+            except Exception:
+                pass
+        else:
+            img_to_save = img
+        img_to_save.save(dst, format="WEBP", quality=85, method=6)
     dst_size = dst.stat().st_size
     return src_size, dst_size, True
 
 
 def convert_jpg(src: Path, dst: Path) -> tuple[int, int, bool]:
-    """Convert JPG/JPEG to WebP with quality=95, method=6. Converts to RGB."""
+    """Convert JPG/JPEG to WebP with quality=85, method=6. Converts to RGB."""
     src_size = src.stat().st_size
     with Image.open(src) as img:
         rgb_img = img.convert("RGB") if img.mode != "RGB" else img
-        rgb_img.save(dst, format="WEBP", quality=95, method=6)
+        rgb_img.save(dst, format="WEBP", quality=85, method=6)
     dst_size = dst.stat().st_size
     return src_size, dst_size, True
 
@@ -91,37 +104,23 @@ def main() -> int:
                 webp_path = folder_path / webp_name
                 asset_rel_path = f"{rel_folder}/{webp_name}".replace("\\", "/")
 
-                # Check if up-to-date
-                if webp_path.exists() and webp_path.stat().st_mtime >= src_path.stat().st_mtime:
-                    src_size = src_path.stat().st_size
-                    webp_size = webp_path.stat().st_size
+                try:
+                    if ext == ".png":
+                        src_size, webp_size, _ = convert_png(src_path, webp_path)
+                    else:
+                        src_size, webp_size, _ = convert_jpg(src_path, webp_path)
+
                     total_orig_bytes += src_size
                     total_webp_bytes += webp_size
-                    skipped_count += 1
+                    converted_count += 1
                     diff = src_size - webp_size
                     pct = (diff / src_size * 100) if src_size > 0 else 0
                     print(
-                        f"  [UP-TO-DATE] {item} -> {webp_name} "
+                        f"  [OPTIMIZED]  {item} -> {webp_name} "
                         f"({format_bytes(src_size)} -> {format_bytes(webp_size)}, -{pct:.1f}%)"
                     )
-                else:
-                    try:
-                        if ext == ".png":
-                            src_size, webp_size, _ = convert_png(src_path, webp_path)
-                        else:
-                            src_size, webp_size, _ = convert_jpg(src_path, webp_path)
-
-                        total_orig_bytes += src_size
-                        total_webp_bytes += webp_size
-                        converted_count += 1
-                        diff = src_size - webp_size
-                        pct = (diff / src_size * 100) if src_size > 0 else 0
-                        print(
-                            f"  [CONVERTED]  {item} -> {webp_name} "
-                            f"({format_bytes(src_size)} -> {format_bytes(webp_size)}, -{pct:.1f}%)"
-                        )
-                    except Exception as err:
-                        print(f"  [ERROR] Failed to convert {item}: {err}", file=sys.stderr)
+                except Exception as err:
+                    print(f"  [ERROR] Failed to convert {item}: {err}", file=sys.stderr)
 
             # Record any existing or converted webp in this folder
             if ext == ".webp" or lower_name.endswith(".webp"):

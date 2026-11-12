@@ -1,14 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../../features/patient/lab/data/patient_lab_catalog_builder.dart';
 import '../../../features/patient/lab/models/lab_models.dart';
-
-import '../firebase_bootstrap.dart';
-
-import '../firestore_paths.dart';
-
-import '../firestore_read_helper.dart';
-
+import '../../supabase/supabase_bootstrap.dart';
 import 'lab_repository.dart';
 
 class LabCatalogRepository {
@@ -21,21 +13,21 @@ class LabCatalogRepository {
   Future<LabCatalog> fetchCatalog() async {
     LabCatalog catalog;
 
-    if (!FirebaseBootstrap.isReady) {
-      catalog = LabCatalog.defaults();
-    } else {
-      final ref = FirebaseFirestore.instance
-          .collection(FirestorePaths.labCatalog)
-          .doc(_docId);
-      final snap = await FirestoreReadHelper.getDocument(
-        reference: ref,
-        preferCache: true,
-      );
-      if (!snap.exists || snap.data() == null) {
-        catalog = LabCatalog.defaults();
-      } else {
-        catalog = LabCatalog.fromMap(snap.data()!);
-      }
+    catalog = LabCatalog.defaults();
+    if (SupabaseBootstrap.isReady) {
+      try {
+        final snap = await SupabaseBootstrap.client
+            .from('lab_catalog')
+            .select('payload')
+            .eq('id', _docId)
+            .maybeSingle();
+        final payload = snap?['payload'];
+        if (payload is Map<String, dynamic>) {
+          catalog = LabCatalog.fromMap(payload);
+        } else if (payload is Map) {
+          catalog = LabCatalog.fromMap(Map<String, dynamic>.from(payload));
+        }
+      } catch (_) {}
     }
 
     return _withRegisteredPartnerLabs(_withMergedTests(catalog));
@@ -51,7 +43,7 @@ class LabCatalogRepository {
   }
 
   Future<LabCatalog> _withRegisteredPartnerLabs(LabCatalog catalog) async {
-    if (!FirebaseBootstrap.isReady) return catalog;
+    if (!SupabaseBootstrap.isReady) return catalog;
 
     final registered = await LabRepository.instance.fetchVerifiedLabs();
     if (registered.isEmpty) return catalog;

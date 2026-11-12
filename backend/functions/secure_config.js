@@ -3,11 +3,10 @@
 /**
  * Centralized secret / config access for Cloud Functions.
  *
- * All secrets are now strictly loaded via `functions/.env` files.
- * Firebase Secret Manager bindings have been removed to resolve overlap crashes.
+ * Runtime values come from `process.env` (local `.env` / `.env.local` or deployed
+ * env + Secret Manager bindings declared in `index.js` via `defineSecret`).
+ * This module does not call `defineSecret`; see `backend/functions/index.js`.
  */
-
-// No more defineSecret
 
 function readSecret(name, { required = false } = {}) {
   const value = String(process.env[name] || '').trim();
@@ -19,16 +18,16 @@ function readSecret(name, { required = false } = {}) {
   return value;
 }
 
-/** Resolves MSG91 auth key from Secret Manager binding or local env aliases. */
+/** Resolves MSG91 auth key from local env aliases. */
 function readMsg91AuthKey({ required = true } = {}) {
   const value = String(
-    process.env.MSG91_AUTHKEY ||
-      process.env.MSG91_AUTH_KEY ||
+    process.env.MSG91_AUTH_KEY ||
+      process.env.MSG91_AUTHKEY ||
       process.env.AUTH_KEY ||
       '',
   ).trim();
   if (required && !value) {
-    const err = new Error('Missing required secret: MSG91_AUTHKEY');
+    const err = new Error('Missing required secret: MSG91_AUTH_KEY');
     err.code = 'failed-precondition';
     throw err;
   }
@@ -38,6 +37,22 @@ function readMsg91AuthKey({ required = true } = {}) {
 function isProduction() {
   return String(process.env.FUNCTION_TARGET || '').length > 0
     && String(process.env.OTP_TEST_MODE || '').toLowerCase() !== 'true';
+}
+
+/** Resolves Supabase Service Role Key from canonical secret or legacy aliases. */
+function readSupabaseServiceRoleKey({ required = false } = {}) {
+  const value = String(
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_SERVICE_KEY ||
+      process.env.SUPABASE_SECRET_KEY ||
+      '',
+  ).trim();
+  if (required && !value) {
+    const err = new Error('Missing required secret: SUPABASE_SERVICE_ROLE_KEY');
+    err.code = 'failed-precondition';
+    throw err;
+  }
+  return value || null;
 }
 
 function assertProductionSecrets() {
@@ -64,6 +79,7 @@ function assertProductionSecrets() {
 module.exports = {
   readSecret,
   readMsg91AuthKey,
+  readSupabaseServiceRoleKey,
   isProduction,
   assertProductionSecrets,
 };

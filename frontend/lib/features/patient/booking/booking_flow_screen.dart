@@ -1,4 +1,5 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/doctor_availability_repository.dart';
+import '../../../core/firebase/repositories/doctor_profile_detail_repository.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'dart:async';
@@ -66,7 +67,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
   List<FamilyMember> _familyMembers = [];
   ConfirmedBooking? _confirmed;
   DoctorAvailability _schedule = DoctorAvailability.defaults();
-  final _availabilityRepo = FirestoreService.instance.doctorAvailability;
+  final _availabilityRepo = DoctorAvailabilityRepository.instance;
   final _slotShareReasonController = TextEditingController();
 
   TextEditingController _getController(String key) {
@@ -91,7 +92,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
 
   Future<void> _loadDoctor() async {
     try {
-      var doctor = await FirestoreService.instance.doctorProfileDetail
+      var doctor = await DoctorProfileDetailRepository.instance
           .fetch(widget.doctorId)
           .timeout(const Duration(seconds: 12));
       doctor ??= _doctorFromListing(
@@ -494,6 +495,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     final date = _draft.selectedDate!;
     final store = SharedAppointmentsStore.instance;
     final slotShareReason = _resolvedSlotShareReason();
+    const missingPatientIdMessage =
+        'Your patient account is not ready. Sign in again before booking.';
 
     final selectedSlot = _selectedSlot;
     if (selectedSlot == null || !selectedSlot.isSelectable) {
@@ -533,14 +536,6 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           ? '${DateFormat('dd MMM').format(old.dateTime)} · ${old.slotLabel}'
           : '';
       final newLabel = '${DateFormat('dd MMM').format(date)} · $slotLabel';
-      final sameDay = old != null &&
-          old.dateTime.year == date.year &&
-          old.dateTime.month == date.month &&
-          old.dateTime.day == date.day;
-      final newToken = sameDay
-          ? old.tokenNumber
-          : store.nextTokenNumberForDoctorOnDate(widget.doctorId, date);
-
       DateTime newSlotDateTime = date;
       final timeOfDay = parseSlotTimeLabel(slotLabel);
       if (timeOfDay != null) {
@@ -553,39 +548,49 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         );
       }
 
+      final patientId = BookingFlowHelpers.resolvePatientId(
+        sessionPatientId: PatientSession.loggedInPatientId,
+        appointmentPatientId: old?.patientId,
+      );
+      if (patientId == null) {
+        _showBookingMessage(missingPatientIdMessage);
+        return;
+      }
+
+      var newToken = old?.tokenNumber ?? 0;
       try {
-        if (SupabaseBootstrap.isReady && old?.appointmentId != null) {
-          await SupabasePatientRepository.instance.bookAppointment(
-            context: context,
-            appointmentId: old!.appointmentId,
-            doctorId: widget.doctorId,
-            patientId: old.patientId ??
-                (PatientSession.loggedInPatientId.isNotEmpty
-                    ? PatientSession.loggedInPatientId
-                    : 'pat-default'),
-            doctorName: _draft.doctorName,
-            specialization: listing?.specialization ??
-                _doctor?.specialization ??
-                'General Physician',
-            patientName: combinedName,
-            patientAge: profile.age,
-            patientGender:
-                BookingFlowHelpers.resolvePatientGender(profile.gender) ??
-                    'Other',
-            dateTime: newSlotDateTime,
-            slotLabel: slotLabel,
-            visitType: 'followUp',
-            tokenNumber: newToken,
-            clinicName: _doctor?.clinicName,
-            clinicAddress: clinicAddress,
-          );
-        }
-        await store.reschedulePatient(
+        newToken = await store.reschedulePatient(
           recordId: widget.rescheduleFromRecordId!,
           newDate: date,
           newSlotLabel: slotLabel,
-          newToken: newToken,
         );
+        if (SupabaseBootstrap.isReady && old?.appointmentId != null) {
+          try {
+            await SupabasePatientRepository.instance.bookAppointment(
+              context: context,
+              appointmentId: old!.appointmentId,
+              doctorId: widget.doctorId,
+              patientId: patientId,
+              doctorName: _draft.doctorName,
+              specialization: listing?.specialization ??
+                  _doctor?.specialization ??
+                  'General Physician',
+              patientName: combinedName,
+              patientAge: profile.age,
+              patientGender:
+                  BookingFlowHelpers.resolvePatientGender(profile.gender) ??
+                      'Other',
+              dateTime: newSlotDateTime,
+              slotLabel: slotLabel,
+              visitType: 'followUp',
+              tokenNumber: newToken,
+              clinicName: _doctor?.clinicName,
+              clinicAddress: clinicAddress,
+            );
+          } catch (_) {
+            // Firestore reschedule already succeeded.
+          }
+        }
       } on PatientMaintenanceException catch (_) {
         // Friendly maintenance sheet already displayed by PatientWriteGuard
         return;
@@ -632,6 +637,14 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     String? firstAppointmentId;
     int? firstToken;
 
+    final patientId = BookingFlowHelpers.resolvePatientId(
+      sessionPatientId: PatientSession.loggedInPatientId,
+    );
+    if (patientId == null) {
+      _showBookingMessage(missingPatientIdMessage);
+      return;
+    }
+
     if (_draft.bookingForSelf && !PatientDetailsGuard.hasRequiredDetails()) {
       await PatientDetailsGuard.run(context, () => _confirmPay());
       return;
@@ -663,11 +676,6 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       String? bookedBy,
       String? patientRelation,
     }) async {
-      final appointmentId = BookingFlowHelpers.newAppointmentId();
-      firstAppointmentId ??= appointmentId;
-      final token = store.nextTokenNumberForDoctorOnDate(widget.doctorId, date);
-      firstToken ??= token;
-
       DateTime slotDateTime = date;
       final timeOfDay = parseSlotTimeLabel(slotLabel);
       if (timeOfDay != null) {
@@ -680,34 +688,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         );
       }
 
-      // 1. PRIMARY WRITE: Supabase PostgreSQL (Patient Module Staged Cutover)
-      // Guarded by PatientWriteGuard for maintenance kill-switch & 42501 defense
-      if (SupabaseBootstrap.isReady) {
-        await SupabasePatientRepository.instance.bookAppointment(
-          context: context,
-          appointmentId: appointmentId,
-          doctorId: widget.doctorId,
-          patientId: PatientSession.loggedInPatientId.isNotEmpty
-              ? PatientSession.loggedInPatientId
-              : 'pat-default',
-          doctorName: _draft.doctorName,
-          specialization: listing?.specialization ??
-              _doctor?.specialization ??
-              'General Physician',
-          patientName: pName,
-          patientAge: pAge,
-          patientGender: pGender,
-          dateTime: slotDateTime,
-          slotLabel: slotLabel,
-          visitType: 'newVisit',
-          tokenNumber: token,
-          clinicName: _doctor?.clinicName,
-          clinicAddress: clinicAddress,
-        );
-      }
-
-      // 2. Synchronize local store for UI responsiveness
-      final confirmed = await store.addBooking(
+      // Firestore is written by bookAppointment (Admin SDK). Supabase is best-effort.
+      final booked = await store.bookPatientViaCallable(
         doctorId: widget.doctorId,
         doctorName: _draft.doctorName,
         specialization: listing?.specialization ??
@@ -715,8 +697,6 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
             'General Physician',
         date: date,
         slotLabel: slotLabel,
-        appointmentId: appointmentId,
-        tokenNumber: token,
         patientName: pName,
         patientAge: pAge,
         patientGender: pGender,
@@ -728,7 +708,34 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         patientRelation: patientRelation,
         slotShareReason: slotShareReason,
       );
-      if (!confirmed) allConfirmed = false;
+      firstAppointmentId ??= booked.appointmentId;
+      firstToken ??= booked.tokenNumber;
+      if (!booked.autoConfirmed) allConfirmed = false;
+      if (SupabaseBootstrap.isReady) {
+        try {
+          await SupabasePatientRepository.instance.bookAppointment(
+            context: context,
+            appointmentId: booked.appointmentId,
+            doctorId: widget.doctorId,
+            patientId: patientId,
+            doctorName: _draft.doctorName,
+            specialization: listing?.specialization ??
+                _doctor?.specialization ??
+                'General Physician',
+            patientName: pName,
+            patientAge: pAge,
+            patientGender: pGender,
+            dateTime: slotDateTime,
+            slotLabel: slotLabel,
+            visitType: 'newVisit',
+            tokenNumber: booked.tokenNumber,
+            clinicName: _doctor?.clinicName,
+            clinicAddress: clinicAddress,
+          );
+        } catch (_) {
+          // Mirror failure must not undo the Firestore booking.
+        }
+      }
     }
 
     final mainPatientName = PatientProfileMock.profile.name.isNotEmpty
@@ -1060,7 +1067,7 @@ class _SlotStep extends StatelessWidget {
 
   bool _isHoliday(DateTime date) {
     if (!_isDaySelectable(date)) return false;
-    return FirestoreService.instance.doctorAvailability.isUnavailableDay(
+    return DoctorAvailabilityRepository.instance.isUnavailableDay(
       schedule,
       date,
     );
@@ -1068,7 +1075,7 @@ class _SlotStep extends StatelessWidget {
 
   String? _holidayMessage(DateTime date) {
     if (!_isDaySelectable(date)) return null;
-    return FirestoreService.instance.doctorAvailability.unavailabilityReason(
+    return DoctorAvailabilityRepository.instance.unavailabilityReason(
       schedule,
       date,
     );

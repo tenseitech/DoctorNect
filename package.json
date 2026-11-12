@@ -1,0 +1,12 @@
+{
+  "name": "doctornect-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test:rules": "npx firebase-tools emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node scripts/run_rules_tests.js\"",
+    "audit:firestore-reachability": "node scripts/audit/scan_firestore_release_reachability.js"
+  },
+  "devDependencies": {
+    "libpg-query": "^18.2.1"
+  }
+}

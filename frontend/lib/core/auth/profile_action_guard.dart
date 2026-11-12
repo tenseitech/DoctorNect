@@ -10,11 +10,15 @@ import '../session/lab_session.dart';
 import '../session/medical_store_session.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../../features/ambulance/ambulance_profile_screen.dart';
+import '../../features/ambulance/ambulance_profile_screen.dart'
+    deferred as amb_prof;
 import '../../features/doctor/profile/data/doctor_profile_store.dart';
-import '../../features/doctor/profile/doctor_profile_screen.dart';
-import '../../features/lab/screens/lab_profile_screen.dart';
-import '../../features/pharmacy/screens/store_profile_screen.dart';
+import '../../features/doctor/profile/doctor_profile_screen.dart'
+    deferred as doc_prof;
+import '../../features/lab/screens/lab_profile_screen.dart'
+    deferred as lab_prof;
+import '../../features/pharmacy/screens/store_profile_screen.dart'
+    deferred as store_prof;
 import 'demo_auth_config.dart';
 import 'verification_lifecycle.dart';
 
@@ -40,7 +44,7 @@ abstract final class ProfileActionGuard {
       final docId = DoctorSession.loggedInDoctorId;
       final mobile = DoctorProfileStore.instance.profile.mobile;
       if (DemoAuthConfig.isDemoDoctorPhone(docId) ||
-          docId.contains(DemoAuthConfig.demoDoctorPhone) ||
+          DemoAuthConfig.isDemoDoctorId(docId) ||
           DemoAuthConfig.isDemoDoctorPhone(mobile)) {
         return true;
       }
@@ -50,7 +54,7 @@ abstract final class ProfileActionGuard {
     if (role == UserType.medicalStore) {
       final storeId = MedicalStoreSession.loggedInStoreId;
       if (DemoAuthConfig.isDemoPharmacyPhone(storeId) ||
-          storeId.contains(DemoAuthConfig.demoPharmacyPhone)) {
+          DemoAuthConfig.isDemoPharmacyId(storeId)) {
         return true;
       }
     }
@@ -59,7 +63,7 @@ abstract final class ProfileActionGuard {
     if (role == UserType.lab) {
       final labId = LabSession.loggedInLabId;
       if (DemoAuthConfig.isDemoLabPhone(labId) ||
-          labId.contains(DemoAuthConfig.demoLabPhone)) {
+          DemoAuthConfig.isDemoLabId(labId)) {
         return true;
       }
     }
@@ -68,7 +72,7 @@ abstract final class ProfileActionGuard {
     if (role == UserType.ambulance) {
       final ambId = AmbulanceSession.loggedInAmbulanceId;
       if (DemoAuthConfig.isDemoAmbulancePhone(ambId) ||
-          ambId.contains(DemoAuthConfig.demoAmbulancePhone)) {
+          DemoAuthConfig.isDemoAmbulanceId(ambId)) {
         return true;
       }
     }
@@ -149,27 +153,33 @@ class _ProfileVerificationDialog extends StatelessWidget {
   Future<void> _navigateToProfile(BuildContext context) async {
     switch (role) {
       case UserType.doctor:
-        await DoctorProfileScreen.open(context);
+        await doc_prof.loadLibrary();
+        if (context.mounted) {
+          await doc_prof.DoctorProfileScreen.open(context);
+        }
       case UserType.medicalStore:
+        await store_prof.loadLibrary();
         if (context.mounted) {
           await Navigator.push<void>(
             context,
-            MaterialPageRoute(builder: (_) => const StoreProfileScreen()),
+            MaterialPageRoute(builder: (_) => store_prof.StoreProfileScreen()),
           );
         }
       case UserType.lab:
+        await lab_prof.loadLibrary();
         if (context.mounted) {
           await Navigator.push<void>(
             context,
-            MaterialPageRoute(builder: (_) => const LabProfileScreen()),
+            MaterialPageRoute(builder: (_) => lab_prof.LabProfileScreen()),
           );
         }
       case UserType.ambulance:
+        await amb_prof.loadLibrary();
         if (context.mounted) {
           await Navigator.push<void>(
             context,
             MaterialPageRoute(
-              builder: (_) => AmbulanceProfileScreen(
+              builder: (_) => amb_prof.AmbulanceProfileScreen(
                 ambulanceId: AmbulanceSession.loggedInAmbulanceId,
               ),
             ),

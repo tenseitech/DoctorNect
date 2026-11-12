@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/firebase/firestore_client.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -22,7 +23,7 @@ abstract final class BookingFlowHelpers {
   /// Firestore auto-id — avoids legacy `APT${timestamp}` collisions (Issue #16).
   static String newAppointmentId() {
     final collection = debugAppointmentsCollection ??
-        FirebaseFirestore.instance.collection('appointments');
+        FirestoreClient.instance.collection('appointments');
     return collection.doc().id;
   }
 
@@ -30,6 +31,26 @@ abstract final class BookingFlowHelpers {
   @visibleForTesting
   static bool isLegacyAppointmentId(String id) =>
       RegExp(r'^APT\d+$').hasMatch(id);
+
+  static const placeholderPatientId = 'pat-default';
+
+  /// Returns a real patient id, or null when the session/appointment only has
+  /// the legacy placeholder (or is empty).
+  static String? resolvePatientId({
+    required String sessionPatientId,
+    String? appointmentPatientId,
+  }) {
+    final fromAppointment = appointmentPatientId?.trim() ?? '';
+    if (fromAppointment.isNotEmpty &&
+        fromAppointment != placeholderPatientId) {
+      return fromAppointment;
+    }
+    final fromSession = sessionPatientId.trim();
+    if (fromSession.isNotEmpty && fromSession != placeholderPatientId) {
+      return fromSession;
+    }
+    return null;
+  }
 
   @visibleForTesting
   static void debugReset() {

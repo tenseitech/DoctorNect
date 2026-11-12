@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../firebase/firestore_client.dart';
 
 import '../firebase/firebase_bootstrap.dart';
 import '../firebase/firestore_paths.dart';
@@ -28,7 +29,7 @@ abstract final class PharmacyDoctorInviteService {
   static Future<void> ensureInviteMetadata(String storeId) async {
     if (!FirebaseBootstrap.isReady || storeId.isEmpty) return;
 
-    await FirebaseFirestore.instance
+    await FirestoreClient.instance
         .collection(FirestorePaths.medicalStores)
         .doc(storeId)
         .set({

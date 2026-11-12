@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// DoctorNect: Clean Launch Lockdown Rules
+// Zero client reads or writes are permitted to Firebase Storage.
+// AWS S3 (via server-side presigned URLs) is the sole object storage engine.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

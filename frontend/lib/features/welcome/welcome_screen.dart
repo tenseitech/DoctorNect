@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/config/ambulance_enabled.dart';
+import '../../core/notifications/app_toast.dart';
 import '../../core/auth/unified_auth_coordinator.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/invite/pending_ambulance_invite_store.dart';
@@ -76,6 +78,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final role = _selectedRole;
     if (role == null) return;
 
+    if (role == UserType.ambulance && !AmbulanceEnabled.isOn) {
+      AppToast.info(context, 'Ambulance sign-in is not available in this build.');
+      return;
+    }
+
     if (widget.isNewUser) {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -144,13 +151,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           color: AppColors.labPurple,
           icon: Icons.biotech_rounded,
         ),
-        _WelcomeRoleOption(
-          role: UserType.ambulance,
-          title: UnifiedAuthCoordinator.roleLabel(UserType.ambulance),
-          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.ambulance),
-          color: const Color(0xFFDC2626),
-          icon: Icons.emergency_rounded,
-        ),
+        if (AmbulanceEnabled.isOn)
+          _WelcomeRoleOption(
+            role: UserType.ambulance,
+            title: UnifiedAuthCoordinator.roleLabel(UserType.ambulance),
+            subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.ambulance),
+            color: const Color(0xFFDC2626),
+            icon: Icons.emergency_rounded,
+          ),
       ];
 
   @override
@@ -245,7 +253,7 @@ class _WebDynamicBrandPanel extends StatelessWidget {
   final UserType? selectedRole;
   final Color selectedAccent;
 
-  static const _roleBenefits = <UserType, _RoleBenefitData>{
+  static Map<UserType, _RoleBenefitData> get _roleBenefits => {
     UserType.doctor: _RoleBenefitData(
       icon: Icons.medical_services_rounded,
       headline: 'Run your practice, simply.',
@@ -261,7 +269,9 @@ class _WebDynamicBrandPanel extends StatelessWidget {
       benefits: [
         'Book doctors and lab tests',
         'Keep your prescriptions and records together',
-        'Request an ambulance when it matters',
+        AmbulanceEnabled.isOn
+            ? 'Request an ambulance when it matters'
+            : 'Track appointments and lab results',
       ],
     ),
     UserType.medicalStore: _RoleBenefitData(
@@ -470,7 +480,9 @@ class _WebDynamicBrandPanel extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         Text(
-          'Connect doctors, patients, pharmacies, labs, and ambulances in one seamless healthcare network.',
+          AmbulanceEnabled.isOn
+              ? 'Connect doctors, patients, pharmacies, labs, and ambulances in one seamless healthcare network.'
+              : 'Connect doctors, patients, pharmacies, and labs in one seamless healthcare network.',
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 16,

@@ -1,0 +1,74 @@
+--- 20261021000002_phase_d_pharmacy_lab_ambulance.sql	(accept_ambulance_request)
++++ 20261026000001_rpc_null_safe_authz.sql	(accept_ambulance_request)
+@@ -9,4 +9,5 @@
+ AS $$
+ DECLARE
+     v_caller_uid TEXT;
++    v_profile_id TEXT;
+     v_driver_id TEXT;
+@@ -15,5 +16,9 @@
+     v_contact public.ambulance_trip_contacts%ROWTYPE;
+     v_winning_request_id VARCHAR(64);
+ BEGIN
++    v_caller_uid := NULLIF(COALESCE(
++        auth.jwt() ->> 'sub',
++        auth.jwt() ->> 'uid',
++        current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
++    ), '');
+-    v_caller_uid := auth.jwt() ->> 'sub';
+     IF v_caller_uid IS NULL THEN
+@@ -20,8 +25,10 @@
+         RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501';
+     END IF;
+ 
++    v_profile_id := private.current_profile_id();
++
+     -- Resolve driver profile
+     SELECT * INTO v_driver
+     FROM public.ambulances
++    WHERE auth_uid = v_caller_uid OR (v_profile_id IS NOT NULL AND ambulance_id = v_profile_id);
+-    WHERE auth_uid = v_caller_uid OR ambulance_id = private.current_profile_id();
+ 
+@@ -29,5 +36,5 @@
+         RAISE EXCEPTION 'Ambulance driver profile not registered' USING ERRCODE = '42501';
+     END IF;
+ 
++    IF v_driver.verified IS NOT TRUE THEN
+-    IF v_driver.verified != TRUE THEN
+         RAISE EXCEPTION 'Only verified ambulance drivers can accept emergency requests' USING ERRCODE = '42501';
+@@ -45,5 +52,5 @@
+         RAISE EXCEPTION 'Broadcast % not found', p_broadcast_id USING ERRCODE = 'P0002';
+     END IF;
+ 
++    IF v_broadcast.status IS DISTINCT FROM 'pending' THEN
+-    IF v_broadcast.status != 'pending' THEN
+         RAISE EXCEPTION 'This emergency request has already been accepted or cancelled (status: %)', v_broadcast.status
+@@ -50,7 +57,16 @@
+             USING ERRCODE = '42501';
+     END IF;
+ 
++    -- Determine winning request id strictly bound to broadcast_id and v_driver_id
+-    -- Determine winning request id
+     IF p_request_id IS NOT NULL THEN
++        SELECT request_id INTO v_winning_request_id
++        FROM public.ambulance_requests
++        WHERE request_id = p_request_id
++          AND broadcast_id = p_broadcast_id
++          AND driver_id = v_driver_id;
++
++        IF v_winning_request_id IS NULL THEN
++            RAISE EXCEPTION 'Request % does not belong to broadcast % and driver %', p_request_id, p_broadcast_id, v_driver_id
++                USING ERRCODE = '42501';
++        END IF;
+-        v_winning_request_id := p_request_id;
+     ELSE
+@@ -58,4 +74,9 @@
+         FROM public.ambulance_requests
+         WHERE broadcast_id = p_broadcast_id AND driver_id = v_driver_id
+         LIMIT 1;
++
++        IF v_winning_request_id IS NULL THEN
++            RAISE EXCEPTION 'No matching ambulance request found for broadcast % and driver %', p_broadcast_id, v_driver_id
++                USING ERRCODE = '42501';
++        END IF;
+     END IF;

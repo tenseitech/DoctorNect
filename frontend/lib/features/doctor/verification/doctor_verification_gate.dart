@@ -4,7 +4,7 @@ import '../../../core/auth/demo_auth_config.dart';
 import '../../../core/auth/verification_lifecycle.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/firebase/firebase_bootstrap.dart';
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/doctor_verification_repository.dart';
 
 import 'package:flutter/material.dart';
 
@@ -41,16 +41,15 @@ class DoctorVerificationGate extends StatelessWidget {
         ? FirebaseAuth.instance.currentUser?.phoneNumber
         : null;
 
-    final isDemoDoc = DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        doctorId.contains(DemoAuthConfig.demoDoctorPhone) ||
-        DemoAuthConfig.isDemoDoctorPhone(
-          DoctorProfileStore.instance.profile.mobile,
-        ) ||
-        DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
-        DoctorSession.loggedInDoctorId.contains(
-          DemoAuthConfig.demoDoctorPhone,
-        ) ||
-        DemoAuthConfig.isDemoDoctorPhone(authPhone);
+    final isDemoDoc = DemoAuthConfig.isDemoAllowed &&
+        (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
+            DemoAuthConfig.isDemoDoctorId(doctorId) ||
+            DemoAuthConfig.isDemoDoctorPhone(
+              DoctorProfileStore.instance.profile.mobile,
+            ) ||
+            DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
+            DemoAuthConfig.isDemoDoctorId(DoctorSession.loggedInDoctorId) ||
+            DemoAuthConfig.isDemoDoctorPhone(authPhone));
 
     if (isDemoDoc) {
       return verifiedChildOverride ??
@@ -64,7 +63,7 @@ class DoctorVerificationGate extends StatelessWidget {
       ]),
       builder: (context, _) {
         return StreamBuilder<bool>(
-          stream: FirestoreService.instance.doctorVerification.watchVerified(
+          stream: DoctorVerificationRepository.instance.watchVerified(
             doctorId,
           ),
           builder: (context, snapshot) {

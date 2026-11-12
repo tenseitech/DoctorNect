@@ -651,8 +651,11 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                           decoration: _fieldDecoration(label: 'Unit'),
                           items: _dosageUnits
                               .map(
-                                (u) =>
-                                    DropdownMenuItem(value: u, child: Text(u)),
+                                (u) => DropdownMenuItem(
+                                  value: u,
+                                  child:
+                                      Text(u, overflow: TextOverflow.ellipsis),
+                                ),
                               )
                               .toList(),
                           onChanged: (v) {
@@ -700,8 +703,11 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                           decoration: _fieldDecoration(label: 'Period'),
                           items: ClinicalMockData.durationUnits
                               .map(
-                                (d) =>
-                                    DropdownMenuItem(value: d, child: Text(d)),
+                                (d) => DropdownMenuItem(
+                                  value: d,
+                                  child:
+                                      Text(d, overflow: TextOverflow.ellipsis),
+                                ),
                               )
                               .toList(),
                           onChanged: (v) {
@@ -851,6 +857,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                                 value: '',
                                 child: Text(
                                   'None',
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontFamily: 'Inter',
                                     color: AppColors.textSecondaryOf(context),
@@ -858,8 +865,11 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                                 ),
                               ),
                               ...ClinicalMockData.instructionOptions.map(
-                                (i) =>
-                                    DropdownMenuItem(value: i, child: Text(i)),
+                                (i) => DropdownMenuItem(
+                                  value: i,
+                                  child:
+                                      Text(i, overflow: TextOverflow.ellipsis),
+                                ),
                               ),
                             ],
                             onChanged: (v) {

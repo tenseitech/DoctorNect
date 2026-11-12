@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/config/ambulance_enabled.dart';
 import '../core/theme/app_colors.dart';
-import '../features/ambulance/ambulance_booking_screen.dart';
-import '../features/ambulance/models/ambulance_models.dart';
+import 'emergency_hotline_sheet.dart';
+import '../features/ambulance/ambulance_booking_screen.dart'
+    deferred as amb_booking;
+import '../features/ambulance/models/ambulance_models.dart'
+    deferred as amb_models;
 import '../core/theme/app_typography.dart';
 
 /// SOS Emergency Sheet for instant 108 Ambulance Hotline and Emergency Trauma Dispatch.
@@ -11,6 +15,10 @@ class EmergencySosSheet extends StatelessWidget {
   const EmergencySosSheet({super.key});
 
   static void show(BuildContext context) {
+    if (!AmbulanceEnabled.isOn) {
+      EmergencyHotlineSheet.show(context);
+      return;
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -168,38 +176,44 @@ class EmergencySosSheet extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 14),
-            // Book Ambulance Quick Dispatch Button
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AmbulanceBookingScreen(
-                      bookedByRole: AmbulanceBookedByRole.patient,
-                    ),
+            if (AmbulanceEnabled.isOn) ...[
+              const SizedBox(height: 14),
+              // Book Ambulance Quick Dispatch Button
+              OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await amb_booking.loadLibrary();
+                  await amb_models.loadLibrary();
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => amb_booking.AmbulanceBookingScreen(
+                          bookedByRole: amb_models.AmbulanceBookedByRole.patient,
+                        ),
+                      ),
+                    );
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  side: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+                  foregroundColor: const Color(0xFFDC2626),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                side: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
-                foregroundColor: const Color(0xFFDC2626),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                ),
+                icon: const Icon(Icons.airport_shuttle_rounded, size: 20),
+                label: Text(
+                  'Book Nearby ICU Ambulance Dispatcher',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              icon: const Icon(Icons.airport_shuttle_rounded, size: 20),
-              label: Text(
-                'Book Nearby ICU Ambulance Dispatcher',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: AppTypography.bodyMedium,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+            ],
             const SizedBox(height: 20),
             Text(
               'Emergency Trauma Services',

@@ -6,7 +6,7 @@ const { Timestamp } = require('firebase-admin/firestore');
 const { initializeApp, getApps } = require('firebase-admin/app');
 if (!getApps().length) initializeApp({ projectId: 'test-project' });
 
-process.env.MSG91_AUTHKEY = 'mock_secret_key_123';
+process.env.MSG91_AUTH_KEY = 'mock_secret_key_123';
 process.env.OTP_TEST_MODE = 'true';
 
 const { setRedisClientForTesting } = require('../redis');
@@ -20,11 +20,29 @@ const {
   consumeOtpChallengeAtomically,
   hashOtp,
   legacyHashOtp,
-  ALLOW_LEGACY_UNSALTED_OTP_HASH,
-  setDemoConfigDocForTesting,
+  allowLegacyUnsaltedOtpHash,
 } = require('../registration_otp');
 
-setDemoConfigDocForTesting(null);
+let origLegacyCutover;
+test.beforeEach(() => {
+  origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+  process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
+  try {
+    const { _resetRemoteConfigCache } = require('../sync_flags');
+    _resetRemoteConfigCache();
+  } catch (_) {}
+});
+
+test.afterEach(() => {
+  delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+  if (origLegacyCutover === undefined) delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+  else process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacyCutover;
+  try {
+    const { _resetRemoteConfigCache } = require('../sync_flags');
+    _resetRemoteConfigCache();
+  } catch (_) {}
+});
+
 
 function createConcurrentMockFirestore() {
   const docs = new Map();
@@ -171,8 +189,36 @@ test('10 concurrent valid OTP attempts consume the challenge exactly once', asyn
   assert.equal(readAttempts(db, challengeKey), null);
 });
 
+test('legacy unsalted SHA-256 challenge is rejected unless ALLOW_LEGACY_UNSALTED_OTP_HASH is true', async () => {
+  const previous = process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
+  delete process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
+  try {
+    assert.equal(allowLegacyUnsaltedOtpHash(), false);
+    const db = createConcurrentMockFirestore();
+    const challengeKey = 'challenge-legacy-default-off';
+    seedChallenge(db, challengeKey, { otpCode: '849201', attempts: 0, useLegacyHash: true });
+    await assert.rejects(
+      consumeOtpChallengeAtomically(db, {
+        challengeKey,
+        otp: '849201',
+        mobileDigits: '9876543210',
+        role: 'patient',
+        isDemoAccount: false,
+      }),
+      { code: 'permission-denied' },
+    );
+    assert.equal(db.docs.has(`otp_challenges/${challengeKey}`), true);
+  } finally {
+    if (previous === undefined) delete process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
+    else process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH = previous;
+  }
+});
+
 test('in-flight legacy unsalted SHA-256 challenge is accepted when ALLOW_LEGACY_UNSALTED_OTP_HASH is true', async () => {
-  assert.equal(ALLOW_LEGACY_UNSALTED_OTP_HASH, true, 'Legacy hash fallback must be enabled');
+  const previous = process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
+  process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH = 'true';
+  try {
+  assert.equal(allowLegacyUnsaltedOtpHash(), true, 'Legacy hash fallback must be enabled');
   const db = createConcurrentMockFirestore();
   const challengeKey = 'challenge-legacy-inflight';
   seedChallenge(db, challengeKey, { otpCode: '849201', attempts: 0, useLegacyHash: true });
@@ -187,6 +233,58 @@ test('in-flight legacy unsalted SHA-256 challenge is accepted when ALLOW_LEGACY_
 
   assert.equal(result.consumed, true, 'Legacy unsalted OTP challenge must be consumed successfully');
   assert.equal(db.docs.has(`otp_challenges/${challengeKey}`), false, 'Legacy challenge doc must be deleted');
+  } finally {
+    if (previous === undefined) delete process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
+    else process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH = previous;
+  }
+});
+
+test('missing role-scoped challenge is not filled from another role on the same mobile', async () => {
+  const db = createConcurrentMockFirestore();
+  const doctorKey = 'doctor_other';
+  seedChallenge(db, doctorKey, {
+    otpCode: '445566',
+    attempts: 0,
+    role: 'doctor',
+    mobileDigits: '9876543210',
+  });
+  db.collection = (name) => ({
+    doc(id) {
+      return { id, collection: name, key: `${name}/${id}` };
+    },
+    where(field, op, value) {
+      const matches = [];
+      for (const [key, data] of db.docs.entries()) {
+        if (!key.startsWith(`${name}/`)) continue;
+        if (op === '==' && data[field] === value) {
+          matches.push({
+            ref: { id: key.split('/')[1], collection: name, key },
+            data: () => data,
+          });
+        }
+      }
+      return {
+        limit() {
+          return this;
+        },
+        async get() {
+          return { empty: matches.length === 0, docs: matches };
+        },
+      };
+    },
+  });
+
+  await assert.rejects(
+    consumeOtpChallengeAtomically(db, {
+      challengeKey: 'patient_missing',
+      otp: '445566',
+      mobileDigits: '9876543210',
+      role: 'patient',
+      isDemoAccount: false,
+    }),
+    { code: 'failed-precondition' },
+  );
+  assert.equal(db.docs.has(`otp_challenges/${doctorKey}`), true);
 });
 
 test('HMAC-SHA256 OTP verification rejects mismatched mobile number or role', async () => {

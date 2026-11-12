@@ -122,6 +122,7 @@ class AmbulanceTypeField extends StatelessWidget {
   Widget build(BuildContext context) {
     return DropdownButtonFormField<AmbulanceType>(
       initialValue: value,
+      isExpanded: true,
       decoration: RequiredFieldLabels.decorate(
         InputDecoration(
           prefixIcon: Icon(
@@ -151,7 +152,10 @@ class AmbulanceTypeField extends StatelessWidget {
           AmbulanceType.icu => 'ICU Ambulance',
           AmbulanceType.patientTransport => 'Patient Transport',
         };
-        return DropdownMenuItem(value: type, child: Text(label));
+        return DropdownMenuItem(
+          value: type,
+          child: Text(label, overflow: TextOverflow.ellipsis),
+        );
       }).toList(),
       onChanged: (v) {
         if (v != null) onChanged(v);

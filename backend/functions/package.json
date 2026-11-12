@@ -8,6 +8,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1141.0",
     "@aws-sdk/s3-request-presigner": "^3.1141.0",
+    "@supabase/supabase-js": "^2.117.0",
     "firebase-admin": "^14.4.0",
     "firebase-functions": "^7.3.2",
     "ioredis": "^6.0.0"
@@ -18,16 +19,27 @@
   "overrides": {
     "gaxios": "^7.3.1",
     "uuid": "^11.1.0",
-    "@grpc/grpc-js": "^1.14.5"
+    "@grpc/grpc-js": "^1.14.5",
+    "@fastify/busboy": "^3.2.2",
+    "minimatch": "^11.0.3",
+    "glob": "^14.0.3",
+    "rimraf": "^6.1.3"
   },
   "scripts": {
     "build": "node --check index.js src/config/redis.js redis.js",
     "deploy": "firebase deploy --only firestore:rules,storage,functions",
-    "test": "node --test test/**/*.test.js",
-    "test:storage-rules": "firebase emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node --test test/storage_doctor_kyc.rules.test.js test/storage_provider_kyc.rules.test.js\"",
+    "test": "node --require ./test/setup_env.js --test \"test/**/*.test.js\"",
+    "test:emulators": "firebase emulators:exec --only firestore,storage --project demo-doctornect-test \"node --test --test-concurrency=1 test/profile_claims_rules.test.js test/firestore_reviews.rules.test.js test/firestore_s3_rules.test.js test/firestore_directory_and_appointments.rules.test.js test/promoted_ads_verification.test.js test/doctor_slots_emulator.test.js test/storage_doctor_kyc.rules.test.js test/storage_provider_kyc.rules.test.js test/storage_live_app_paths.rules.test.js test/client_payload_replay.rules.test.js test/client_read_replay.rules.test.js test/sync_dead_letters.rules.test.js test/sync_to_firestore_emulator.test.js\"",
+    "test:env-parity": "node --require ./test/setup_env.js --test test/env_parity.test.js",
+    "test:storage-rules": "firebase emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node --test --test-concurrency=1 test/storage_doctor_kyc.rules.test.js test/storage_provider_kyc.rules.test.js test/storage_live_app_paths.rules.test.js\"",
     "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-doctornect-reviews \"node --test test/firestore_reviews.rules.test.js\"",
     "test:firestore-s3-rules": "firebase emulators:exec --only firestore --project demo-doctornect-s3-rules \"node --test test/firestore_s3_rules.test.js\"",
-    "test:promoted-ads": "firebase emulators:exec --only firestore --project demo-doctornect-promoted-rules \"node --test test/promoted_ads_verification.test.js\""
+    "test:promoted-ads": "firebase emulators:exec --only firestore --project demo-doctornect-promoted-rules \"node --test test/promoted_ads_verification.test.js\"",
+    "test:doctor-slots-emulator": "firebase emulators:exec --only firestore --project demo-doctornect-slots \"node --test test/doctor_slots_emulator.test.js\"",
+    "test:sync-to-firestore-emulator": "firebase emulators:exec --only firestore --project demo-doctornect-test \"node --test test/sync_to_firestore_emulator.test.js\"",
+    "test:sync-dead-letters-rules": "firebase emulators:exec --only firestore --project demo-doctornect-deadletters-rules \"node --test test/sync_dead_letters.rules.test.js\"",
+    "test:all-rules": "firebase emulators:exec --only firestore --project demo-doctornect-dir-appt-rules \"node --test test/firestore_directory_and_appointments.rules.test.js\" && firebase emulators:exec --only firestore --project demo-doctornect-reviews \"node --test test/firestore_reviews.rules.test.js\" && firebase emulators:exec --only firestore --project demo-doctornect-s3-rules \"node --test test/firestore_s3_rules.test.js\" && firebase emulators:exec --only firestore --project demo-doctornect-claims-rules \"node --test test/profile_claims_rules.test.js\" && firebase emulators:exec --only firestore --project demo-doctornect-promoted-rules \"node --test test/promoted_ads_verification.test.js\" && firebase emulators:exec --only firestore --project demo-doctornect-slots \"node --test test/doctor_slots_emulator.test.js\" && firebase emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node --test test/storage_doctor_kyc.rules.test.js test/storage_provider_kyc.rules.test.js test/storage_live_app_paths.rules.test.js\" && firebase emulators:exec --only firestore --project demo-doctornect-payload-replay \"node --test test/client_payload_replay.rules.test.js\" && firebase emulators:exec --only firestore --project demo-doctornect-read-replay \"node --test test/client_read_replay.rules.test.js\" && firebase emulators:exec --only firestore --project demo-doctornect-deadletters-rules \"node --test test/sync_dead_letters.rules.test.js\"",
+    "test:rules": "npx firebase-tools emulators:exec --only firestore,storage --project demo-doctornect-test \"node --test test/*.rules.test.js test/*_emulator.test.js\""
   },
   "private": true
 }

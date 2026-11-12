@@ -1,3 +1,4 @@
+require('./firestore_forbidden_guard');
 'use strict';
 
 /**
@@ -8,17 +9,28 @@
  * 
  * Includes:
  * 1. Strict loop prevention (detects syncedBy: 'supabase_bridge' | 'reconciler_bot')
- * 2. Monotonic timestamp verification
- * 3. Dead-Letter Queue (DLQ) logging on unrecoverable failures
+ * 2. Monotonic compare-and-skip: an appointment upsert runs only when Firestore
+ *    updatedAt is strictly newer than the Postgres row's updated_at. A missing
+ *    updatedAt never overwrites an existing row. A first insert (no Postgres row)
+ *    is allowed. Stale snapshots are skipped, not applied.
+ * 3. Dead-Letter Queue (DLQ) logging on unrecoverable failures and when the
+ *    writer origin cannot be determined (those rows are not guessed).
  */
 
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const crypto = require('crypto');
+const { toUserUuid, executeUserSyncWithEmailFallback } = require('./user_id_bridge');
+const { readSupabaseServiceRoleKey } = require('./secure_config');
 
 // Resolve Supabase config from environment or Firebase functions config
 function getSupabaseConfig() {
-  const url = process.env.SUPABASE_URL || process.env.STAGING_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+  const isProduction = (process.env.APP_ENV || 'staging').toLowerCase() === 'production';
+  const url = isProduction
+    ? (process.env.PROD_GATEWAY_URL || '')
+    : (process.env.STAGING_SUPABASE_URL || process.env.SUPABASE_URL || '');
+  const key = isProduction
+    ? (process.env.PROD_GATEWAY_SERVICE_KEY || '')
+    : (process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY || readSupabaseServiceRoleKey() || '');
   return { url, key };
 }
 
@@ -136,6 +148,601 @@ async function recordDlqFailure({ direction, entityType, entityId, payload, erro
   }
 }
 
+const APPOINTMENT_SYNC_ORIGINS = new Set([
+  'patient_supabase',
+  'patient_firestore',
+  'doctor_firestore',
+]);
+
+/**
+ * doctors.experience_years is NOT NULL DEFAULT 1. A missing Firestore value is
+ * omitted so insert uses that default and update does not overwrite a real value.
+ */
+function experienceYearsFromDoctorDoc(after) {
+  const n = optionalFiniteNumber(after?.experienceYears ?? after?.yearsExperience);
+  if (n === undefined) return undefined;
+  return Math.trunc(n);
+}
+
+/**
+ * patients.age is nullable. patients.mobile is NOT NULL with no default.
+ * Missing mobile must not be invented; the caller dead-letters and skips the insert.
+ */
+function firstText(...values) {
+  for (const value of values) {
+    if (value == null) continue;
+    const text = String(value).trim();
+    if (text) return text;
+  }
+  return undefined;
+}
+
+function putText(target, key, ...values) {
+  const text = firstText(...values);
+  if (text !== undefined) target[key] = text;
+}
+
+function putBooleanIfPresent(target, key, value) {
+  if (typeof value === 'boolean') target[key] = value;
+}
+
+function placeholderPatientPayload(patientId, docData, fallbackData = {}) {
+  const rawMobile = docData?.mobile || fallbackData.mobile || fallbackData.patientMobile || '';
+  const mobile = String(rawMobile).replace(/\D/g, '');
+  if (!mobile) {
+    return { skip: true, reason: 'patient_mobile_missing' };
+  }
+  // patients.name is NOT NULL with no default. Do not invent a name.
+  const name = firstText(docData?.name, fallbackData.patientName);
+  if (!name) {
+    return { skip: true, reason: 'patient_name_missing' };
+  }
+  const patient = {
+    patient_id: patientId,
+    name,
+    mobile,
+  };
+  // patients.gender is nullable. Omit it unless it is already a legal value.
+  const genderVal = firstText(docData?.gender, fallbackData.patientGender);
+  if (genderVal && ['Male', 'Female', 'Other'].includes(genderVal)) {
+    patient.gender = genderVal;
+  }
+  const createdAt = toIsoTimestamp(docData?.createdAt);
+  if (createdAt) patient.created_at = createdAt;
+  const age = optionalFiniteNumber(docData?.age ?? fallbackData.patientAge);
+  if (age !== undefined) patient.age = Math.trunc(age);
+  return { skip: false, patient };
+}
+
+/**
+ * doctors.name/email/mobile/specialization/qualification are NOT NULL with no
+ * default. Missing ones skip the sync. Columns with defaults are omitted.
+ */
+function buildDoctorSupabasePayload(doctorId, after) {
+  const doc = after || {};
+  const name = firstText(doc.name, doc.fullName);
+  const email = firstText(doc.email);
+  const mobile = firstText(doc.mobile, doc.phone);
+  const specialization = firstText(
+    doc.specialization,
+    Array.isArray(doc.specializations) ? doc.specializations[0] : undefined,
+  );
+  const qualification = firstText(
+    doc.qualification,
+    Array.isArray(doc.degrees) && doc.degrees.length > 0 ? doc.degrees.join(', ') : undefined,
+  );
+  const missing = [];
+  if (!name) missing.push('name');
+  if (!email) missing.push('email');
+  if (!mobile) missing.push('mobile');
+  if (!specialization) missing.push('specialization');
+  if (!qualification) missing.push('qualification');
+  if (missing.length > 0) {
+    return { skip: true, reason: `doctor_required_missing:${missing.join(',')}` };
+  }
+  const doctor = {
+    doctor_id: doctorId,
+    name,
+    email: email.toLowerCase(),
+    mobile,
+    specialization,
+    qualification,
+  };
+  putText(doctor, 'super_specialization', doc.superSpecialization);
+  const fee = optionalFiniteNumber(doc.consultationFee);
+  if (fee !== undefined) doctor.consultation_fee = fee;
+  putText(doctor, 'clinic_name', doc.clinicName);
+  putText(doctor, 'area', doc.area);
+  putText(doctor, 'city', doc.city);
+  putText(doctor, 'state', doc.state);
+  putText(doctor, 'country', doc.country);
+  putText(doctor, 'pincode', doc.pincode);
+  putText(doctor, 'address_line1', doc.addressLine1);
+  putText(doctor, 'address_line2', doc.addressLine2);
+  putText(doctor, 'state_council', doc.stateCouncil);
+  putText(doctor, 'council_number', doc.councilNumber);
+  if (Array.isArray(doc.certifications)) doctor.certifications = toStringArray(doc.certifications, []);
+  if (Array.isArray(doc.pastWorkplaces)) doctor.past_workplaces = toStringArray(doc.pastWorkplaces, []);
+  if (Array.isArray(doc.memberships)) doctor.memberships = toStringArray(doc.memberships, []);
+  if (Array.isArray(doc.awards)) doctor.awards = toStringArray(doc.awards, []);
+  if (Array.isArray(doc.publications)) doctor.publications = toStringArray(doc.publications, []);
+  putText(doctor, 'about', doc.about);
+  if (Array.isArray(doc.languages)) doctor.languages = toStringArray(doc.languages, []);
+  putText(doctor, 'photo_url', doc.photoUrl, doc.photoURL);
+  putText(doctor, 'maps_link', doc.mapsLink, doc.mapsUrl);
+  putText(doctor, 'landmark', doc.landmark);
+  const rating = optionalFiniteNumber(doc.rating);
+  if (rating !== undefined) doctor.rating = rating;
+  const reviewCount = optionalFiniteNumber(doc.reviewCount);
+  if (reviewCount !== undefined) doctor.review_count = Math.trunc(reviewCount);
+  putBooleanIfPresent(doctor, 'profile_completed', doc.profileCompleted);
+  putBooleanIfPresent(doctor, 'verified', doc.verified);
+  const verifiedAt = toIsoTimestamp(doc.verifiedAt);
+  if (verifiedAt) doctor.verified_at = verifiedAt;
+  putBooleanIfPresent(doctor, 'deactivated', doc.deactivated);
+  const deactivatedAt = toIsoTimestamp(doc.deactivatedAt);
+  if (deactivatedAt) doctor.deactivated_at = deactivatedAt;
+  const reactivateBefore = toIsoTimestamp(doc.reactivateBefore);
+  if (reactivateBefore) doctor.reactivate_before = reactivateBefore;
+  const reactivatedAt = toIsoTimestamp(doc.reactivatedAt);
+  if (reactivatedAt) doctor.reactivated_at = reactivatedAt;
+  putText(doctor, 'fcm_token', doc.fcmToken);
+  const fcmUpdated = toIsoTimestamp(doc.fcmTokenUpdatedAt);
+  if (fcmUpdated) doctor.fcm_token_updated_at = fcmUpdated;
+  const createdAt = toIsoTimestamp(doc.createdAt);
+  if (createdAt) doctor.created_at = createdAt;
+  const updatedAt = toIsoTimestamp(doc.updatedAt);
+  if (updatedAt) doctor.updated_at = updatedAt;
+  return { skip: false, doctor };
+}
+
+function buildMedicalStoreSupabasePayload(storeId, docData, fallbackData = {}) {
+  const doc = docData || {};
+  const storeName = firstText(doc.storeName, fallbackData.storeName);
+  const ownerName = firstText(doc.ownerName, fallbackData.ownerName);
+  const license = firstText(doc.drugLicenseNumber, doc.licenseNumber, fallbackData.drugLicenseNumber);
+  const phone = firstText(doc.phone, fallbackData.phone);
+  const email = firstText(doc.email, fallbackData.email);
+  const missing = [];
+  if (!storeName) missing.push('store_name');
+  if (!ownerName) missing.push('owner_name');
+  if (!license) missing.push('drug_license_number');
+  if (!phone) missing.push('phone');
+  if (!email) missing.push('email');
+  if (missing.length > 0) {
+    return { skip: true, reason: `medical_store_required_missing:${missing.join(',')}` };
+  }
+  const store = {
+    store_id: storeId,
+    store_name: storeName,
+    owner_name: ownerName,
+    drug_license_number: license,
+    phone,
+    email: email.toLowerCase(),
+  };
+  putText(store, 'city', doc.city, doc.address && doc.address.city);
+  putText(store, 'state', doc.state, doc.address && doc.address.state);
+  putText(store, 'country', doc.country, doc.address && doc.address.country);
+  putText(store, 'gst_number', doc.gstNumber);
+  putText(store, 'address_line1', doc.addressLine1, doc.address && doc.address.addressLine1);
+  putText(store, 'address_line2', doc.addressLine2, doc.address && doc.address.addressLine2);
+  putText(store, 'pincode', doc.pincode, doc.address && (doc.address.pinCode || doc.address.pincode));
+  const ownerUid = toValidUuid(doc.ownerUid);
+  if (ownerUid) store.owner_uid = ownerUid;
+  putBooleanIfPresent(store, 'profile_completed', doc.profileCompleted);
+  putBooleanIfPresent(store, 'verified', doc.verified);
+  putBooleanIfPresent(store, 'deactivated', doc.deactivated);
+  const verifiedAt = toIsoTimestamp(doc.verifiedAt);
+  if (verifiedAt) store.verified_at = verifiedAt;
+  const createdAt = toIsoTimestamp(doc.createdAt);
+  if (createdAt) store.created_at = createdAt;
+  const updatedAt = toIsoTimestamp(doc.updatedAt);
+  if (updatedAt) store.updated_at = updatedAt;
+  return { skip: false, store };
+}
+
+function buildLabSupabasePayload(labId, docData, fallbackData = {}) {
+  const doc = docData || {};
+  const labName = firstText(doc.labName, fallbackData.labName);
+  const license = firstText(doc.licenseNumber, fallbackData.licenseNumber);
+  const phone = firstText(doc.phone, fallbackData.phone);
+  const email = firstText(doc.email, fallbackData.email);
+  const missing = [];
+  if (!labName) missing.push('lab_name');
+  if (!license) missing.push('license_number');
+  if (!phone) missing.push('phone');
+  if (!email) missing.push('email');
+  if (missing.length > 0) {
+    return { skip: true, reason: `lab_required_missing:${missing.join(',')}` };
+  }
+  const lab = {
+    lab_id: labId,
+    lab_name: labName,
+    license_number: license,
+    phone,
+    email: email.toLowerCase(),
+  };
+  putText(lab, 'city', doc.city);
+  putText(lab, 'state', doc.state);
+  putText(lab, 'country', doc.country);
+  const rating = optionalFiniteNumber(doc.rating);
+  if (rating !== undefined) lab.rating = rating;
+  const createdAt = toIsoTimestamp(doc.createdAt);
+  if (createdAt) lab.created_at = createdAt;
+  const updatedAt = toIsoTimestamp(doc.updatedAt);
+  if (updatedAt) lab.updated_at = updatedAt;
+  return { skip: false, lab };
+}
+
+function buildAmbulanceSupabasePayload(ambulanceId, docData, fallbackData = {}) {
+  const doc = docData || {};
+  const fallback = fallbackData || {};
+  const serviceName = firstText(doc.serviceName, fallback.serviceName);
+  const driverName = firstText(doc.driverName, fallback.driverName);
+  const phone = firstText(doc.phone, fallback.phone);
+  const vehicleNumber = firstText(doc.vehicleNumber, fallback.vehicleNumber);
+  const city = firstText(doc.city, doc.address && doc.address.city, fallback.city);
+  const ambulanceType = firstText(doc.ambulanceType, fallback.ambulanceType);
+  const legalType = ['bls', 'als', 'icu', 'patientTransport'].includes(ambulanceType) ? ambulanceType : undefined;
+  const missing = [];
+  if (!serviceName) missing.push('service_name');
+  if (!driverName) missing.push('driver_name');
+  if (!phone) missing.push('phone');
+  if (!vehicleNumber) missing.push('vehicle_number');
+  if (!legalType) missing.push('ambulance_type');
+  if (!city) missing.push('city');
+  if (missing.length > 0) {
+    return { skip: true, reason: `ambulance_required_missing:${missing.join(',')}` };
+  }
+  const ambulance = {
+    ambulance_id: ambulanceId,
+    service_name: serviceName,
+    driver_name: driverName,
+    phone,
+    vehicle_number: vehicleNumber,
+    ambulance_type: legalType,
+    city,
+  };
+  putText(ambulance, 'owner_name', doc.ownerName);
+  putText(ambulance, 'username', doc.username);
+  if (ambulance.username) ambulance.username = ambulance.username.toLowerCase();
+  putText(ambulance, 'base_address', doc.baseAddress);
+  putText(ambulance, 'state', doc.state, doc.address && doc.address.state);
+  putText(ambulance, 'country', doc.country, doc.address && doc.address.country);
+  putBooleanIfPresent(ambulance, 'has_oxygen', doc.hasOxygen);
+  putBooleanIfPresent(ambulance, 'has_ventilator', doc.hasVentilator);
+  putBooleanIfPresent(ambulance, 'has_stretcher', doc.hasStretcher);
+  putBooleanIfPresent(ambulance, 'is_24x7', doc.is24x7);
+  putBooleanIfPresent(ambulance, 'is_available', doc.isAvailable);
+  putBooleanIfPresent(ambulance, 'verified', doc.verified);
+  const createdAt = toIsoTimestamp(doc.createdAt);
+  if (createdAt) ambulance.created_at = createdAt;
+  const updatedAt = toIsoTimestamp(doc.updatedAt);
+  if (updatedAt) ambulance.updated_at = updatedAt;
+  const authUid = toValidUuid(doc.authUid);
+  if (authUid) ambulance.auth_uid = authUid;
+  return { skip: false, ambulance };
+}
+
+// New broadcasts are written with status 'pending'.
+// frontend/lib/core/firebase/repositories/ambulance_repository.dart:501
+function ambulanceBroadcastStatus(raw) {
+  const value = firstText(raw) || 'pending';
+  return ['pending', 'accepted', 'completed', 'cancelled'].includes(value) ? value : 'pending';
+}
+
+// New driver requests are written with status 'pending'.
+// frontend/lib/core/firebase/repositories/ambulance_repository.dart:523
+function ambulanceRequestStatus(raw) {
+  const value = firstText(raw) || 'pending';
+  return ['pending', 'taken', 'accepted', 'cancelled'].includes(value) ? value : 'pending';
+}
+
+// New invites are written with status pending.
+// frontend/lib/core/invite/ambulance_invite_service.dart:68
+function ambulanceInviteStatus(raw) {
+  const value = firstText(raw) || 'pending';
+  if (value === 'expired') return 'cancelled';
+  return ['pending', 'completed', 'cancelled'].includes(value) ? value : 'pending';
+}
+
+function buildAmbulanceBroadcastSupabasePayload(broadcastId, docData, fallbackData = {}) {
+  const doc = docData || {};
+  const fallback = fallbackData || {};
+  const patientId = firstText(doc.patientId, fallback.patientId);
+  const patientName = firstText(doc.patientName, fallback.patientName);
+  const pickup = firstText(doc.pickupLocation, fallback.pickupLocation);
+  const drop = firstText(doc.dropLocation, fallback.dropLocation);
+  const phone = firstText(doc.contactPhone, fallback.contactPhone);
+  const missing = [];
+  if (!patientId) missing.push('patient_id');
+  if (!patientName) missing.push('patient_name');
+  if (!pickup) missing.push('pickup_location');
+  if (!drop) missing.push('drop_location');
+  if (!phone) missing.push('contact_phone');
+  if (missing.length > 0) {
+    return { skip: true, reason: `ambulance_broadcast_required_missing:${missing.join(',')}` };
+  }
+  return {
+    skip: false,
+    row: {
+      broadcast_id: broadcastId,
+      patient_id: patientId,
+      patient_name: patientName,
+      pickup_location: pickup,
+      drop_location: drop,
+      contact_phone: phone,
+      status: ambulanceBroadcastStatus(doc.status || fallback.status),
+    },
+  };
+}
+
+function buildAmbulanceRequestSupabasePayload(requestId, docData) {
+  const doc = docData || {};
+  const broadcastId = firstText(doc.broadcastId);
+  const driverId = firstText(doc.driverId);
+  const patientId = firstText(doc.patientId);
+  const patientName = firstText(doc.patientName);
+  const pickup = firstText(doc.pickupLocation);
+  const drop = firstText(doc.dropLocation);
+  const phone = firstText(doc.contactPhone);
+  const missing = [];
+  if (!broadcastId) missing.push('broadcast_id');
+  if (!driverId) missing.push('driver_id');
+  if (!patientId) missing.push('patient_id');
+  if (!patientName) missing.push('patient_name');
+  if (!pickup) missing.push('pickup_location');
+  if (!drop) missing.push('drop_location');
+  if (!phone) missing.push('contact_phone');
+  if (missing.length > 0) {
+    return { skip: true, reason: `ambulance_request_required_missing:${missing.join(',')}` };
+  }
+  return {
+    skip: false,
+    row: {
+      request_id: requestId,
+      broadcast_id: broadcastId,
+      driver_id: driverId,
+      patient_id: patientId,
+      patient_name: patientName,
+      pickup_location: pickup,
+      drop_location: drop,
+      contact_phone: phone,
+      status: ambulanceRequestStatus(doc.status),
+    },
+  };
+}
+
+function buildAmbulanceInviteSupabasePayload(inviteId, docData) {
+  const doc = docData || {};
+  const doctorId = firstText(doc.doctorId);
+  const ambulanceId = firstText(doc.ambulanceId);
+  const serviceName = firstText(doc.serviceName);
+  const driverName = firstText(doc.driverName);
+  const phone = firstText(doc.phone);
+  const token = firstText(doc.token);
+  const missing = [];
+  if (!doctorId) missing.push('doctor_id');
+  if (!ambulanceId) missing.push('ambulance_id');
+  if (!serviceName) missing.push('service_name');
+  if (!driverName) missing.push('driver_name');
+  if (!phone) missing.push('phone');
+  if (!token) missing.push('token');
+  if (missing.length > 0) {
+    return { skip: true, reason: `ambulance_invite_required_missing:${missing.join(',')}` };
+  }
+  return {
+    skip: false,
+    row: {
+      invite_id: inviteId,
+      token,
+      doctor_id: doctorId,
+      ambulance_id: ambulanceId,
+      service_name: serviceName,
+      driver_name: driverName,
+      phone,
+      status: ambulanceInviteStatus(doc.status),
+    },
+  };
+}
+
+function buildAvailabilitySupabasePayload(doctorId, after) {
+  const doc = after || {};
+  const payload = { doctor_id: doctorId };
+  if (Array.isArray(doc.workingDays)) payload.working_days = toStringArray(doc.workingDays, []);
+  putText(payload, 'morning_start', doc.morningStart);
+  putText(payload, 'morning_end', doc.morningEnd);
+  putBooleanIfPresent(payload, 'evening_enabled', doc.eveningEnabled);
+  putText(payload, 'evening_start', doc.eveningStart);
+  putText(payload, 'evening_end', doc.eveningEnd);
+  const slot = optionalFiniteNumber(doc.slotDurationMins);
+  if (slot !== undefined) payload.slot_duration_mins = Math.trunc(slot);
+  const maxPatients = optionalFiniteNumber(doc.maxPatientsPerDay);
+  if (maxPatients !== undefined) payload.max_patients_per_day = Math.trunc(maxPatients);
+  putBooleanIfPresent(payload, 'break_enabled', doc.breakEnabled);
+  putText(payload, 'break_start', doc.breakStart);
+  putText(payload, 'break_end', doc.breakEnd);
+  const leaveStart = toIsoTimestamp(doc.leaveStart);
+  if (leaveStart) payload.leave_start = leaveStart;
+  const leaveEnd = toIsoTimestamp(doc.leaveEnd);
+  if (leaveEnd) payload.leave_end = leaveEnd;
+  const updatedAt = toIsoTimestamp(doc.updatedAt);
+  if (updatedAt) payload.updated_at = updatedAt;
+  return payload;
+}
+
+async function pgMergeUpsert(pool, table, payload, conflictColumn) {
+  const entries = Object.entries(payload).filter(([, value]) => value !== undefined);
+  if (entries.length === 0) return;
+  const cols = entries.map(([key]) => key);
+  const values = entries.map(([, value]) => value);
+  const placeholders = cols.map((_, index) => `$${index + 1}`).join(', ');
+  const updates = cols
+    .filter((col) => col !== conflictColumn && col !== 'created_at')
+    .map((col) => `${col} = EXCLUDED.${col}`);
+  const action = updates.length > 0 ? `DO UPDATE SET ${updates.join(', ')}` : 'DO NOTHING';
+  await pool.query(
+    `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${placeholders}) ON CONFLICT (${conflictColumn}) ${action}`,
+    values,
+  );
+}
+
+/** Finite number, or undefined when the Firestore field is absent. Zero is kept. */
+function optionalFiniteNumber(value) {
+  if (value === undefined || value === null || value === '') return undefined;
+  const n = typeof value === 'number' ? value : Number(String(value).trim());
+  if (!Number.isFinite(n)) return undefined;
+  return n;
+}
+
+function firestoreTimestampMs(value) {
+  if (value == null || value === '') return null;
+  if (typeof value.toDate === 'function') {
+    const ms = value.toDate().getTime();
+    return Number.isNaN(ms) ? null : ms;
+  }
+  if (value instanceof Date) {
+    const ms = value.getTime();
+    return Number.isNaN(ms) ? null : ms;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const ms = Date.parse(value);
+    return Number.isNaN(ms) ? null : ms;
+  }
+  if (typeof value === 'object' && Number.isFinite(value._seconds)) {
+    return value._seconds * 1000 + Math.floor((value._nanoseconds || 0) / 1e6);
+  }
+  return null;
+}
+
+/**
+ * Writer origin already stored on the Firestore document.
+ * Returns null when the document does not say who wrote it — callers must skip.
+ */
+function resolveWriterSyncOrigin(doc) {
+  if (!doc || typeof doc !== 'object') return null;
+  const explicit = String(doc.syncOrigin || doc.sync_origin || '').trim();
+  if (APPOINTMENT_SYNC_ORIGINS.has(explicit)) return explicit;
+
+  const syncedBy = String(doc.syncedBy || '').trim().toLowerCase();
+  if (syncedBy === 'patient' || syncedBy === 'patient_client') return 'patient_firestore';
+  if (syncedBy === 'doctor' || syncedBy === 'doctor_client') return 'doctor_firestore';
+
+  const createdBy = String(doc.createdBy || doc.writerRole || doc.bookedByRole || '').trim().toLowerCase();
+  if (createdBy === 'patient') return 'patient_firestore';
+  if (createdBy === 'doctor') return 'doctor_firestore';
+
+  const source = String(doc.source || '').trim().toLowerCase();
+  if (source === 'walkin') return 'doctor_firestore';
+  if (source === 'patient' || source === 'patient_app') return 'patient_firestore';
+  return null;
+}
+
+function buildAppointmentSupabasePayload(after, appointmentId, syncOrigin) {
+  const doctorName = firstText(after.doctorName);
+  const patientName = firstText(after.patientName);
+  if (!doctorName || !patientName) {
+    const missing = [];
+    if (!doctorName) missing.push('doctor_name');
+    if (!patientName) missing.push('patient_name');
+    console.warn(JSON.stringify({
+      severity: 'WARNING',
+      event: 'SYNC_BRIDGE_PAYLOAD_VALIDATION_FAILED',
+      entityType: 'appointment',
+      entityId: appointmentId,
+      documentPath: `appointments/${appointmentId}`,
+      missingFields: missing,
+    }));
+    return { skip: true, reason: `appointment_required_missing:${missing.join(',')}` };
+  }
+
+  const dateTimeRaw = after.dateTime;
+  const dateTimeIso = dateTimeRaw?.toDate?.()
+    ? dateTimeRaw.toDate().toISOString()
+    : (dateTimeRaw ? toIsoTimestamp(dateTimeRaw) : undefined);
+
+  const payload = {
+    appointment_id: appointmentId,
+    doctor_name: doctorName,
+    patient_name: patientName,
+    has_prescription: Boolean(after.hasPrescription),
+    sync_origin: syncOrigin,
+    synced_by: 'firestore_cloud_function',
+  };
+
+  putText(payload, 'doctor_id', after.doctorId);
+  putText(payload, 'patient_id', after.patientId);
+  putText(payload, 'specialization', after.specialization);
+  putText(payload, 'patient_gender', after.patientGender);
+  if (dateTimeIso) payload.date_time = dateTimeIso;
+  putText(payload, 'visit_type', after.visitType);
+  putText(payload, 'patient_status', after.patientStatus);
+  putText(payload, 'doctor_status', after.doctorStatus);
+  putText(payload, 'clinic_name', after.clinicName);
+  putText(payload, 'clinic_address', after.clinicAddress);
+  putText(payload, 'cancellation_reason', after.cancellationReason);
+  putText(payload, 'diagnosis', after.diagnosis);
+
+  const age = optionalFiniteNumber(after.patientAge);
+  if (age !== undefined) payload.patient_age = age;
+  const token = optionalFiniteNumber(after.tokenNumber);
+  if (token !== undefined) payload.token_number = token;
+  if (typeof after.slotLabel === 'string' && after.slotLabel.trim()) {
+    payload.slot_label = after.slotLabel.trim();
+  }
+  const updatedMs = firestoreTimestampMs(after.updatedAt);
+  if (updatedMs != null) payload.updated_at = new Date(updatedMs).toISOString();
+  return payload;
+}
+
+async function readRemoteUpdatedAtMs({ url, key, pool, table, idColumn, id }) {
+  if (!/^[a-z_]+$/.test(table) || !/^[a-z_]+$/.test(idColumn)) {
+    throw new Error('Unsupported compare-and-skip target');
+  }
+  if (url && key) {
+    const endpoint = `${url.replace(/\/+$/, '')}/rest/v1/${table}?${idColumn}=eq.${encodeURIComponent(id)}&select=updated_at&limit=1`;
+    const resp = await fetch(endpoint, {
+      method: 'GET',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+      },
+    });
+    if (!resp.ok) {
+      throw new Error(`compare-and-skip read failed (${resp.status})`);
+    }
+    const rows = await resp.json();
+    if (!Array.isArray(rows) || rows.length === 0 || rows[0].updated_at == null) return null;
+    const ms = Date.parse(rows[0].updated_at);
+    return Number.isNaN(ms) ? null : ms;
+  }
+  if (pool) {
+    const result = await pool.query(
+      `SELECT updated_at FROM ${table} WHERE ${idColumn} = $1 LIMIT 1`,
+      [id],
+    );
+    if (!result.rows || result.rows.length === 0 || result.rows[0].updated_at == null) return null;
+    const ms = new Date(result.rows[0].updated_at).getTime();
+    return Number.isNaN(ms) ? null : ms;
+  }
+  return null;
+}
+
+async function upsertMergeRow(pool, table, conflictColumn, payload) {
+  if (!/^[a-z_]+$/.test(table) || !/^[a-z_]+$/.test(conflictColumn)) {
+    throw new Error('Unsupported upsert target');
+  }
+  const cols = Object.keys(payload).filter((col) => /^[a-z_]+$/.test(col));
+  if (!cols.includes(conflictColumn)) throw new Error('Upsert payload missing conflict column');
+  const assignments = cols
+    .filter((col) => col !== conflictColumn && col !== 'id' && col !== 'created_at')
+    .map((col) => `${col} = EXCLUDED.${col}`);
+  const action = assignments.length > 0 ? `DO UPDATE SET ${assignments.join(', ')}` : 'DO NOTHING';
+  const sql = `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')}) ON CONFLICT (${conflictColumn}) ${action}`;
+  await pool.query(sql, cols.map((col) => payload[col]));
+}
+
 /**
  * Sync Firestore Appointment to Supabase
  */
@@ -154,6 +761,18 @@ async function syncFirestoreAppointmentToSupabase(event) {
     return;
   }
 
+  const syncOrigin = resolveWriterSyncOrigin(after);
+  if (!syncOrigin) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'appointment',
+      entityId: appointmentId,
+      payload: { reason: 'origin_undetermined' },
+      errorMessage: 'Skipped sync: appointment writer origin could not be determined from the document.',
+    });
+    return;
+  }
+
   const { url, key } = getSupabaseConfig();
   const pool = getPgPool();
 
@@ -162,34 +781,47 @@ async function syncFirestoreAppointmentToSupabase(event) {
     return;
   }
 
-  const dateTimeIso = after.dateTime?.toDate?.()
-    ? after.dateTime.toDate().toISOString()
-    : (after.dateTime ? new Date(after.dateTime).toISOString() : new Date().toISOString());
+  const localMs = firestoreTimestampMs(after.updatedAt);
+  let remoteMs = null;
+  try {
+    remoteMs = await readRemoteUpdatedAtMs({
+      url,
+      key,
+      pool,
+      table: 'appointments',
+      idColumn: 'appointment_id',
+      id: appointmentId,
+    });
+  } catch (err) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'appointment',
+      entityId: appointmentId,
+      payload: { reason: 'compare_and_skip_read_failed' },
+      errorMessage: err.message,
+      errorStack: err.stack,
+    });
+    return;
+  }
+  if (remoteMs != null && (localMs == null || localMs <= remoteMs)) {
+    console.info(`[SyncBridge] Skipping stale appointment snapshot ${appointmentId}`);
+    return;
+  }
 
-  const supabasePayload = {
-    appointment_id: appointmentId,
-    doctor_id: after.doctorId || 'doc-unknown',
-    patient_id: after.patientId || null,
-    doctor_name: after.doctorName || 'Doctor',
-    specialization: after.specialization || 'General',
-    patient_name: after.patientName || 'Patient',
-    patient_age: Number(after.patientAge) || 30,
-    patient_gender: after.patientGender || 'Other',
-    date_time: dateTimeIso,
-    slot_label: after.slotLabel || '10:00 AM',
-    visit_type: after.visitType || 'newVisit',
-    patient_status: after.patientStatus || 'confirmed',
-    doctor_status: after.doctorStatus || 'pendingRequest',
-    token_number: Number(after.tokenNumber) || 1,
-    clinic_name: after.clinicName || null,
-    clinic_address: after.clinicAddress || null,
-    cancellation_reason: after.cancellationReason || null,
-    diagnosis: after.diagnosis || null,
-    has_prescription: Boolean(after.hasPrescription),
-    sync_origin: 'doctor_firestore',
-    synced_by: 'firestore_cloud_function',
-    updated_at: new Date().toISOString(),
-  };
+  const supabasePayload = buildAppointmentSupabasePayload(after, appointmentId, syncOrigin);
+  if (supabasePayload.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'appointment',
+      entityId: appointmentId,
+      payload: { reason: supabasePayload.reason },
+      errorMessage: `Skipped appointment sync: ${supabasePayload.reason}`,
+    });
+    return;
+  }
+  if (!supabasePayload.updated_at && remoteMs == null) {
+    supabasePayload.updated_at = new Date().toISOString();
+  }
 
   try {
     await executeWithRetry(
@@ -211,46 +843,7 @@ async function syncFirestoreAppointmentToSupabase(event) {
             throw new Error(`Supabase PostgREST error (${resp.status}): ${errBody}`);
           }
         } else if (pool) {
-          await pool.query(`
-            INSERT INTO appointments (
-              appointment_id, doctor_id, patient_id, doctor_name, specialization,
-              patient_name, patient_age, patient_gender, date_time, slot_label,
-              visit_type, patient_status, doctor_status, token_number, clinic_name,
-              clinic_address, cancellation_reason, diagnosis, has_prescription,
-              sync_origin, synced_by, updated_at
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW()
-            ) ON CONFLICT (appointment_id) DO UPDATE SET
-              doctor_status = EXCLUDED.doctor_status,
-              patient_status = EXCLUDED.patient_status,
-              diagnosis = EXCLUDED.diagnosis,
-              has_prescription = EXCLUDED.has_prescription,
-              sync_origin = 'doctor_firestore',
-              synced_by = 'firestore_cloud_function',
-              updated_at = NOW();
-          `, [
-            supabasePayload.appointment_id,
-            supabasePayload.doctor_id,
-            supabasePayload.patient_id,
-            supabasePayload.doctor_name,
-            supabasePayload.specialization,
-            supabasePayload.patient_name,
-            supabasePayload.patient_age,
-            supabasePayload.patient_gender,
-            supabasePayload.date_time,
-            supabasePayload.slot_label,
-            supabasePayload.visit_type,
-            supabasePayload.patient_status,
-            supabasePayload.doctor_status,
-            supabasePayload.token_number,
-            supabasePayload.clinic_name,
-            supabasePayload.clinic_address,
-            supabasePayload.cancellation_reason,
-            supabasePayload.diagnosis,
-            supabasePayload.has_prescription,
-            supabasePayload.sync_origin,
-            supabasePayload.synced_by,
-          ]);
+          await upsertMergeRow(pool, 'appointments', 'appointment_id', supabasePayload);
         }
       },
       { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'appointment', entityId: appointmentId } }
@@ -295,21 +888,41 @@ async function syncFirestorePrescriptionToSupabase(event) {
     return;
   }
 
+  const prescriptionDoctorId = firstText(after.doctorId);
+  const prescriptionPatientId = firstText(after.patientId);
+  const prescriptionPatientName = firstText(after.patientName);
+  const prescriptionAge = optionalFiniteNumber(after.patientAge);
+  if (!prescriptionDoctorId || !prescriptionPatientId || !prescriptionPatientName || prescriptionAge === undefined) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'prescription',
+      entityId: prescriptionId,
+      payload: { prescription_id: prescriptionId },
+      errorMessage: 'Skipped prescription sync: doctor_id, patient_id, patient_name, and patient_age are required.',
+      retryCount: 0,
+    });
+    return;
+  }
   const prescriptionPayload = {
     prescription_id: prescriptionId,
-    doctor_id: after.doctorId || 'doc-unknown',
-    patient_id: after.patientId || 'pat-unknown',
-    appointment_id: after.appointmentId || null,
-    doctor_name: after.doctorName || 'Doctor',
-    patient_name: after.patientName || 'Patient',
-    patient_age: Number(after.patientAge) || 30,
-    patient_gender: after.patientGender || 'Other',
-    primary_diagnosis: after.primaryDiagnosis || after.diagnosis || 'General Consultation',
-    general_advice: after.generalAdvice || null,
+    doctor_id: prescriptionDoctorId,
+    patient_id: prescriptionPatientId,
+    patient_name: prescriptionPatientName,
+    patient_age: Math.trunc(prescriptionAge),
+    // This trigger only runs for a Firestore prescription write from the doctor app.
     sync_origin: 'doctor_firestore',
     synced_by: 'firestore_cloud_function',
-    updated_at: new Date().toISOString(),
   };
+  putText(prescriptionPayload, 'appointment_id', after.appointmentId);
+  putText(prescriptionPayload, 'doctor_name', after.doctorName);
+  const prescriptionGender = firstText(after.patientGender);
+  if (prescriptionGender && ['Male', 'Female', 'Other'].includes(prescriptionGender)) {
+    prescriptionPayload.patient_gender = prescriptionGender;
+  }
+  putText(prescriptionPayload, 'primary_diagnosis', after.primaryDiagnosis, after.diagnosis);
+  putText(prescriptionPayload, 'general_advice', after.generalAdvice);
+  const prescriptionUpdatedAt = toIsoTimestamp(after.updatedAt);
+  if (prescriptionUpdatedAt) prescriptionPayload.updated_at = prescriptionUpdatedAt;
 
   try {
     await executeWithRetry(
@@ -334,18 +947,31 @@ async function syncFirestorePrescriptionToSupabase(event) {
         // 2. Upsert medicines line items if present
         const medicines = Array.isArray(after.medicines) ? after.medicines : [];
         if (medicines.length > 0) {
-          const medRows = medicines.map((m, idx) => ({
-            prescription_id: prescriptionId,
-            medicine_entry_id: `${prescriptionId}_med_${idx}`,
-            name: m.name || m.medicineName || 'Medicine',
-            dosage: m.dosage || 'Standard',
-            form: m.form || 'Tablet',
-            frequency: m.frequency || '1-0-1',
-            quantity: String(m.quantity || '10'),
-            duration: m.duration || '5 days',
-            instructions: m.instructions || m.timing || 'After meals',
-          }));
+          const medRows = medicines.flatMap((m, idx) => {
+            const name = firstText(m.name, m.medicineName);
+            const dosage = firstText(m.dosage);
+            const form = firstText(m.form);
+            const frequency = firstText(m.frequency);
+            const quantity = firstText(m.quantity);
+            const duration = firstText(m.duration);
+            if (!name || !dosage || !form || !frequency || !quantity || !duration) {
+              return [];
+            }
+            const row = {
+              prescription_id: prescriptionId,
+              medicine_entry_id: `${prescriptionId}_med_${idx}`,
+              name,
+              dosage,
+              form,
+              frequency,
+              quantity,
+              duration,
+            };
+            putText(row, 'instructions', m.instructions, m.timing);
+            return [row];
+          });
 
+          if (medRows.length === 0) return;
           const medResp = await fetch(`${url.replace(/\/+$/, '')}/rest/v1/prescription_medicines?on_conflict=prescription_id,medicine_entry_id`, {
             method: 'POST',
             headers: {
@@ -472,16 +1098,19 @@ async function ensureDoctorExistsInPostgres(doctorId, { url, key, pool }) {
     if (snap.exists) docData = snap.data();
   } catch (_) {}
 
-  const placeholderDoctor = {
-    doctor_id: doctorId,
-    name: docData?.name || docData?.fullName || 'Doctor',
-    email: (docData?.email || `${doctorId}@doctornect.com`).toLowerCase(),
-    mobile: docData?.mobile || docData?.phone || '0000000000',
-    specialization: docData?.specialization || 'General Physician',
-    qualification: docData?.qualification || 'MBBS',
-    created_at: toIsoTimestamp(docData?.createdAt) || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  const builtDoctor = buildDoctorSupabasePayload(doctorId, docData);
+  if (builtDoctor.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'doctor',
+      entityId: doctorId,
+      payload: { doctor_id: doctorId },
+      errorMessage: `Skipped doctor placeholder: ${builtDoctor.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
+  const placeholderDoctor = builtDoctor.doctor;
 
   try {
     if (url && key) {
@@ -496,18 +1125,7 @@ async function ensureDoctorExistsInPostgres(doctorId, { url, key, pool }) {
         body: JSON.stringify(placeholderDoctor),
       });
     } else if (pool) {
-      await pool.query(`
-        INSERT INTO doctors (doctor_id, name, email, mobile, specialization, qualification, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-        ON CONFLICT (doctor_id) DO NOTHING;
-      `, [
-        placeholderDoctor.doctor_id,
-        placeholderDoctor.name,
-        placeholderDoctor.email,
-        placeholderDoctor.mobile,
-        placeholderDoctor.specialization,
-        placeholderDoctor.qualification,
-      ]);
+      await pgMergeUpsert(pool, 'doctors', placeholderDoctor, 'doctor_id');
     }
   } catch (e) {
     console.warn(`[SyncBridge] Warning: unable to ensure parent doctor ${doctorId} in Postgres: ${e.message}`);
@@ -521,7 +1139,7 @@ async function syncDoctorEducationToSupabase(doctorId, rawEducation, qualificati
   const educationList = Array.isArray(rawEducation) ? rawEducation : [];
   let educationRows = educationList.map(item => ({
     doctor_id: doctorId,
-    degree: String(item.degree || item.title || qualification || 'MBBS').slice(0, 128),
+    degree: String(firstText(item.degree, item.title, qualification) || '').slice(0, 128),
     college: item.college || item.university || item.institution || null,
     year: item.year ? parseInt(item.year, 10) || null : null,
   })).filter(e => e.degree);
@@ -709,50 +1327,21 @@ async function syncFirestoreDoctorToSupabase(event) {
     return;
   }
 
-  const doctorPayload = {
-    doctor_id: doctorId,
-    name: after.name || after.fullName || 'Doctor',
-    email: (after.email || `${doctorId}@doctornect.com`).toLowerCase(),
-    mobile: after.mobile || after.phone || '0000000000',
-    specialization: after.specialization || (Array.isArray(after.specializations) && after.specializations.length > 0 ? after.specializations[0] : 'General Physician'),
-    super_specialization: after.superSpecialization || null,
-    qualification: after.qualification || (Array.isArray(after.degrees) && after.degrees.length > 0 ? after.degrees.join(', ') : 'MBBS'),
-    experience_years: parseInt(after.experienceYears ?? after.yearsExperience ?? 1, 10) || 1,
-    consultation_fee: parseFloat(after.consultationFee ?? 0.0) || 0.0,
-    clinic_name: after.clinicName || null,
-    area: after.area || null,
-    city: after.city || 'Mumbai',
-    state: after.state || 'Maharashtra',
-    country: after.country || 'India',
-    pincode: after.pincode || null,
-    address_line1: after.addressLine1 || null,
-    address_line2: after.addressLine2 || null,
-    state_council: after.stateCouncil || null,
-    council_number: after.councilNumber || null,
-    certifications: toStringArray(after.certifications, []),
-    past_workplaces: toStringArray(after.pastWorkplaces, []),
-    memberships: toStringArray(after.memberships, []),
-    awards: toStringArray(after.awards, []),
-    publications: toStringArray(after.publications, []),
-    about: after.about || null,
-    languages: toStringArray(after.languages, ['English', 'Hindi']),
-    photo_url: after.photoUrl || after.photoURL || null,
-    maps_link: after.mapsLink || after.mapsUrl || null,
-    landmark: after.landmark || null,
-    rating: parseFloat(after.rating ?? 0.0) || 0.0,
-    review_count: parseInt(after.reviewCount ?? 0, 10) || 0,
-    profile_completed: Boolean(after.profileCompleted),
-    verified: Boolean(after.verified),
-    verified_at: toIsoTimestamp(after.verifiedAt),
-    deactivated: Boolean(after.deactivated),
-    deactivated_at: toIsoTimestamp(after.deactivatedAt),
-    reactivate_before: toIsoTimestamp(after.reactivateBefore),
-    reactivated_at: toIsoTimestamp(after.reactivatedAt),
-    fcm_token: after.fcmToken || null,
-    fcm_token_updated_at: toIsoTimestamp(after.fcmTokenUpdatedAt),
-    created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
-    updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
-  };
+  const builtDoctor = buildDoctorSupabasePayload(doctorId, after);
+  if (builtDoctor.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'doctor',
+      entityId: doctorId,
+      payload: { doctor_id: doctorId },
+      errorMessage: `Skipped doctor sync: ${builtDoctor.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
+  const doctorPayload = builtDoctor.doctor;
+  const experienceYears = experienceYearsFromDoctorDoc(after);
+  if (experienceYears !== undefined) doctorPayload.experience_years = experienceYears;
 
   try {
     await executeWithRetry(
@@ -774,77 +1363,7 @@ async function syncFirestoreDoctorToSupabase(event) {
             throw new Error(`Supabase PostgREST doctor error (${resp.status}): ${errBody}`);
           }
         } else if (pool) {
-          await pool.query(`
-            INSERT INTO doctors (
-              doctor_id, name, email, mobile, specialization, super_specialization,
-              qualification, experience_years, consultation_fee, clinic_name,
-              area, city, state, country, pincode, address_line1, address_line2,
-              state_council, council_number, certifications, past_workplaces,
-              memberships, awards, publications, about, languages, photo_url,
-              maps_link, landmark, rating, review_count, profile_completed,
-              verified, verified_at, deactivated, deactivated_at, reactivate_before,
-              reactivated_at, fcm_token, fcm_token_updated_at, created_at, updated_at
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-              $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28,
-              $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42
-            ) ON CONFLICT (doctor_id) DO UPDATE SET
-              name = EXCLUDED.name,
-              email = EXCLUDED.email,
-              mobile = EXCLUDED.mobile,
-              specialization = EXCLUDED.specialization,
-              super_specialization = EXCLUDED.super_specialization,
-              qualification = EXCLUDED.qualification,
-              experience_years = EXCLUDED.experience_years,
-              consultation_fee = EXCLUDED.consultation_fee,
-              clinic_name = EXCLUDED.clinic_name,
-              area = EXCLUDED.area,
-              city = EXCLUDED.city,
-              state = EXCLUDED.state,
-              country = EXCLUDED.country,
-              pincode = EXCLUDED.pincode,
-              address_line1 = EXCLUDED.address_line1,
-              address_line2 = EXCLUDED.address_line2,
-              state_council = EXCLUDED.state_council,
-              council_number = EXCLUDED.council_number,
-              certifications = EXCLUDED.certifications,
-              past_workplaces = EXCLUDED.past_workplaces,
-              memberships = EXCLUDED.memberships,
-              awards = EXCLUDED.awards,
-              publications = EXCLUDED.publications,
-              about = EXCLUDED.about,
-              languages = EXCLUDED.languages,
-              photo_url = EXCLUDED.photo_url,
-              maps_link = EXCLUDED.maps_link,
-              landmark = EXCLUDED.landmark,
-              rating = EXCLUDED.rating,
-              review_count = EXCLUDED.review_count,
-              profile_completed = EXCLUDED.profile_completed,
-              verified = EXCLUDED.verified,
-              verified_at = EXCLUDED.verified_at,
-              deactivated = EXCLUDED.deactivated,
-              deactivated_at = EXCLUDED.deactivated_at,
-              reactivate_before = EXCLUDED.reactivate_before,
-              reactivated_at = EXCLUDED.reactivated_at,
-              fcm_token = EXCLUDED.fcm_token,
-              fcm_token_updated_at = EXCLUDED.fcm_token_updated_at,
-              updated_at = NOW();
-          `, [
-            doctorPayload.doctor_id, doctorPayload.name, doctorPayload.email, doctorPayload.mobile,
-            doctorPayload.specialization, doctorPayload.super_specialization, doctorPayload.qualification,
-            doctorPayload.experience_years, doctorPayload.consultation_fee, doctorPayload.clinic_name,
-            doctorPayload.area, doctorPayload.city, doctorPayload.state, doctorPayload.country,
-            doctorPayload.pincode, doctorPayload.address_line1, doctorPayload.address_line2,
-            doctorPayload.state_council, doctorPayload.council_number, doctorPayload.certifications,
-            doctorPayload.past_workplaces, doctorPayload.memberships, doctorPayload.awards,
-            doctorPayload.publications, doctorPayload.about, doctorPayload.languages,
-            doctorPayload.photo_url, doctorPayload.maps_link, doctorPayload.landmark,
-            doctorPayload.rating, doctorPayload.review_count, doctorPayload.profile_completed,
-            doctorPayload.verified, doctorPayload.verified_at, doctorPayload.deactivated,
-            doctorPayload.deactivated_at, doctorPayload.reactivate_before, doctorPayload.reactivated_at,
-            doctorPayload.fcm_token, doctorPayload.fcm_token_updated_at, doctorPayload.created_at,
-            doctorPayload.updated_at
-          ]);
+          await pgMergeUpsert(pool, 'doctors', doctorPayload, 'doctor_id');
         }
 
         // 2. Sync Doctor Education
@@ -942,23 +1461,7 @@ async function syncFirestoreDoctorAvailabilityToSupabase(event) {
   // Ensure parent doctor exists to satisfy foreign key constraint
   await ensureDoctorExistsInPostgres(doctorId, { url, key, pool });
 
-  const availabilityPayload = {
-    doctor_id: doctorId,
-    working_days: toStringArray(after.workingDays, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']),
-    morning_start: after.morningStart || '09:00 AM',
-    morning_end: after.morningEnd || '01:00 PM',
-    evening_enabled: after.eveningEnabled !== false,
-    evening_start: after.eveningStart || '04:00 PM',
-    evening_end: after.eveningEnd || '08:00 PM',
-    slot_duration_mins: parseInt(after.slotDurationMins || 15, 10),
-    max_patients_per_day: parseInt(after.maxPatientsPerDay || 20, 10),
-    break_enabled: Boolean(after.breakEnabled),
-    break_start: after.breakStart || '01:00 PM',
-    break_end: after.breakEnd || '02:00 PM',
-    leave_start: toIsoTimestamp(after.leaveStart),
-    leave_end: toIsoTimestamp(after.leaveEnd),
-    updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
-  };
+  const availabilityPayload = buildAvailabilitySupabasePayload(doctorId, after);
 
   try {
     await executeWithRetry(
@@ -979,45 +1482,7 @@ async function syncFirestoreDoctorAvailabilityToSupabase(event) {
             throw new Error(`Supabase PostgREST doctor_availability error (${resp.status}): ${errBody}`);
           }
         } else if (pool) {
-          await pool.query(`
-            INSERT INTO doctor_availability (
-              doctor_id, working_days, morning_start, morning_end, evening_enabled,
-              evening_start, evening_end, slot_duration_mins, max_patients_per_day,
-              break_enabled, break_start, break_end, leave_start, leave_end, updated_at
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
-            ) ON CONFLICT (doctor_id) DO UPDATE SET
-              working_days = EXCLUDED.working_days,
-              morning_start = EXCLUDED.morning_start,
-              morning_end = EXCLUDED.morning_end,
-              evening_enabled = EXCLUDED.evening_enabled,
-              evening_start = EXCLUDED.evening_start,
-              evening_end = EXCLUDED.evening_end,
-              slot_duration_mins = EXCLUDED.slot_duration_mins,
-              max_patients_per_day = EXCLUDED.max_patients_per_day,
-              break_enabled = EXCLUDED.break_enabled,
-              break_start = EXCLUDED.break_start,
-              break_end = EXCLUDED.break_end,
-              leave_start = EXCLUDED.leave_start,
-              leave_end = EXCLUDED.leave_end,
-              updated_at = EXCLUDED.updated_at;
-          `, [
-            availabilityPayload.doctor_id,
-            availabilityPayload.working_days,
-            availabilityPayload.morning_start,
-            availabilityPayload.morning_end,
-            availabilityPayload.evening_enabled,
-            availabilityPayload.evening_start,
-            availabilityPayload.evening_end,
-            availabilityPayload.slot_duration_mins,
-            availabilityPayload.max_patients_per_day,
-            availabilityPayload.break_enabled,
-            availabilityPayload.break_start,
-            availabilityPayload.break_end,
-            availabilityPayload.leave_start,
-            availabilityPayload.leave_end,
-            availabilityPayload.updated_at,
-          ]);
+          await pgMergeUpsert(pool, 'doctor_availability', availabilityPayload, 'doctor_id');
         }
 
         // Sync blocked dates embedded in availability if present
@@ -1200,19 +1665,19 @@ async function ensureMedicalStoreExistsInPostgres(storeId, fallbackData = {}, { 
     if (snap.exists) docData = snap.data();
   } catch (_) {}
 
-  const placeholderStore = {
-    store_id: storeId,
-    store_name: docData?.storeName || fallbackData.storeName || 'Medical Store',
-    owner_name: docData?.ownerName || 'Owner',
-    drug_license_number: docData?.drugLicenseNumber || docData?.licenseNumber || 'PENDING',
-    phone: docData?.phone || '0000000000',
-    email: (docData?.email || `${storeId}@doctornect.com`).toLowerCase(),
-    city: docData?.city || 'Mumbai',
-    state: docData?.state || 'Maharashtra',
-    country: docData?.country || 'India',
-    created_at: toIsoTimestamp(docData?.createdAt) || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  const builtStore = buildMedicalStoreSupabasePayload(storeId, docData, fallbackData);
+  if (builtStore.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'medical_store',
+      entityId: storeId,
+      payload: { store_id: storeId },
+      errorMessage: `Skipped medical store placeholder: ${builtStore.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
+  const placeholderStore = builtStore.store;
 
   try {
     if (url && key) {
@@ -1227,21 +1692,7 @@ async function ensureMedicalStoreExistsInPostgres(storeId, fallbackData = {}, { 
         body: JSON.stringify(placeholderStore),
       });
     } else if (pool) {
-      await pool.query(`
-        INSERT INTO medical_stores (store_id, store_name, owner_name, drug_license_number, phone, email, city, state, country, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-        ON CONFLICT (store_id) DO NOTHING;
-      `, [
-        placeholderStore.store_id,
-        placeholderStore.store_name,
-        placeholderStore.owner_name,
-        placeholderStore.drug_license_number,
-        placeholderStore.phone,
-        placeholderStore.email,
-        placeholderStore.city,
-        placeholderStore.state,
-        placeholderStore.country,
-      ]);
+      await pgMergeUpsert(pool, 'medical_stores', placeholderStore, 'store_id');
     }
   } catch (e) {
     console.warn(`[SyncBridge] Warning: unable to ensure parent medical_store ${storeId} in Postgres: ${e.message}`);
@@ -1280,18 +1731,19 @@ async function ensureLabExistsInPostgres(labId, fallbackData = {}, { url, key, p
     if (snap.exists) docData = snap.data();
   } catch (_) {}
 
-  const placeholderLab = {
-    lab_id: labId,
-    lab_name: docData?.labName || fallbackData.labName || 'Diagnostic Lab',
-    license_number: docData?.licenseNumber || 'PENDING',
-    phone: docData?.phone || '0000000000',
-    email: (docData?.email || `${labId}@doctornect.com`).toLowerCase(),
-    city: docData?.city || 'Mumbai',
-    state: docData?.state || 'Maharashtra',
-    country: docData?.country || 'India',
-    created_at: toIsoTimestamp(docData?.createdAt) || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  const builtLab = buildLabSupabasePayload(labId, docData, fallbackData);
+  if (builtLab.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'lab',
+      entityId: labId,
+      payload: { lab_id: labId },
+      errorMessage: `Skipped lab placeholder: ${builtLab.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
+  const placeholderLab = builtLab.lab;
 
   try {
     if (url && key) {
@@ -1306,20 +1758,7 @@ async function ensureLabExistsInPostgres(labId, fallbackData = {}, { url, key, p
         body: JSON.stringify(placeholderLab),
       });
     } else if (pool) {
-      await pool.query(`
-        INSERT INTO labs (lab_id, lab_name, license_number, phone, email, city, state, country, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
-        ON CONFLICT (lab_id) DO NOTHING;
-      `, [
-        placeholderLab.lab_id,
-        placeholderLab.lab_name,
-        placeholderLab.license_number,
-        placeholderLab.phone,
-        placeholderLab.email,
-        placeholderLab.city,
-        placeholderLab.state,
-        placeholderLab.country,
-      ]);
+      await pgMergeUpsert(pool, 'labs', placeholderLab, 'lab_id');
     }
   } catch (e) {
     console.warn(`[SyncBridge] Warning: unable to ensure parent lab ${labId} in Postgres: ${e.message}`);
@@ -1358,18 +1797,19 @@ async function ensurePatientExistsInPostgres(patientId, fallbackData = {}, { url
     if (snap.exists) docData = snap.data();
   } catch (_) {}
 
-  const genderVal = docData?.gender || fallbackData.patientGender;
-  const validGender = ['Male', 'Female', 'Other'].includes(genderVal) ? genderVal : 'Other';
-
-  const placeholderPatient = {
-    patient_id: patientId,
-    name: docData?.name || fallbackData.patientName || 'Patient',
-    mobile: docData?.mobile || '0000000000',
-    age: parseInt(docData?.age || fallbackData.patientAge || 30, 10) || 30,
-    gender: validGender,
-    created_at: toIsoTimestamp(docData?.createdAt) || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  const built = placeholderPatientPayload(patientId, docData, fallbackData);
+  if (built.skip) {
+    // patients.mobile is NOT NULL and has no default. Do not invent a number.
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'patient',
+      entityId: patientId,
+      payload: { reason: built.reason },
+      errorMessage: `Skipped patient placeholder: ${built.reason}`,
+    });
+    return;
+  }
+  const placeholderPatient = built.patient;
 
   try {
     if (url && key) {
@@ -1392,7 +1832,7 @@ async function ensurePatientExistsInPostgres(patientId, fallbackData = {}, { url
         placeholderPatient.patient_id,
         placeholderPatient.name,
         placeholderPatient.mobile,
-        placeholderPatient.age,
+        placeholderPatient.age ?? null,
         placeholderPatient.gender,
       ]);
     }
@@ -1433,8 +1873,21 @@ async function ensurePrescriptionExistsInPostgres(prescriptionId, fallbackData =
     if (snap.exists) docData = snap.data();
   } catch (_) {}
 
-  const doctorId = docData?.doctorId || fallbackData.doctorId || 'doc-unknown';
-  const patientId = docData?.patientId || fallbackData.patientId || 'pat-unknown';
+  const doctorId = firstText(docData?.doctorId, fallbackData.doctorId);
+  const patientId = firstText(docData?.patientId, fallbackData.patientId);
+  const patientName = firstText(docData?.patientName, fallbackData.patientName);
+  const patientAge = optionalFiniteNumber(docData?.patientAge ?? fallbackData.patientAge);
+  if (!doctorId || !patientId || !patientName || patientAge === undefined) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'prescription',
+      entityId: prescriptionId,
+      payload: { prescription_id: prescriptionId },
+      errorMessage: 'Skipped prescription placeholder: doctor_id, patient_id, patient_name, and patient_age are required.',
+      retryCount: 0,
+    });
+    return;
+  }
 
   await ensureDoctorExistsInPostgres(doctorId, { url, key, pool });
   await ensurePatientExistsInPostgres(patientId, fallbackData, { url, key, pool });
@@ -1443,12 +1896,13 @@ async function ensurePrescriptionExistsInPostgres(prescriptionId, fallbackData =
     prescription_id: prescriptionId,
     doctor_id: doctorId,
     patient_id: patientId,
-    doctor_name: docData?.doctorName || fallbackData.doctorName || 'Doctor',
-    patient_name: docData?.patientName || fallbackData.patientName || 'Patient',
-    primary_diagnosis: docData?.primaryDiagnosis || 'General Consultation',
-    created_at: toIsoTimestamp(docData?.createdAt) || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    patient_name: patientName,
+    patient_age: Math.trunc(patientAge),
   };
+  putText(placeholderPrescription, 'doctor_name', docData?.doctorName, fallbackData.doctorName);
+  putText(placeholderPrescription, 'primary_diagnosis', docData?.primaryDiagnosis, docData?.diagnosis);
+  const prescriptionCreatedAt = toIsoTimestamp(docData?.createdAt);
+  if (prescriptionCreatedAt) placeholderPrescription.created_at = prescriptionCreatedAt;
 
   try {
     if (url && key) {
@@ -1464,16 +1918,15 @@ async function ensurePrescriptionExistsInPostgres(prescriptionId, fallbackData =
       });
     } else if (pool) {
       await pool.query(`
-        INSERT INTO prescriptions (prescription_id, doctor_id, patient_id, doctor_name, patient_name, primary_diagnosis, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        INSERT INTO prescriptions (prescription_id, doctor_id, patient_id, patient_name, patient_age)
+        VALUES ($1, $2, $3, $4, $5)
         ON CONFLICT (prescription_id) DO NOTHING;
       `, [
         placeholderPrescription.prescription_id,
         placeholderPrescription.doctor_id,
         placeholderPrescription.patient_id,
-        placeholderPrescription.doctor_name,
         placeholderPrescription.patient_name,
-        placeholderPrescription.primary_diagnosis,
+        placeholderPrescription.patient_age,
       ]);
     }
   } catch (e) {
@@ -1486,12 +1939,22 @@ async function ensurePrescriptionExistsInPostgres(prescriptionId, fallbackData =
  */
 async function syncPharmacyDeliveryMedicinesToSupabase(deliveryId, rawMedicines, { url, key, pool }) {
   const medList = Array.isArray(rawMedicines) ? rawMedicines : [];
-  const medicineRows = medList.map((m, idx) => ({
-    delivery_id: deliveryId,
-    medicine_entry_id: String(m.medicineEntryId || m.id || `${deliveryId}_med_${idx}`),
-    availability: ['pending', 'available', 'outOfStock', 'substituted'].includes(m.availability) ? m.availability : 'pending',
-    substitute_name: m.substituteName || null,
-  }));
+  const medicineRows = medList.flatMap((m) => {
+    const entryId = firstText(m.medicineEntryId, m.id);
+    if (!entryId) return [];
+    const row = {
+      delivery_id: deliveryId,
+      medicine_entry_id: entryId,
+    };
+    // New dispense lines start as pending.
+    // frontend/lib/features/pharmacy/models/pharmacy_models.dart:117
+    const availability = firstText(m.availability) || 'pending';
+    if (['pending', 'available', 'outOfStock', 'substituted'].includes(availability)) {
+      row.availability = availability;
+    }
+    putText(row, 'substitute_name', m.substituteName);
+    return [row];
+  });
 
   if (url && key) {
     // 1. Delete existing delivery medicines
@@ -1602,51 +2065,19 @@ async function syncFirestoreMedicalStoreToSupabase(event) {
     return;
   }
 
-  let addressLine1 = null;
-  let addressLine2 = null;
-  let city = 'Mumbai';
-  let state = 'Maharashtra';
-  let country = 'India';
-  let pincode = null;
-
-  if (after.address && typeof after.address === 'object') {
-    addressLine1 = after.address.addressLine1 || after.addressLine1 || null;
-    addressLine2 = after.address.addressLine2 || after.addressLine2 || null;
-    city = after.address.city || after.city || 'Mumbai';
-    state = after.address.state || after.state || 'Maharashtra';
-    country = after.address.country || after.country || 'India';
-    pincode = after.address.pinCode || after.address.pincode || after.pincode || null;
-  } else {
-    addressLine1 = after.addressLine1 || (typeof after.address === 'string' ? after.address : null);
-    addressLine2 = after.addressLine2 || null;
-    city = after.city || 'Mumbai';
-    state = after.state || 'Maharashtra';
-    country = after.country || 'India';
-    pincode = after.pincode || null;
+  const builtStore = buildMedicalStoreSupabasePayload(storeId, after);
+  if (builtStore.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'medical_store',
+      entityId: storeId,
+      payload: { store_id: storeId },
+      errorMessage: `Skipped medical store sync: ${builtStore.reason}`,
+      retryCount: 0,
+    });
+    return;
   }
-
-  const storePayload = {
-    store_id: storeId,
-    owner_uid: toValidUuid(after.ownerUid),
-    store_name: after.storeName || 'Medical Store',
-    owner_name: after.ownerName || 'Owner',
-    drug_license_number: after.drugLicenseNumber || after.licenseNumber || 'PENDING',
-    phone: after.phone || '0000000000',
-    email: (after.email || `${storeId}@doctornect.com`).toLowerCase(),
-    gst_number: after.gstNumber || null,
-    address_line1: addressLine1,
-    address_line2: addressLine2,
-    city: city,
-    state: state,
-    country: country,
-    pincode: pincode,
-    profile_completed: Boolean(after.profileCompleted),
-    verified: Boolean(after.verified),
-    verified_at: toIsoTimestamp(after.verifiedAt),
-    deactivated: Boolean(after.deactivated),
-    created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
-    updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
-  };
+  const storePayload = builtStore.store;
 
   try {
     await executeWithRetry(
@@ -1667,40 +2098,7 @@ async function syncFirestoreMedicalStoreToSupabase(event) {
             throw new Error(`Supabase PostgREST medical store error (${resp.status}): ${errBody}`);
           }
         } else if (pool) {
-          await pool.query(`
-            INSERT INTO medical_stores (
-              store_id, owner_uid, store_name, owner_name, drug_license_number, phone, email,
-              gst_number, address_line1, address_line2, city, state, country, pincode,
-              profile_completed, verified, verified_at, deactivated, created_at, updated_at
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-            ) ON CONFLICT (store_id) DO UPDATE SET
-              store_name = EXCLUDED.store_name,
-              owner_name = EXCLUDED.owner_name,
-              drug_license_number = EXCLUDED.drug_license_number,
-              phone = EXCLUDED.phone,
-              email = EXCLUDED.email,
-              gst_number = EXCLUDED.gst_number,
-              address_line1 = EXCLUDED.address_line1,
-              address_line2 = EXCLUDED.address_line2,
-              city = EXCLUDED.city,
-              state = EXCLUDED.state,
-              country = EXCLUDED.country,
-              pincode = EXCLUDED.pincode,
-              profile_completed = EXCLUDED.profile_completed,
-              verified = EXCLUDED.verified,
-              verified_at = EXCLUDED.verified_at,
-              deactivated = EXCLUDED.deactivated,
-              updated_at = NOW();
-          `, [
-            storePayload.store_id, storePayload.owner_uid, storePayload.store_name,
-            storePayload.owner_name, storePayload.drug_license_number, storePayload.phone,
-            storePayload.email, storePayload.gst_number, storePayload.address_line1,
-            storePayload.address_line2, storePayload.city, storePayload.state,
-            storePayload.country, storePayload.pincode, storePayload.profile_completed,
-            storePayload.verified, storePayload.verified_at, storePayload.deactivated,
-            storePayload.created_at, storePayload.updated_at,
-          ]);
+          await pgMergeUpsert(pool, 'medical_stores', storePayload, 'store_id');
         }
       },
       { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'medical_store', entityId: storeId } }
@@ -1783,10 +2181,37 @@ async function syncFirestorePharmacyConnectionToSupabase(event) {
 
   const doctorId = after.doctorId;
   const storeId = after.medicalStoreId || after.storeId;
+  const doctorName = firstText(after.doctorName);
+  const storeName = firstText(after.storeName);
+
+  if (!doctorId || !storeId || !doctorName || !storeName) {
+    const missing = [];
+    if (!doctorId) missing.push('doctor_id');
+    if (!storeId) missing.push('medical_store_id');
+    if (!doctorName) missing.push('doctor_name');
+    if (!storeName) missing.push('store_name');
+    console.warn(JSON.stringify({
+      severity: 'WARNING',
+      event: 'SYNC_BRIDGE_PAYLOAD_VALIDATION_FAILED',
+      entityType: 'pharmacy_connection',
+      entityId: connectionId,
+      documentPath: `pharmacy_connections/${connectionId}`,
+      missingFields: missing,
+    }));
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'pharmacy_connection',
+      entityId: connectionId,
+      payload: { connection_id: connectionId },
+      errorMessage: `Skipped pharmacy connection sync: ${missing.join(', ')} required.`,
+      retryCount: 0,
+    });
+    return;
+  }
 
   // Self-healing foreign keys
   await ensureDoctorExistsInPostgres(doctorId, { url, key, pool });
-  await ensureMedicalStoreExistsInPostgres(storeId, { storeName: after.storeName }, { url, key, pool });
+  await ensureMedicalStoreExistsInPostgres(storeId, { storeName }, { url, key, pool });
 
   const rawStatus = after.status || 'pending';
   const status = ['pending', 'active', 'rejected', 'removed'].includes(rawStatus) ? rawStatus : 'pending';
@@ -1797,8 +2222,8 @@ async function syncFirestorePharmacyConnectionToSupabase(event) {
     connection_id: connectionId,
     doctor_id: doctorId,
     medical_store_id: storeId,
-    doctor_name: after.doctorName || 'Doctor',
-    store_name: after.storeName || 'Medical Store',
+    doctor_name: doctorName,
+    store_name: storeName,
     status: status,
     requested_by: requestedBy,
     requested_at: toIsoTimestamp(after.requestedAt) || new Date().toISOString(),
@@ -1922,10 +2347,24 @@ async function syncFirestorePharmacyDeliveryToSupabase(event) {
     return;
   }
 
-  const prescriptionId = after.prescriptionId;
-  const doctorId = after.doctorId;
-  const storeId = after.storeId || after.medicalStoreId;
-  const patientId = after.patientId || (after.draft && after.draft.patientId);
+  const prescriptionId = firstText(after.prescriptionId);
+  const doctorId = firstText(after.doctorId);
+  const storeId = firstText(after.storeId, after.medicalStoreId);
+  const patientId = firstText(after.patientId, after.draft && after.draft.patientId);
+  const doctorName = firstText(after.doctorName);
+  const storeName = firstText(after.storeName);
+  const patientName = firstText(after.patientName);
+  if (!prescriptionId || !doctorId || !storeId || !patientId || !doctorName || !storeName || !patientName) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'pharmacy_delivery',
+      entityId: deliveryId,
+      payload: { delivery_id: deliveryId },
+      errorMessage: 'Skipped pharmacy delivery: prescription, doctor, store, patient, and their names are required.',
+      retryCount: 0,
+    });
+    return;
+  }
 
   // Self-healing foreign keys
   await ensureDoctorExistsInPostgres(doctorId, { url, key, pool });
@@ -1938,9 +2377,10 @@ async function syncFirestorePharmacyDeliveryToSupabase(event) {
     patientName: after.patientName,
   }, { url, key, pool });
 
-  const rawStatus = after.status || 'sent';
+  // New deliveries are constructed with status sent.
+  // frontend/lib/features/pharmacy/models/pharmacy_models.dart:143
+  const rawStatus = firstText(after.status) || 'sent';
   const status = ['sent', 'viewed', 'partiallyDispensed', 'dispensed'].includes(rawStatus) ? rawStatus : 'sent';
-  const medicineCount = parseInt(after.medicineCount ?? (Array.isArray(after.medicineLines) ? after.medicineLines.length : 0), 10) || 0;
 
   const deliveryPayload = {
     delivery_id: deliveryId,
@@ -1948,18 +2388,27 @@ async function syncFirestorePharmacyDeliveryToSupabase(event) {
     doctor_id: doctorId,
     store_id: storeId,
     patient_id: patientId,
-    doctor_name: after.doctorName || null,
-    store_name: after.storeName || null,
-    patient_name: after.patientName || null,
-    status: status,
-    sent_at: toIsoTimestamp(after.sentAt) || new Date().toISOString(),
-    viewed_at: toIsoTimestamp(after.viewedAt),
-    dispensed_at: toIsoTimestamp(after.dispensedAt),
-    dispensing_notes: after.dispensingNotes || null,
-    medicine_count: medicineCount,
-    prescription_draft: after.draft || null,
-    updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
+    doctor_name: doctorName,
+    store_name: storeName,
+    patient_name: patientName,
+    status,
   };
+  const sentAt = toIsoTimestamp(after.sentAt);
+  if (sentAt) deliveryPayload.sent_at = sentAt;
+  const viewedAt = toIsoTimestamp(after.viewedAt);
+  if (viewedAt) deliveryPayload.viewed_at = viewedAt;
+  const dispensedAt = toIsoTimestamp(after.dispensedAt);
+  if (dispensedAt) deliveryPayload.dispensed_at = dispensedAt;
+  putText(deliveryPayload, 'dispensing_notes', after.dispensingNotes);
+  const medicineCount = optionalFiniteNumber(after.medicineCount);
+  if (medicineCount !== undefined) {
+    deliveryPayload.medicine_count = Math.trunc(medicineCount);
+  } else if (Array.isArray(after.medicineLines)) {
+    deliveryPayload.medicine_count = after.medicineLines.length;
+  }
+  if (after.draft) deliveryPayload.prescription_draft = after.draft;
+  const deliveryUpdatedAt = toIsoTimestamp(after.updatedAt);
+  if (deliveryUpdatedAt) deliveryPayload.updated_at = deliveryUpdatedAt;
 
   try {
     await executeWithRetry(
@@ -2100,53 +2549,31 @@ async function syncFirestoreLabToSupabase(event) {
     return;
   }
 
-  let addressLine1 = null;
-  let addressLine2 = null;
-  let city = 'Mumbai';
-  let state = 'Maharashtra';
-  let country = 'India';
-  let pincode = null;
-  const area = after.area || null;
-
-  if (after.address && typeof after.address === 'object') {
-    addressLine1 = after.address.addressLine1 || after.addressLine1 || null;
-    addressLine2 = after.address.addressLine2 || after.addressLine2 || null;
-    city = after.address.city || after.city || 'Mumbai';
-    state = after.address.state || after.state || 'Maharashtra';
-    country = after.address.country || after.country || 'India';
-    pincode = after.address.pinCode || after.address.pincode || after.pincode || null;
-  } else {
-    addressLine1 = after.addressLine1 || (typeof after.address === 'string' ? after.address : null);
-    addressLine2 = after.addressLine2 || null;
-    city = after.city || 'Mumbai';
-    state = after.state || 'Maharashtra';
-    country = after.country || 'India';
-    pincode = after.pincode || null;
+  const builtLabSync = buildLabSupabasePayload(labId, after);
+  if (builtLabSync.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'lab',
+      entityId: labId,
+      payload: { lab_id: labId },
+      errorMessage: `Skipped lab sync: ${builtLabSync.reason}`,
+      retryCount: 0,
+    });
+    return;
   }
-
-  const labPayload = {
-    lab_id: labId,
-    owner_uid: toValidUuid(after.ownerUid),
-    lab_name: after.labName || 'Diagnostic Lab',
-    license_number: after.licenseNumber || 'PENDING',
-    phone: after.phone || '0000000000',
-    email: (after.email || `${labId}@doctornect.com`).toLowerCase(),
-    gst_number: after.gstNumber || null,
-    rating: parseFloat(after.rating ?? 0.0) || 0.0,
-    area: area,
-    city: city,
-    state: state,
-    country: country,
-    pincode: pincode,
-    address_line1: addressLine1,
-    address_line2: addressLine2,
-    profile_completed: Boolean(after.profileCompleted),
-    verified: Boolean(after.verified),
-    verified_at: toIsoTimestamp(after.verifiedAt),
-    deactivated: Boolean(after.deactivated),
-    created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
-    updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
-  };
+  const labPayload = builtLabSync.lab;
+  const labOwnerUid = toValidUuid(after.ownerUid);
+  if (labOwnerUid) labPayload.owner_uid = labOwnerUid;
+  putText(labPayload, 'gst_number', after.gstNumber);
+  putText(labPayload, 'area', after.area);
+  putText(labPayload, 'address_line1', after.addressLine1, after.address && after.address.addressLine1);
+  putText(labPayload, 'address_line2', after.addressLine2, after.address && after.address.addressLine2);
+  putText(labPayload, 'pincode', after.pincode, after.address && (after.address.pinCode || after.address.pincode));
+  putBooleanIfPresent(labPayload, 'profile_completed', after.profileCompleted);
+  putBooleanIfPresent(labPayload, 'verified', after.verified);
+  putBooleanIfPresent(labPayload, 'deactivated', after.deactivated);
+  const labVerifiedAt = toIsoTimestamp(after.verifiedAt);
+  if (labVerifiedAt) labPayload.verified_at = labVerifiedAt;
 
   try {
     await executeWithRetry(
@@ -2167,42 +2594,7 @@ async function syncFirestoreLabToSupabase(event) {
             throw new Error(`Supabase PostgREST lab error (${resp.status}): ${errBody}`);
           }
         } else if (pool) {
-          await pool.query(`
-            INSERT INTO labs (
-              lab_id, owner_uid, lab_name, license_number, phone, email,
-              gst_number, rating, area, city, state, country, pincode,
-              address_line1, address_line2, profile_completed, verified,
-              verified_at, deactivated, created_at, updated_at
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
-            ) ON CONFLICT (lab_id) DO UPDATE SET
-              lab_name = EXCLUDED.lab_name,
-              license_number = EXCLUDED.license_number,
-              phone = EXCLUDED.phone,
-              email = EXCLUDED.email,
-              gst_number = EXCLUDED.gst_number,
-              rating = EXCLUDED.rating,
-              area = EXCLUDED.area,
-              city = EXCLUDED.city,
-              state = EXCLUDED.state,
-              country = EXCLUDED.country,
-              pincode = EXCLUDED.pincode,
-              address_line1 = EXCLUDED.address_line1,
-              address_line2 = EXCLUDED.address_line2,
-              profile_completed = EXCLUDED.profile_completed,
-              verified = EXCLUDED.verified,
-              verified_at = EXCLUDED.verified_at,
-              deactivated = EXCLUDED.deactivated,
-              updated_at = NOW();
-          `, [
-            labPayload.lab_id, labPayload.owner_uid, labPayload.lab_name,
-            labPayload.license_number, labPayload.phone, labPayload.email,
-            labPayload.gst_number, labPayload.rating, labPayload.area,
-            labPayload.city, labPayload.state, labPayload.country,
-            labPayload.pincode, labPayload.address_line1, labPayload.address_line2,
-            labPayload.profile_completed, labPayload.verified, labPayload.verified_at,
-            labPayload.deactivated, labPayload.created_at, labPayload.updated_at,
-          ]);
+          await pgMergeUpsert(pool, 'labs', labPayload, 'lab_id');
         }
       },
       { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'lab', entityId: labId } }
@@ -2286,39 +2678,53 @@ async function syncFirestoreLabCatalogTestToSupabase(event) {
   }
 
   // Determine if this document is a catalog aggregate (with tests array) or a single test doc
-  const rows = [];
-  if (Array.isArray(after.tests)) {
-    for (const t of after.tests) {
-      const tid = t.id || t.testId;
-      if (!tid) continue;
-      const rawSample = t.sampleType || 'blood';
-      const sampleType = ['blood', 'urine', 'swab', 'stool', 'other'].includes(rawSample) ? rawSample : 'blood';
-      rows.push({
-        test_id: tid,
-        name: t.name || 'Lab Test',
-        parameters: toStringArray(t.parameters, []),
-        fasting_required: Boolean(t.fastingRequired),
-        sample_type: sampleType,
-        report_hours: parseInt(t.reportHours ?? 24, 10) || 24,
-        popular: Boolean(t.popular),
-        category: t.category || null,
-      });
+  const catalogSamples = ['blood', 'urine', 'swab', 'stool', 'other'];
+  function catalogRow(id, doc) {
+    const name = firstText(doc && doc.name);
+    if (!id || !name) return { skip: true, reason: 'lab_catalog_name_missing' };
+    const rawSample = firstText(doc.sampleType);
+    if (rawSample && !catalogSamples.includes(rawSample)) {
+      return { skip: true, reason: 'lab_catalog_sample_type_invalid' };
     }
-  } else {
-    const rawSample = after.sampleType || 'blood';
-    const sampleType = ['blood', 'urine', 'swab', 'stool', 'other'].includes(rawSample) ? rawSample : 'blood';
-    rows.push({
-      test_id: testId,
-      name: after.name || 'Lab Test',
-      parameters: toStringArray(after.parameters, []),
-      fasting_required: Boolean(after.fastingRequired),
-      sample_type: sampleType,
-      report_hours: parseInt(after.reportHours ?? 24, 10) || 24,
-      popular: Boolean(after.popular),
-      category: after.category || null,
-    });
+    const row = { test_id: id, name };
+    if (Array.isArray(doc.parameters)) {
+      row.parameters = doc.parameters.map((item) => String(item || '').trim()).filter(Boolean);
+    }
+    if (typeof doc.fastingRequired === 'boolean') row.fasting_required = doc.fastingRequired;
+    // Missing sampleType is omitted. lab_catalog_tests.sample_type defaults to blood,
+    // matching the reader fallback in lab_catalog_repository.dart:179.
+    if (rawSample) row.sample_type = rawSample;
+    const hours = optionalFiniteNumber(doc.reportHours);
+    if (hours !== undefined) row.report_hours = Math.trunc(hours);
+    if (typeof doc.popular === 'boolean') row.popular = doc.popular;
+    putText(row, 'category', doc.category);
+    return { skip: false, row };
   }
 
+  const rows = [];
+  const skipped = [];
+  if (Array.isArray(after.tests)) {
+    for (const t of after.tests) {
+      const built = catalogRow(firstText(t.id, t.testId), t);
+      if (built.skip) skipped.push(built.reason);
+      else rows.push(built.row);
+    }
+  } else {
+    const built = catalogRow(testId, after);
+    if (built.skip) skipped.push(built.reason);
+    else rows.push(built.row);
+  }
+
+  if (skipped.length > 0) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'lab_catalog_tests',
+      entityId: testId,
+      payload: { reason: skipped[0] },
+      errorMessage: `Skipped lab catalog row: ${skipped[0]}`,
+      retryCount: 0,
+    });
+  }
   if (rows.length === 0) return;
 
   try {
@@ -2341,22 +2747,7 @@ async function syncFirestoreLabCatalogTestToSupabase(event) {
           }
         } else if (pool) {
           for (const row of rows) {
-            await pool.query(`
-              INSERT INTO lab_catalog_tests (
-                test_id, name, parameters, fasting_required, sample_type, report_hours, popular, category
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-              ON CONFLICT (test_id) DO UPDATE SET
-                name = EXCLUDED.name,
-                parameters = EXCLUDED.parameters,
-                fasting_required = EXCLUDED.fasting_required,
-                sample_type = EXCLUDED.sample_type,
-                report_hours = EXCLUDED.report_hours,
-                popular = EXCLUDED.popular,
-                category = EXCLUDED.category;
-            `, [
-              row.test_id, row.name, row.parameters, row.fasting_required,
-              row.sample_type, row.report_hours, row.popular, row.category,
-            ]);
+            await pgMergeUpsert(pool, 'lab_catalog_tests', row, 'test_id');
           }
         }
       },
@@ -2438,12 +2829,54 @@ async function syncFirestoreLabBookingToSupabase(event) {
     return;
   }
 
-  const patientId = after.patientId || 'pat-unknown';
+  const patientId = firstText(after.patientId);
+  const patientName = firstText(after.patientName);
+  const bookingAge = optionalFiniteNumber(after.patientAge);
+  const testIds = Array.isArray(after.testIds)
+    ? after.testIds.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  const testNames = Array.isArray(after.testNames)
+    ? after.testNames.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  const testId = firstText(after.testId, testIds[0]);
+  const testName = firstText(after.testName, testNames[0]);
+  const slotLabel = firstText(after.slotLabel);
+  const dateTime = toIsoTimestamp(after.dateTime);
+  const collectionType = firstText(after.collectionType);
+  const collectionOk = ['homeCollection', 'labVisit', 'walkIn'].includes(collectionType);
+  const bookingStatuses = ['confirmed', 'sampleCollected', 'inAnalysis', 'completed', 'cancelled'];
+  const rawBookingStatus = firstText(after.status);
+  // Patient and walk-in bookings are created with status confirmed.
+  // frontend/lib/core/firebase/repositories/lab_booking_repository.dart:109
+  const status = rawBookingStatus
+    ? (bookingStatuses.includes(rawBookingStatus) ? rawBookingStatus : undefined)
+    : 'confirmed';
+  const missing = [];
+  if (!patientId) missing.push('patient_id');
+  if (!patientName) missing.push('patient_name');
+  if (bookingAge === undefined) missing.push('patient_age');
+  if (!testId) missing.push('test_id');
+  if (!testName) missing.push('test_name');
+  if (testNames.length === 0 && !testName) missing.push('test_names');
+  if (!collectionOk) missing.push('collection_type');
+  if (!dateTime) missing.push('date_time');
+  if (!slotLabel) missing.push('slot_label');
+  if (!status) missing.push('status');
+  if (missing.length > 0) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'lab_booking',
+      entityId: bookingId,
+      payload: { reason: `lab_booking_required_missing:${missing.join(',')}` },
+      errorMessage: `Skipped lab booking: ${missing.join(', ')} required.`,
+      retryCount: 0,
+    });
+    return;
+  }
 
-  // Self-healing foreign keys
   await ensurePatientExistsInPostgres(patientId, {
-    patientName: after.patientName,
-    patientAge: after.patientAge,
+    patientName,
+    patientAge: bookingAge,
     patientGender: after.patientGender,
   }, { url, key, pool });
 
@@ -2451,43 +2884,38 @@ async function syncFirestoreLabBookingToSupabase(event) {
     await ensureLabExistsInPostgres(after.labId, { labName: after.partnerLab }, { url, key, pool });
   }
 
-  const testNames = toStringArray(after.testNames, [after.testName || 'Lab Test']);
-  const testIds = toStringArray(after.testIds, [after.testId || 'general_test']);
-  const rawColl = after.collectionType || 'labVisit';
-  const collectionType = ['homeCollection', 'labVisit', 'walkIn'].includes(rawColl) ? rawColl : 'labVisit';
-  const rawStatus = after.status || 'confirmed';
-  const status = ['confirmed', 'sampleCollected', 'inAnalysis', 'completed', 'cancelled'].includes(rawStatus) ? rawStatus : 'confirmed';
-  const rawSource = after.source || 'app';
-  const source = ['app', 'walkin'].includes(rawSource) ? rawSource : 'app';
-
   const bookingPayload = {
     booking_id: bookingId,
     patient_id: patientId,
-    lab_id: after.labId || null,
-    patient_name: after.patientName || 'Patient',
-    patient_age: parseInt(after.patientAge || 30, 10) || 30,
-    patient_gender: after.patientGender || null,
-    contact_number: after.contactNumber || null,
-    test_id: after.testId || (testIds[0] || 'general_test'),
-    test_name: after.testName || (testNames[0] || 'Lab Test'),
-    test_names: testNames,
-    test_ids: testIds,
-    booking_for_self: after.bookingForSelf !== false,
-    family_member_id: after.familyMemberId || null,
+    patient_name: patientName,
+    patient_age: Math.trunc(bookingAge),
+    test_id: testId,
+    test_name: testName,
+    test_names: testNames.length > 0 ? testNames : [testName],
     collection_type: collectionType,
-    partner_lab: after.partnerLab || null,
-    address: after.address || null,
-    date_time: toIsoTimestamp(after.dateTime) || new Date().toISOString(),
-    slot_label: after.slotLabel || 'Morning',
-    status: status,
-    source: source,
-    report_file_name: after.reportFileName || null,
-    report_storage_url: after.reportStorageUrl || null,
-    report_booking_id: after.reportBookingId || null,
-    report_submitted_at: toIsoTimestamp(after.reportSubmittedAt),
-    created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
-    updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
+    date_time: dateTime,
+    slot_label: slotLabel,
+    status,
   };
+  if (testIds.length > 0) bookingPayload.test_ids = testIds;
+  putText(bookingPayload, 'lab_id', after.labId);
+  putText(bookingPayload, 'patient_gender', after.patientGender);
+  putText(bookingPayload, 'contact_number', after.contactNumber);
+  putText(bookingPayload, 'family_member_id', after.familyMemberId);
+  putText(bookingPayload, 'partner_lab', after.partnerLab);
+  putText(bookingPayload, 'address', after.address);
+  if (typeof after.bookingForSelf === 'boolean') bookingPayload.booking_for_self = after.bookingForSelf;
+  const bookingSource = firstText(after.source);
+  if (bookingSource === 'app' || bookingSource === 'walkin') bookingPayload.source = bookingSource;
+  putText(bookingPayload, 'report_file_name', after.reportFileName);
+  putText(bookingPayload, 'report_storage_url', after.reportStorageUrl);
+  putText(bookingPayload, 'report_booking_id', after.reportBookingId);
+  const reportSubmittedAt = toIsoTimestamp(after.reportSubmittedAt);
+  if (reportSubmittedAt) bookingPayload.report_submitted_at = reportSubmittedAt;
+  const bookingCreatedAt = toIsoTimestamp(after.createdAt);
+  if (bookingCreatedAt) bookingPayload.created_at = bookingCreatedAt;
+  const bookingUpdatedAt = toIsoTimestamp(after.updatedAt);
+  if (bookingUpdatedAt) bookingPayload.updated_at = bookingUpdatedAt;
 
   try {
     await executeWithRetry(
@@ -2508,33 +2936,7 @@ async function syncFirestoreLabBookingToSupabase(event) {
             throw new Error(`Supabase PostgREST lab booking error (${resp.status}): ${errBody}`);
           }
         } else if (pool) {
-          await pool.query(`
-            INSERT INTO lab_bookings (
-              booking_id, patient_id, lab_id, patient_name, patient_age, patient_gender,
-              contact_number, test_id, test_name, test_names, test_ids, booking_for_self,
-              family_member_id, collection_type, partner_lab, address, date_time, slot_label,
-              status, source, report_file_name, report_storage_url, report_booking_id,
-              report_submitted_at, created_at, updated_at
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
-            ) ON CONFLICT (booking_id) DO UPDATE SET
-              status = EXCLUDED.status,
-              report_file_name = EXCLUDED.report_file_name,
-              report_storage_url = EXCLUDED.report_storage_url,
-              report_booking_id = EXCLUDED.report_booking_id,
-              report_submitted_at = EXCLUDED.report_submitted_at,
-              updated_at = NOW();
-          `, [
-            bookingPayload.booking_id, bookingPayload.patient_id, bookingPayload.lab_id,
-            bookingPayload.patient_name, bookingPayload.patient_age, bookingPayload.patient_gender,
-            bookingPayload.contact_number, bookingPayload.test_id, bookingPayload.test_name,
-            bookingPayload.test_names, bookingPayload.test_ids, bookingPayload.booking_for_self,
-            bookingPayload.family_member_id, bookingPayload.collection_type, bookingPayload.partner_lab,
-            bookingPayload.address, bookingPayload.date_time, bookingPayload.slot_label,
-            bookingPayload.status, bookingPayload.source, bookingPayload.report_file_name,
-            bookingPayload.report_storage_url, bookingPayload.report_booking_id,
-            bookingPayload.report_submitted_at, bookingPayload.created_at, bookingPayload.updated_at,
-          ]);
+          await pgMergeUpsert(pool, 'lab_bookings', bookingPayload, 'booking_id');
         }
       },
       { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'lab_booking', entityId: bookingId } }
@@ -2615,53 +3017,90 @@ async function syncFirestoreLabOrderToSupabase(event) {
     return;
   }
 
-  const doctorId = after.doctorId || 'doc-unknown';
-  const patientId = after.patientId || 'pat-unknown';
+  const doctorId = firstText(after.doctorId);
+  const patientId = firstText(after.patientId);
+  const doctorName = firstText(after.doctorName);
+  const patientName = firstText(after.patientName);
+  const orderAge = optionalFiniteNumber(after.patientAge);
+  const testIds = Array.isArray(after.testIds)
+    ? after.testIds.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  const testNames = Array.isArray(after.testNames)
+    ? after.testNames.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  const orderStatuses = ['ordered', 'received', 'inProgress', 'completed', 'cancelled'];
+  const rawOrderStatus = firstText(after.status);
+  // Doctor lab orders are constructed with status ordered.
+  // frontend/lib/core/firebase/models/doctor_lab_order.dart:20
+  const status = rawOrderStatus
+    ? (orderStatuses.includes(rawOrderStatus) ? rawOrderStatus : undefined)
+    : 'ordered';
+  const rawUrgency = firstText(after.urgency);
+  const urgency = !rawUrgency
+    ? undefined
+    : (['Routine', 'Urgent', 'STAT'].includes(rawUrgency) ? rawUrgency : undefined);
+  const missing = [];
+  if (!doctorId) missing.push('doctor_id');
+  if (!patientId) missing.push('patient_id');
+  if (!doctorName) missing.push('doctor_name');
+  if (!patientName) missing.push('patient_name');
+  if (orderAge === undefined) missing.push('patient_age');
+  if (testIds.length === 0) missing.push('test_ids');
+  if (testNames.length === 0) missing.push('test_names');
+  if (!status) missing.push('status');
+  if (rawUrgency && !urgency) missing.push('urgency');
+  if (missing.length > 0) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'lab_order',
+      entityId: orderId,
+      payload: { reason: `lab_order_required_missing:${missing.join(',')}` },
+      errorMessage: `Skipped lab order: ${missing.join(', ')} required.`,
+      retryCount: 0,
+    });
+    return;
+  }
 
-  // Self-healing foreign keys
   await ensureDoctorExistsInPostgres(doctorId, { url, key, pool });
   await ensurePatientExistsInPostgres(patientId, {
-    patientName: after.patientName,
-    patientAge: after.patientAge,
+    patientName,
+    patientAge: orderAge,
   }, { url, key, pool });
 
   if (after.labId) {
     await ensureLabExistsInPostgres(after.labId, { labName: after.labName }, { url, key, pool });
   }
 
-  const testIds = toStringArray(after.testIds, []);
-  const testNames = toStringArray(after.testNames, []);
-  const rawUrgency = after.urgency || 'Routine';
-  const urgency = ['Routine', 'Urgent', 'STAT'].includes(rawUrgency) ? rawUrgency : 'Routine';
-  const rawStatus = after.status || 'ordered';
-  const status = ['ordered', 'received', 'inProgress', 'completed', 'cancelled'].includes(rawStatus) ? rawStatus : 'ordered';
-
   const orderPayload = {
     order_id: orderId,
     doctor_id: doctorId,
     patient_id: patientId,
-    lab_id: after.labId || null,
-    appointment_id: after.appointmentId || null,
-    facility_id: after.facilityId || null,
-    admission_id: after.admissionId || null,
-    doctor_name: after.doctorName || 'Doctor',
-    patient_name: after.patientName || 'Patient',
-    patient_age: parseInt(after.patientAge || 30, 10) || 30,
-    lab_name: after.labName || null,
+    doctor_name: doctorName,
+    patient_name: patientName,
+    patient_age: Math.trunc(orderAge),
     test_ids: testIds,
     test_names: testNames,
-    indication: after.indication || null,
-    urgency: urgency,
-    fasting_required: Boolean(after.fastingRequired),
-    home_collection: Boolean(after.homeCollection),
-    source: after.source || 'investigations',
-    status: status,
-    report_file_name: after.reportFileName || null,
-    report_storage_url: after.reportStorageUrl || null,
-    report_submitted_at: toIsoTimestamp(after.reportSubmittedAt),
-    created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
-    updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
+    status,
   };
+  putText(orderPayload, 'lab_id', after.labId);
+  putText(orderPayload, 'appointment_id', after.appointmentId);
+  putText(orderPayload, 'facility_id', after.facilityId);
+  putText(orderPayload, 'admission_id', after.admissionId);
+  putText(orderPayload, 'lab_name', after.labName);
+  putText(orderPayload, 'indication', after.indication);
+  if (urgency) orderPayload.urgency = urgency;
+  if (typeof after.fastingRequired === 'boolean') orderPayload.fasting_required = after.fastingRequired;
+  if (typeof after.homeCollection === 'boolean') orderPayload.home_collection = after.homeCollection;
+  const orderSource = firstText(after.source);
+  if (orderSource) orderPayload.source = orderSource;
+  putText(orderPayload, 'report_file_name', after.reportFileName);
+  putText(orderPayload, 'report_storage_url', after.reportStorageUrl);
+  const orderReportAt = toIsoTimestamp(after.reportSubmittedAt);
+  if (orderReportAt) orderPayload.report_submitted_at = orderReportAt;
+  const orderCreatedAt = toIsoTimestamp(after.createdAt);
+  if (orderCreatedAt) orderPayload.created_at = orderCreatedAt;
+  const orderUpdatedAt = toIsoTimestamp(after.updatedAt);
+  if (orderUpdatedAt) orderPayload.updated_at = orderUpdatedAt;
 
   try {
     await executeWithRetry(
@@ -2682,30 +3121,7 @@ async function syncFirestoreLabOrderToSupabase(event) {
             throw new Error(`Supabase PostgREST lab order error (${resp.status}): ${errBody}`);
           }
         } else if (pool) {
-          await pool.query(`
-            INSERT INTO lab_orders (
-              order_id, doctor_id, patient_id, lab_id, appointment_id, facility_id, admission_id,
-              doctor_name, patient_name, patient_age, lab_name, test_ids, test_names, indication,
-              urgency, fasting_required, home_collection, source, status, report_file_name,
-              report_storage_url, report_submitted_at, created_at, updated_at
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
-            ) ON CONFLICT (order_id) DO UPDATE SET
-              status = EXCLUDED.status,
-              report_file_name = EXCLUDED.report_file_name,
-              report_storage_url = EXCLUDED.report_storage_url,
-              report_submitted_at = EXCLUDED.report_submitted_at,
-              updated_at = NOW();
-          `, [
-            orderPayload.order_id, orderPayload.doctor_id, orderPayload.patient_id,
-            orderPayload.lab_id, orderPayload.appointment_id, orderPayload.facility_id,
-            orderPayload.admission_id, orderPayload.doctor_name, orderPayload.patient_name,
-            orderPayload.patient_age, orderPayload.lab_name, orderPayload.test_ids,
-            orderPayload.test_names, orderPayload.indication, orderPayload.urgency,
-            orderPayload.fasting_required, orderPayload.home_collection, orderPayload.source,
-            orderPayload.status, orderPayload.report_file_name, orderPayload.report_storage_url,
-            orderPayload.report_submitted_at, orderPayload.created_at, orderPayload.updated_at,
-          ]);
+          await pgMergeUpsert(pool, 'lab_orders', orderPayload, 'order_id');
         }
       },
       { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'lab_order', entityId: orderId } }
@@ -2786,30 +3202,60 @@ async function syncFirestoreLabConnectionToSupabase(event) {
     return;
   }
 
-  const doctorId = after.doctorId;
-  const labId = after.labId;
+  const doctorId = firstText(after.doctorId);
+  const labId = firstText(after.labId);
+  const doctorName = firstText(after.doctorName);
+  const labName = firstText(after.labName);
+  const connectionStatuses = ['pending', 'active', 'rejected', 'removed'];
+  const rawStatus = firstText(after.status);
+  // New lab connections are created as pending.
+  // frontend/lib/features/lab/data/lab_connection_store.dart:204
+  const status = rawStatus
+    ? (connectionStatuses.includes(rawStatus) ? rawStatus : undefined)
+    : 'pending';
+  const rawReqBy = firstText(after.requestedBy);
+  // A doctor-sent invite sets requestedBy to doctor.
+  // frontend/lib/features/lab/data/lab_connection_store.dart:205
+  const requestedBy = rawReqBy
+    ? (['doctor', 'lab'].includes(rawReqBy) ? rawReqBy : undefined)
+    : 'doctor';
+  const missing = [];
+  if (!doctorId) missing.push('doctor_id');
+  if (!labId) missing.push('lab_id');
+  if (!doctorName) missing.push('doctor_name');
+  if (!labName) missing.push('lab_name');
+  if (!status) missing.push('status');
+  if (!requestedBy) missing.push('requested_by');
+  if (missing.length > 0) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'lab_connection',
+      entityId: connectionId,
+      payload: { reason: `lab_connection_required_missing:${missing.join(',')}` },
+      errorMessage: `Skipped lab connection: ${missing.join(', ')} required.`,
+      retryCount: 0,
+    });
+    return;
+  }
 
-  // Self-healing foreign keys
   await ensureDoctorExistsInPostgres(doctorId, { url, key, pool });
-  await ensureLabExistsInPostgres(labId, { labName: after.labName }, { url, key, pool });
-
-  const rawStatus = after.status || 'pending';
-  const status = ['pending', 'active', 'rejected', 'removed'].includes(rawStatus) ? rawStatus : 'pending';
-  const rawReqBy = after.requestedBy || 'doctor';
-  const requestedBy = ['doctor', 'lab'].includes(rawReqBy) ? rawReqBy : 'doctor';
+  await ensureLabExistsInPostgres(labId, { labName }, { url, key, pool });
 
   const labConnectionPayload = {
     connection_id: connectionId,
     doctor_id: doctorId,
     lab_id: labId,
-    doctor_name: after.doctorName || 'Doctor',
-    lab_name: after.labName || 'Diagnostic Lab',
-    status: status,
+    doctor_name: doctorName,
+    lab_name: labName,
+    status,
     requested_by: requestedBy,
-    requested_at: toIsoTimestamp(after.requestedAt) || new Date().toISOString(),
-    responded_at: toIsoTimestamp(after.respondedAt),
-    updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
   };
+  const requestedAt = toIsoTimestamp(after.requestedAt);
+  if (requestedAt) labConnectionPayload.requested_at = requestedAt;
+  const respondedAt = toIsoTimestamp(after.respondedAt);
+  if (respondedAt) labConnectionPayload.responded_at = respondedAt;
+  const connectionUpdatedAt = toIsoTimestamp(after.updatedAt);
+  if (connectionUpdatedAt) labConnectionPayload.updated_at = connectionUpdatedAt;
 
   try {
     await executeWithRetry(
@@ -2830,24 +3276,7 @@ async function syncFirestoreLabConnectionToSupabase(event) {
             throw new Error(`Supabase PostgREST lab connection error (${resp.status}): ${errBody}`);
           }
         } else if (pool) {
-          await pool.query(`
-            INSERT INTO lab_connections (
-              connection_id, doctor_id, lab_id, doctor_name, lab_name,
-              status, requested_by, requested_at, responded_at, updated_at
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-            ) ON CONFLICT (connection_id) DO UPDATE SET
-              status = EXCLUDED.status,
-              requested_by = EXCLUDED.requested_by,
-              responded_at = EXCLUDED.responded_at,
-              updated_at = NOW();
-          `, [
-            labConnectionPayload.connection_id, labConnectionPayload.doctor_id,
-            labConnectionPayload.lab_id, labConnectionPayload.doctor_name,
-            labConnectionPayload.lab_name, labConnectionPayload.status,
-            labConnectionPayload.requested_by, labConnectionPayload.requested_at,
-            labConnectionPayload.responded_at, labConnectionPayload.updated_at,
-          ]);
+          await pgMergeUpsert(pool, 'lab_connections', labConnectionPayload, 'connection_id');
         }
       },
       { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'lab_connection', entityId: connectionId } }
@@ -2924,17 +3353,19 @@ async function ensureAmbulanceExistsInPostgres(ambulanceId, fallbackData = {}, {
     if (snap.exists) docData = snap.data();
   } catch (_) {}
 
-  const placeholder = {
-    ambulance_id: ambulanceId,
-    service_name: docData?.serviceName || fallbackData.serviceName || 'Ambulance Service',
-    driver_name: docData?.driverName || fallbackData.driverName || 'Driver',
-    phone: docData?.phone || fallbackData.phone || '0000000000',
-    vehicle_number: docData?.vehicleNumber || fallbackData.vehicleNumber || 'MH-00-XX-0000',
-    ambulance_type: ['bls', 'als', 'icu', 'patientTransport'].includes(docData?.ambulanceType) ? docData.ambulanceType : 'bls',
-    city: (docData?.address && docData?.address.city) || docData?.city || 'Mumbai',
-    created_at: toIsoTimestamp(docData?.createdAt) || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  const builtAmbulance = buildAmbulanceSupabasePayload(ambulanceId, docData, fallbackData);
+  if (builtAmbulance.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'ambulance',
+      entityId: ambulanceId,
+      payload: { ambulance_id: ambulanceId },
+      errorMessage: `Skipped ambulance placeholder: ${builtAmbulance.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
+  const placeholder = builtAmbulance.ambulance;
 
   try {
     if (url && key) {
@@ -2997,17 +3428,19 @@ async function ensureAmbulanceBroadcastExistsInPostgres(broadcastId, fallbackDat
     if (snap.exists) docData = snap.data();
   } catch (_) {}
 
-  const placeholder = {
-    broadcast_id: broadcastId,
-    patient_id: docData?.patientId || fallbackData.patientId || 'pat-unknown',
-    patient_name: docData?.patientName || fallbackData.patientName || 'Patient',
-    pickup_location: docData?.pickupLocation || fallbackData.pickupLocation || 'Pickup location',
-    drop_location: docData?.dropLocation || fallbackData.dropLocation || 'Drop location',
-    contact_phone: docData?.contactPhone || fallbackData.contactPhone || '0000000000',
-    status: ['pending', 'accepted', 'completed', 'cancelled'].includes(docData?.status) ? docData.status : 'pending',
-    created_at: toIsoTimestamp(docData?.createdAt) || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  const builtBroadcast = buildAmbulanceBroadcastSupabasePayload(broadcastId, docData, fallbackData);
+  if (builtBroadcast.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'ambulance_broadcast',
+      entityId: broadcastId,
+      payload: { reason: builtBroadcast.reason },
+      errorMessage: `Skipped ambulance broadcast placeholder: ${builtBroadcast.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
+  const placeholder = builtBroadcast.row;
 
   try {
     if (url && key) {
@@ -3101,62 +3534,33 @@ async function syncFirestoreAmbulanceToSupabase(event) {
     return;
   }
 
-  let addressLine1 = null;
-  let addressLine2 = null;
-  let state = 'Maharashtra';
-  let country = 'India';
-  let pincode = null;
-  let city = 'Mumbai';
-
-  if (after.address && typeof after.address === 'object') {
-    addressLine1 = after.address.addressLine1 || after.addressLine1 || null;
-    addressLine2 = after.address.addressLine2 || after.addressLine2 || null;
-    city = after.address.city || after.city || 'Mumbai';
-    state = after.address.state || after.state || 'Maharashtra';
-    country = after.address.country || after.country || 'India';
-    pincode = after.address.pinCode || after.address.pincode || after.pincode || null;
-  } else {
-    addressLine1 = after.addressLine1 || (typeof after.address === 'string' ? after.address : null);
-    addressLine2 = after.addressLine2 || null;
-    city = after.city || 'Mumbai';
-    state = after.state || 'Maharashtra';
-    country = after.country || 'India';
-    pincode = after.pincode || null;
+  const builtAmbulanceSync = buildAmbulanceSupabasePayload(ambulanceId, after);
+  if (builtAmbulanceSync.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'ambulance',
+      entityId: ambulanceId,
+      payload: { ambulance_id: ambulanceId },
+      errorMessage: `Skipped ambulance sync: ${builtAmbulanceSync.reason}`,
+      retryCount: 0,
+    });
+    return;
   }
-
-  const ambulancePayload = {
-    ambulance_id: ambulanceId,
-    auth_uid: toValidUuid(after.authUid),
-    service_name: after.serviceName || 'Ambulance Service',
-    owner_name: after.ownerName || null,
-    driver_name: after.driverName || 'Driver',
-    phone: after.phone || '0000000000',
-    vehicle_number: after.vehicleNumber || 'MH-00-XX-0000',
-    ambulance_type: ['bls', 'als', 'icu', 'patientTransport'].includes(after.ambulanceType) ? after.ambulanceType : 'bls',
-    username: after.username ? String(after.username).trim().toLowerCase() : null,
-    city: city,
-    base_address: after.baseAddress || null,
-    license_number: after.licenseNumber || null,
-    insurance_number: after.insuranceNumber || null,
-    has_oxygen: Boolean(after.hasOxygen),
-    has_ventilator: Boolean(after.hasVentilator),
-    has_stretcher: after.hasStretcher !== false,
-    is_24x7: Boolean(after.is24x7),
-    rate_per_km: after.ratePerKm != null ? parseFloat(after.ratePerKm) : null,
-    total_rating: parseFloat(after.totalRating ?? 0.0) || 0.0,
-    rating_count: parseInt(after.ratingCount ?? 0, 10) || 0,
-    is_available: after.isAvailable !== false && after.available !== false,
-    profile_completed: Boolean(after.profileCompleted),
-    verified: Boolean(after.verified),
-    address_line1: addressLine1,
-    address_line2: addressLine2,
-    state: state,
-    country: country,
-    pincode: pincode,
-    service_areas: toStringArray(after.serviceAreas, []),
-    created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
-    updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
-  };
+  const ambulancePayload = builtAmbulanceSync.ambulance;
+  putText(ambulancePayload, 'address_line1', after.addressLine1, after.address && after.address.addressLine1);
+  putText(ambulancePayload, 'address_line2', after.addressLine2, after.address && after.address.addressLine2);
+  putText(ambulancePayload, 'pincode', after.pincode, after.address && (after.address.pinCode || after.address.pincode));
+  putText(ambulancePayload, 'base_address', after.baseAddress);
+  putText(ambulancePayload, 'license_number', after.licenseNumber);
+  putText(ambulancePayload, 'insurance_number', after.insuranceNumber);
+  const ratePerKm = optionalFiniteNumber(after.ratePerKm);
+  if (ratePerKm !== undefined) ambulancePayload.rate_per_km = ratePerKm;
+  const totalRating = optionalFiniteNumber(after.totalRating);
+  if (totalRating !== undefined) ambulancePayload.total_rating = totalRating;
+  const ratingCount = optionalFiniteNumber(after.ratingCount);
+  if (ratingCount !== undefined) ambulancePayload.rating_count = Math.trunc(ratingCount);
+  putBooleanIfPresent(ambulancePayload, 'profile_completed', after.profileCompleted);
+  if (Array.isArray(after.serviceAreas)) ambulancePayload.service_areas = toStringArray(after.serviceAreas, []);
 
   try {
     await executeWithRetry(
@@ -3177,60 +3581,7 @@ async function syncFirestoreAmbulanceToSupabase(event) {
             throw new Error(`Supabase PostgREST ambulance error (${resp.status}): ${errBody}`);
           }
         } else if (pool) {
-          await pool.query(`
-            INSERT INTO ambulances (
-              ambulance_id, auth_uid, service_name, owner_name, driver_name, phone,
-              vehicle_number, ambulance_type, username, city, base_address, license_number,
-              insurance_number, has_oxygen, has_ventilator, has_stretcher, is_24x7,
-              rate_per_km, total_rating, rating_count, is_available, profile_completed,
-              verified, address_line1, address_line2, state, country, pincode, service_areas,
-              created_at, updated_at
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-              $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
-            ) ON CONFLICT (ambulance_id) DO UPDATE SET
-              auth_uid = EXCLUDED.auth_uid,
-              service_name = EXCLUDED.service_name,
-              owner_name = EXCLUDED.owner_name,
-              driver_name = EXCLUDED.driver_name,
-              phone = EXCLUDED.phone,
-              vehicle_number = EXCLUDED.vehicle_number,
-              ambulance_type = EXCLUDED.ambulance_type,
-              username = EXCLUDED.username,
-              city = EXCLUDED.city,
-              base_address = EXCLUDED.base_address,
-              license_number = EXCLUDED.license_number,
-              insurance_number = EXCLUDED.insurance_number,
-              has_oxygen = EXCLUDED.has_oxygen,
-              has_ventilator = EXCLUDED.has_ventilator,
-              has_stretcher = EXCLUDED.has_stretcher,
-              is_24x7 = EXCLUDED.is_24x7,
-              rate_per_km = EXCLUDED.rate_per_km,
-              total_rating = EXCLUDED.total_rating,
-              rating_count = EXCLUDED.rating_count,
-              is_available = EXCLUDED.is_available,
-              profile_completed = EXCLUDED.profile_completed,
-              verified = EXCLUDED.verified,
-              address_line1 = EXCLUDED.address_line1,
-              address_line2 = EXCLUDED.address_line2,
-              state = EXCLUDED.state,
-              country = EXCLUDED.country,
-              pincode = EXCLUDED.pincode,
-              service_areas = EXCLUDED.service_areas,
-              updated_at = NOW();
-          `, [
-            ambulancePayload.ambulance_id, ambulancePayload.auth_uid, ambulancePayload.service_name,
-            ambulancePayload.owner_name, ambulancePayload.driver_name, ambulancePayload.phone,
-            ambulancePayload.vehicle_number, ambulancePayload.ambulance_type, ambulancePayload.username,
-            ambulancePayload.city, ambulancePayload.base_address, ambulancePayload.license_number,
-            ambulancePayload.insurance_number, ambulancePayload.has_oxygen, ambulancePayload.has_ventilator,
-            ambulancePayload.has_stretcher, ambulancePayload.is_24x7, ambulancePayload.rate_per_km,
-            ambulancePayload.total_rating, ambulancePayload.rating_count, ambulancePayload.is_available,
-            ambulancePayload.profile_completed, ambulancePayload.verified, ambulancePayload.address_line1,
-            ambulancePayload.address_line2, ambulancePayload.state, ambulancePayload.country,
-            ambulancePayload.pincode, ambulancePayload.service_areas, ambulancePayload.created_at,
-            ambulancePayload.updated_at,
-          ]);
+          await pgMergeUpsert(pool, 'ambulances', ambulancePayload, 'ambulance_id');
         }
       },
       { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'ambulance', entityId: ambulanceId } }
@@ -3502,18 +3853,21 @@ async function syncFirestoreAmbulanceBroadcastToSupabase(event) {
     }, { url, key, pool });
   }
 
-  const rawStatus = after.status || 'pending';
-  const status = ['pending', 'accepted', 'completed', 'cancelled'].includes(rawStatus) ? rawStatus : 'pending';
-
+  const builtBroadcastSync = buildAmbulanceBroadcastSupabasePayload(broadcastId, after);
+  if (builtBroadcastSync.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'ambulance_broadcast',
+      entityId: broadcastId,
+      payload: { reason: builtBroadcastSync.reason },
+      errorMessage: `Skipped ambulance broadcast sync: ${builtBroadcastSync.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
   const broadcastPayload = {
-    broadcast_id: broadcastId,
-    patient_id: after.patientId || 'pat-unknown',
-    patient_name: after.patientName || 'Patient',
-    pickup_location: after.pickupLocation || 'Pickup location',
-    drop_location: after.dropLocation || 'Drop location',
-    contact_phone: after.contactPhone || '0000000000',
+    ...builtBroadcastSync.row,
     notes: after.notes || null,
-    status: status,
     accepted_driver_id: after.acceptedDriverId || null,
     accepted_driver_name: after.acceptedDriverName || after.acceptedAmbulanceName || null,
     accepted_driver_phone: after.acceptedDriverPhone || null,
@@ -3577,7 +3931,7 @@ async function syncFirestoreAmbulanceBroadcastToSupabase(event) {
         }
 
         // 2. Reflect Sibling Cancellation / Taken status in Postgres
-        if (status === 'accepted' && after.acceptedDriverId) {
+        if (broadcastPayload.status === 'accepted' && after.acceptedDriverId) {
           if (url && key) {
             await fetch(`${url.replace(/\/+$/, '')}/rest/v1/ambulance_requests?broadcast_id=eq.${encodeURIComponent(broadcastId)}&driver_id=neq.${encodeURIComponent(after.acceptedDriverId)}&status=eq.pending`, {
               method: 'PATCH',
@@ -3599,7 +3953,7 @@ async function syncFirestoreAmbulanceBroadcastToSupabase(event) {
               [after.acceptedDriverId, broadcastId]
             );
           }
-        } else if (status === 'cancelled') {
+        } else if (broadcastPayload.status === 'cancelled') {
           if (url && key) {
             await fetch(`${url.replace(/\/+$/, '')}/rest/v1/ambulance_requests?broadcast_id=eq.${encodeURIComponent(broadcastId)}&status=eq.pending`, {
               method: 'PATCH',
@@ -3708,19 +4062,20 @@ async function syncFirestoreAmbulanceRequestToSupabase(event) {
   await ensureAmbulanceBroadcastExistsInPostgres(broadcastId, after, { url, key, pool });
   await ensureAmbulanceExistsInPostgres(driverId, {}, { url, key, pool });
 
-  const rawStatus = after.status || 'pending';
-  const status = ['pending', 'taken', 'accepted', 'cancelled'].includes(rawStatus) ? rawStatus : 'pending';
-
+  const builtRequest = buildAmbulanceRequestSupabasePayload(requestId, after);
+  if (builtRequest.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'ambulance_request',
+      entityId: requestId,
+      payload: { reason: builtRequest.reason },
+      errorMessage: `Skipped ambulance request sync: ${builtRequest.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
   const requestPayload = {
-    request_id: requestId,
-    broadcast_id: broadcastId,
-    driver_id: driverId,
-    patient_id: after.patientId || 'pat-unknown',
-    patient_name: after.patientName || 'Patient',
-    pickup_location: after.pickupLocation || 'Pickup location',
-    drop_location: after.dropLocation || 'Drop location',
-    contact_phone: after.contactPhone || '0000000000',
-    status: status,
+    ...builtRequest.row,
     accepted_driver_id: after.acceptedDriverId || null,
     created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
     updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
@@ -3847,20 +4202,20 @@ async function syncFirestoreAmbulanceInviteToSupabase(event) {
   // Self-healing parent doctor foreign key
   await ensureDoctorExistsInPostgres(doctorId, { url, key, pool });
 
-  const rawStatus = after.status || 'pending';
-  const status = ['pending', 'completed', 'cancelled'].includes(rawStatus)
-    ? rawStatus
-    : (rawStatus === 'expired' ? 'cancelled' : 'pending');
-
+  const builtInvite = buildAmbulanceInviteSupabasePayload(inviteId, after);
+  if (builtInvite.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'ambulance_invite',
+      entityId: inviteId,
+      payload: { reason: builtInvite.reason },
+      errorMessage: `Skipped ambulance invite sync: ${builtInvite.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
   const invitePayload = {
-    invite_id: inviteId,
-    token: after.token || inviteId,
-    doctor_id: doctorId,
-    ambulance_id: after.ambulanceId || 'amb-unknown',
-    service_name: after.serviceName || 'Ambulance Service',
-    driver_name: after.driverName || 'Driver',
-    phone: after.phone || '0000000000',
-    status: status,
+    ...builtInvite.row,
     username: after.username || null,
     created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
     completed_at: toIsoTimestamp(after.completedAt),
@@ -3921,7 +4276,287 @@ async function syncFirestoreAmbulanceInviteToSupabase(event) {
   }
 }
 
+function normalizeRole(role) {
+  const raw = String(role || '').trim();
+  const lower = raw.toLowerCase();
+  if (lower === 'patient') return 'patient';
+  if (lower === 'doctor') return 'doctor';
+  if (lower === 'medical' || lower === 'medicalstore' || lower === 'medical_store' || lower === 'pharmacy') return 'medicalStore';
+  if (lower === 'lab') return 'lab';
+  if (lower === 'ambulance') return 'ambulance';
+  if (lower === 'superadmin' || lower === 'super_admin') return 'superAdmin';
+  if (lower === 'admin') return 'admin';
+  return raw;
+}
+
+function buildUserSupabasePayload(uid, docData) {
+  const doc = docData || {};
+  const normalizedUid = String(uid || '').trim();
+  if (!normalizedUid) {
+    return { skip: true, reason: 'user_uid_missing' };
+  }
+
+  const role = normalizeRole(doc.role || 'patient');
+  const profileId = firstText(doc.profileId, doc.profile_id, doc.id, normalizedUid);
+  if (!profileId) {
+    return { skip: true, reason: 'user_profile_id_missing' };
+  }
+
+  const rawEmail = firstText(doc.email);
+  const rawMobile = firstText(doc.mobile, doc.phone);
+  let mobile = rawMobile ? String(rawMobile).replace(/\D/g, '') : null;
+  if (mobile && mobile.length === 12 && mobile.startsWith('91')) {
+    mobile = mobile.slice(2);
+  } else if (mobile && mobile.length === 11 && mobile.startsWith('0')) {
+    mobile = mobile.slice(1);
+  }
+  const email = (rawEmail || `${mobile || normalizedUid}@signup.doctornect.app`).toLowerCase();
+  const displayName = firstText(doc.displayName, doc.name, 'User');
+  const profileCompleted = typeof doc.profileCompleted === 'boolean' ? doc.profileCompleted : false;
+  const verified = typeof doc.verified === 'boolean' ? doc.verified : false;
+  const status = firstText(doc.status, 'approved');
+  const photoUrl = firstText(doc.photoUrl, doc.photo_url) || null;
+  const createdAt = toIsoTimestamp(doc.createdAt) || new Date().toISOString();
+  const updatedAt = toIsoTimestamp(doc.updatedAt) || new Date().toISOString();
+  const verifiedAt = toIsoTimestamp(doc.verifiedAt) || null;
+  const deactivated = Boolean(doc.deactivated);
+
+  const row = {
+    firebase_uid: normalizedUid,
+    role,
+    profile_id: profileId,
+    display_name: displayName,
+    email,
+    mobile: mobile || null,
+    profile_completed: profileCompleted,
+    verified,
+    status,
+    deactivated,
+    updated_at: updatedAt,
+  };
+  if (photoUrl) row.photo_url = photoUrl;
+  if (verifiedAt) row.verified_at = verifiedAt;
+
+  return {
+    skip: false,
+    row,
+    createdAt,
+  };
+}
+
+/**
+ * Sync Firestore users/{uid} to Supabase public.users
+ * Keyed on firebase_uid. Idempotent. Handles creates, updates, role changes, and deletes.
+ */
+async function syncFirestoreUserToSupabase(event) {
+  const change = event.data;
+  if (!change) return;
+
+  const uid = event.params?.uid || change.after?.id || change.before?.id;
+  if (!uid) return;
+
+  // 1. Loop Prevention Check
+  const afterData = change.after?.exists ? change.after.data() : null;
+  if (afterData && (afterData.syncedBy === 'supabase_bridge' || afterData.syncedBy === 'reconciler_bot')) {
+    return;
+  }
+
+  const { url, key } = getSupabaseConfig();
+  const pool = getPgPool();
+
+  if ((!url || !key) && !pool) {
+    console.warn('[SyncBridge] Supabase credentials not configured in Cloud Functions. Skipping user sync.');
+    return;
+  }
+
+  // 2. Handle document deletion: follow deleteMyAccount cleanup policy
+  if (!change.after || !change.after.exists) {
+    const beforeData = change.before?.exists ? change.before.data() : {};
+    const role = beforeData.role ? normalizeRole(beforeData.role) : undefined;
+    const profileId = beforeData.profileId || beforeData.profile_id;
+    try {
+      await executeWithRetry(
+        async () => {
+          const { cleanupUserSupabaseRows } = require('./delete_my_account');
+          const res = await cleanupUserSupabaseRows({ uid, role, profileId });
+          if (res && res.failedSupabaseTables && res.failedSupabaseTables.length > 0) {
+            throw new Error(`Failed to cleanup Supabase tables: ${res.failedSupabaseTables.join(', ')}`);
+          }
+        },
+        { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'user', entityId: uid, action: 'delete' } }
+      );
+    } catch (err) {
+      await recordDlqFailure({
+        direction: 'firestore_to_supabase',
+        entityType: 'user',
+        entityId: uid,
+        payload: { uid, action: 'delete' },
+        errorMessage: err.message,
+        errorStack: err.stack,
+        retryCount: err.retryCount || 3,
+      });
+      throw err;
+    }
+    return;
+  }
+
+  // 3. Monotonic compare-and-skip
+  const localMs = firestoreTimestampMs(afterData.updatedAt);
+  let remoteMs = null;
+  try {
+    remoteMs = await readRemoteUpdatedAtMs({
+      url,
+      key,
+      pool,
+      table: 'users',
+      idColumn: 'firebase_uid',
+      id: uid,
+    });
+  } catch (err) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'user',
+      entityId: uid,
+      payload: { reason: 'compare_and_skip_read_failed' },
+      errorMessage: err.message,
+      errorStack: err.stack,
+    });
+    return;
+  }
+  if (remoteMs != null && (localMs == null || localMs <= remoteMs)) {
+    console.info(`[SyncBridge] Skipping stale user snapshot ${uid}`);
+    return;
+  }
+
+  // 4. Build payload
+  const built = buildUserSupabasePayload(uid, afterData);
+  if (built.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'user',
+      entityId: uid,
+      payload: { uid },
+      errorMessage: `Skipped user sync: ${built.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
+
+  const { row, createdAt } = built;
+
+  // 5. Execute upsert with retry
+  try {
+    await executeWithRetry(
+      async () => {
+        if (url && key) {
+          const checkResp = await fetch(
+            `${url.replace(/\/+$/, '')}/rest/v1/users?firebase_uid=eq.${encodeURIComponent(uid)}&select=id,email&limit=1`,
+            {
+              method: 'GET',
+              headers: {
+                apikey: key,
+                Authorization: `Bearer ${key}`,
+              },
+            }
+          );
+          const existingRows = checkResp.ok ? await checkResp.json() : [];
+          const existingUser = (Array.isArray(existingRows) && existingRows.length > 0) ? existingRows[0] : null;
+
+          const patchFn = async (patchPayload) => {
+            const patchResp = await fetch(
+              `${url.replace(/\/+$/, '')}/rest/v1/users?firebase_uid=eq.${encodeURIComponent(uid)}`,
+              {
+                method: 'PATCH',
+                headers: {
+                  apikey: key,
+                  Authorization: `Bearer ${key}`,
+                  'Content-Type': 'application/json',
+                  Prefer: 'return=minimal',
+                },
+                body: JSON.stringify(patchPayload),
+              }
+            );
+            if (!patchResp.ok) {
+              const errBody = await patchResp.text();
+              const err = new Error(`Supabase PostgREST user update error (${patchResp.status}): ${errBody}`);
+              err.status = patchResp.status;
+              err.body = errBody;
+              throw err;
+            }
+          };
+
+          const postFn = async (insertPayload) => {
+            const postResp = await fetch(
+              `${url.replace(/\/+$/, '')}/rest/v1/users?on_conflict=firebase_uid`,
+              {
+                method: 'POST',
+                headers: {
+                  apikey: key,
+                  Authorization: `Bearer ${key}`,
+                  'Content-Type': 'application/json',
+                  Prefer: 'resolution=merge-duplicates,return=minimal',
+                },
+                body: JSON.stringify(insertPayload),
+              }
+            );
+            if (!postResp.ok) {
+              const errBody = await postResp.text();
+              const err = new Error(`Supabase PostgREST user insert error (${postResp.status}): ${errBody}`);
+              err.status = postResp.status;
+              err.body = errBody;
+              throw err;
+            }
+          };
+
+          await executeUserSyncWithEmailFallback({
+            uid,
+            row,
+            createdAt,
+            deterministicId: toUserUuid(uid),
+            existingUser,
+            patchFn,
+            postFn,
+            logger: (msg) => {
+              try {
+                const parsed = typeof msg === 'string' ? JSON.parse(msg) : msg;
+                console.warn('[SyncBridge User Email Fallback]', parsed);
+              } catch (_) {
+                console.warn(msg);
+              }
+            },
+          });
+        } else if (pool) {
+          const insertPayload = {
+            id: toUserUuid(uid),
+            created_at: createdAt,
+            ...row,
+          };
+          await upsertMergeRow(pool, 'users', 'firebase_uid', insertPayload);
+        }
+      },
+      { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'user', entityId: uid } }
+    );
+  } catch (err) {
+    const retryCount = err.retryCount || 3;
+    const actualErr = err.originalError || err;
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'user',
+      entityId: uid,
+      payload: row,
+      errorMessage: actualErr.message,
+      errorStack: actualErr.stack,
+      retryCount,
+    });
+    throw actualErr;
+  }
+}
+
 module.exports = {
+  syncFirestoreUserToSupabase,
+  buildUserSupabasePayload,
+  normalizeRole,
+  toUserUuid,
   syncFirestoreAppointmentToSupabase,
   syncFirestorePrescriptionToSupabase,
   syncFirestoreDoctorToSupabase,
@@ -3954,6 +4589,20 @@ module.exports = {
   isAmbulancePinHash,
   recordDlqFailure,
   executeWithRetry,
+  resolveWriterSyncOrigin,
+  buildAppointmentSupabasePayload,
+  firestoreTimestampMs,
+  optionalFiniteNumber,
+  experienceYearsFromDoctorDoc,
+  placeholderPatientPayload,
+  buildDoctorSupabasePayload,
+  buildMedicalStoreSupabasePayload,
+  buildLabSupabasePayload,
+  buildAmbulanceSupabasePayload,
+  buildAmbulanceBroadcastSupabasePayload,
+  buildAmbulanceRequestSupabasePayload,
+  buildAmbulanceInviteSupabasePayload,
+  buildAvailabilitySupabasePayload,
   toStringArray,
   toIsoTimestamp,
   toDateString,

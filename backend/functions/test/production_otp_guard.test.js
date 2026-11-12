@@ -31,7 +31,7 @@ function cloudRuntimeEnv(overrides = {}) {
 test('production OTP guard allows test/demo config outside production project', () => {
   const env = baseEnv({
     OTP_TEST_MODE: 'true',
-    DEMO_PHONE_PATIENT: '9359503874',
+    DEMO_PHONE_PATIENT: '9888800003',
   });
 
   assert.equal(isProductionFirebaseProject(env), false);
@@ -43,7 +43,7 @@ test('production OTP guard skips local deploy analysis even with prod project en
   const env = baseEnv({
     GCLOUD_PROJECT: PROD_PROJECT,
     OTP_TEST_MODE: 'true',
-    DEMO_PHONE_PATIENT: '9359503874',
+    DEMO_PHONE_PATIENT: '9888800003',
   });
 
   assert.doesNotThrow(() => assertProductionOtpSafety(env));
@@ -85,7 +85,7 @@ test('registration OTP backdoors are disabled on production project', async () =
   try {
     process.env.GCLOUD_PROJECT = PROD_PROJECT;
     process.env.OTP_TEST_MODE = 'true';
-    process.env.DEMO_PHONE_PATIENT = '9359503874';
+    process.env.DEMO_PHONE_PATIENT = '9888800003';
 
     for (const modulePath of [
       '../production_otp_guard',
@@ -94,9 +94,9 @@ test('registration OTP backdoors are disabled on production project', async () =
       delete require.cache[require.resolve(modulePath)];
     }
 
-    const { isTestMode, isDemoPhone } = require('../registration_otp');
-    assert.equal(isTestMode(), false);
-    assert.equal(await isDemoPhone('9359503874', 'patient'), false);
+    const { isReviewerPhone } = require('../registration_otp');
+    // isTestMode removed
+    assert.equal(isReviewerPhone('9888800003'), false);
   } finally {
     for (const [key, value] of Object.entries(savedEnv)) {
       if (value === undefined) {

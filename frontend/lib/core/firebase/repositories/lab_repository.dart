@@ -1,9 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../firebase_bootstrap.dart';
-import '../firestore_paths.dart';
-import '../firestore_query_limits.dart';
-import '../firestore_read_helper.dart';
+import '../../supabase/repositories/supabase_lab_repository.dart';
+import '../../supabase/supabase_bootstrap.dart';
 
 /// Registered diagnostic lab profile.
 class RegisteredLabProfile {
@@ -50,7 +46,8 @@ class RegisteredLabProfile {
     String? phone,
     String? email,
     String? gstNumber,
-    bool clearGstNumber = false,
+    double? rating,
+    String? area,
     bool? verified,
     String? addressLine1,
     String? addressLine2,
@@ -66,9 +63,9 @@ class RegisteredLabProfile {
       licenseNumber: licenseNumber ?? this.licenseNumber,
       phone: phone ?? this.phone,
       email: email ?? this.email,
-      gstNumber: clearGstNumber ? null : (gstNumber ?? this.gstNumber),
-      rating: rating,
-      area: area,
+      gstNumber: gstNumber ?? this.gstNumber,
+      rating: rating ?? this.rating,
+      area: area ?? this.area,
       verified: verified ?? this.verified,
       addressLine1: addressLine1 ?? this.addressLine1,
       addressLine2: addressLine2 ?? this.addressLine2,
@@ -86,103 +83,81 @@ class LabRepository {
   static final LabRepository instance = LabRepository._();
 
   Future<bool> isLabVerified(String labId) async {
-    if (!FirebaseBootstrap.isReady || labId.isEmpty) return false;
-    final snap = await FirestoreReadHelper.getDocument(
-      reference:
-          FirebaseFirestore.instance.collection(FirestorePaths.labs).doc(labId),
-      preferCache: false,
-    );
-    if (!snap.exists || snap.data() == null) return false;
-    return snap.data()!['verified'] as bool? ??
-        false; // FIXED: gate login on admin verification
+    if (!SupabaseBootstrap.isReady || labId.isEmpty) return false;
+    try {
+      final res = await SupabaseBootstrap.client
+          .from('labs')
+          .select('verified')
+          .eq('lab_id', labId)
+          .maybeSingle();
+      return res?['verified'] as bool? ?? false;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<RegisteredLabProfile?> fetchLabById(
     String labId, {
     bool preferCache = true,
   }) async {
-    if (!FirebaseBootstrap.isReady || labId.isEmpty) return null;
-    final snap = await FirestoreReadHelper.getDocument(
-      reference:
-          FirebaseFirestore.instance.collection(FirestorePaths.labs).doc(labId),
-      preferCache: preferCache,
-    );
-    if (!snap.exists || snap.data() == null) return null;
-    return _fromMap(snap.id, snap.data()!);
+    if (!SupabaseBootstrap.isReady || labId.isEmpty) return null;
+    try {
+      final res = await SupabaseBootstrap.client
+          .from('labs')
+          .select()
+          .eq('lab_id', labId)
+          .maybeSingle();
+      if (res == null) return null;
+      return _fromRow(labId, res);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<List<RegisteredLabProfile>> fetchVerifiedLabs({
     bool preferCache = true,
   }) async {
-    if (!FirebaseBootstrap.isReady) return const [];
-
-    final snapshot = await FirestoreReadHelper.getQuery(
-      query: FirebaseFirestore.instance
-          .collection(FirestorePaths.labs)
-          .where(
-            'verified',
-            isEqualTo: true,
-          ) // FIXED: only surface admin-verified labs to doctors/patients
-          .limit(FirestoreQueryLimits.verifiedDirectoryListingCap),
-      preferCache: preferCache,
-    );
-
-    return snapshot.docs
-        .map((doc) => _fromMap(doc.id, doc.data()))
-        .whereType<RegisteredLabProfile>()
-        .toList();
+    final partners =
+        await SupabaseLabRepository.instance.fetchVerifiedLabs();
+    if (partners.isEmpty) return const [];
+    final profiles = <RegisteredLabProfile>[];
+    for (final partner in partners) {
+      final profile = await fetchLabById(
+        partner.id ?? '',
+        preferCache: preferCache,
+      );
+      if (profile != null && profile.verified) {
+        profiles.add(profile);
+      }
+    }
+    return profiles;
   }
 
-  RegisteredLabProfile? _fromMap(String id, Map<String, dynamic> data) {
+  RegisteredLabProfile? _fromRow(String id, Map<String, dynamic> row) {
     try {
-      final addressData = data['address'];
-      String addressStr = '';
-      String aCountry = '';
-      String aState = '';
-      String aCity = data['city'] as String? ?? '';
-      String aLine1 = '';
-      String aLine2 = '';
-      String aPinCode = '';
-
-      if (addressData is Map) {
-        aCountry = addressData['country'] as String? ?? '';
-        aState = addressData['state'] as String? ?? '';
-        aCity = addressData['city'] as String? ?? aCity;
-        aLine1 = addressData['addressLine1'] as String? ?? '';
-        aLine2 = addressData['addressLine2'] as String? ?? '';
-        aPinCode = addressData['pinCode'] as String? ?? '';
-
-        final parts = [
-          aLine1,
-          aLine2,
-          aCity,
-          aState,
-          aPinCode,
-        ].where((e) => e.isNotEmpty);
-        addressStr = parts.join(', ');
-      } else if (addressData is String) {
-        addressStr = addressData;
-      }
-
+      final line1 = row['address_line1'] as String? ?? '';
+      final line2 = row['address_line2'] as String? ?? '';
+      final city = row['city'] as String? ?? '';
+      final state = row['state'] as String? ?? '';
+      final pin = row['pincode'] as String? ?? '';
+      final parts = [line1, line2, city, state, pin].where((e) => e.isNotEmpty);
       return RegisteredLabProfile(
-        id: data['labId'] as String? ?? id,
-        labName: data['labName'] as String? ?? data['name'] as String? ?? '',
-        address: addressStr,
-        addressLine1: aLine1,
-        addressLine2: aLine2,
-        country: aCountry,
-        state: aState,
-        city: aCity,
-        pincode: aPinCode,
-        licenseNumber: data['licenseNumber'] as String? ?? '',
-        phone: data['phone'] as String? ?? '',
-        email: data['email'] as String? ?? '',
-        gstNumber: _optionalGst(data['gstNumber'] as String?),
-        rating: (data['rating'] as num?)?.toDouble() ?? 0,
-        area: aCity.isNotEmpty
-            ? aCity
-            : (data['area'] as String? ?? data['city'] as String? ?? ''),
-        verified: data['verified'] as bool? ?? false,
+        id: row['lab_id'] as String? ?? id,
+        labName: row['lab_name'] as String? ?? row['name'] as String? ?? '',
+        address: parts.join(', '),
+        addressLine1: line1,
+        addressLine2: line2,
+        country: row['country'] as String? ?? '',
+        state: state,
+        city: city,
+        pincode: pin,
+        licenseNumber: row['license_number'] as String? ?? '',
+        phone: row['phone'] as String? ?? '',
+        email: row['email'] as String? ?? '',
+        gstNumber: _optionalGst(row['gst_number'] as String?),
+        rating: (row['rating'] as num?)?.toDouble() ?? 0,
+        area: city.isNotEmpty ? city : (row['area'] as String? ?? ''),
+        verified: row['verified'] as bool? ?? false,
       );
     } catch (_) {
       return null;
@@ -204,30 +179,41 @@ class LabRepository {
     String? gstNumber,
     bool clearGstNumber = false,
   }) async {
-    if (!FirebaseBootstrap.isReady || labId.isEmpty) return;
+    if (!SupabaseBootstrap.isReady || labId.isEmpty) return;
 
     final updates = <String, dynamic>{
-      'updatedAt': FieldValue.serverTimestamp(),
+      'updated_at': DateTime.now().toIso8601String(),
     };
     if (labName != null) {
-      updates['labName'] = labName;
+      updates['lab_name'] = labName;
       updates['name'] = labName;
     }
-    if (licenseNumber != null) updates['licenseNumber'] = licenseNumber;
-    if (address != null) updates['address'] = address;
+    if (licenseNumber != null) updates['license_number'] = licenseNumber;
+    if (address != null) {
+      if (address['country'] != null) updates['country'] = address['country'];
+      if (address['state'] != null) updates['state'] = address['state'];
+      if (address['city'] != null) updates['city'] = address['city'];
+      if (address['addressLine1'] != null) {
+        updates['address_line1'] = address['addressLine1'];
+      }
+      if (address['addressLine2'] != null) {
+        updates['address_line2'] = address['addressLine2'];
+      }
+      if (address['pinCode'] != null) updates['pincode'] = address['pinCode'];
+    }
     if (phone != null) updates['phone'] = phone;
     if (email != null) updates['email'] = email.trim().toLowerCase();
     if (clearGstNumber) {
-      updates['gstNumber'] = FieldValue.delete();
+      updates['gst_number'] = null;
     } else if (gstNumber != null) {
-      updates['gstNumber'] = gstNumber;
+      updates['gst_number'] = gstNumber;
     }
 
     if (updates.length == 1) return;
 
-    await FirebaseFirestore.instance
-        .collection(FirestorePaths.labs)
-        .doc(labId)
-        .set(updates, SetOptions(merge: true));
+    await SupabaseBootstrap.client
+        .from('labs')
+        .update(updates)
+        .eq('lab_id', labId);
   }
 }

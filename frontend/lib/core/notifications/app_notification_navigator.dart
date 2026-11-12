@@ -8,21 +8,30 @@ import '../data/shared_appointments_store.dart';
 import '../session/doctor_session.dart';
 import '../session/patient_session.dart';
 
-import 'package:medibond/features/shared/screens/appointment_detail_screen.dart';
+import 'package:medibond/features/shared/screens/appointment_detail_screen.dart'
+    deferred as appt_detail;
 
-import '../../features/doctor/clinical/referral_consult_service.dart';
-import '../../features/doctor/home/widgets/doctor_referred_patients_screen.dart';
+import '../../features/doctor/clinical/referral_consult_service.dart'
+    deferred as doc_referral;
+import '../../features/doctor/home/widgets/doctor_referred_patients_screen.dart'
+    deferred as doc_referred;
 import '../../features/doctor/clinical/data/clinical_prescription_store.dart';
 import '../../features/doctor/clinical/data/lab_order_store.dart';
-import '../../features/doctor/clinical/prescription/prescription_preview_modal.dart';
-import '../../features/doctor/lab/doctor_connected_labs_screen.dart';
-import '../../features/doctor/pharmacy/doctor_connected_stores_screen.dart';
-import '../../features/patient/lab/lab_report_screen.dart';
+import '../../features/doctor/clinical/prescription/prescription_preview_modal.dart'
+    deferred as rx_preview;
+import '../../features/doctor/lab/doctor_connected_labs_screen.dart'
+    deferred as doc_labs;
+import '../../features/doctor/pharmacy/doctor_connected_stores_screen.dart'
+    deferred as doc_stores;
+import '../../features/patient/lab/lab_report_screen.dart' deferred as pat_lab;
 import '../../features/patient/records/data/patient_lab_booking_store.dart';
-import '../../features/patient/records/widgets/patient_blood_test_sheet.dart';
-import '../../features/patient/records/widgets/patient_lab_order_sheet.dart';
+import '../../features/patient/records/widgets/patient_blood_test_sheet.dart'
+    deferred as blood_sheet;
+import '../../features/patient/records/widgets/patient_lab_order_sheet.dart'
+    deferred as lab_order_sheet;
 import '../../features/pharmacy/data/pharmacy_prescription_store.dart';
-import '../../features/doctor/verification/doctor_verification_gate.dart';
+import '../../features/doctor/verification/doctor_verification_gate.dart'
+    deferred as doc_gate;
 import 'app_notification.dart';
 import 'doctor_notification_trigger.dart';
 import 'patient_notification_trigger.dart';
@@ -174,9 +183,11 @@ abstract final class AppNotificationNavigator {
         notification.body.toLowerCase().contains('verification')) {
       final doctorId = DoctorSession.loggedInDoctorId;
       if (doctorId.isNotEmpty && audience == NotificationAudience.doctor) {
+        await doc_gate.loadLibrary();
+        if (!context.mounted) return false;
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => DoctorVerificationGate(doctorId: doctorId),
+            builder: (_) => doc_gate.DoctorVerificationGate(doctorId: doctorId),
           ),
         );
         return true;
@@ -303,14 +314,21 @@ abstract final class AppNotificationNavigator {
     );
     if (!context.mounted) return false;
     if (referral == null) {
-      await DoctorReferredPatientsScreen.open(context);
+      await doc_referred.loadLibrary();
+      if (!context.mounted) return false;
+      await doc_referred.DoctorReferredPatientsScreen.open(context);
       return true;
     }
     if (referral.toDoctorId != DoctorSession.loggedInDoctorId) {
-      await DoctorReferredPatientsScreen.open(context);
+      await doc_referred.loadLibrary();
+      if (!context.mounted) return false;
+      await doc_referred.DoctorReferredPatientsScreen.open(context);
       return true;
     }
-    await ReferralConsultService.openIncomingConsult(context, referral);
+    await doc_referral.loadLibrary();
+    if (!context.mounted) return false;
+    await doc_referral.ReferralConsultService.openIncomingConsult(
+        context, referral);
     return true;
   }
 
@@ -341,10 +359,13 @@ abstract final class AppNotificationNavigator {
         return false;
       }
       if (!context.mounted) return false;
+      await appt_detail.loadLibrary();
+      if (!context.mounted) return false;
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => AppointmentDetailScreen(appointment: appointment!),
+          builder: (_) =>
+              appt_detail.AppointmentDetailScreen(appointment: appointment!),
         ),
       );
       return true;
@@ -367,11 +388,13 @@ abstract final class AppNotificationNavigator {
       return false;
     }
     if (!context.mounted) return false;
+    await appt_detail.loadLibrary();
+    if (!context.mounted) return false;
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            AppointmentDetailScreen(appointment: patientAppointment!),
+        builder: (_) => appt_detail.AppointmentDetailScreen(
+            appointment: patientAppointment!),
       ),
     );
     return true;
@@ -401,7 +424,9 @@ abstract final class AppNotificationNavigator {
       return false;
     }
     if (!context.mounted) return false;
-    await PatientBloodTestSheet.show(context, booking);
+    await blood_sheet.loadLibrary();
+    if (!context.mounted) return false;
+    await blood_sheet.PatientBloodTestSheet.show(context, booking);
     return true;
   }
 
@@ -448,12 +473,17 @@ abstract final class AppNotificationNavigator {
     }
     if (!context.mounted) return false;
     if (booking.hasReport) {
+      await pat_lab.loadLibrary();
+      if (!context.mounted) return false;
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => LabReportScreen(booking: booking)),
+        MaterialPageRoute(
+            builder: (_) => pat_lab.LabReportScreen(booking: booking)),
       );
     } else {
-      await PatientBloodTestSheet.show(context, booking);
+      await blood_sheet.loadLibrary();
+      if (!context.mounted) return false;
+      await blood_sheet.PatientBloodTestSheet.show(context, booking);
     }
     return true;
   }
@@ -480,7 +510,9 @@ abstract final class AppNotificationNavigator {
       return false;
     }
     if (!context.mounted) return false;
-    await PatientLabOrderSheet.show(context, order);
+    await lab_order_sheet.loadLibrary();
+    if (!context.mounted) return false;
+    await lab_order_sheet.PatientLabOrderSheet.show(context, order);
     return true;
   }
 
@@ -488,18 +520,23 @@ abstract final class AppNotificationNavigator {
 
   static Future<bool> _openDoctorConnectedLabs(BuildContext context) async {
     if (!context.mounted) return false;
+    await doc_labs.loadLibrary();
+    if (!context.mounted) return false;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const DoctorConnectedLabsScreen()),
+      MaterialPageRoute(builder: (_) => doc_labs.DoctorConnectedLabsScreen()),
     );
     return true;
   }
 
   static Future<bool> _openDoctorConnectedStores(BuildContext context) async {
     if (!context.mounted) return false;
+    await doc_stores.loadLibrary();
+    if (!context.mounted) return false;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const DoctorConnectedStoresScreen()),
+      MaterialPageRoute(
+          builder: (_) => doc_stores.DoctorConnectedStoresScreen()),
     );
     return true;
   }
@@ -526,7 +563,9 @@ abstract final class AppNotificationNavigator {
       return false;
     }
     if (!context.mounted) return false;
-    PrescriptionPreviewModal.show(context, draft: delivery.draft);
+    await rx_preview.loadLibrary();
+    if (!context.mounted) return false;
+    rx_preview.PrescriptionPreviewModal.show(context, draft: delivery.draft);
     return true;
   }
 
@@ -554,7 +593,9 @@ abstract final class AppNotificationNavigator {
       return false;
     }
     if (!context.mounted) return false;
-    PrescriptionPreviewModal.show(context, draft: draft);
+    await rx_preview.loadLibrary();
+    if (!context.mounted) return false;
+    rx_preview.PrescriptionPreviewModal.show(context, draft: draft);
     return true;
   }
 

@@ -3,6 +3,7 @@ import '../../../../core/firebase/firestore_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/config/ambulance_enabled.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/session/doctor_session.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -114,8 +115,10 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
   }
 
   bool get _showAmbulance {
-    if (_query.trim().isEmpty) return false;
-    return 'ambulance'.contains(_query.trim().toLowerCase());
+    if (!AmbulanceEnabled.isOn) return false;
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return false;
+    return q.contains('ambulance');
   }
 
   @override

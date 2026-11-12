@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../supabase/supabase_bootstrap.dart';
+import '../../supabase/repositories/supabase_ambulance_repository.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import '../../../features/ambulance/data/ambulance_login_cache.dart';
 import '../../../features/ambulance/data/ambulance_store.dart';
 import '../../../features/ambulance/models/ambulance_models.dart';
+import '../../config/firestore_forbidden_guard.dart';
 import '../../constants/app_constants.dart';
 import '../../notifications/ambulance_notification_emitter.dart'; // FIXED: notify booker on accept
 import '../firebase_bootstrap.dart';
@@ -139,8 +142,36 @@ class AmbulanceRepository {
 
   /// Saves the device FCM token so Cloud Functions can send push alerts.
   Future<void> saveDriverFcmToken(String ambulanceId, String token) async {
-    if (!FirebaseBootstrap.isReady || ambulanceId.isEmpty || token.isEmpty)
+    if (SupabaseBootstrap.isReady && SupabaseBootstrap.isReady) {
+      try {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null && uid.isNotEmpty) {
+          final platform = kIsWeb
+              ? 'web'
+              : (defaultTargetPlatform == TargetPlatform.android
+                  ? 'android'
+                  : (defaultTargetPlatform == TargetPlatform.iOS
+                      ? 'ios'
+                      : 'unknown'));
+          await SupabaseBootstrap.client.from('user_devices').upsert({
+            'user_id': uid,
+            'platform': platform,
+            'fcm_token': token,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          }, onConflict: 'user_id,platform');
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('saveDriverFcmToken Supabase failed: $e');
+      }
       return;
+    }
+
+    if (!FirebaseBootstrap.isReady ||
+        ambulanceId.isEmpty ||
+        token.isEmpty ||
+        FirestoreForbiddenGuard.isForbidden) {
+      return;
+    }
 
     try {
       await FirebaseFirestore.instance
@@ -159,7 +190,33 @@ class AmbulanceRepository {
 
   /// Removes FCM token on driver logout.
   Future<void> clearDriverFcmToken(String ambulanceId) async {
-    if (!FirebaseBootstrap.isReady || ambulanceId.isEmpty) return;
+    if (SupabaseBootstrap.isReady && SupabaseBootstrap.isReady) {
+      try {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null && uid.isNotEmpty) {
+          final platform = kIsWeb
+              ? 'web'
+              : (defaultTargetPlatform == TargetPlatform.android
+                  ? 'android'
+                  : (defaultTargetPlatform == TargetPlatform.iOS
+                      ? 'ios'
+                      : 'unknown'));
+          await SupabaseBootstrap.client
+              .from('user_devices')
+              .delete()
+              .match({'user_id': uid, 'platform': platform});
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('clearDriverFcmToken Supabase failed: $e');
+      }
+      return;
+    }
+
+    if (!FirebaseBootstrap.isReady ||
+        ambulanceId.isEmpty ||
+        FirestoreForbiddenGuard.isForbidden) {
+      return;
+    }
 
     try {
       await FirebaseFirestore.instance
@@ -250,6 +307,14 @@ class AmbulanceRepository {
   }
 
   Future<RegisteredAmbulance?> fetchAmbulanceById(String id) async {
+    if (SupabaseBootstrap.isReady) {
+      final profile =
+          await SupabaseAmbulanceRepository.instance.fetchProfile(id);
+      if (profile != null) {
+        AmbulanceStore.instance.registerAmbulance(profile);
+      }
+      return profile;
+    }
     if (id.isEmpty) return null;
 
     final cached = AmbulanceStore.instance.findAmbulance(id);
@@ -473,6 +538,29 @@ class AmbulanceRepository {
 
     final driverIds = drivers.map((d) => d.id).toList();
 
+    if (SupabaseBootstrap.isReady) {
+      final broadcastId = 'broadcast-${DateTime.now().millisecondsSinceEpoch}';
+      final booking = AmbulanceBooking(
+        id: broadcastId,
+        patientName: patientName?.trim().isNotEmpty == true
+            ? patientName!.trim()
+            : 'Patient',
+        pickupLocation: pickupLocation.trim(),
+        contactPhone: contactPhone?.trim() ?? '',
+        notes: 'Destination: ${dropLocation.trim()}',
+        bookedByRole: bookedByRole == AmbulanceBookedByRole.doctor.name
+            ? AmbulanceBookedByRole.doctor
+            : AmbulanceBookedByRole.patient,
+        bookedByName: patientName ?? 'Patient',
+        bookedById: patientId,
+        status: AmbulanceBookingStatus.pending,
+        createdAt: DateTime.now(),
+      );
+      await SupabaseAmbulanceRepository.instance.saveBroadcast(booking);
+      AmbulanceStore.instance.upsertBooking(booking);
+      return broadcastId;
+    }
+
     if (!FirebaseBootstrap.isReady) {
       return AmbulanceStore.instance.createBroadcastRequest(
         driverIds: driverIds,
@@ -622,6 +710,21 @@ class AmbulanceRepository {
       return false;
     }
     final resolvedAmbulance = ambulance;
+    if (SupabaseBootstrap.isReady) {
+      final existing = AmbulanceStore.instance.findBooking(broadcastId);
+      final ok = await SupabaseAmbulanceRepository.instance
+          .acceptAmbulanceRequest(
+        broadcastId: broadcastId,
+        requestId: existing?.firestoreRequestId,
+      );
+      if (ok) {
+        AmbulanceStore.instance.acceptBooking(
+          bookingId: broadcastId,
+          ambulanceId: driverId,
+        );
+      }
+      return ok;
+    }
 
     if (!FirebaseBootstrap.isReady) {
       return AmbulanceStore.instance.acceptBooking(

@@ -7,22 +7,24 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
+import 'core/auth/demo_auth_config.dart';
 import 'core/firebase/firebase_bootstrap.dart';
 import 'core/invite/pending_invite_store.dart';
 import 'core/media/gallery_image_picker.dart';
 import 'core/notifications/ambulance_push_background.dart';
 import 'core/performance/app_scroll_behavior.dart';
-import 'core/supabase/supabase_auth_service.dart';
 import 'core/supabase/supabase_bootstrap.dart';
 import 'core/system/edge_to_edge_bootstrap.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_theme_controller.dart';
+import 'core/update/minimum_build_gate.dart';
 import 'features/doctor/clinical/data/symptoms_database.dart';
 import 'features/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  DemoAuthConfig.verifyReleaseBuildSafety();
 
   // Native splash is Android/iOS only (`web: false` in pubspec).
   if (!kIsWeb) {
@@ -48,14 +50,6 @@ Future<void> main() async {
     }(),
     AppThemeController.instance.init(),
   ]);
-
-  // Wire up the auth-state listener now that Supabase is ready.
-  // SupabaseAuthService._() calls _initAuthStateListener() but silently
-  // no-ops when isReady is false — touching the singleton here guarantees
-  // it runs after SupabaseBootstrap.initialize() has set isReady = true.
-  if (SupabaseBootstrap.isReady) {
-    SupabaseAuthService.instance; // ignore: unnecessary_statements
-  }
 
   if (!kIsWeb) {
     FirebaseMessaging.onBackgroundMessage(ambulancePushBackgroundHandler);
@@ -104,7 +98,9 @@ class DoctorNectApp extends StatelessWidget {
               data: clampedMediaQuery,
               child: AnnotatedRegion<SystemUiOverlayStyle>(
                 value: EdgeToEdgeBootstrap.overlayStyleFor(brightness),
-                child: child ?? const SizedBox.shrink(),
+                child: MinimumBuildHost(
+                  child: child ?? const SizedBox.shrink(),
+                ),
               ),
             );
           },

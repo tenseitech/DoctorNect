@@ -1,3 +1,15 @@
+// PRODUCTION GUARD: Demo seeding is strictly forbidden in production environments
+if (
+  process.env.NODE_ENV === 'production' ||
+  process.env.ENVIRONMENT === 'production' ||
+  process.env.APP_ENV === 'production' ||
+  process.env.FIREBASE_ENV === 'production' ||
+  process.env.SUPABASE_ENV === 'production'
+) {
+  console.error('[SECURITY FATAL] Refusing to run seed_demo_accounts: Strictly forbidden in production environments.');
+  process.exit(1);
+}
+
 const admin = require('firebase-admin');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
@@ -26,11 +38,11 @@ async function seedDemoAccounts() {
   const config = {
     demoOtp: "000000",
     demoPhones: {
-      patient: ["7058809803"],
-      doctor: ["7666892394"],
-      medicalStore: ["9359503874"],
-      lab: ["9409858233"],
-      ambulance: ["9307583929"],
+      patient: ["9999900001"],
+      doctor: ["9999900002"],
+      medicalStore: ["9999900003"],
+      lab: ["9999900004"],
+      ambulance: ["9999900005"],
       superAdmin: ["9999988888"]
     },
     enableDemoSuperAdmin: false,
@@ -43,8 +55,8 @@ async function seedDemoAccounts() {
     console.log('Successfully seeded demo_accounts config.');
 
     // Seed fully verified demo doctor account
-    const doctorPhone = "7666892394";
-    const doctorId = "demo_doctor_7666892394";
+    const doctorPhone = "9999900002";
+    const doctorId = "demo_doctor_9999900002";
     const doctorEmail = "doctor.demo@doctornect.com";
     const doctorDisplayName = "Dr. Demo Doctor";
 
@@ -114,8 +126,8 @@ async function seedDemoAccounts() {
     await db.collection('users').doc(doctorUid).set(userProfile, { merge: true });
     console.log(`Successfully seeded fully verified demo doctor (${doctorId} / ${doctorUid}).`);
 
-    // Seed fully verified demo pharmacy / medical store account (9359503874)
-    const pharmacyPhone = "9359503874";
+    // Seed fully verified demo pharmacy / medical store account (9999900003)
+    const pharmacyPhone = "9999900003";
     const pharmacyProfileId = "ms1784184914244";
     const pharmacyDisplayName = "KD Rx Pharma";
     const pharmacyEmail = "pharmacy.demo@doctornect.com";
@@ -162,8 +174,8 @@ async function seedDemoAccounts() {
     await db.collection('users').doc(pharmacyUid).set(pharmacyUserData, { merge: true });
     console.log(`Successfully seeded fully verified demo pharmacy (${pharmacyProfileId} / ${pharmacyUid}).`);
 
-    // Seed fully verified demo lab account (9409858233)
-    const labPhone = "9409858233";
+    // Seed fully verified demo lab account (9999900004)
+    const labPhone = "9999900004";
     const labProfileId = "l1784185011933";
     const labDisplayName = "KD Labs";
     const labEmail = "lab.demo@doctornect.com";
@@ -210,8 +222,8 @@ async function seedDemoAccounts() {
     await db.collection('users').doc(labUid).set(labUserData, { merge: true });
     console.log(`Successfully seeded fully verified demo lab (${labProfileId} / ${labUid}).`);
 
-    // Seed fully verified demo ambulance account (9307583929)
-    const ambulancePhone = "9307583929";
+    // Seed fully verified demo ambulance account (9999900005)
+    const ambulancePhone = "9999900005";
     const ambulanceProfileId = "amb-reg-1787919627226";
     const ambulanceDisplayName = "Demo Ambulance";
     const ambulanceDriverName = "Driver";

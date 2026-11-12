@@ -99,6 +99,22 @@ test('readAppCheckToken reads X-Firebase-AppCheck header', () => {
   assert.equal(token, 'abc123');
 });
 
+test('ambulance HTTP login runs the PIN check when App Check enforcement is unset', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '../index.js'), 'utf8');
+  const handler = source.slice(source.indexOf('exports.verifyAmbulanceDriverLoginHttp'));
+  const nextExport = handler.indexOf('exports.', 10);
+  const body = nextExport === -1 ? handler : handler.slice(0, nextExport);
+  assert.equal(body.includes('status(503)'), false);
+  assert.match(body, /assertAmbulanceHttpAppCheck\(req, \{ enforce: ENFORCE_AMBULANCE_HTTP_APP_CHECK \}\)/);
+  const appCheck = body.indexOf('assertAmbulanceHttpAppCheck');
+  const login = body.indexOf('runVerifyAmbulanceDriverLogin');
+  assert.ok(appCheck > 0 && login > appCheck);
+  assert.equal(isAmbulanceHttpAppCheckEnforced({}), false);
+  assert.equal(isAmbulanceHttpAppCheckEnforced({ ENFORCE_AMBULANCE_HTTP_APP_CHECK: 'true' }), true);
+});
+
 test('isAmbulanceHttpAppCheckEnforced defaults to false', () => {
   assert.equal(isAmbulanceHttpAppCheckEnforced({}), false);
   assert.equal(isAmbulanceHttpAppCheckEnforced({ ENFORCE_AMBULANCE_HTTP_APP_CHECK: 'true' }), true);

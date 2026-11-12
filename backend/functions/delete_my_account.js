@@ -1,4 +1,6 @@
+const { resolveCallerIdentity } = require('./caller_identity');
 'use strict';
+require('./firestore_forbidden_guard');
 
 const crypto = require('crypto');
 const { getFirestore } = require('firebase-admin/firestore');
@@ -6,6 +8,17 @@ const { getAuth } = require('firebase-admin/auth');
 const { getStorage } = require('firebase-admin/storage');
 const { logger } = require('firebase-functions');
 const { HttpsError } = require('firebase-functions/v2/https');
+const { defineSecret } = require('firebase-functions/params');
+const { toUserUuid } = require('./user_id_bridge');
+const { readSupabaseServiceRoleKey } = require('./secure_config');
+
+
+const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');
+
+let _testingSupabaseFetch = null;
+function setSupabaseFetchForTesting(fn) {
+  _testingSupabaseFetch = fn;
+}
 let _s3Sdk;
 function getS3Sdk() {
   if (!_s3Sdk) {
@@ -14,7 +27,10 @@ function getS3Sdk() {
   return _s3Sdk;
 }
 
-const S3_BUCKET = process.env.S3_BUCKET || 'doctornect';
+const { resolveS3Bucket } = require('./src/config/s3_bucket');
+function s3Bucket() {
+  return resolveS3Bucket();
+}
 let _testingS3Client = null;
 
 function setS3ClientForTesting(client) {
@@ -35,6 +51,31 @@ function getS3Client() {
           }
         : undefined,
   });
+}
+
+/**
+ * Deletes OTP challenge keys from Redis for the deleting user.
+ * Best-effort, fail-soft.
+ */
+async function cleanupUserRedisKeys({ mobileDigits, role }) {
+  if (String(process.env.OTP_REDIS_MIRROR || '').trim().toLowerCase() !== 'on') {
+    return;
+  }
+  const digits = normalizeMobileDigits(mobileDigits);
+  if (!digits) return;
+  try {
+    const { getRedisClient } = require('./redis');
+    const redis = getRedisClient();
+    if (!redis) return;
+    const roles = ['patient', 'doctor', 'medicalStore', 'lab', 'ambulance', null];
+    if (role && !roles.includes(role)) roles.push(role);
+    const keys = roles.map((r) => (r ? `otp:challenge:${r}:${digits}` : `otp:challenge:${digits}`));
+    await Promise.all(keys.map((k) => (typeof redis.del === 'function' ? redis.del(k) : Promise.resolve()).catch(() => {})));
+  } catch (err) {
+    logger.warn('deleteMyAccount: Redis cleanup failed (soft-fail)', {
+      error: err?.message || 'unknown',
+    });
+  }
 }
 
 const OTP_ROLES = ['patient', 'doctor', 'medicalStore', 'medical', 'lab', 'ambulance'];
@@ -624,6 +665,395 @@ async function deletePersonalStorage(db, bucket, uid) {
   ]);
 }
 
+function readBoundSecret(secret, envName) {
+  try {
+    if (secret && typeof secret.value === 'function') {
+      const bound = secret.value();
+      if (bound) return String(bound).trim();
+    }
+  } catch (_) {}
+  return String(process.env[envName] || '').trim();
+}
+
+function getSupabaseServiceConfig() {
+  const isProduction = (process.env.APP_ENV || 'staging').toLowerCase() === 'production';
+  const url = isProduction
+    ? String(process.env.PROD_GATEWAY_URL || '').trim().replace(/\/+$/, '')
+    : String(process.env.STAGING_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
+
+  const key = isProduction
+    ? String(process.env.PROD_GATEWAY_SERVICE_KEY || '').trim()
+    : (readBoundSecret(supabaseServiceRoleKey, 'SUPABASE_SERVICE_ROLE_KEY') ||
+      readSupabaseServiceRoleKey({ required: false }) ||
+      String(process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY || '').trim() ||
+      String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim());
+  if (!url || !key) return null;
+  return { url, key, isProduction };
+}
+
+function supabaseHeaders(key) {
+  return {
+    apikey: key,
+    Authorization: `Bearer ${key}`,
+    'Content-Type': 'application/json',
+    Prefer: 'return=representation',
+  };
+}
+
+async function supabaseRequest(config, method, pathAndQuery, body) {
+  const doFetch = _testingSupabaseFetch || fetch;
+  const resp = await doFetch(`${config.url}/rest/v1/${pathAndQuery}`, {
+    method,
+    headers: supabaseHeaders(config.key),
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await resp.text();
+  let json = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch (_) {
+    json = null;
+  }
+  if (!resp.ok) {
+    const err = new Error(`Supabase ${method} ${pathAndQuery.split('?')[0]} failed (${resp.status})`);
+    err.status = resp.status;
+    throw err;
+  }
+  return json;
+}
+
+function addIds(set, rows, field) {
+  if (!Array.isArray(rows)) return;
+  for (const row of rows) {
+    const value = String(row?.[field] || '').trim();
+    if (value) set.add(value);
+  }
+}
+
+/**
+ * Best-effort PostgREST cleanup of this user's Supabase rows.
+ * Uses service-role credentials when present; soft-fails per table.
+ */
+async function cleanupUserSupabaseRows({ uid, role, profileId }) {
+  const failedSupabaseTables = [];
+  const config = getSupabaseServiceConfig();
+  if (!config) {
+    return { skipped: true, failedSupabaseTables };
+  }
+
+  const recordFailure = (table, err) => {
+    failedSupabaseTables.push(table);
+    logger.warn('deleteMyAccount supabase cleanup failed', {
+      table,
+      uidHash: hashKey(uid).slice(0, 16),
+      status: err?.status || 'unknown',
+    });
+  };
+
+  const del = async (table, query) => {
+    try {
+      await supabaseRequest(config, 'DELETE', `${table}?${query}`);
+    } catch (err) {
+      if (err?.status === 403 || err?.status === 404) {
+        throw err;
+      }
+      recordFailure(table, err);
+    }
+  };
+
+  const getRows = async (table, query, field) => {
+    try {
+      return await supabaseRequest(config, 'GET', `${table}?${query}&select=${field}`);
+    } catch (err) {
+      if (err?.status === 403 || err?.status === 404) {
+        throw err;
+      }
+      recordFailure(table, err);
+      return [];
+    }
+  };
+
+  let supabaseUserId = '';
+  let supabaseProfileId = String(profileId || '').trim();
+  let supabaseRole = String(role || '').trim();
+  let supabaseMobile = '';
+
+  try {
+    const rows = await supabaseRequest(
+      config,
+      'GET',
+      `users?firebase_uid=eq.${encodeURIComponent(uid)}&select=id,profile_id,role,mobile`,
+    );
+    if (Array.isArray(rows) && rows[0]) {
+      supabaseUserId = String(rows[0].id || '').trim();
+      if (!supabaseProfileId) supabaseProfileId = String(rows[0].profile_id || '').trim();
+      if (!supabaseRole) supabaseRole = String(rows[0].role || '').trim();
+      supabaseMobile = String(rows[0].mobile || '').trim();
+    }
+  } catch (err) {
+    if (err?.status === 403 || err?.status === 404) {
+      throw err;
+    }
+    recordFailure('users', err);
+  }
+
+  const patientIds = new Set();
+  const doctorIds = new Set();
+  const storeIds = new Set();
+  const labIds = new Set();
+  const ambulanceIds = new Set();
+
+  if (supabaseRole === 'patient' && supabaseProfileId) patientIds.add(supabaseProfileId);
+  if (supabaseRole === 'doctor' && supabaseProfileId) doctorIds.add(supabaseProfileId);
+  if (
+    (supabaseRole === 'medicalStore' || supabaseRole === 'medical' || supabaseRole === 'pharmacy')
+    && supabaseProfileId
+  ) {
+    storeIds.add(supabaseProfileId);
+  }
+  if (supabaseRole === 'lab' && supabaseProfileId) labIds.add(supabaseProfileId);
+  if (supabaseRole === 'ambulance' && supabaseProfileId) ambulanceIds.add(supabaseProfileId);
+
+  if (supabaseUserId) {
+    addIds(patientIds, await getRows('patients', `owner_uid=eq.${encodeURIComponent(supabaseUserId)}`, 'patient_id'), 'patient_id');
+    addIds(doctorIds, await getRows('doctors', `owner_uid=eq.${encodeURIComponent(supabaseUserId)}`, 'doctor_id'), 'doctor_id');
+    addIds(storeIds, await getRows('medical_stores', `owner_uid=eq.${encodeURIComponent(supabaseUserId)}`, 'store_id'), 'store_id');
+    addIds(labIds, await getRows('labs', `owner_uid=eq.${encodeURIComponent(supabaseUserId)}`, 'lab_id'), 'lab_id');
+    addIds(ambulanceIds, await getRows('ambulances', `auth_uid=eq.${encodeURIComponent(supabaseUserId)}`, 'ambulance_id'), 'ambulance_id');
+  }
+
+  // 1. Collect and delete deliveries and medicines (RESTRICT on prescriptions/patients/stores/doctors)
+  const deliveryIds = new Set();
+  for (const pid of patientIds) {
+    addIds(deliveryIds, await getRows('pharmacy_deliveries', `patient_id=eq.${encodeURIComponent(pid)}`, 'delivery_id'), 'delivery_id');
+  }
+  for (const sid of storeIds) {
+    addIds(deliveryIds, await getRows('pharmacy_deliveries', `store_id=eq.${encodeURIComponent(sid)}`, 'delivery_id'), 'delivery_id');
+  }
+  for (const did of doctorIds) {
+    addIds(deliveryIds, await getRows('pharmacy_deliveries', `doctor_id=eq.${encodeURIComponent(did)}`, 'delivery_id'), 'delivery_id');
+  }
+  for (const delId of deliveryIds) {
+    await del('pharmacy_delivery_medicines', `delivery_id=eq.${encodeURIComponent(delId)}`);
+    await del('pharmacy_deliveries', `delivery_id=eq.${encodeURIComponent(delId)}`);
+  }
+
+  // 2. Lab orders & Lab bookings & Lab connections (RESTRICT on patients/doctors/labs)
+  for (const pid of patientIds) {
+    await del('lab_orders', `patient_id=eq.${encodeURIComponent(pid)}`);
+    await del('lab_bookings', `patient_id=eq.${encodeURIComponent(pid)}`);
+  }
+  for (const lid of labIds) {
+    await del('lab_orders', `lab_id=eq.${encodeURIComponent(lid)}`);
+    await del('lab_bookings', `lab_id=eq.${encodeURIComponent(lid)}`);
+    await del('lab_connections', `lab_id=eq.${encodeURIComponent(lid)}`);
+  }
+  for (const did of doctorIds) {
+    await del('lab_orders', `doctor_id=eq.${encodeURIComponent(did)}`);
+    await del('lab_connections', `doctor_id=eq.${encodeURIComponent(did)}`);
+    await del('pharmacy_connections', `doctor_id=eq.${encodeURIComponent(did)}`);
+  }
+  for (const sid of storeIds) {
+    await del('pharmacy_connections', `medical_store_id=eq.${encodeURIComponent(sid)}`);
+  }
+
+  // 3. Referrals (RESTRICT on patients/doctors)
+  for (const pid of patientIds) {
+    await del('referrals', `patient_id=eq.${encodeURIComponent(pid)}`);
+  }
+  for (const did of doctorIds) {
+    await del('referrals', `from_doctor_id=eq.${encodeURIComponent(did)}`);
+    await del('referrals', `to_doctor_id=eq.${encodeURIComponent(did)}`);
+  }
+
+  // 4. Prescriptions
+  const prescriptionIds = new Set();
+  for (const patientId of patientIds) {
+    addIds(
+      prescriptionIds,
+      await getRows('prescriptions', `patient_id=eq.${encodeURIComponent(patientId)}`, 'prescription_id'),
+      'prescription_id',
+    );
+  }
+  for (const doctorId of doctorIds) {
+    addIds(
+      prescriptionIds,
+      await getRows('prescriptions', `doctor_id=eq.${encodeURIComponent(doctorId)}`, 'prescription_id'),
+      'prescription_id',
+    );
+  }
+
+  for (const prescriptionId of prescriptionIds) {
+    const q = `prescription_id=eq.${encodeURIComponent(prescriptionId)}`;
+    await del('prescription_medicines', q);
+    await del('prescription_investigations', q);
+    await del('prescription_referrals', q);
+    await del('prescriptions', q);
+  }
+
+  // 4b. Ambulance trip contacts & location updates (linked to broadcasts/phones)
+  const broadcastIds = new Set();
+  for (const pid of patientIds) {
+    addIds(broadcastIds, await getRows('ambulance_broadcasts', `patient_id=eq.${encodeURIComponent(pid)}`, 'broadcast_id'), 'broadcast_id');
+  }
+  for (const aid of ambulanceIds) {
+    addIds(broadcastIds, await getRows('ambulance_broadcasts', `accepted_driver_id=eq.${encodeURIComponent(aid)}`, 'broadcast_id'), 'broadcast_id');
+  }
+  for (const bid of broadcastIds) {
+    await del('ambulance_trip_contacts', `broadcast_id=eq.${encodeURIComponent(bid)}`);
+    await del('ambulance_location_updates', `broadcast_id=eq.${encodeURIComponent(bid)}`);
+  }
+  if (supabaseMobile) {
+    await del('ambulance_trip_contacts', `patient_phone=eq.${encodeURIComponent(supabaseMobile)}`);
+    await del('ambulance_trip_contacts', `driver_phone=eq.${encodeURIComponent(supabaseMobile)}`);
+  }
+
+  // 5. Patient records & relationships
+  for (const patientId of patientIds) {
+    const q = `patient_id=eq.${encodeURIComponent(patientId)}`;
+    await del('health_records', q);
+    await del('family_members', q);
+    await del('review_votes', q);
+    await del('reviews', q);
+    await del('patient_doctor_links', q);
+    await del('patient_care_team', q);
+    await del('medical_directory', q);
+    await del('appointments', q);
+    await del('ambulance_requests', q);
+    await del('ambulance_broadcasts', q);
+    await del('patients', q);
+  }
+
+  // 6. Doctor records & relationships
+  for (const doctorId of doctorIds) {
+    const q = `doctor_id=eq.${encodeURIComponent(doctorId)}`;
+    await del('doctor_invites', q);
+    await del('pharmacy_doctor_invites', q);
+    await del('doctor_private', q);
+    await del('doctor_availability', q);
+    await del('doctor_facilities', q);
+    await del('doctor_education', q);
+    await del('doctor_blocked_dates', q);
+    await del('patient_doctor_links', q);
+    await del('patient_care_team', q);
+    await del('medical_directory', q);
+    await del('reviews', q);
+    await del('appointments', q);
+    await del('doctors', q);
+  }
+
+  // 7. Store records
+  for (const storeId of storeIds) {
+    await del('pharmacy_doctor_invites', `store_id=eq.${encodeURIComponent(storeId)}`);
+    await del('medical_stores', `store_id=eq.${encodeURIComponent(storeId)}`);
+  }
+
+  // 8. Lab records
+  for (const labId of labIds) {
+    await del('labs', `lab_id=eq.${encodeURIComponent(labId)}`);
+  }
+
+  // 9. Ambulance records
+  for (const ambulanceId of ambulanceIds) {
+    const q = `ambulance_id=eq.${encodeURIComponent(ambulanceId)}`;
+    await del('ambulance_private_settings', q);
+    await del('ambulance_invites', q);
+    await del('ambulance_locations', `driver_id=eq.${encodeURIComponent(ambulanceId)}`);
+    await del('ambulance_requests', `driver_id=eq.${encodeURIComponent(ambulanceId)}`);
+    await del('ambulance_broadcasts', `accepted_driver_id=eq.${encodeURIComponent(ambulanceId)}`);
+    await del('ambulances', q);
+  }
+
+  // 10. Support tickets & messages
+  const ticketIds = new Set();
+  for (const pid of patientIds) {
+    addIds(ticketIds, await getRows('support_tickets', `patient_id=eq.${encodeURIComponent(pid)}`, 'ticket_id'), 'ticket_id');
+  }
+  for (const did of doctorIds) {
+    addIds(ticketIds, await getRows('support_tickets', `doctor_id=eq.${encodeURIComponent(did)}`, 'ticket_id'), 'ticket_id');
+  }
+  for (const sid of storeIds) {
+    addIds(ticketIds, await getRows('support_tickets', `store_id=eq.${encodeURIComponent(sid)}`, 'ticket_id'), 'ticket_id');
+  }
+  for (const lid of labIds) {
+    addIds(ticketIds, await getRows('support_tickets', `lab_id=eq.${encodeURIComponent(lid)}`, 'ticket_id'), 'ticket_id');
+  }
+  for (const aid of ambulanceIds) {
+    addIds(ticketIds, await getRows('support_tickets', `ambulance_id=eq.${encodeURIComponent(aid)}`, 'ticket_id'), 'ticket_id');
+  }
+  if (supabaseUserId) {
+    addIds(ticketIds, await getRows('support_tickets', `user_id=eq.${encodeURIComponent(supabaseUserId)}`, 'ticket_id'), 'ticket_id');
+  }
+  for (const tid of ticketIds) {
+    await del('support_ticket_messages', `ticket_id=eq.${encodeURIComponent(tid)}`);
+    await del('support_tickets', `ticket_id=eq.${encodeURIComponent(tid)}`);
+  }
+
+  if (supabaseUserId) {
+    await del('user_devices', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
+  }
+  await del('in_app_notifications', `recipient_uid=${encodeURIComponent(uid)}`);
+
+  // 11. Promoted ads & admin/provisioning records
+  if (supabaseProfileId) {
+    await del('promoted_ads', `provider_id=eq=${encodeURIComponent(supabaseProfileId)}`);
+  }
+  if (supabaseUserId) {
+    await del('promoted_ads', `provider_id=eq=${encodeURIComponent(supabaseUserId)}`);
+    await del('admin_users', `user_id=eq=${encodeURIComponent(supabaseUserId)}`);
+  }
+  await del('promoted_ads', `provider_id=eq=${encodeURIComponent(uid)}`);
+  await del('super_admins', `user_uid=eq=${encodeURIComponent(uid)}`);
+  await del('provisioning_errors', `auth_user_id=eq=${encodeURIComponent(uid)}`);
+
+  // Anonymize payment records (PII minimization while retaining accounting audit history)
+  try {
+    await supabaseRequest(
+      config,
+      'PATCH',
+      `razorpay_orders?user_uid=eq.${encodeURIComponent(uid)}`,
+      { user_uid: null },
+    );
+  } catch (err) {
+    if (err?.status === 403 || err?.status === 404) {
+      throw err;
+    }
+    recordFailure('razorpay_orders', err);
+  }
+
+  try {
+    await supabaseRequest(config, 'DELETE', `users?firebase_uid=eq.${encodeURIComponent(uid)}`);
+  } catch (deleteErr) {
+    if (deleteErr?.status === 403 || deleteErr?.status === 404) {
+      throw deleteErr;
+    }
+    try {
+      await supabaseRequest(
+        config,
+        'PATCH',
+        `users?firebase_uid=eq.${encodeURIComponent(uid)}`,
+        {
+          display_name: 'Deleted User',
+          email: `deleted-${uid}@deleted.invalid`,
+          mobile: null,
+          photo_url: null,
+          deactivated: true,
+          firebase_uid: null,
+        },
+      );
+    } catch (patchErr) {
+      if (patchErr?.status === 403 || patchErr?.status === 404) {
+        throw patchErr;
+      }
+      recordFailure('users', patchErr || deleteErr);
+    }
+  }
+
+  // TASK 1e: auth.users admin call removed (Firebase Auth is primary)
+
+  return { skipped: false, failedSupabaseTables };
+}
+
 /**
  * Deletes only the authenticated user's personal/account data, then Auth.
  * Shared clinical/commerce/history records are intentionally preserved.
@@ -633,6 +1063,99 @@ async function deleteMyAccountHandler(uid) {
   const normalizedUid = String(uid || '').trim();
   if (!normalizedUid) {
     throw new HttpsError('unauthenticated', 'Authentication required.');
+  }
+
+  const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
+  const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
+
+  if (isCutover) {
+    let profile = null;
+    try {
+      profile = await resolveCallerIdentity({ uid: normalizedUid, forceSupabase: true });
+    } catch (err) {
+      // User not found in Supabase
+    }
+
+    if (!profile) {
+      try {
+        await getAuth().deleteUser(normalizedUid);
+      } catch (err) {
+        if (err?.code !== 'auth/user-not-found') {
+          logger.error('deleteMyAccount auth cleanup failed for missing profile', {
+            uid: normalizedUid,
+            code: err?.code || 'unknown',
+          });
+          throw new HttpsError('internal', 'Could not delete account. Please try again.');
+        }
+      }
+      return { ok: true, alreadyDeleted: true };
+    }
+
+    const role = String(profile.role || '').trim();
+    const profileId = String(profile.profileId || profile.profile_id || '').trim();
+
+    // S3 cleanup
+    let failedS3Prefixes = [];
+    try {
+      const s3 = getS3Client();
+      const s3Prefixes = [];
+      if (profileId) {
+        if (role === 'doctor') s3Prefixes.push(`doctor_profiles/${profileId}/`);
+        if (role === 'patient') {
+          s3Prefixes.push(`patient_profiles/${profileId}/`);
+          s3Prefixes.push(`health_records/${profileId}/`);
+        }
+        if (role === 'lab') s3Prefixes.push(`lab_reports/${profileId}/`);
+        if (role === 'medicalStore' || role === 'medical') s3Prefixes.push(`pharmacy_licenses/${profileId}/`);
+        s3Prefixes.push(`promoted_ads/${profileId}/`);
+      }
+      s3Prefixes.push(`avatars/${normalizedUid}/`);
+      failedS3Prefixes = await cleanupUserS3Prefixes(s3, s3Bucket(), s3Prefixes);
+    } catch (s3Err) {
+      logger.warn('deleteMyAccount S3 cleanup unexpected failure (soft-fail)', {
+        uid: normalizedUid,
+        message: s3Err?.message || 'unknown',
+      });
+    }
+
+    // Supabase row cleanup
+    let failedSupabaseTables = [];
+    try {
+      const supabaseCleanup = await cleanupUserSupabaseRows({
+        uid: normalizedUid,
+        role,
+        profileId,
+      });
+      failedSupabaseTables = supabaseCleanup.failedSupabaseTables || [];
+    } catch (sbErr) {
+      if (sbErr?.status === 403 || sbErr?.status === 404) {
+        throw new HttpsError('internal', `Account deletion blocked by gateway authorization: ${sbErr.message}`);
+      }
+      logger.warn('deleteMyAccount Supabase cleanup unexpected failure (soft-fail)', {
+        uid: normalizedUid,
+        message: sbErr?.message || 'unknown',
+      });
+    }
+
+    // Delete Firebase Auth user LAST
+    try {
+      await getAuth().deleteUser(normalizedUid);
+    } catch (authErr) {
+      if (authErr?.code !== 'auth/user-not-found') {
+        logger.error('deleteMyAccount Firebase Auth deletion failed', {
+          uid: normalizedUid,
+          code: authErr?.code || 'unknown',
+        });
+        throw new HttpsError('internal', 'Could not delete account. Please try again.');
+      }
+    }
+
+    return {
+      ok: true,
+      supabase: true,
+      failedS3Prefixes,
+      failedSupabaseTables,
+    };
   }
 
   const db = getFirestore();
@@ -687,7 +1210,7 @@ async function deleteMyAccountHandler(uid) {
         role,
         profileId,
       });
-      failedS3Prefixes = await cleanupUserS3Prefixes(s3, S3_BUCKET, s3Prefixes);
+      failedS3Prefixes = await cleanupUserS3Prefixes(s3, s3Bucket(), s3Prefixes);
 
       // Collect specific S3 object keys (e.g. lab reports uploaded by this lab for patients)
       const specificReportKeys = await collectRoleSpecificS3ReportKeys(db, {
@@ -696,7 +1219,7 @@ async function deleteMyAccountHandler(uid) {
         uid: normalizedUid,
       });
       if (specificReportKeys.length > 0) {
-        const keysRes = await deleteS3SpecificKeysVersions(s3, S3_BUCKET, specificReportKeys);
+        const keysRes = await deleteS3SpecificKeysVersions(s3, s3Bucket(), specificReportKeys);
         if (!keysRes.success && keysRes.failedKeys) {
           failedS3Keys = keysRes.failedKeys;
         }
@@ -717,6 +1240,28 @@ async function deleteMyAccountHandler(uid) {
       });
     }
 
+    let failedSupabaseTables = [];
+    try {
+      const supabaseCleanup = await cleanupUserSupabaseRows({
+        uid: normalizedUid,
+        role,
+        profileId,
+      });
+      failedSupabaseTables = supabaseCleanup.failedSupabaseTables || [];
+      if (failedSupabaseTables.length > 0) {
+        logger.warn('deleteMyAccount: Some Supabase tables failed cleanup (soft-fail)', {
+          uid: normalizedUid,
+          failedSupabaseTables,
+        });
+      }
+    } catch (supabaseErr) {
+      failedSupabaseTables = ['supabase'];
+      logger.warn('deleteMyAccount supabase cleanup unexpected failure (soft-fail)', {
+        uid: normalizedUid,
+        message: supabaseErr?.message || 'unknown',
+      });
+    }
+
     await deleteDocIfExists(db, userRef);
 
     await getAuth().deleteUser(normalizedUid);
@@ -726,6 +1271,7 @@ async function deleteMyAccountHandler(uid) {
     return {
       ok: true,
       ...(failedS3Total.length > 0 ? { failedS3Prefixes: failedS3Total } : {}),
+      ...(failedSupabaseTables.length > 0 ? { failedSupabaseTables } : {}),
     };
   } catch (err) {
     logger.error('deleteMyAccount failed', {
@@ -746,6 +1292,12 @@ module.exports = {
   collectRoleSpecificS3ReportKeys,
   resolveUserS3Prefixes,
   cleanupUserS3Prefixes,
+  cleanupUserSupabaseRows,
+  cleanupUserRedisKeys,
   setS3ClientForTesting,
+  setSupabaseFetchForTesting,
   getS3Client,
+  getSupabaseServiceConfig,
+
+  supabaseServiceRoleKey,
 };

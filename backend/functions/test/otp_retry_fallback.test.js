@@ -17,7 +17,7 @@ adminFirestore.getFirestore = () => ({
   }),
 });
 
-process.env.MSG91_AUTHKEY = 'mock_auth_key_123';
+process.env.MSG91_AUTH_KEY = 'mock_auth_key_123';
 process.env.MSG91_TEMPLATE_ID_REGISTRATION = 'mock_dlt_template_reg';
 process.env.MSG91_TEMPLATE_ID = 'mock_dlt_template_shared';
 process.env.MSG91_SENDER_ID = 'DRNECT';
@@ -36,8 +36,31 @@ const {
   sendUserRegistrationOtp,
   consumeOtpChallengeAtomically,
   legacyHashOtp,
+  hashOtp,
+  verifyChallengeOtpHash,
+  allowLegacyUnsaltedOtpHash,
   otpRedisKey,
 } = require('../registration_otp');
+
+let origLegacyCutover;
+test.beforeEach(() => {
+  origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+  process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
+  try {
+    const { _resetRemoteConfigCache } = require('../sync_flags');
+    _resetRemoteConfigCache();
+  } catch (_) {}
+});
+
+test.afterEach(() => {
+  delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+  if (origLegacyCutover === undefined) delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+  else process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacyCutover;
+  try {
+    const { _resetRemoteConfigCache } = require('../sync_flags');
+    _resetRemoteConfigCache();
+  } catch (_) {}
+});
 
 function mobileHash(role, digits) {
   return crypto.createHash('sha256').update(`${role}:${digits}`).digest('hex');
@@ -121,6 +144,8 @@ function createMockFirestore() {
 }
 
 test('retry fails with session expired -> fallback to fresh send, stale challenge replaced, exactly one SMS sent', async () => {
+  const origMirror = process.env.OTP_REDIS_MIRROR;
+  process.env.OTP_REDIS_MIRROR = 'on';
   const db = createMockFirestore();
   const redisStore = new Map();
   setRedisClientForTesting({
@@ -226,6 +251,8 @@ test('retry fails with session expired -> fallback to fresh send, stale challeng
   } finally {
     https.request = origHttpsRequest;
     console.warn = origWarn;
+    if (origMirror === undefined) delete process.env.OTP_REDIS_MIRROR;
+    else process.env.OTP_REDIS_MIRROR = origMirror;
   }
 });
 
@@ -411,11 +438,11 @@ test('fallback to fresh send works across all roles', async () => {
 });
 
 test('otpRedisKey returns null when no secret is available, skipping Redis write and read while Firestore continues to work', async () => {
-  const origKey = process.env.MSG91_AUTHKEY;
-  const origKey2 = process.env.MSG91_AUTH_KEY;
+  const origMirror = process.env.OTP_REDIS_MIRROR;
+  process.env.OTP_REDIS_MIRROR = 'on';
+  const origKey = process.env.MSG91_AUTH_KEY;
   const origAuth = process.env.AUTH_KEY;
 
-  delete process.env.MSG91_AUTHKEY;
   delete process.env.MSG91_AUTH_KEY;
   delete process.env.AUTH_KEY;
 
@@ -465,9 +492,237 @@ test('otpRedisKey returns null when no secret is available, skipping Redis write
     );
   } finally {
     console.warn = origWarn;
-    if (origKey !== undefined) process.env.MSG91_AUTHKEY = origKey;
-    if (origKey2 !== undefined) process.env.MSG91_AUTH_KEY = origKey2;
+    if (origKey !== undefined) process.env.MSG91_AUTH_KEY = origKey;
+    if (origAuth !== undefined) process.env.AUTH_KEY = origAuth;
+    if (origMirror === undefined) delete process.env.OTP_REDIS_MIRROR;
+    else process.env.OTP_REDIS_MIRROR = origMirror;
+  }
+});
+
+test('hashOtp in production project fails challenge creation when HMAC secret is missing, without leaking secrets', async () => {
+  const origProj = process.env.GCLOUD_PROJECT;
+  const origKey = process.env.MSG91_AUTH_KEY;
+  const origAuth = process.env.AUTH_KEY;
+  const origEmu = process.env.FUNCTIONS_EMULATOR;
+
+  process.env.GCLOUD_PROJECT = 'medibond-45fad';
+  delete process.env.MSG91_AUTH_KEY;
+  delete process.env.AUTH_KEY;
+  delete process.env.FUNCTIONS_EMULATOR;
+
+  const errorLogs = [];
+  const origError = console.error;
+  console.error = (...args) => {
+    errorLogs.push(args.join(' '));
+    origError(...args);
+  };
+
+  try {
+    // 1. Calling hashOtp with purpose: 'create' directly throws HttpsError 'internal'
+    assert.throws(
+      () => {
+        hashOtp('123456', { role: 'patient', digits: '9876543210', purpose: 'create' });
+      },
+      (err) => err.code === 'internal' && err.message.includes('Could not send OTP'),
+    );
+
+    // 1b. Production rejects a non-create hash as well. No legacy fallback.
+    assert.throws(
+      () => {
+        hashOtp('123456', { role: 'patient', digits: '9876543210', purpose: 'verify' });
+      },
+      (err) => err.code === 'internal' && err.message.includes('Could not send OTP'),
+    );
+
+    // 2. Calling with positional arguments and purpose: 'create' also throws
+    assert.throws(
+      () => {
+        hashOtp('123456', 'patient', '9876543210', { purpose: 'create' });
+      },
+      (err) => err.code === 'internal',
+    );
+
+    // 3. sendUserRegistrationOtp also fails closed
+    const db = createMockFirestore();
+    await assert.rejects(
+      sendUserRegistrationOtp(db, { mobile: '9876543210', role: 'patient' }),
+      (err) => err.code === 'internal',
+    );
+
+    // 4. Verify log was recorded without leaking secret
+    assert.ok(
+      errorLogs.some((log) => log.includes('otp_hash_secret_missing')),
+      'Security error must be logged',
+    );
+    for (const log of errorLogs) {
+      assert.equal(log.includes(origKey || 'NOT_PRESENT_ANYWAY'), false);
+    }
+  } finally {
+    console.error = origError;
+    if (origProj !== undefined) process.env.GCLOUD_PROJECT = origProj;
+    else delete process.env.GCLOUD_PROJECT;
+    if (origKey !== undefined) process.env.MSG91_AUTH_KEY = origKey;
+    if (origAuth !== undefined) process.env.AUTH_KEY = origAuth;
+    if (origEmu !== undefined) process.env.FUNCTIONS_EMULATOR = origEmu;
+  }
+});
+
+test('hashOtp allows fallback outside production or under emulator, and verification of legacy hashes continues to work', async () => {
+  const origProj = process.env.GCLOUD_PROJECT;
+  const origKey = process.env.MSG91_AUTH_KEY;
+  const origAuth = process.env.AUTH_KEY;
+
+  process.env.GCLOUD_PROJECT = 'demo-test-project';
+  delete process.env.MSG91_AUTH_KEY;
+  delete process.env.AUTH_KEY;
+
+  try {
+    // 1. Outside prod, hashOtp falls back to legacyHashOtp
+    const hash = hashOtp('123456', { role: 'patient', digits: '9876543210', purpose: 'create' });
+    assert.equal(hash, legacyHashOtp('123456'));
+
+    // 2. With an HMAC secret, a legacy hash matches only when the rollback flag is on.
+    const previousFlag = process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
+    delete process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
+    process.env.MSG91_AUTH_KEY = 'unit-test-hmac-key';
+    assert.equal(allowLegacyUnsaltedOtpHash(), false);
+    assert.equal(
+      verifyChallengeOtpHash('123456', legacyHashOtp('123456'), 'patient', '9876543210'),
+      false,
+    );
+    process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH = 'true';
+    const valid = verifyChallengeOtpHash('123456', legacyHashOtp('123456'), 'patient', '9876543210');
+    assert.equal(valid, true, 'Legacy unsalted OTP hash verification must succeed when the flag is on');
+    delete process.env.MSG91_AUTH_KEY;
+    if (previousFlag === undefined) delete process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
+    else process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH = previousFlag;
+  } finally {
+    if (origProj !== undefined) process.env.GCLOUD_PROJECT = origProj;
+    else delete process.env.GCLOUD_PROJECT;
+    if (origKey !== undefined) process.env.MSG91_AUTH_KEY = origKey;
     if (origAuth !== undefined) process.env.AUTH_KEY = origAuth;
   }
+});
+
+test('sendUserRegistrationOtp never touches Redis when OTP_REDIS_MIRROR is not on', async () => {
+  const origMirror = process.env.OTP_REDIS_MIRROR;
+  delete process.env.OTP_REDIS_MIRROR;
+
+  const redisCalls = [];
+  setRedisClientForTesting({
+    set: async () => { redisCalls.push('set'); return 'OK'; },
+    get: async () => { redisCalls.push('get'); return null; },
+    del: async () => { redisCalls.push('del'); return 1; },
+  });
+
+  const origHttpsRequest = https.request;
+  https.request = (options, cb) => {
+    const req = new EventEmitter();
+    req.setTimeout = () => {};
+    req.destroy = () => {};
+    req.write = () => {};
+    req.end = () => {
+      process.nextTick(() => {
+        const res = new EventEmitter();
+        res.statusCode = 200;
+        cb(res);
+        res.emit('data', JSON.stringify({ message: 'ok', type: 'success' }));
+        res.emit('end');
+      });
+    };
+    return req;
+  };
+
+  try {
+    const db = createMockFirestore();
+    const result = await sendUserRegistrationOtp(db, {
+      mobile: '9876543210',
+      role: 'patient',
+      otpType: 'registration',
+    }, { clientIp: '127.0.0.1' });
+    assert.equal(result.ok, true);
+    assert.equal(redisCalls.length, 0, 'Send path must not call Redis when mirror is off');
+  } finally {
+    https.request = origHttpsRequest;
+    if (origMirror === undefined) delete process.env.OTP_REDIS_MIRROR;
+    else process.env.OTP_REDIS_MIRROR = origMirror;
+  }
+});
+
+test('OTP flow never touches Redis when OTP_REDIS_MIRROR is not on', async () => {
+  const origMirror = process.env.OTP_REDIS_MIRROR;
+  delete process.env.OTP_REDIS_MIRROR;
+
+  const redisCalls = [];
+  setRedisClientForTesting({
+    set: async (...args) => { redisCalls.push('set'); return 'OK'; },
+    get: async (...args) => { redisCalls.push('get'); return null; },
+    del: async (...args) => { redisCalls.push('del'); return 1; },
+  });
+
+  const db = createMockFirestore();
+  const phone = '9876543210';
+  const role = 'patient';
+  const chKey = `patient_${mobileHash(role, phone)}`;
+  db.docs.set(`otp_challenges/${chKey}`, {
+    role,
+    mobileDigits: phone,
+    otpHash: hashOtp('654321', role, phone),
+    expiresAt: Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)),
+    attempts: 0,
+  });
+
+  const consumeRes = await consumeOtpChallengeAtomically(db, {
+    challengeKey: chKey,
+    otp: '654321',
+    mobileDigits: phone,
+    role,
+    isDemoAccount: false,
+  });
+
+  assert.equal(consumeRes.consumed, true);
+  assert.equal(redisCalls.length, 0, 'Redis must not be called when OTP_REDIS_MIRROR is off');
+
+  if (origMirror === undefined) delete process.env.OTP_REDIS_MIRROR;
+  else process.env.OTP_REDIS_MIRROR = origMirror;
+});
+
+test('verify-path Redis get is bounded by 1500ms timeout when mirror is on', async () => {
+  const origMirror = process.env.OTP_REDIS_MIRROR;
+  process.env.OTP_REDIS_MIRROR = 'on';
+
+  setRedisClientForTesting({
+    get: () => new Promise(() => {}),
+    del: async () => 1,
+    set: async () => 'OK',
+  });
+
+  const db = createMockFirestore();
+  const phone = '9876543210';
+  const role = 'patient';
+  const chKey = `patient_${mobileHash(role, phone)}`;
+  db.docs.set(`otp_challenges/${chKey}`, {
+    role,
+    mobileDigits: phone,
+    otpHash: hashOtp('112233', role, phone),
+    expiresAt: Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)),
+    attempts: 0,
+  });
+
+  const started = Date.now();
+  const consumeRes = await consumeOtpChallengeAtomically(db, {
+    challengeKey: chKey,
+    otp: '112233',
+    mobileDigits: phone,
+    role,
+    isDemoAccount: false,
+  });
+  const elapsed = Date.now() - started;
+
+  assert.equal(consumeRes.consumed, true);
+  assert.ok(elapsed < 4000, `Redis get timeout should fail open quickly, elapsed=${elapsed}`);
+
+  if (origMirror === undefined) delete process.env.OTP_REDIS_MIRROR;
+  else process.env.OTP_REDIS_MIRROR = origMirror;
 });
 

@@ -1,20 +1,23 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../core/supabase/repositories/supabase_user_repository.dart';
+import '../core/firebase/models/medibond_user_profile.dart';
 import '../core/auth/demo_auth_config.dart';
 import '../core/auth/verification_lifecycle.dart';
 import '../core/enums/user_type.dart';
 
 export '../core/auth/verification_lifecycle.dart';
 export '../core/enums/user_type.dart';
-import '../core/firebase/firestore_paths.dart';
 import '../core/session/ambulance_session.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
-import '../features/ambulance/ambulance_profile_screen.dart';
-import '../features/doctor/profile/doctor_profile_screen.dart';
-import '../features/lab/screens/lab_profile_screen.dart';
-import '../features/pharmacy/screens/store_profile_screen.dart';
+import '../features/ambulance/ambulance_profile_screen.dart'
+    deferred as amb_prof;
+import '../features/doctor/profile/doctor_profile_screen.dart'
+    deferred as doc_prof;
+import '../features/lab/screens/lab_profile_screen.dart' deferred as lab_prof;
+import '../features/pharmacy/screens/store_profile_screen.dart'
+    deferred as store_prof;
 
 /// Prominent banner displayed on role home screens for progressive profile completion
 /// and real-time verification lifecycle monitoring.
@@ -39,27 +42,33 @@ class VerificationStatusBanner extends StatelessWidget {
     }
     switch (role) {
       case UserType.doctor:
-        await DoctorProfileScreen.open(context);
+        await doc_prof.loadLibrary();
+        if (context.mounted) {
+          await doc_prof.DoctorProfileScreen.open(context);
+        }
       case UserType.medicalStore:
+        await store_prof.loadLibrary();
         if (context.mounted) {
           await Navigator.push<void>(
             context,
-            MaterialPageRoute(builder: (_) => const StoreProfileScreen()),
+            MaterialPageRoute(builder: (_) => store_prof.StoreProfileScreen()),
           );
         }
       case UserType.lab:
+        await lab_prof.loadLibrary();
         if (context.mounted) {
           await Navigator.push<void>(
             context,
-            MaterialPageRoute(builder: (_) => const LabProfileScreen()),
+            MaterialPageRoute(builder: (_) => lab_prof.LabProfileScreen()),
           );
         }
       case UserType.ambulance:
+        await amb_prof.loadLibrary();
         if (context.mounted) {
           await Navigator.push<void>(
             context,
             MaterialPageRoute(
-              builder: (_) => AmbulanceProfileScreen(
+              builder: (_) => amb_prof.AmbulanceProfileScreen(
                 ambulanceId: AmbulanceSession.loggedInAmbulanceId,
               ),
             ),
@@ -81,29 +90,22 @@ class VerificationStatusBanner extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection(FirestorePaths.users)
-          .doc(uid)
-          .snapshots(),
+    return StreamBuilder<DoctorNectUserProfile?>(
+      stream: SupabaseUserRepository.instance.watchProfile(uid),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data == null) {
           return const SizedBox.shrink();
         }
-        final data = snapshot.data!.data();
-        if (data == null) return const SizedBox.shrink();
-
-        final mobile = data['mobile'] as String? ?? data['phone'] as String?;
+        final profile = snapshot.data!;
+        final mobile = profile.mobile;
         final isDemoDoctor =
             role == UserType.doctor && DemoAuthConfig.isDemoDoctorPhone(mobile);
-        final verified = data['verified'] == true || isDemoDoctor;
+        final verified = profile.verificationStatus == 'verified' || isDemoDoctor;
         if (verified) return const SizedBox.shrink();
 
-        final statusStr = data['verificationStatus'] as String? ??
-            data['status'] as String? ??
-            'registered';
+        final statusStr = profile.verificationStatus ?? 'registered';
         final resolvedStage = VerificationStage.fromString(statusStr);
-        final reason = data['rejectionReason'] as String?;
+        final reason = profile.rejectionReason;
 
         return _buildContent(context, resolvedStage, reason);
       },

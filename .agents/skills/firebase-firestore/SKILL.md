@@ -70,7 +70,7 @@ corresponding reference guides:
 - **Data Model**: Read [data_model.md](references/enterprise/data_model.md)
 
 - **Security Rules**: Read
-  [security_rules.md](references/enterprise/security_rules.md)
+  [security_rules.md](references/standard/security_rules.md) (same guide as Standard)
 
 - **SDK Usage**:
 

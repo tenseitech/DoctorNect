@@ -91,6 +91,12 @@
       "skillPath": "skills/fix-security-vulnerabilities-with-strix/SKILL.md",
       "computedHash": "511acdd61ee8c28528d7d65972ba0c70ea14e8b0b697de267a589c363fd36967"
     },
+    "gravitas": {
+      "source": "udaysharmadev/Gravitas",
+      "sourceType": "github",
+      "skillPath": "skills/gravitas/SKILL.md",
+      "computedHash": "c43784d217533c674f34b58ad17acb6deb53eecb0ff38ace010a36045464e0e0"
+    },
     "managed-pentesting-with-strix": {
       "source": "usestrix/strix",
       "sourceType": "github",

@@ -1,0 +1,37 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowBucketOperations",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": "arn:aws:s3:::${S3_BUCKET}",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "health_records/*",
+            "lab_reports/*",
+            "patients/*",
+            "doctor_profiles/*",
+            "pharmacies/*",
+            "promoted_ads/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "AllowObjectOperations",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:HeadObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::${S3_BUCKET}/*"
+    }
+  ]
+}

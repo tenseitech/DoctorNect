@@ -25,7 +25,7 @@ The wiring of each patient feature was verified against the active codebase usin
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Doctor Booking & Slot Reservation** | [`booking_flow_screen.dart`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/features/patient/booking/booking_flow_screen.dart) (L530, L650) | `SupabasePatientRepository.instance.bookAppointment(...)` | `PatientWriteGuard.run`<br>`sync_origin = 'patient_supabase'` | [`test_staging_booking_flow.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scratch/test_staging_booking_flow.js)<br>Double-booking prevention verified. | **STAGING VERIFIED** |
 | **Appointments List (Upcoming / Completed / Cancelled)** | [`patient_appointments_screen.dart`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/features/patient/appointments/patient_appointments_screen.dart)<br>via [`shared_appointments_store.dart`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/core/data/shared_appointments_store.dart) (L250) | `SupabasePatientRepository.instance.fetchAppointments(patientId)` | Read-only query;<br>Tab separation by `PatientAppointmentFilters` | [`test_patient_appointments_staging.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scratch/test_patient_appointments_staging.js)<br>Fetches cleanly from Supabase on ready. | **STAGING VERIFIED** |
-| **Appointment Cancellation** | [`appointment_detail_screen.dart`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/features/shared/screens/appointment_detail_screen.dart) (L953)<br>via [`shared_appointments_store.dart`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/core/data/shared_appointments_store.dart) (L786) | `SupabasePatientRepository.instance.cancelAppointment(...)` | `PatientWriteGuard.run`<br>`sync_origin = 'patient_supabase'`<br>DB completed-state guard | [`test_patient_appointments_staging.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scratch/test_patient_appointments_staging.js)<br>[`test_cancellation_safety_net.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scratch/test_cancellation_safety_net.js)<br>Completed-state cancellation blocked. | **STAGING VERIFIED** |
+| **Appointment Cancellation** | [`appointment_detail_screen.dart`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/features/shared/screens/appointment_detail_screen.dart) (L953)<br>via [`shared_appointments_store.dart`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/core/data/shared_appointments_store.dart) (L786) | `SupabasePatientRepository.instance.cancelAppointment(...)` | `PatientWriteGuard.run`<br>`sync_origin = 'patient_supabase'`<br>DB completed-state guard;<br>Reverse sync writes `doctorStatus = 'cancelled'` + `cancellationReason` | [`test_patient_appointments_staging.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scratch/test_patient_appointments_staging.js)<br>[`test_cancellation_safety_net.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scratch/test_cancellation_safety_net.js)<br>Completed-state cancellation blocked. | **STAGING VERIFIED** |
 | **Appointment Rescheduling** | [`shared_appointments_store.dart`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/core/data/shared_appointments_store.dart) (L707 `reschedulePatient`) | Internal persistence via `_updateRecordAtIndex` / `_persist` | State validation (rejects completed/inProgress); updates `date_time`, `slot_label`, `wasRescheduled` | [`test_reschedule_and_double_booking.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scratch/test_reschedule_and_double_booking.js)<br>Slot change reflected in Supabase & Firestore. | **STAGING VERIFIED** |
 | **Patient Profile (Fetch & Update)** | [`patient_profile_mock.dart`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/features/patient/profile/data/patient_profile_mock.dart) (L202, L390)<br>(Data store for [`edit_patient_profile_screen.dart`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/features/patient/profile/screens/edit_patient_profile_screen.dart) & [`patient_profile_screen.dart`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/features/shared/screens/patient_profile_screen.dart)) | `SupabasePatientRepository.instance.fetchProfile(...)`<br>`SupabasePatientRepository.instance.updateProfile(...)` | `PatientWriteGuard.run`<br>`sync_origin = 'patient_supabase'`<br>DB `verified` tamper protection | [`test_patient_profile_staging.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scratch/test_patient_profile_staging.js)<br>[`test_patient_verified_tamper.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scratch/test_patient_verified_tamper.js)<br>[`test_profile_hard_freeze_staging.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scratch/test_profile_hard_freeze_staging.js) | **STAGING VERIFIED** |
 | **Prescriptions History & Detail** | [`clinical_prescription_store.dart`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/features/doctor/clinical/data/clinical_prescription_store.dart) (L247)<br>via [`prescription_supabase_mapper.dart`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/core/supabase/mappers/prescription_supabase_mapper.dart) | `SupabasePatientRepository.instance.fetchPrescriptions(patientId)` | **Strictly Read-Only for Patients**<br>(Doctors only for writes; RLS blocks patient writes with `42501`) | [`test_prescriptions_staging.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scratch/test_prescriptions_staging.js)<br>Joined query with 2 meds + 2 investigations verified. | **STAGING VERIFIED** |
@@ -112,8 +112,8 @@ The bidirectional synchronization bridge ensures zero data loss between legacy c
 | Component | Implementation | Verification State | Operational Behavior |
 | :--- | :--- | :--- | :--- |
 | **Loop Prevention** | `sync_origin` metadata tagging | **Active & Verified** | Every write tags origin (`'patient_supabase'` or `'firestore'`). Edge function and Firestore trigger suppress re-sync if incoming origin matches destination. |
-| **Dead Letter Queue (DLQ)** | `sync_dlq` table + retry policy | **Active & Verified** | Failed sync jobs record payload, error stack, retry count, and next retry timestamp. Exceeding 3 retries halts automated churn and triggers alert. |
-| **Retry Worker** | `supabase_to_firestore_worker.js` | **Active & Verified** | Background worker scans for pending sync tasks, applies exponential backoff, and writes directly to Firestore using Firebase Admin SDK. |
+| **Dead Letter Queue (DLQ)** | `syncDeadLetters` (Firestore) + `sync_dlq` (SQL) | **Active & Verified** | Failed sync jobs record payload, deterministic ID, sanitized code, and next retry timestamp without leaking PII or raw stacks. |
+| **Reverse Sync Function** | `sync-to-firestore` Edge Function | **Active & Verified** | Supabase database webhook triggers reverse sync to Firestore REST API with optimistic concurrency (`updateTime`), terminal-state protection, and PII-free dead-lettering. |
 | **Data Parity Auditor** | `check_sync_parity.js` | **Active & Verified** | Script compares record counts, primary keys, and data hashes across Firestore collections and PostgreSQL tables to detect drift. |
 
 ---
@@ -150,7 +150,7 @@ Step 5: Release Staged Rollout via Play Console ► In Publishing Overview, clic
 Step 6: Live Smoke Test on Physical Devices ─► Verify real SMS OTP, slot booking, prescriptions, & record upload
        │
        ▼ [02:45 AM IST] (T+1h15m)
-Step 7: Launch Bidirectional Sync Bridge ────► Start Cloud Run / background worker: supabase_to_firestore_worker.js
+Step 7: Verify Reverse Sync Edge Function ────► Check sync-to-firestore Edge Function health & webhook delivery
        │
        ▼ [03:00 AM IST] (T+1h30m)
 Step 8: Restore Normal Firestore Rules ──────► firebase deploy --only firestore:rules (Re-enable doctor writes)
@@ -170,7 +170,7 @@ Step 9: Declare Cutover Window Complete ─────► Hand off to 24-hour S
 | **02:05 AM** | **Step 4 (T+35m)** | Activate Supabase Writes | `GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;`<br>`UPDATE system_config SET config_value = '{"status":"active","allow_writes":true}'::jsonb WHERE config_key = 'patient_module_status';` | Supabase accepts patient authenticated writes; `PatientWriteGuard.isMaintenanceActive()` returns `false`. |
 | **02:10 AM** | **Step 5 (T+40m)** | Release Staged Rollout | In Google Play Console $\rightarrow$ **Publishing overview**, click **Publish changes**. | Release v1.1.0 immediately enters rollout to 10% bucket with zero review delay. |
 | **02:15 AM** | **Step 6 (T+45m)** | Live Physical Smoke Test | Test on 2 physical Android devices (installed via Play Store Internal Testing track or 10% rollout) | Real MSG91 OTP delivery $\ge 98.5\%$; appointment booked in Supabase; prescription readable; record upload succeeds. |
-| **02:45 AM** | **Step 7 (T+1h15m)** | Launch Sync Worker | Start `scripts/supabase_to_firestore_worker.js` (Cloud Run / daemon) | Worker processes newly created test appointment and replicates to Firestore within 2.5s. |
+| **02:45 AM** | **Step 7 (T+1h15m)** | Verify Reverse Sync | Test appointment in Supabase | `sync-to-firestore` processes newly created test appointment and replicates to Firestore within 2.5s. |
 | **03:00 AM** | **Step 8 (T+1h30m)** | Restore Firestore Rules | `firebase deploy --only firestore:rules` *(production rules)* | Doctor, Pharmacy, and Lab apps resume write capability without disruption. |
 | **03:30 AM** | **Step 9 (T+2h00m)** | Cutover Hand-off | Verify `sync_dlq` table is empty (`SELECT count(*) FROM sync_dlq;` = 0) | System handed off to 24-hour Stage 1 monitoring team. |
 
@@ -189,7 +189,7 @@ Step 9: Declare Cutover Window Complete ─────► Hand off to 24-hour S
 | **Sev-1 (Critical)** | MSG91 SMS OTP delivery rate $< 90\%$ on test numbers over 15 minutes | **ABORT & ROLLBACK** | Halts patient login. Execute Emergency Rollback Protocol (Section 5). |
 | **Sev-1 (Critical)** | Sync worker fails to replicate patient bookings to Firestore within 30s | **ABORT & ROLLBACK** | Prevents doctor visibility blackout. Execute Emergency Rollback Protocol (Section 5). |
 | **Sev-1 (Critical)** | v1.1.0 crash loop ($> 1\%$ crash rate) reported in Crashlytics within 30 min | **ABORT & ROLLBACK** | Halt Google Play rollout; execute Emergency Rollback Protocol (Section 5). |
-| **Sev-2 (Moderate)** | Isolated sync failure caught by `sync_dlq` and scheduled for retry | **KEEP GOING** | Investigate DLQ payload; trigger manual re-drive via `supabase_to_firestore_worker.js`. |
+| **Sev-2 (Moderate)** | Isolated sync failure caught by `syncDeadLetters` / `sync_dlq` | **KEEP GOING** | Investigate DLQ payload; re-drive from system of record. |
 | **Sev-3 (Low)** | Minor UI styling/overflow glitch on non-critical secondary screens | **KEEP GOING** | Log ticket for next hotfix build (v1.1.1); does not block cutover. |
 
 ---
@@ -206,22 +206,25 @@ In the event of an unrecoverable failure during the live cutover window or early
 [Rollback Trigger Decision]
        │
        ▼ (T+0s, < 1s)
-Step 1: Soft Maintenance Kill-Switch ─────► UPDATE system_config SET config_value = '{"status":"maintenance","allow_writes":false}'
+Step 0: Remote Config Primary Cutover Switch ─► Firebase Console: Set `use_supabase_db_doctor_patient = false`
+       │                                       (Reverts Flutter client & Cloud Functions [~60s cache] to Firestore)
+       ▼ (T+0s, < 1s)
+Step 1: Soft Maintenance Kill-Switch ─────────► UPDATE system_config SET config_value = '{"status":"maintenance","allow_writes":false}'
        │
        ▼ (T+0s to T+30s)
-[30-Second Grace & Drain Window] ────────► Cache TTL (30s) drains in-flight requests; active v1.1.0 clients intercept writes
-       │                                   with friendly maintenance bottom sheet (zero app crashes)
+[30-Second Grace & Drain Window] ─────────────► Cache TTL (30s) drains in-flight requests; active v1.1.0 clients intercept writes
+       │                                        with friendly maintenance bottom sheet (zero app crashes)
        ▼ (T+30s, < 1s [Tested: 48ms])
-Step 2: Hard-Freeze Supabase DB Writes ──► REVOKE INSERT, UPDATE, DELETE FROM anon, authenticated (Airtight 42501 barrier)
+Step 2: Hard-Freeze Supabase DB Writes ───────► REVOKE INSERT, UPDATE, DELETE FROM anon, authenticated (Airtight 42501 barrier)
        │
        ▼ (T+1 min, ~1-2 min)
-Step 3: Halt Google Play Rollout ────────► Play Console -> Release -> Production -> Halt Rollout (Stops new downloads)
+Step 3: Halt Google Play Rollout ─────────────► Play Console -> Release -> Production -> Halt Rollout (Stops new downloads)
        │
        ▼ (T+2 min, ~3-5s [Tested: 1.34s])
-Step 4: Reverse Sync Supabase → Firestore ► node reverse_sync_supabase_to_firestore.js --live --since="<cutover_start>"
+Step 4: Reverse Sync Supabase → Firestore ────► node reverse_sync_supabase_to_firestore.js --live --since="<cutover_start>"
        │
        ▼ (T+3 min, ~20-30s)
-Step 5: Restore Firestore Security Rules ─► firebase deploy --only firestore:rules (Re-enables legacy writes)
+Step 5: Restore Firestore Security Rules ─────► firebase deploy --only firestore:rules (Re-enables legacy writes)
        │
        ▼ (T+4 min, Instant)
 Step 6: Production Resumption & Isolation:
@@ -230,6 +233,13 @@ Step 6: Production Resumption & Isolation:
 ```
 
 ### Step-by-Step Operational Procedure
+
+#### Step 0: Remote Config Unified Cutover Kill-Switch (T+0s, Duration: < 1s)
+- **Action:** Open Firebase Console -> Remote Config -> Update parameter `use_supabase_db_doctor_patient` to `false` and publish changes.
+- **Operational Impact:**
+  - **Flutter Client:** Both Doctor and Patient flows switch their runtime repository bindings back to Firestore repositories without binary rebuild.
+  - **Cloud Functions:** Serverless triggers and S3 storage handlers automatically fall back to Firestore paths after their ~60s in-memory cache TTL expires.
+  - **Fallback Safety:** `USE_SUPABASE_DB_DOCTOR_PATIENT` env var acts strictly as a fallback if Firebase Remote Config is unreachable.
 
 #### Step 1: Soft Maintenance Kill-Switch (T+0s, Duration: < 1s)
 - **Action:** Switch `patient_module_status` in `system_config` table to `maintenance`:

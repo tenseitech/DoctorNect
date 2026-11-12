@@ -1,5 +1,3 @@
-import 'package:medibond/core/firebase/firestore_service.dart';
-
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -7,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../firebase/firebase_bootstrap.dart';
+import '../firebase/repositories/patient_profile_repository.dart';
+import 'default_fcm_channel.dart';
 
 /// Registers FCM for patients and routes push taps to the correct screen.
 abstract final class PatientPushService {
@@ -78,6 +78,14 @@ abstract final class PatientPushService {
           importance: Importance.high,
         ),
       );
+      await androidPlugin?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          DefaultFcmChannel.id,
+          DefaultFcmChannel.name,
+          description: DefaultFcmChannel.description,
+          importance: Importance.defaultImportance,
+        ),
+      );
     }
 
     _foregroundSub ??= FirebaseMessaging.onMessage.listen(_onForegroundMessage);
@@ -107,19 +115,13 @@ abstract final class PatientPushService {
 
     final token = await messaging.getToken();
     if (token != null && token.isNotEmpty) {
-      await FirestoreService.instance.patientProfile.savePatientFcmToken(
-        patientId,
-        token,
-      );
+      await _persistToken(patientId, token);
     }
 
     await _tokenRefreshSub?.cancel();
     _tokenRefreshSub = messaging.onTokenRefresh.listen((newToken) async {
       if (_activePatientId == null || newToken.isEmpty) return;
-      await FirestoreService.instance.patientProfile.savePatientFcmToken(
-        _activePatientId!,
-        newToken,
-      );
+      await _persistToken(_activePatientId!, newToken);
     });
   }
 
@@ -134,9 +136,7 @@ abstract final class PatientPushService {
     _tokenRefreshSub = null;
 
     if (patientId == null || patientId.isEmpty) return;
-    await FirestoreService.instance.patientProfile.clearPatientFcmToken(
-      patientId,
-    );
+    await PatientProfileRepository.instance.clearPatientFcmToken(patientId);
     if (!kIsWeb) {
       await FirebaseMessaging.instance.deleteToken();
     }
@@ -228,6 +228,23 @@ abstract final class PatientPushService {
       ),
       payload: payload,
     );
+  }
+
+  @visibleForTesting
+  static Future<void> persistTokenForTest(String patientId, String token) =>
+      _persistToken(patientId, token);
+
+  static Future<void> _persistToken(String patientId, String token) async {
+    try {
+      await PatientProfileRepository.instance.savePatientFcmToken(
+        patientId,
+        token,
+      );
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[PatientPushService] FCM token persist failed (will retry on refresh): $e\n$st');
+      }
+    }
   }
 
   static void dispose() {

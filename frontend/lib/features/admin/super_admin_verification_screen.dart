@@ -9,6 +9,7 @@ import '../../core/notifications/app_toast.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../widgets/theme_toggle_button.dart';
+import 'promoted_ad_review_screen.dart';
 
 class SuperAdminVerificationScreen extends StatefulWidget {
   const SuperAdminVerificationScreen({super.key});
@@ -110,6 +111,17 @@ class _SuperAdminVerificationScreenState
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.campaign_outlined),
+            tooltip: 'Review promoted ads',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const PromotedAdReviewScreen(),
+                ),
+              );
+            },
+          ),
           const ThemeToggleButton(),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
@@ -122,6 +134,77 @@ class _SuperAdminVerificationScreenState
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Action card for Promoted Ads Review
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Material(
+              color: isDark ? const Color(0xFF1E1B4B) : const Color(0xFFEEF2FF),
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                key: const Key('promoted_ads_review_action_card'),
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const PromotedAdReviewScreen(),
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4F46E5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.campaign_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Promoted Ads Review',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: AppTypography.labelLarge,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF312E81),
+                              ),
+                            ),
+                            Text(
+                              'Approve or reject pending provider banner ads',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: AppTypography.labelSmall,
+                                color: isDark
+                                    ? Colors.white70
+                                    : const Color(0xFF4338CA),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Color(0xFF4F46E5),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
           // Role selection chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,

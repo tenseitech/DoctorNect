@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/core/layout/responsive_layout.dart';
 import 'package:medibond/core/theme/app_colors.dart';
 import 'package:medibond/core/theme/app_theme.dart';
-import 'package:medibond/features/auth/patient_registration_screen.dart';
 import 'package:medibond/features/auth/unified_auth_intro_screen.dart';
 import 'package:medibond/features/auth/unified_mobile_auth_screen.dart';
 import 'package:medibond/features/auth/widgets/auth_layout.dart';
@@ -571,92 +570,7 @@ void main() {
     });
   });
 
-  group(
-      'AuthLoginPageShell & Patient Registration Desktop Responsiveness Tests',
-      () {
-    testWidgets(
-        'PatientRegistrationScreen on desktop (1920x1080) renders split layout',
-        (tester) async {
-      tester.view.physicalSize = const Size(1920, 1080);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light(AppColors.patientTeal),
-          home: const PatientRegistrationScreen(),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Join as Patient'), findsOneWidget);
-      expect(find.text('Personal details'), findsOneWidget);
-      expect(find.byTooltip('Back'), findsOneWidget);
-
-      final rowFinder = find.byType(Row);
-      expect(rowFinder, findsWidgets);
-
-      final rowWidget = tester.widget<Row>(rowFinder.first);
-      final flexChildren = rowWidget.children.whereType<Expanded>().toList();
-      expect(flexChildren.length, equals(2));
-      expect(flexChildren[0].flex, equals(43));
-      expect(flexChildren[1].flex, equals(57));
-
-      final constrainedBox = find.byWidgetPredicate(
-        (w) => w is ConstrainedBox && w.constraints.maxWidth == 480,
-      );
-      expect(constrainedBox, findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets(
-        'PatientRegistrationScreen at 1024x768 renders cleanly with left panel >= 380px',
-        (tester) async {
-      tester.view.physicalSize = const Size(1024, 768);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light(AppColors.patientTeal),
-          home: const PatientRegistrationScreen(),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Join as Patient'), findsOneWidget);
-      expect(find.text('Personal details'), findsOneWidget);
-
-      final leftPanelFinder = find.byWidgetPredicate(
-        (w) =>
-            w is Container &&
-            w.constraints != null &&
-            w.constraints!.minWidth >= 380,
-      );
-      expect(leftPanelFinder, findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets(
-        'PatientRegistrationScreen on mobile (390x844) renders stacked layout',
-        (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light(AppColors.patientTeal),
-          home: const PatientRegistrationScreen(),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Patient Registration'), findsOneWidget);
-      expect(find.text('Personal details'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
+  group('AuthLoginPageShell desktop responsiveness tests', () {
     testWidgets('ResponsiveLayout.contentMaxWidth returns 1200 on desktop',
         (tester) async {
       tester.view.physicalSize = const Size(1920, 1080);

@@ -9,6 +9,9 @@ enum UnifiedAuthPath {
 
   /// Mobile is registered under a different role — block and show support message.
   blockedWrongRole,
+
+  /// Lookup failed (network/App Check) — do not treat as new user.
+  lookupUnavailable,
 }
 
 /// Resolves login vs register from server-side mobile lookup (no separate Register UI).
@@ -17,7 +20,10 @@ abstract final class UnifiedAuthCoordinator {
       'This mobile number may be registered under a different account type. '
       'Try another login option or contact support.';
 
-  /// Uses [lookupMobileRegistration]: authoritative single-roundtrip lookup.
+  static const lookupUnavailableMessage =
+      MobileRegistrationLookup.lookupUnavailableMessage;
+
+  /// Uses [MobileRegistrationLookup.lookup] with legacy conflict fallback.
   static Future<UnifiedAuthPath> resolvePath({
     required String mobile,
     required UserType role,
@@ -33,14 +39,16 @@ abstract final class UnifiedAuthCoordinator {
       intent: MobileLookupIntent.login,
       role: role,
     );
+    if (lookup.isError) {
+      return UnifiedAuthPath.lookupUnavailable;
+    }
     if (!lookup.exists) {
       return UnifiedAuthPath.register;
     }
-
-    if (lookup.role != null && lookup.role != role) {
+    if (lookup.conflict == true ||
+        (lookup.role != null && lookup.role != role)) {
       return UnifiedAuthPath.blockedWrongRole;
     }
-
     return UnifiedAuthPath.login;
   }
 

@@ -9,16 +9,43 @@ const {
   getS3DownloadUrlHandler,
   getS3DownloadUrlsHandler,
   deleteS3ObjectHandler,
+  confirmS3UploadHandler,
+  logStorageAccess,
   setS3ClientForTesting,
   validateContentTypeAndSize,
   extractExtension,
 } = _test;
+
+const { _resetRemoteConfigCache } = require('../sync_flags');
+
+let origLegacyCutover;
+let origServiceKey;
+test.beforeEach(() => {
+  origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+  origServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'dummy-service-role-key-for-test';
+  }
+  _resetRemoteConfigCache();
+});
+
+test.afterEach(() => {
+  if (origLegacyCutover === undefined) delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
+  else process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacyCutover;
+
+  if (origServiceKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  else process.env.SUPABASE_SERVICE_ROLE_KEY = origServiceKey;
+
+  _resetRemoteConfigCache();
+});
 
 /**
  * In-memory Mock Firestore for unit testing authorization matrix.
  */
 function createMockDb(initialData = {}) {
   const store = new Map();
+  const added = [];
 
   for (const [coll, docs] of Object.entries(initialData)) {
     for (const [id, data] of Object.entries(docs)) {
@@ -27,8 +54,17 @@ function createMockDb(initialData = {}) {
   }
 
   return {
+    _store: store,
+    _added: added,
     collection(collName) {
       return {
+        async add(data) {
+          const autoId = `auto_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          const key = `${collName}/${autoId}`;
+          store.set(key, data);
+          added.push({ collection: collName, id: autoId, data });
+          return { id: autoId };
+        },
         doc(docId) {
           const key = `${collName}/${docId}`;
           return {
@@ -39,6 +75,21 @@ function createMockDb(initialData = {}) {
                 exists: data !== undefined,
                 data: () => data || null,
               };
+            },
+            async set(data, options = {}) {
+              if (options.merge) {
+                const existing = store.get(key) || {};
+                store.set(key, { ...existing, ...data });
+              } else {
+                store.set(key, { ...data });
+              }
+            },
+            async update(data) {
+              const existing = store.get(key) || {};
+              store.set(key, { ...existing, ...data });
+            },
+            async delete() {
+              store.delete(key);
             },
           };
         },
@@ -94,7 +145,7 @@ const { S3Client } = require('@aws-sdk/client-s3');
 /**
  * Mock S3 Client with mock credentials for local SigV4 presigning without network calls.
  */
-function createMockS3Client() {
+function createMockS3Client(mockHead = null) {
   const client = new S3Client({
     region: 'ap-south-1',
     credentials: {
@@ -104,7 +155,15 @@ function createMockS3Client() {
     requestChecksumCalculation: 'WHEN_REQUIRED',
     responseChecksumValidation: 'WHEN_REQUIRED',
   });
-  client.send = async () => ({});
+  client.send = async (cmd) => {
+    if (cmd && cmd.constructor && cmd.constructor.name === 'HeadObjectCommand') {
+      if (typeof mockHead === 'function') {
+        return mockHead(cmd);
+      }
+      return mockHead || { ContentType: 'application/pdf', ContentLength: 2048 };
+    }
+    return {};
+  };
   return client;
 }
 
@@ -192,6 +251,62 @@ test('wrong patient blocked from uploading to another patient record', async () 
   await assert.rejects(
     async () => getS3UploadUrlHandler(data, auth, db),
     /Only the patient owner can upload health records/,
+  );
+});
+
+test('pharmacy, lab, and ambulance owners can upload their own KYC and nobody else can', async () => {
+  const db = createMockDb({
+    users: {
+      uid_store: { role: 'medicalStore', profileId: 'store_1' },
+      uid_lab: { role: 'lab', profileId: 'lab_1' },
+      uid_amb: { role: 'ambulance', profileId: 'amb_1' },
+      uid_patient: { role: 'patient', profileId: 'p_1', profileCompleted: true },
+    },
+  });
+
+  const pharmacy = await getS3UploadUrlHandler({
+    purpose: 'pharmacy_kyc',
+    parentId: 'store_1',
+    fileName: 'license.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 2048,
+  }, { uid: 'uid_store' }, db);
+  assert.ok(pharmacy.objectKey.startsWith('pharmacies/store_1/documents/'));
+
+  const lab = await getS3UploadUrlHandler({
+    purpose: 'lab_kyc',
+    parentId: 'lab_1',
+    fileName: 'nabl.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 2048,
+  }, { uid: 'uid_lab' }, db);
+  assert.ok(lab.objectKey.startsWith('labs/lab_1/documents/'));
+
+  const ambulance = await getS3UploadUrlHandler({
+    purpose: 'ambulance_kyc',
+    parentId: 'amb_1',
+    fileName: 'permit.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 2048,
+  }, { uid: 'uid_amb' }, db);
+  assert.ok(ambulance.objectKey.startsWith('ambulances/amb_1/documents/'));
+
+  await assert.rejects(
+    () => getS3UploadUrlHandler({
+      purpose: 'pharmacy_kyc',
+      parentId: 'store_1',
+      fileName: 'license.pdf',
+      contentType: 'application/pdf',
+      sizeBytes: 2048,
+    }, { uid: 'uid_patient' }, db),
+    /Only the pharmacy owner can upload pharmacy KYC/,
+  );
+
+  const { authorizeRead } = _test;
+  const owner = { role: 'medicalStore', profileId: 'store_1' };
+  assert.equal(
+    await authorizeRead(pharmacy.objectKey, owner, { uid: 'uid_store' }, db),
+    false,
   );
 });
 
@@ -432,7 +547,7 @@ test('verified doctor with care relationship allowed to download shared record',
   const data = { objectKey: 'health_records/p_1/hr_1/file123.pdf' };
 
   const res = await getS3DownloadUrlHandler(data, auth, db);
-  assert.equal(res.expiresIn, 600);
+  assert.equal(res.expiresIn, 300);
   assert.ok(res.url);
 });
 
@@ -447,7 +562,7 @@ test('patient owner allowed to download their own health record', async () => {
   const data = { objectKey: 'health_records/p_1/hr_1/uuid123.pdf' };
 
   const res = await getS3DownloadUrlHandler(data, auth, db);
-  assert.equal(res.expiresIn, 600);
+  assert.equal(res.expiresIn, 300);
   assert.ok(res.url);
 });
 
@@ -489,6 +604,50 @@ test('super admin allowlisted email with email_verified=false is denied admin by
   });
 
   const auth = { uid: 'uid_unverified', token: { email: 'admin@doctornect.com', email_verified: false } };
+  const data = { objectKey: 'health_records/p_99/hr_99/secret.pdf' };
+
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler(data, auth, db),
+    /You do not have permission to access this file/,
+  );
+});
+
+test('claim-based admin bypass allows download regardless of non-allowlisted email when email_verified=true', async () => {
+  const db = createMockDb({
+    users: {
+      uid_claim_admin: { role: 'admin', profileId: 'adm_001' },
+    },
+  });
+
+  const auth = {
+    uid: 'uid_claim_admin',
+    token: {
+      email: 'custom_ops_staff@external-domain.org',
+      email_verified: true,
+      user_role: 'admin',
+    },
+  };
+  const data = { objectKey: 'health_records/p_99/hr_99/secret.pdf' };
+
+  const res = await getS3DownloadUrlHandler(data, auth, db);
+  assert.ok(res.url);
+});
+
+test('claim-based admin bypass is denied when email_verified=false', async () => {
+  const db = createMockDb({
+    users: {
+      uid_claim_unverified: { role: 'admin', profileId: 'adm_002' },
+    },
+  });
+
+  const auth = {
+    uid: 'uid_claim_unverified',
+    token: {
+      email: 'custom_ops_staff@external-domain.org',
+      email_verified: false,
+      user_role: 'admin',
+    },
+  };
   const data = { objectKey: 'health_records/p_99/hr_99/secret.pdf' };
 
   await assert.rejects(
@@ -799,7 +958,7 @@ test('patient owner allowed to download lab_order report', async () => {
 
   const res = await getS3DownloadUrlHandler(data, auth, db);
   assert.ok(res.url);
-  assert.equal(res.expiresIn, 600);
+  assert.equal(res.expiresIn, 300);
 });
 
 test('unrelated patient blocked from downloading lab_order report', async () => {
@@ -928,3 +1087,726 @@ test('wrong lab blocked from deleting lab_order report', async () => {
     /You do not have permission to delete this file/,
   );
 });
+
+// ----------------------------------------------------------------------------
+// 10. CONFIRM S3 UPLOAD (Step 3: HeadObject verification & DB persistence)
+// ----------------------------------------------------------------------------
+test('confirmS3Upload verifies S3 HeadObject and persists s3_key in DB', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1' },
+    },
+    health_records: {
+      rec_1: { title: 'Blood Report' },
+    },
+  });
+
+  // Configure mock S3 client with valid HeadObject response
+  setS3ClientForTesting(createMockS3Client({
+    ContentType: 'application/pdf',
+    ContentLength: 4096,
+  }));
+
+  const auth = { uid: 'uid_p1' };
+  const data = {
+    objectKey: 'health_records/p_1/rec_1/uuid123.pdf',
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  };
+
+  const res = await confirmS3UploadHandler(data, auth, db);
+  assert.equal(res.success, true);
+  assert.equal(res.contentLength, 4096);
+  assert.equal(res.contentType, 'application/pdf');
+
+  // Verify DB record was updated with S3 metadata
+  const doc = await db.collection('health_records').doc('rec_1').get();
+  assert.equal(doc.data().s3Key, 'health_records/p_1/rec_1/uuid123.pdf');
+  assert.equal(doc.data().fileSizeBytes, 4096);
+  assert.equal(doc.data().mimeType, 'application/pdf');
+  assert.equal(doc.data().storageProvider, 's3');
+  assert.ok(doc.data().uploadConfirmedAt);
+});
+
+test('confirmS3Upload is idempotent when called twice with same objectKey', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1' },
+    },
+    health_records: {
+      rec_1: { title: 'Blood Report' },
+    },
+  });
+
+  setS3ClientForTesting(createMockS3Client({
+    ContentType: 'application/pdf',
+    ContentLength: 4096,
+  }));
+
+  const auth = { uid: 'uid_p1' };
+  const data = {
+    objectKey: 'health_records/p_1/rec_1/uuid123.pdf',
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  };
+
+  const first = await confirmS3UploadHandler(data, auth, db);
+  const second = await confirmS3UploadHandler(data, auth, db);
+  assert.equal(first.success, true);
+  assert.equal(second.success, true);
+
+  const doc = await db.collection('health_records').doc('rec_1').get();
+  assert.equal(doc.data().s3Key, 'health_records/p_1/rec_1/uuid123.pdf');
+});
+
+test('confirmS3Upload rejects when caller is not the owner (403)', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p2: { role: 'patient', profileId: 'p_2' },
+    },
+  });
+
+  const auth = { uid: 'uid_p2' };
+  const data = {
+    objectKey: 'health_records/p_1/rec_1/uuid123.pdf',
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  };
+
+  await assert.rejects(
+    async () => confirmS3UploadHandler(data, auth, db),
+    /You do not have permission to confirm this upload/,
+  );
+});
+
+test('confirmS3Upload rejects when S3 HeadObject throws not-found (404)', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1' },
+    },
+  });
+
+  // Mock S3 client where HeadObject throws NoSuchKey
+  const client = createMockS3Client();
+  client.send = async (cmd) => {
+    if (cmd?.constructor?.name === 'HeadObjectCommand') {
+      const err = new Error('NotFound');
+      err.name = 'NotFound';
+      throw err;
+    }
+    return {};
+  };
+  setS3ClientForTesting(client);
+
+  const auth = { uid: 'uid_p1' };
+  const data = {
+    objectKey: 'health_records/p_1/rec_1/uuid123.pdf',
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  };
+
+  await assert.rejects(
+    async () => confirmS3UploadHandler(data, auth, db),
+    /Uploaded file was not found in S3/,
+  );
+});
+
+test('confirmS3Upload rejects when S3 HeadObject size exceeds limit', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1' },
+    },
+  });
+
+  // Mock S3 client where file size is 25 MB (exceeds 15 MB doc limit)
+  setS3ClientForTesting(createMockS3Client({
+    ContentType: 'application/pdf',
+    ContentLength: 25 * 1024 * 1024,
+  }));
+
+  const auth = { uid: 'uid_p1' };
+  const data = {
+    objectKey: 'health_records/p_1/rec_1/uuid123.pdf',
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  };
+
+  await assert.rejects(
+    async () => confirmS3UploadHandler(data, auth, db),
+    /exceeds limit/,
+  );
+});
+
+test('confirmS3Upload rejects invalid Content-Type in S3 HeadObject', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1' },
+    },
+  });
+
+  // Mock S3 client with unallowed mime type
+  setS3ClientForTesting(createMockS3Client({
+    ContentType: 'application/x-executable',
+    ContentLength: 1024,
+  }));
+
+  const auth = { uid: 'uid_p1' };
+  const data = {
+    objectKey: 'health_records/p_1/rec_1/uuid123.exe',
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  };
+
+  await assert.rejects(
+    async () => confirmS3UploadHandler(data, auth, db),
+    /Invalid S3 object Content-Type/,
+  );
+});
+
+// ----------------------------------------------------------------------------
+// 11. AUDIT LOGGING (Step 3: storage_audit_logs verification)
+// ----------------------------------------------------------------------------
+test('storage operations record immutable rows in storage_audit_logs', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1', profileCompleted: true },
+    },
+    health_records: {
+      rec_1: {},
+    },
+  });
+
+  setS3ClientForTesting(createMockS3Client({
+    ContentType: 'application/pdf',
+    ContentLength: 1024,
+  }));
+
+  const auth = { uid: 'uid_p1' };
+
+  // 1. Upload presigned
+  const uploadRes = await getS3UploadUrlHandler({
+    purpose: 'health_records',
+    parentId: 'p_1/rec_1',
+    fileName: 'lab_scan.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 1024,
+  }, auth, db);
+  assert.ok(uploadRes.uploadUrl);
+
+  // 2. Download presigned
+  const dlRes = await getS3DownloadUrlHandler({
+    objectKey: uploadRes.objectKey,
+  }, auth, db);
+  assert.ok(dlRes.url);
+
+  // 3. Confirm upload
+  await confirmS3UploadHandler({
+    objectKey: uploadRes.objectKey,
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  }, auth, db);
+
+  // 4. Delete object
+  await deleteS3ObjectHandler({
+    objectKey: uploadRes.objectKey,
+  }, auth, db);
+
+  // Verify all 4 audit log entries were recorded
+  const auditLogs = db._added.filter(entry => entry.collection === 'storage_audit_logs');
+  assert.ok(auditLogs.length >= 4, `Expected at least 4 audit logs, got ${auditLogs.length}`);
+
+  const actions = auditLogs.map(l => l.data.action);
+  assert.ok(actions.includes('upload_presigned'));
+  assert.ok(actions.includes('download_presigned'));
+  assert.ok(actions.includes('upload_confirmed'));
+  assert.ok(actions.includes('delete'));
+
+  for (const log of auditLogs) {
+    assert.equal(log.data.who, 'uid_p1');
+    assert.equal(log.data.role, 'patient');
+    assert.equal(log.data.status, 'success');
+    assert.ok(log.data.when);
+  }
+});
+
+// ----------------------------------------------------------------------------
+// 12. PRESCRIPTIONS ACCESS CONTROL (Step 3: doctor, patient, assigned pharmacy)
+// ----------------------------------------------------------------------------
+test('prescriptions: patient owner allowed to download prescription', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1' },
+    },
+  });
+
+  const auth = { uid: 'uid_p1' };
+  const data = { objectKey: 'prescriptions/p_1/rx_100/file.pdf' };
+
+  const res = await getS3DownloadUrlHandler(data, auth, db);
+  assert.ok(res.url);
+  assert.equal(res.expiresIn, 300);
+});
+
+test('prescriptions: author doctor allowed to download prescription', async () => {
+  const db = createMockDb({
+    users: {
+      uid_doc1: { role: 'doctor', profileId: 'doc_1' },
+    },
+    prescriptions: {
+      rx_100: { doctorId: 'doc_1', patientId: 'p_1' },
+    },
+  });
+
+  const auth = { uid: 'uid_doc1' };
+  const data = { objectKey: 'prescriptions/p_1/rx_100/file.pdf' };
+
+  const res = await getS3DownloadUrlHandler(data, auth, db);
+  assert.ok(res.url);
+  assert.equal(res.expiresIn, 300);
+});
+
+test('prescriptions: assigned pharmacy allowed to download prescription', async () => {
+  const db = createMockDb({
+    users: {
+      uid_store1: { role: 'medicalStore', profileId: 'store_1' },
+    },
+    pharmacy_deliveries: {
+      del_1: { prescriptionId: 'rx_100', storeId: 'store_1' },
+    },
+  });
+
+  const auth = { uid: 'uid_store1' };
+  const data = { objectKey: 'prescriptions/p_1/rx_100/file.pdf' };
+
+  const res = await getS3DownloadUrlHandler(data, auth, db);
+  assert.ok(res.url);
+  assert.equal(res.expiresIn, 300);
+});
+
+test('prescriptions: unrelated pharmacy blocked from downloading prescription (403)', async () => {
+  const db = createMockDb({
+    users: {
+      uid_store2: { role: 'medicalStore', profileId: 'store_2' },
+    },
+    pharmacy_deliveries: {
+      del_1: { prescriptionId: 'rx_100', storeId: 'store_other' },
+    },
+  });
+
+  const auth = { uid: 'uid_store2' };
+  const data = { objectKey: 'prescriptions/p_1/rx_100/file.pdf' };
+
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler(data, auth, db),
+    /You do not have permission to access this file/,
+  );
+});
+
+// ----------------------------------------------------------------------------
+// 13. SUPABASE-PRIMARY DUAL-TARGET S3 AUTHORIZATION & AUDIT (Cutover Flag ON)
+// ----------------------------------------------------------------------------
+
+function createMockSupabase(initialTables = {}) {
+  const tables = {};
+  for (const [tbl, rows] of Object.entries(initialTables)) {
+    tables[tbl] = Array.isArray(rows) ? rows.map(r => ({ ...r })) : [{ ...rows }];
+  }
+  const inserted = [];
+  const updated = [];
+
+  return {
+    _tables: tables,
+    _inserted: inserted,
+    _updated: updated,
+    from(tableName) {
+      let currentRows = tables[tableName] || [];
+      let pendingUpdate = null;
+      let filterFn = () => true;
+
+      const builder = {
+        select(cols) {
+          return builder;
+        },
+        eq(col, val) {
+          const prev = filterFn;
+          filterFn = (r) => prev(r) && String(r[col]) === String(val);
+          return builder;
+        },
+        or(condition) {
+          const prev = filterFn;
+          filterFn = (r) => {
+            if (!prev(r)) return false;
+            const parts = condition.split(',');
+            return parts.some((p) => {
+              const [c, op, v] = p.split('.');
+              return op === 'eq' && String(r[c]) === String(v);
+            });
+          };
+          return builder;
+        },
+        limit(n) {
+          return builder;
+        },
+        async maybeSingle() {
+          const matching = currentRows.filter(filterFn);
+          return { data: matching[0] || null, error: null };
+        },
+        async single() {
+          const matching = currentRows.filter(filterFn);
+          return { data: matching[0] || null, error: matching[0] ? null : new Error('Row not found') };
+        },
+        async insert(payload) {
+          const row = { ...payload };
+          if (!tables[tableName]) tables[tableName] = [];
+          tables[tableName].push(row);
+          inserted.push({ table: tableName, row });
+          return { data: row, error: null };
+        },
+        update(payload) {
+          pendingUpdate = payload;
+          return {
+            eq(col, val) {
+              const matching = currentRows.filter(r => String(r[col]) === String(val));
+              for (const r of matching) {
+                Object.assign(r, pendingUpdate);
+                updated.push({ table: tableName, row: r, patch: pendingUpdate });
+              }
+              return Promise.resolve({ data: matching, error: null });
+            },
+          };
+        },
+      };
+      return builder;
+    },
+  };
+}
+
+test('S3 Supabase Primary: verified doctor with appointment reads patient record and logs to Postgres storage_audit_logs', async () => {
+  const mockDb = createMockDb();
+  const mockSupabase = createMockSupabase({
+    users: [
+      { id: 'uid_doc1', role: 'doctor', profile_id: 'doc_1', email: 'doc1@example.com' },
+    ],
+    doctors: [
+      { doctor_id: 'doc_1', verified: true, deactivated: false },
+    ],
+    patients: [
+      { patient_id: 'pat_1', share_records_with_doctors: true },
+    ],
+    appointments: [
+      { appointment_id: 'apt_1', patient_id: 'pat_1', doctor_id: 'doc_1' },
+    ],
+    health_records: [
+      { record_id: 'rec_10', shared_with_doctors: true },
+    ],
+  });
+
+  const auth = { uid: 'uid_doc1' };
+  const data = { objectKey: 'health_records/pat_1/rec_10/scan.pdf' };
+  const storageOptions = {
+    db: mockDb,
+    supabaseClient: mockSupabase,
+    isSupabasePrimary: true,
+  };
+
+  const res = await getS3DownloadUrlHandler(data, auth, storageOptions);
+  assert.ok(res.url);
+
+  // Verify audit log was written to Supabase storage_audit_logs table, NOT Firestore
+  assert.equal(mockDb._added.length, 0);
+  assert.equal(mockSupabase._inserted.length, 1);
+  assert.equal(mockSupabase._inserted[0].table, 'storage_audit_logs');
+  assert.equal(mockSupabase._inserted[0].row.who, 'uid_doc1');
+  assert.equal(mockSupabase._inserted[0].row.action, 'download_presigned');
+  assert.equal(mockSupabase._inserted[0].row.status, 'success');
+});
+
+test('S3 Supabase Primary: unverified doctor blocked from reading record even with appointment', async () => {
+  const mockDb = createMockDb();
+  const mockSupabase = createMockSupabase({
+    users: [
+      { id: 'uid_doc_unver', role: 'doctor', profile_id: 'doc_unver', email: 'unver@example.com' },
+    ],
+    doctors: [
+      { doctor_id: 'doc_unver', verified: false, deactivated: false },
+    ],
+    patients: [
+      { patient_id: 'pat_1', share_records_with_doctors: true },
+    ],
+    appointments: [
+      { appointment_id: 'apt_1', patient_id: 'pat_1', doctor_id: 'doc_unver' },
+    ],
+  });
+
+  const auth = { uid: 'uid_doc_unver' };
+  const data = { objectKey: 'health_records/pat_1/rec_10/scan.pdf' };
+  const storageOptions = {
+    db: mockDb,
+    supabaseClient: mockSupabase,
+    isSupabasePrimary: true,
+  };
+
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler(data, auth, storageOptions),
+    /You do not have permission to access this file/,
+  );
+});
+
+test('S3 Supabase Primary: assigned lab allowed to upload/download lab report', async () => {
+  const mockDb = createMockDb();
+  const mockSupabase = createMockSupabase({
+    users: [
+      { id: 'uid_lab1', role: 'lab', profile_id: 'lab_1', email: 'lab@example.com' },
+    ],
+    lab_bookings: [
+      {
+        booking_id: 'b_100',
+        lab_id: 'lab_1',
+        patient_id: 'pat_1',
+        status: 'confirmed',
+        report_storage_key: 'lab_reports/pat_1/b_100/report.pdf',
+      },
+    ],
+  });
+
+  const auth = { uid: 'uid_lab1' };
+  const storageOptions = {
+    db: mockDb,
+    supabaseClient: mockSupabase,
+    isSupabasePrimary: true,
+  };
+
+  // 1. Upload URL
+  const uploadRes = await getS3UploadUrlHandler({
+    purpose: 'lab_reports',
+    fileName: 'report.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 1024 * 1024,
+    parentId: 'pat_1/b_100',
+  }, auth, storageOptions);
+  assert.ok(uploadRes.uploadUrl);
+
+  // 2. Download URL
+  const dlRes = await getS3DownloadUrlHandler({
+    objectKey: 'lab_reports/pat_1/b_100/report.pdf',
+  }, auth, storageOptions);
+  assert.ok(dlRes.url);
+});
+
+test('S3 Supabase Primary: lab report download denied when objectKey does not match stored key', async () => {
+  const mockDb = createMockDb();
+  const mockSupabase = createMockSupabase({
+    users: [
+      { id: 'uid_lab1', role: 'lab', profile_id: 'lab_1', email: 'lab@example.com' },
+    ],
+    lab_bookings: [
+      {
+        booking_id: 'b_100',
+        lab_id: 'lab_1',
+        patient_id: 'pat_1',
+        status: 'completed',
+        report_storage_key: 'lab_reports/pat_1/b_100/official.pdf',
+      },
+    ],
+  });
+
+  const auth = { uid: 'uid_lab1' };
+  const storageOptions = {
+    db: mockDb,
+    supabaseClient: mockSupabase,
+    isSupabasePrimary: true,
+  };
+
+  await assert.rejects(
+    async () =>
+      getS3DownloadUrlHandler(
+        { objectKey: 'lab_reports/pat_1/b_100/other.pdf' },
+        auth,
+        storageOptions,
+      ),
+    /You do not have permission to access this file/,
+  );
+});
+
+test('S3 Supabase Primary: confirmS3Upload writes snake_case columns to Supabase and logs to Postgres', async () => {
+  const mockDb = createMockDb();
+  const mockSupabase = createMockSupabase({
+    users: [
+      { id: 'uid_pat1', role: 'patient', profile_id: 'pat_1' },
+    ],
+    health_records: [
+      { record_id: 'rec_99', patient_id: 'pat_1' },
+    ],
+  });
+
+  const auth = { uid: 'uid_pat1' };
+  const storageOptions = {
+    db: mockDb,
+    supabaseClient: mockSupabase,
+    isSupabasePrimary: true,
+  };
+
+  const confirmRes = await confirmS3UploadHandler({
+    objectKey: 'health_records/pat_1/rec_99/blood_test.pdf',
+    purpose: 'health_records',
+    recordId: 'rec_99',
+  }, auth, storageOptions);
+
+  assert.equal(confirmRes.success, true);
+  assert.equal(confirmRes.contentType, 'application/pdf');
+
+  // Verify Supabase health_records row was updated with snake_case columns
+  const updatedRows = mockSupabase._updated.filter(u => u.table === 'health_records');
+  assert.equal(updatedRows.length, 1);
+  const patch = updatedRows[0].patch;
+  assert.equal(patch.s3_key, 'health_records/pat_1/rec_99/blood_test.pdf');
+  assert.equal(patch.storage_provider, 's3');
+  assert.equal(patch.file_size_bytes, 2048);
+  assert.equal(patch.mime_type, 'application/pdf');
+  assert.ok(patch.upload_confirmed_at);
+
+  // Verify audit log went to Supabase storage_audit_logs table
+  assert.equal(mockDb._added.length, 0);
+  assert.equal(mockSupabase._inserted.length, 1);
+  assert.equal(mockSupabase._inserted[0].table, 'storage_audit_logs');
+  assert.equal(mockSupabase._inserted[0].row.action, 'upload_confirmed');
+});
+
+// ----------------------------------------------------------------------------
+// 14. CONFIRM S3 UPLOAD FAILED VALIDATION: S3 OBJECT DELETION & AUDIT LOGGING
+// ----------------------------------------------------------------------------
+
+test('confirmS3Upload: missing object (head_not_found) attempts delete and audit logs failure', async () => {
+  const mockDb = createMockDb({
+    users: {
+      uid_pat1: { role: 'patient', profileId: 'pat_1' },
+    },
+  });
+
+  let deletedKey = null;
+  setS3ClientForTesting({
+    async send(cmd) {
+      if (cmd.constructor.name === 'HeadObjectCommand') {
+        const err = new Error('The specified key does not exist.');
+        err.name = 'NotFound';
+        throw err;
+      }
+      if (cmd.constructor.name === 'DeleteObjectCommand') {
+        deletedKey = cmd.input.Key;
+        return {};
+      }
+      return {};
+    },
+  });
+
+  const auth = { uid: 'uid_pat1' };
+  const targetKey = 'health_records/pat_1/rec_1/nonexistent.pdf';
+
+  await assert.rejects(
+    async () => confirmS3UploadHandler({
+      objectKey: targetKey,
+      purpose: 'health_records',
+      recordId: 'rec_1',
+    }, auth, mockDb),
+    /Uploaded file was not found in S3 or is inaccessible/,
+  );
+
+  // Verify delete was sent for the failed object
+  assert.equal(deletedKey, targetKey);
+
+  // Verify failure was logged to storage_audit_logs
+  const auditLogs = mockDb._added.filter(e => e.collection === 'storage_audit_logs');
+  assert.equal(auditLogs.length, 1);
+  assert.equal(auditLogs[0].data.action, 'upload_confirm_failed');
+  assert.equal(auditLogs[0].data.status, 'head_not_found');
+});
+
+test('confirmS3Upload: invalid content-type deletes uploaded S3 object and audit logs failure', async () => {
+  const mockDb = createMockDb({
+    users: {
+      uid_pat1: { role: 'patient', profileId: 'pat_1' },
+    },
+  });
+
+  let deletedKey = null;
+  setS3ClientForTesting({
+    async send(cmd) {
+      if (cmd.constructor.name === 'HeadObjectCommand') {
+        return {
+          ContentType: 'application/x-sh', // disallowed script
+          ContentLength: 1024,
+        };
+      }
+      if (cmd.constructor.name === 'DeleteObjectCommand') {
+        deletedKey = cmd.input.Key;
+        return {};
+      }
+      return {};
+    },
+  });
+
+  const auth = { uid: 'uid_pat1' };
+  const targetKey = 'health_records/pat_1/rec_1/malicious.sh';
+
+  await assert.rejects(
+    async () => confirmS3UploadHandler({
+      objectKey: targetKey,
+      purpose: 'health_records',
+      recordId: 'rec_1',
+    }, auth, mockDb),
+    /Invalid S3 object Content-Type/,
+  );
+
+  assert.equal(deletedKey, targetKey);
+
+  const auditLogs = mockDb._added.filter(e => e.collection === 'storage_audit_logs');
+  assert.equal(auditLogs.length, 1);
+  assert.equal(auditLogs[0].data.action, 'upload_confirm_failed');
+  assert.equal(auditLogs[0].data.status, 'invalid_content_type');
+});
+
+test('confirmS3Upload: size exceeded deletes uploaded S3 object and audit logs failure', async () => {
+  const mockDb = createMockDb({
+    users: {
+      uid_pat1: { role: 'patient', profileId: 'pat_1' },
+    },
+  });
+
+  let deletedKey = null;
+  setS3ClientForTesting({
+    async send(cmd) {
+      if (cmd.constructor.name === 'HeadObjectCommand') {
+        return {
+          ContentType: 'image/png',
+          ContentLength: 20 * 1024 * 1024, // 20MB exceeds 5MB image limit
+        };
+      }
+      if (cmd.constructor.name === 'DeleteObjectCommand') {
+        deletedKey = cmd.input.Key;
+        return {};
+      }
+      return {};
+    },
+  });
+
+  const auth = { uid: 'uid_pat1' };
+  const targetKey = 'patients/pat_1/profile/huge_photo.png';
+
+  await assert.rejects(
+    async () => confirmS3UploadHandler({
+      objectKey: targetKey,
+      purpose: 'patient_profile',
+      recordId: 'pat_1',
+    }, auth, mockDb),
+    /exceeds limit/,
+  );
+
+  assert.equal(deletedKey, targetKey);
+
+  const auditLogs = mockDb._added.filter(e => e.collection === 'storage_audit_logs');
+  assert.equal(auditLogs.length, 1);
+  assert.equal(auditLogs[0].data.action, 'upload_confirm_failed');
+  assert.equal(auditLogs[0].data.status, 'size_exceeded');
+});
+
+

@@ -157,7 +157,7 @@ function verifyProductionConfig(options = {}) {
   // If running in client-only mode (called during flutter build), we can finish early if no backend keys needed
   if (!isClientOnly) {
     // =========================================================================
-    // 2. MSG91 SMS GATEWAY & PROXY CREDENTIALS (for Supabase auth-otp Edge Function)
+    // 2. MSG91 SMS GATEWAY & PROXY CREDENTIALS (for Cloud Functions / MSG91 egress)
     // =========================================================================
     console.log('\n--- 2. Checking MSG91 Gateway & Egress Proxy Configuration ---');
     const proxyUrlRes = resolveParam('MSG91_PROXY_URL', options);
@@ -235,6 +235,88 @@ function verifyProductionConfig(options = {}) {
       warnings.push('[RAZORPAY_WEBHOOK_SECRET] Not set in local env. Webhook validation requires this secret.');
     } else {
       console.log(`  ✓ RAZORPAY_WEBHOOK_SECRET: [Configured] (Source: ${rzpWebhookSecretRes.source})`);
+    }
+
+    // =========================================================================
+    // 4. DATABASE & JWKS STAGING CHECKS
+    // =========================================================================
+    const jwksRes = resolveParam('SUPABASE_JWKS_URL', options);
+    if (jwksRes.value && jwksRes.value.includes(STAGING_PROJECT_REF)) {
+      if (allowStaging) {
+        warnings.push(`[SUPABASE_JWKS_URL] Staging Reference Permitted: SUPABASE_JWKS_URL contains staging ref '${STAGING_PROJECT_REF}'.`);
+      } else {
+        errors.push(`[SUPABASE_JWKS_URL] Staging Leak: SUPABASE_JWKS_URL contains staging ref '${STAGING_PROJECT_REF}'.`);
+      }
+    }
+
+    const dbUrlRes = resolveParam('DATABASE_URL', options);
+    if (dbUrlRes.value && dbUrlRes.value.includes(STAGING_PROJECT_REF)) {
+      if (allowStaging) {
+        warnings.push(`[DATABASE_URL] Staging Reference Permitted: DATABASE_URL contains staging ref '${STAGING_PROJECT_REF}'.`);
+      } else {
+        errors.push(`[DATABASE_URL] Staging Leak: DATABASE_URL contains staging ref '${STAGING_PROJECT_REF}'.`);
+      }
+    }
+
+    const supabaseDbUrlRes = resolveParam('SUPABASE_DB_URL', options);
+    if (supabaseDbUrlRes.value && supabaseDbUrlRes.value.includes(STAGING_PROJECT_REF)) {
+      if (allowStaging) {
+        warnings.push(`[SUPABASE_DB_URL] Staging Reference Permitted: SUPABASE_DB_URL contains staging ref '${STAGING_PROJECT_REF}'.`);
+      } else {
+        errors.push(`[SUPABASE_DB_URL] Staging Leak: SUPABASE_DB_URL contains staging ref '${STAGING_PROJECT_REF}'.`);
+      }
+    }
+
+    // =========================================================================
+    // 5. DEPLOYED CLOUD FUNCTIONS INVENTORY AUDIT (baseline_functions.json)
+    // =========================================================================
+    console.log('\n--- 4. Checking Deployed Cloud Functions Inventory ---');
+    const skipBaseline = options.skipDeployedBaseline !== undefined
+      ? options.skipDeployedBaseline
+      : process.argv.includes('--skip-deployed-baseline');
+
+    const candidatePaths = [
+      path.resolve(process.cwd(), 'baseline_functions.json'),
+      path.resolve(__dirname, '../../baseline_functions.json'),
+      path.resolve(__dirname, '../baseline_functions.json'),
+    ];
+
+    const baselineFile = candidatePaths.find(p => fs.existsSync(p));
+    if (!baselineFile) {
+      console.log('  ℹ️  No baseline_functions.json found (Skipping deployed function inventory audit).');
+    } else if (skipBaseline) {
+      console.log('  ℹ️  --skip-deployed-baseline active: Skipping deployed functions inventory audit.');
+    } else {
+      try {
+        const raw = fs.readFileSync(baselineFile, 'utf8');
+        const parsed = JSON.parse(raw);
+        const list = Array.isArray(parsed) ? parsed : (parsed.result || []);
+        const staleFns = [];
+
+        for (const fn of list) {
+          const env = fn.environmentVariables || {};
+          const sUrl = env.SUPABASE_URL || '';
+          const jwks = env.SUPABASE_JWKS_URL || '';
+          if (sUrl.includes(STAGING_PROJECT_REF) || jwks.includes(STAGING_PROJECT_REF)) {
+            const idParts = (fn.id || fn.entryPoint || fn.name || '').split('/');
+            staleFns.push(idParts[idParts.length - 1]);
+          }
+        }
+
+        if (staleFns.length > 0) {
+          if (allowStaging) {
+            warnings.push(`[DEPLOYED_FUNCTIONS_BASELINE] Staging Permitted: ${staleFns.length} deployed Cloud Functions point to staging ref '${STAGING_PROJECT_REF}'.`);
+            console.log(`  ⚠️  DEPLOYED FUNCTIONS: ${staleFns.length} functions point to staging ref '${STAGING_PROJECT_REF}' (STAGING PERMITTED via --allow-staging).`);
+          } else {
+            errors.push(`[DEPLOYED_FUNCTIONS_BASELINE] Staging Leak in Deployed Cloud Functions: ${staleFns.length} deployed Cloud Functions point to stale staging ref '${STAGING_PROJECT_REF}' (e.g. ${staleFns.slice(0, 5).join(', ')}...). These functions must be redeployed with production ref 'rnltknemwnjrjxthtull'.`);
+            console.error(`  ❌ DEPLOYED FUNCTIONS: ${staleFns.length} functions point to stale staging ref '${STAGING_PROJECT_REF}'!`);
+          }
+        } else {
+          console.log(`  ✓ DEPLOYED FUNCTIONS: ${list.length} functions checked in ${path.basename(baselineFile)} — 0 staging leaks.`);
+        }
+      } catch (err) {
+        warnings.push(`[DEPLOYED_FUNCTIONS_BASELINE] Could not parse ${path.basename(baselineFile)}: ${err.message}`);
+      }
     }
   }
 

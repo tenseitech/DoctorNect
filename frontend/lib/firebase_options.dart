@@ -78,6 +78,27 @@ class DefaultFirebaseOptions {
     return '';
   }
 
+  static const String _appEnv =
+      String.fromEnvironment('APP_ENV', defaultValue: 'staging');
+
+  static String _resolveProjectId() {
+    const fromDefine = String.fromEnvironment('FIREBASE_PROJECT_ID');
+    if (fromDefine.isNotEmpty) return fromDefine;
+    return _appEnv == 'production' ? 'medibond-45fad' : 'medibond-staging';
+  }
+
+  static String _resolveStorageBucket() {
+    const fromDefine = String.fromEnvironment('FIREBASE_STORAGE_BUCKET');
+    if (fromDefine.isNotEmpty) return fromDefine;
+    return _appEnv == 'production'
+        ? 'medibond-prod-vault.firebasestorage.app'
+        : 'medibond-staging.firebasestorage.app';
+  }
+
+  static String _resolveAuthDomain() {
+    return '${_resolveProjectId()}.firebaseapp.com';
+  }
+
   static void _requireConfiguredApiKey(String defineName, String apiKey) {
     if (apiKey.isNotEmpty) {
       return;
@@ -101,9 +122,9 @@ class DefaultFirebaseOptions {
       ),
       appId: '1:658118593597:web:fc49d67175f2f39b44ae54',
       messagingSenderId: '658118593597',
-      projectId: 'medibond-45fad',
-      authDomain: 'medibond-45fad.firebaseapp.com',
-      storageBucket: 'medibond-45fad.firebasestorage.app',
+      projectId: _resolveProjectId(),
+      authDomain: _resolveAuthDomain(),
+      storageBucket: _resolveStorageBucket(),
       measurementId: 'G-QMYJXZVJ5Z',
     );
   }
@@ -118,8 +139,8 @@ class DefaultFirebaseOptions {
       ),
       appId: '1:658118593597:android:0f1ef9a897bdc52844ae54',
       messagingSenderId: '658118593597',
-      projectId: 'medibond-45fad',
-      storageBucket: 'medibond-45fad.firebasestorage.app',
+      projectId: _resolveProjectId(),
+      storageBucket: _resolveStorageBucket(),
     );
   }
 
@@ -133,8 +154,8 @@ class DefaultFirebaseOptions {
       ),
       appId: '1:658118593597:ios:0fa63da574d241f044ae54',
       messagingSenderId: '658118593597',
-      projectId: 'medibond-45fad',
-      storageBucket: 'medibond-45fad.firebasestorage.app',
+      projectId: _resolveProjectId(),
+      storageBucket: _resolveStorageBucket(),
       iosClientId:
           '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
       iosBundleId: 'com.tenseitech.doctornect',
@@ -151,8 +172,8 @@ class DefaultFirebaseOptions {
       ),
       appId: '1:658118593597:ios:0fa63da574d241f044ae54',
       messagingSenderId: '658118593597',
-      projectId: 'medibond-45fad',
-      storageBucket: 'medibond-45fad.firebasestorage.app',
+      projectId: _resolveProjectId(),
+      storageBucket: _resolveStorageBucket(),
       iosClientId:
           '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
       iosBundleId: 'com.tenseitech.doctornect',
@@ -169,9 +190,9 @@ class DefaultFirebaseOptions {
       ),
       appId: '1:658118593597:web:fc49d67175f2f39b44ae54',
       messagingSenderId: '658118593597',
-      projectId: 'medibond-45fad',
-      authDomain: 'medibond-45fad.firebaseapp.com',
-      storageBucket: 'medibond-45fad.firebasestorage.app',
+      projectId: _resolveProjectId(),
+      authDomain: _resolveAuthDomain(),
+      storageBucket: _resolveStorageBucket(),
       measurementId: 'G-QMYJXZVJ5Z',
     );
   }

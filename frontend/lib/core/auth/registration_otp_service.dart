@@ -9,6 +9,7 @@ import '../firebase/firebase_error_messages.dart';
 import '../security/app_check_service.dart';
 import '../security/client_request_throttle.dart';
 import '../validators/form_validators.dart';
+import 'mobile_registration_lookup.dart';
 
 /// Registration / login / reset OTP via Cloud Functions only.
 /// MSG91 credentials never leave the server.
@@ -20,9 +21,15 @@ class RegistrationOtpService {
 
   static String? _verificationSessionId;
   static String? _loginCustomToken;
+  static bool? _postVerifyExists;
+  static UserType? _postVerifyRole;
 
   static String? get verificationSessionId => _verificationSessionId;
   static String? get loginCustomToken => _loginCustomToken;
+
+  /// Populated after successful [verify] when the backend returns post-OTP fields.
+  static ({bool? exists, UserType? role}) get postVerifyAccountLookup =>
+      (exists: _postVerifyExists, role: _postVerifyRole);
 
   static FirebaseFunctions get _functions =>
       FirebaseFunctions.instanceFor(region: 'asia-south1');
@@ -184,6 +191,14 @@ class RegistrationOtpService {
             sessionId != null && sessionId.isNotEmpty ? sessionId : null;
         final token = data['customToken'] as String?;
         _loginCustomToken = token != null && token.isNotEmpty ? token : null;
+        if (data.containsKey('exists')) {
+          _postVerifyExists = data['exists'] == true;
+          _postVerifyRole =
+              MobileRegistrationLookup.parseUserType(data['role'] as String?);
+        } else {
+          _postVerifyExists = null;
+          _postVerifyRole = null;
+        }
         return null;
       }
       return 'Invalid or expired OTP. Please try again.';
@@ -349,6 +364,8 @@ class RegistrationOtpService {
   static void clearVerificationSession() {
     _verificationSessionId = null;
     _loginCustomToken = null;
+    _postVerifyExists = null;
+    _postVerifyRole = null;
   }
 
   static void clearPending(String mobile, {UserType? role}) {
@@ -358,9 +375,42 @@ class RegistrationOtpService {
   /// Local-only sessions are no longer accepted in production paths.
   static bool isLocalVerificationSession(String? sessionId) => false;
 
+  @visibleForTesting
+  static Future<String?> Function(String sessionId)?
+      debugFinalizeRegistrationVerification;
+
+  @visibleForTesting
+  static Future<({bool ok, bool cleaned})> Function()?
+      debugCleanupPendingRegistration;
+
+  /// Server-side orphan registration cleanup (service role; RLS-safe).
+  static Future<({bool ok, bool cleaned})> cleanupPendingRegistration() async {
+    final override = debugCleanupPendingRegistration;
+    if (override != null) {
+      return override();
+    }
+    if (!FirebaseBootstrap.isReady) {
+      throw StateError('Firebase is not available.');
+    }
+    await AppCheckService.ensureForCallable();
+    final result = await _functions
+        .httpsCallable('cleanupPendingRegistration')
+        .call<Map<String, dynamic>>({});
+    final data = Map<String, dynamic>.from(result.data);
+    return (
+      ok: data['ok'] == true,
+      cleaned: data['cleaned'] == true,
+    );
+  }
+
   /// Applies a pre-registration OTP session after Firebase Auth signup.
-  static Future<String?> finalizeRegistrationVerification(String sessionId) =>
-      finalizePatientVerification(sessionId);
+  static Future<String?> finalizeRegistrationVerification(String sessionId) {
+    final override = debugFinalizeRegistrationVerification;
+    if (override != null) {
+      return override(sessionId);
+    }
+    return finalizePatientVerification(sessionId);
+  }
 
   static String _roleValue(UserType role) => switch (role) {
         UserType.superAdmin => 'super_admin',

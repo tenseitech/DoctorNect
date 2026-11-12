@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../supabase/supabase_bootstrap.dart';
 import 'demo_auth_config.dart';
 import '../enums/user_type.dart';
 import '../session/ambulance_session.dart';
@@ -450,8 +451,7 @@ abstract final class VerificationRequirementsConfig {
     if (role == UserType.doctor &&
         (DemoAuthConfig.isDemoDoctorPhone(mobile) ||
             DemoAuthConfig.isDemoDoctorPhone(docId) ||
-            (docId != null &&
-                docId.contains(DemoAuthConfig.demoDoctorPhone)))) {
+            DemoAuthConfig.isDemoDoctorId(docId))) {
       return true;
     }
 
@@ -476,8 +476,7 @@ abstract final class VerificationRequirementsConfig {
     if (role == UserType.doctor &&
         (DemoAuthConfig.isDemoDoctorPhone(mobile) ||
             DemoAuthConfig.isDemoDoctorPhone(docId) ||
-            (docId != null &&
-                docId.contains(DemoAuthConfig.demoDoctorPhone)))) {
+            DemoAuthConfig.isDemoDoctorId(docId))) {
       return 100;
     }
 
@@ -501,8 +500,7 @@ abstract final class VerificationRequirementsConfig {
       if (role == UserType.doctor &&
           (DemoAuthConfig.isDemoDoctorPhone(mobile) ||
               DemoAuthConfig.isDemoDoctorPhone(docId) ||
-              (docId != null &&
-                  docId.contains(DemoAuthConfig.demoDoctorPhone)))) {
+              DemoAuthConfig.isDemoDoctorId(docId))) {
         return const [];
       }
     }
@@ -552,7 +550,7 @@ class RoleVerificationController extends ChangeNotifier {
       final docId = DoctorSession.loggedInDoctorId;
       final mobile = DoctorProfileStore.instance.profile.mobile;
       if (DemoAuthConfig.isDemoDoctorPhone(docId) ||
-          docId.contains(DemoAuthConfig.demoDoctorPhone) ||
+          DemoAuthConfig.isDemoDoctorId(docId) ||
           DemoAuthConfig.isDemoDoctorPhone(mobile)) {
         return VerificationStage.verified;
       }
@@ -631,6 +629,9 @@ class RoleVerificationController extends ChangeNotifier {
       _rejectionReasons.remove(role);
     }
     _syncStoreVerificationFlag(role, stage.isVerified);
+    if (stage == VerificationStage.verified) {
+      SupabaseBootstrap.refreshAndVerifySession(forceRefresh: true);
+    }
     notifyListeners();
   }
 

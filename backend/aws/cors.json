@@ -1,0 +1,23 @@
+[
+  {
+    "AllowedHeaders": [
+      "*"
+    ],
+    "AllowedMethods": [
+      "GET",
+      "PUT",
+      "HEAD"
+    ],
+    "AllowedOrigins": [
+      "${ALLOWED_ORIGIN_PROD}",
+      "${ALLOWED_ORIGIN_APP}",
+      "${ALLOWED_ORIGIN_LOCAL_1}",
+      "${ALLOWED_ORIGIN_LOCAL_2}"
+    ],
+    "ExposeHeaders": [
+      "ETag",
+      "x-amz-server-side-encryption"
+    ],
+    "MaxAgeSeconds": 3000
+  }
+]

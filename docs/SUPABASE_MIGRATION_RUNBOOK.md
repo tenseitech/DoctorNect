@@ -21,7 +21,20 @@ cp .env.migration.example .env.migration
 > **Zero Plaintext Credentials Policy:**
 > All migration and rollback scripts (`migrate_firestore_to_supabase.js`, `reverse_sync_supabase_to_firestore.js`, `test_rls_policies.js`) automatically load credentials from `.env.migration` via `scripts/load_env.js`.
 > **NEVER pass connection strings inline in CLI commands or PowerShell `$env:` one-liners**, as this permanently exposes credentials in terminal transcripts and shell history.
-```
+
+### Sync Feature Switches & Strict Flag Parsing Contract
+
+All sync enablement switches adhere to a strict boolean parsing policy (`backend/functions/sync_flags.js`):
+- **Accepted Truthy Values**: strictly `'1'` and `'true'` (case-insensitive, trimmed).
+- **Dormant Values (Default)**: unset, empty string (`""`), `'0'`, `'false'`, `'off'`, `'on'`.
+- **Target Switches**:
+  | Switch | Scope | Truthy Values | Behavior When Dormant (Default) |
+  |---|---|---|---|
+  | `ENABLE_SUPABASE_SYNC` | Cloud Functions (`backend/functions/index.js`) | `'1'`, `'true'` (case-insensitive) | Zero sync triggers are exported (`sync*ToSupabase` stay unexported). |
+  | `ENABLE_SUPABASE` | Flutter build scripts (`release_build.sh`, `release_build.ps1`) | `'1'` | Omits `SUPABASE_URL` and `SUPABASE_ANON_KEY` dart-defines; app client stays 100% on Firebase. |
+
+> [!CAUTION]
+> **Production Safety Invariant**: **DO NOT enable `ENABLE_SUPABASE` or `ENABLE_SUPABASE_SYNC` in production** until staging cutover and parity audits are 100% verified.
 
 ---
 
@@ -75,6 +88,210 @@ supabase functions deploy auth-otp --no-verify-jwt
 
 # Deploy razorpay-payments (handles order creation, verification, and webhooks)
 supabase functions deploy razorpay-payments --no-verify-jwt
+
+# Deploy sync-to-firestore (handles reverse sync of cancellations/status changes to Firestore)
+supabase functions deploy sync-to-firestore --no-verify-jwt
+```
+
+### 3. Dedicated Service Account Setup (`sync-to-firestore`)
+
+To maintain least-privilege isolation, the `sync-to-firestore` Edge Function must not share administrative service accounts. It requires a dedicated GCP service account restricted to `roles/datastore.user`.
+
+#### Creation Commands (gcloud):
+```bash
+# 1. Create dedicated service account
+gcloud iam service-accounts create doctornect-sync-to-firestore \
+  --description="Service account for Supabase sync-to-firestore reverse bridge" \
+  --display-name="DoctorNect Sync To Firestore"
+
+# 2. Grant least-privilege Firestore / Datastore user role ONLY
+gcloud projects add-iam-policy-binding <GCP_PROJECT_ID> \
+  --member="serviceAccount:doctornect-sync-to-firestore@<GCP_PROJECT_ID>.iam.gserviceaccount.com" \
+  --role="roles/datastore.user"
+
+# 3. Generate key file securely (store in secure credential vault, never commit to git)
+gcloud iam service-accounts keys create sa-key.json \
+  --iam-account="doctornect-sync-to-firestore@<GCP_PROJECT_ID>.iam.gserviceaccount.com"
+```
+
+#### Required Environment Variable Names for Edge Function:
+Configure these secrets in Supabase via `supabase secrets set`:
+- `SYNC_TO_FIRESTORE_SECRET`: Shared webhook authentication secret verified via constant-time comparison.
+- **Either** full JSON key:
+  - `FIREBASE_SERVICE_ACCOUNT_KEY`: Raw or base64-encoded JSON key file from `sa-key.json`.
+- **Or** individual environment variables:
+  - `FIREBASE_PROJECT_ID`: GCP / Firebase Project ID.
+  - `FIREBASE_CLIENT_EMAIL`: Service account email (`doctornect-sync-to-firestore@<project>.iam.gserviceaccount.com`).
+  - `FIREBASE_PRIVATE_KEY`: PKCS#8 PEM private key (including `-----BEGIN PRIVATE KEY-----`).
+- **Optional Overrides** (for local emulator or staging endpoints):
+  - `FIRESTORE_BASE_URL`: Overrides `https://firestore.googleapis.com/v1`.
+  - `FIRESTORE_EMULATOR_HOST`: Point to local emulator (e.g. `127.0.0.1:8080`).
+  - `GOOGLE_OAUTH_TOKEN_URL`: Overrides `https://oauth2.googleapis.com/token`.
+
+> [!WARNING]
+> **Strict Zero-Secret Policy**: Never print, echo, commit, or hardcode private keys or webhook secrets into repository source code or terminal histories.
+
+### 3b. Supabase Database Webhook Configuration (`sync-to-firestore`)
+
+To support live reverse synchronization of appointment status updates, cancellations, and fallback creation:
+- **Target Table**: `public.appointments`
+- **Events**: Must be configured for **BOTH `INSERT` and `UPDATE`** (not just `UPDATE`).
+- **Webhook Target**: `POST https://<project-ref>.supabase.co/functions/v1/sync-to-firestore`
+- **HTTP Headers**:
+  - `Content-Type: application/json`
+  - `x-webhook-secret: <SYNC_TO_FIRESTORE_SECRET>`
+
+#### Event Semantics & Loop Prevention:
+1. **Loop Prevention Filter**: Any `INSERT` or `UPDATE` where `sync_origin` indicates Firestore origin (`doctor_firestore`, `patient_firestore`, `reconciler_bot`, `firestore_cloud_function`, `firestore`) or was replicated by `synced_by` (`supabase_bridge`, `firestore_cloud_function`, `reconciler_bot`) is dropped with HTTP `200 { ignored: true }`. However, mutations authored in Supabase (`sync_origin = 'patient_supabase'` or `'doctor_supabase'`) are never dropped simply because `synced_by` holds a previous replication marker.
+   > [!IMPORTANT]
+   > **Manual or Support-Tool Updates**: Any manual SQL or support-tool `UPDATE` on `public.appointments` must explicitly set `sync_origin = 'patient_supabase'`, otherwise rows originally created by the forward sync (which hold `sync_origin = 'patient_firestore'` or `synced_by = 'firestore_cloud_function'`) will be evaluated as loop traffic and dropped by the `sync-to-firestore` Edge Function.
+2. **`INSERT` Handling (Create-Only Guard)**:
+   - When an appointment is inserted into Supabase, `sync-to-firestore` maps the row into a full Firestore appointment document matching the `bookAppointment` and `AppointmentFirestoreMapper` contract and injects `syncedBy: 'supabase_bridge'`.
+   - The write enforces precondition `currentDocument.exists = false`.    - If the document already exists in Firestore (e.g. from client-side dual-write), Firestore reports `ALREADY_EXISTS` (unverified, see verification procedure). The Edge Function catches this and returns `200 { ignored: 'already_exists' }`, guaranteeing it **never overwrites** an existing document on `INSERT`.
+3. **`UPDATE` Handling**:
+   - Compares changed status and cancellation fields (`patient_status`, `doctor_status`, `cancellation_reason`). When an `UPDATE` changes `patient_status` to `'cancelled'`, also writes `doctorStatus: 'cancelled'` and `cancellationReason` (Firestore `patientStatus` is never written as `'cancelled'`).
+   - Rejects transitions out of terminal states (`completed`, `inProgress`, `noShow`) with `200 { skipped: 'terminal_state' }` and records a durable dead letter in Firestore's `syncDeadLetters` collection (deterministic ID, zero free text).
+   - Non-terminal updates write strictly changed fields with precondition `currentDocument.updateTime`, retrying once on concurrent modification / conflict (unverified, see verification procedure).
+
+### 3c. Sync Parity Audit & Observability Reference
+
+During the dual-run and staging window, cross-system consistency must be audited weekly using the read-only parity auditor:
+```bash
+node scripts/check_sync_parity.js --audit
+```
+#### Parity Verification Coverage:
+1. **Appointments Existence**:
+   - `inPgNotFs`: Count of appointments present in Supabase PostgreSQL but missing in Firestore.
+   - `inFsNotPg`: Count of appointments present in Firestore but missing in Supabase PostgreSQL.
+2. **Effective Status Parity**:
+   - `mismatched`: Compares effective state (`doctor_status` vs `doctorStatus`, accounting for terminal state propagation where `patientStatus` is maintained as pending/confirmed).
+3. **Weekly Observability & Alerting Manual**:
+   For the complete operational guide covering skip/dead-letter dictionaries, GCP log metrics, Supabase Logs Explorer queries, and dead-letter replay procedures (re-reading from SoR), refer directly to:
+   👉 **[SUPABASE_SYNC_OBSERVABILITY.md](SUPABASE_SYNC_OBSERVABILITY.md)**.
+
+### 3d. Supabase Database Webhook Configuration for Push Notifications (`supabaseDatabaseWebhook`)
+
+When Supabase is the primary database (`use_supabase_db_doctor_patient = true`), legacy Firestore FCM triggers are dormant. Database webhooks dispatched from Supabase notify Cloud Function `supabaseDatabaseWebhook` to deliver real-time FCM push notifications to doctors and patients.
+
+#### Supabase Database Webhook Mechanism
+- **What Supabase Actually Sends**: Supabase Database Webhooks (executed via `pg_net` background triggers) transmit **static HTTP headers only**. They do **not** generate dynamic per-request HMAC signatures.
+- **Authentication**: Auth is implemented via a static shared secret passed in the `x-webhook-secret` (or `x-supabase-webhook-secret`) HTTP header.
+- **Constant-Time Verification**: The Cloud Function hashes both the incoming header and `SUPABASE_WEBHOOK_SECRET` with SHA-256 before comparing them with `crypto.timingSafeEqual(hashA, hashB)`. This prevents timing attacks while guaranteeing uniform buffer lengths.
+
+#### Dashboard Configuration Steps:
+1. Open the Supabase Dashboard: `https://supabase.com/dashboard/project/<PROJECT_REF>`.
+2. Navigate to **Database** -> **Webhooks** (`https://supabase.com/dashboard/project/<PROJECT_REF>/database/hooks`).
+3. Click **Create a new webhook**.
+4. Configure the Appointment Notification Webhook:
+   - **Name**: `notify-appointment-events`
+   - **Table**: `public.appointments`
+   - **Events**: Check both **`Insert`** and **`Update`**
+   - **Type of webhook**: `HTTP Request`
+   - **Method**: `POST`
+   - **URL**: `https://asia-south1-<GCP_PROJECT_ID>.cloudfunctions.net/supabaseDatabaseWebhook`
+   - **HTTP Headers**:
+     - `Content-Type`: `application/json`
+     - `x-webhook-secret`: `<VALUE_OF_SUPABASE_WEBHOOK_SECRET>`
+5. Click **Create webhook**.
+6. Repeat for Referrals:
+   - **Name**: `notify-referral-events`
+   - **Table**: `public.referrals`
+   - **Events**: Check **`Insert`**
+   - **Type of webhook**: `HTTP Request`
+   - **Method**: `POST`
+   - **URL**: `https://asia-south1-<GCP_PROJECT_ID>.cloudfunctions.net/supabaseDatabaseWebhook`
+   - **HTTP Headers**:
+     - `Content-Type`: `application/json`
+     - `x-webhook-secret`: `<VALUE_OF_SUPABASE_WEBHOOK_SECRET>`
+7. Click **Create webhook**.
+
+#### Idempotency Guard
+Every webhook event is tracked in `_webhook_processed_events` using a deterministic SHA-256 hash of `table:type:entityId:timestamp`. Duplicate transmissions (e.g. from network retries) are recognized and skipped immediately without sending redundant push notifications.
+
+
+### 3e. Precondition Status Code Verification Procedure (Real Firestore Project)
+
+> **Notice**: All HTTP status code claims for Cloud Firestore REST preconditions are **unverified on production; verify on a real project** using the throwaway test procedure below before cutover.
+
+#### Setup:
+Obtain an OAuth2 access token for a Google Cloud project with Cloud Datastore User role:
+```bash
+export ACCESS_TOKEN=$(gcloud auth print-access-token)
+export PROJECT_ID="<your-throwaway-or-staging-project>"
+export BASE_URL="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents"
+export COMMIT_URL="${BASE_URL}:commit"
+```
+
+#### Test Case 1: Precondition `currentDocument.exists = true` against non-existent document
+```bash
+# Attempt to PATCH document 'test-missing-doc-999' requiring exists=true
+curl -s -w "\nHTTP_STATUS: %{http_code}\n" -X POST "${COMMIT_URL}" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "writes": [{
+      "update": {
+        "name": "projects/'"${PROJECT_ID}"'/databases/(default)/documents/appointments/test-missing-doc-999",
+        "fields": { "doctorStatus": { "stringValue": "confirmed" } }
+      },
+      "currentDocument": { "exists": true }
+    }]
+  }'
+# Expected observation:
+# Record exact HTTP_STATUS and response JSON (specifically error.code, error.status, error.message).
+# Does it return HTTP 404 with status NOT_FOUND, or HTTP 400 with status FAILED_PRECONDITION?
+```
+
+#### Test Case 2: Precondition `currentDocument.exists = false` against existing document
+```bash
+# 1. Create document first
+curl -s -X PATCH "${BASE_URL}/appointments/test-existing-doc-111" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{ "fields": { "doctorStatus": { "stringValue": "pendingRequest" } } }'
+
+# 2. Attempt INSERT with exists=false
+curl -s -w "\nHTTP_STATUS: %{http_code}\n" -X POST "${COMMIT_URL}" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "writes": [{
+      "update": {
+        "name": "projects/'"${PROJECT_ID}"'/databases/(default)/documents/appointments/test-existing-doc-111",
+        "fields": { "doctorStatus": { "stringValue": "confirmed" } }
+      },
+      "currentDocument": { "exists": false }
+    }]
+  }'
+# Expected observation:
+# Record exact HTTP_STATUS and response JSON (specifically error.code, error.status, error.message).
+# Does it return HTTP 409 with status ALREADY_EXISTS, or HTTP 400 with status FAILED_PRECONDITION?
+```
+
+#### Test Case 3: Precondition `currentDocument.updateTime` mismatch (Stale Concurrency Token)
+```bash
+# Attempt update with a deliberately stale / mismatched RFC 3339 updateTime
+curl -s -w "\nHTTP_STATUS: %{http_code}\n" -X POST "${COMMIT_URL}" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "writes": [{
+      "update": {
+        "name": "projects/'"${PROJECT_ID}"'/databases/(default)/documents/appointments/test-existing-doc-111",
+        "fields": { "doctorStatus": { "stringValue": "confirmed" } }
+      },
+      "currentDocument": { "updateTime": "2020-01-01T00:00:00Z" }
+    }]
+  }'
+# Expected observation:
+# Record exact HTTP_STATUS and response JSON (specifically error.code, error.status, error.message).
+# Does it return HTTP 412, HTTP 409, or HTTP 400 with status FAILED_PRECONDITION / ABORTED?
+```
+
+#### Cleanup:
+```bash
+curl -s -X DELETE "${BASE_URL}/appointments/test-existing-doc-111" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}"
 ```
 
 ---
@@ -107,17 +324,17 @@ Run these verification queries in Supabase SQL editor:
 -- 1. Verify 5 Google Play review demo accounts exist and are verified
 SELECT uid, role, mobile, verified, display_name 
 FROM users 
-WHERE mobile IN ('7058809803', '7666892394', '9359503874', '9409858233', '9307583929');
+WHERE mobile IN ('9999900001', '9999900002', '9999900003', '9999900004', '9999900005');
 
 -- 2. Verify Doctor profile is approved
 SELECT doctor_id, name, specialization, verified 
 FROM doctors 
-WHERE mobile = '7666892394';
+WHERE mobile = '9999900002';
 
 -- 3. Verify Ambulance private settings and PIN hash
 SELECT ambulance_id, pin_hash 
 FROM ambulance_private_settings 
-WHERE ambulance_id = '9307583929';
+WHERE ambulance_id = '9999900005';
 ```
 
 ---
@@ -147,6 +364,12 @@ WHERE ambulance_id = '9307583929';
 If a critical blocker is encountered during cutover, execute the rollback immediately. Total verified execution time is **~3 to 4 minutes** (contingent on Firebase CLI standing authentication pre-condition).
 
 ### Rollback Execution Steps:
+
+0. **Revert Remote Config Cutover Flag (T+0 min, Duration: < 1s):**
+   - In Firebase Console (or Firebase Admin API), set parameter `use_supabase_db_doctor_patient = false` and publish.
+   - Flutter clients revert back to Firestore repositories immediately on restart/refresh.
+   - Cloud Functions triggers & S3 storage handlers fall back to Firestore paths after their ~60s cache TTL expires.
+   - Env var `USE_SUPABASE_DB_DOCTOR_PATIENT` serves strictly as an emergency fallback if Remote Config is unreachable.
 
 1. **Freeze Supabase Client Writes (T+0 min, Duration: < 1s):**
    - Instantly revoke all write permissions from public client roles (`anon` and `authenticated`) to prevent new records from entering Supabase while or after reverse-sync runs:

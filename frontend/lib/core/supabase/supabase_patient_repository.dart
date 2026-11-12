@@ -4,7 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/shared_appointments_store.dart';
 import '../session/patient_session.dart';
 import 'mappers/appointment_supabase_mapper.dart';
-import 'supabase_auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'supabase_bootstrap.dart';
 import 'patient_write_guard.dart';
 
@@ -22,8 +23,18 @@ class SupabasePatientRepository {
   /// When authentication is on Firebase (or hybrid), falls back to the client
   /// session profile ID so Supabase database mutations succeed seamlessly.
   Future<String> _resolveTargetPatientId(String candidateId) async {
-    final serverProfileId =
-        await SupabaseAuthService.instance.fetchCurrentProfileId();
+    String? serverProfileId;
+    if (SupabaseBootstrap.isReady) {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null && uid.isNotEmpty) {
+        final row = await _client
+            .from('users')
+            .select('profile_id')
+            .eq('id', uid)
+            .maybeSingle();
+        serverProfileId = row?['profile_id'] as String?;
+      }
+    }
     final resolved = (serverProfileId != null && serverProfileId.isNotEmpty)
         ? serverProfileId
         : (candidateId.isNotEmpty

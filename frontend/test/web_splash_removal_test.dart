@@ -64,7 +64,8 @@ void main() {
         await tester.pump();
 
         expect(find.byType(SplashScreen), findsOneWidget);
-        expect(find.text('Your Health, Our Priority'), findsOneWidget);
+        expect(find.text('Your Health, Our Priority'), findsNothing);
+        expect(find.byKey(SplashScreen.splashLogoKey), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
       },

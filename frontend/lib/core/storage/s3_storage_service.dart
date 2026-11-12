@@ -24,6 +24,12 @@ class S3StorageService implements StorageService {
   final S3PresignApi _api;
   final http.Client _http;
 
+  @visibleForTesting
+  static int confirmUploadMaxAttempts = 3;
+
+  @visibleForTesting
+  static Duration Function(int attempt)? debugConfirmUploadRetryDelay;
+
   @override
   Future<StorageUploadResult> uploadBytes({
     required String purpose,
@@ -74,6 +80,29 @@ class S3StorageService implements StorageService {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         onProgress?.call(totalBytes, totalBytes);
+
+        try {
+          await _confirmUploadWithRetry(
+            objectKey: creds.objectKey,
+            purpose: purpose,
+            recordId: parentId,
+          );
+        } on StorageException catch (e) {
+          if (e.code == 'confirm-failed') {
+            try {
+              await deleteObject(creds.objectKey);
+            } catch (deleteErr) {
+              if (kDebugMode) {
+                debugPrint(
+                  '[S3StorageService] confirm failed; orphan cleanup failed for '
+                  '${creds.objectKey}: $deleteErr',
+                );
+              }
+            }
+          }
+          rethrow;
+        }
+
         return StorageUploadResult(
           objectKey: creds.objectKey,
           downloadUrl: null,
@@ -187,4 +216,49 @@ class S3StorageService implements StorageService {
       return false;
     }
   }
+
+  Future<void> _confirmUploadWithRetry({
+    required String objectKey,
+    required String purpose,
+    String? recordId,
+  }) async {
+    Object? lastError;
+    for (var attempt = 1; attempt <= confirmUploadMaxAttempts; attempt++) {
+      try {
+        await _api.confirmUpload(
+          objectKey: objectKey,
+          purpose: purpose,
+          recordId: recordId,
+        );
+        return;
+      } catch (e) {
+        lastError = e;
+        final canRetry = attempt < confirmUploadMaxAttempts;
+        if (!canRetry) break;
+        final delay = debugConfirmUploadRetryDelay?.call(attempt) ??
+            Duration(milliseconds: 200 * attempt);
+        if (delay > Duration.zero) {
+          await Future.delayed(delay);
+        }
+      }
+    }
+    final detail = lastError?.toString() ?? 'unknown error';
+    throw StorageException(
+      'Upload reached S3 but server confirmation failed after '
+      '$confirmUploadMaxAttempts attempts ($detail).',
+      code: 'confirm-failed',
+    );
+  }
+
+  /// Explicitly confirms direct-to-S3 upload with backend validation.
+  Future<Map<String, dynamic>> confirmUpload({
+    required String objectKey,
+    required String purpose,
+    String? recordId,
+  }) =>
+      _api.confirmUpload(
+        objectKey: objectKey,
+        purpose: purpose,
+        recordId: recordId,
+      );
 }

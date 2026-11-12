@@ -1,6 +1,7 @@
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 
+import '../config/doctor_patient_cutover_flag.dart';
 import '../firebase/firebase_bootstrap.dart';
 
 /// Central feature flag manager for AWS S3 Storage rollout.
@@ -10,6 +11,7 @@ import '../firebase/firebase_bootstrap.dart';
 /// 1. Firebase Remote Config parameter: `use_s3_storage = true`
 /// 2. Compile-time flag: `--dart-define=USE_S3_STORAGE=true`
 /// 3. In-memory override for testing: `StorageFeatureFlag.debugOverride = true`
+/// 4. Synchronized with `DoctorPatientCutoverFlag.isEnabled`
 abstract final class StorageFeatureFlag {
   static const String flagKey = 'use_s3_storage';
 
@@ -35,7 +37,12 @@ abstract final class StorageFeatureFlag {
         ),
       );
       await remoteConfig.setDefaults({
-        flagKey: false,
+        flagKey: true,
+        'min_supported_build_android': 0,
+        'min_supported_build_ios': 0,
+        'update_required_message': 'Please update DoctorNect to continue.',
+        'store_url_android': '',
+        'store_url_ios': '',
       });
 
       // Best-effort fetch & activate in background
@@ -48,7 +55,7 @@ abstract final class StorageFeatureFlag {
     }
   }
 
-  /// Whether S3 storage is enabled for uploads. Defaults strictly to `false`.
+  /// Whether S3 storage is enabled for uploads. Defaults to `true`.
   static bool get useS3Storage {
     if (debugOverride != null) return debugOverride!;
 
@@ -56,12 +63,16 @@ abstract final class StorageFeatureFlag {
       return _envOverride.toLowerCase() == 'true';
     }
 
-    if (!FirebaseBootstrap.isReady) return false;
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return true;
+    }
+
+    if (!FirebaseBootstrap.isReady) return true;
 
     try {
       return FirebaseRemoteConfig.instance.getBool(flagKey);
     } catch (_) {
-      return false;
+      return true;
     }
   }
 }

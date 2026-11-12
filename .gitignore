@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+backups/
 node_modules/
 **/node_modules/
 
@@ -23,10 +24,15 @@ node_modules/
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
-#.vscode/
+.vscode/
+/gradle/
 
 # Flutter/Dart/Pub related
 **/doc/api/
+frontend/ios/Flutter/ephemeral/
+frontend/macos/Flutter/ephemeral/
+**/ios/Flutter/ephemeral/
+**/macos/Flutter/ephemeral/
 **/ios/Flutter/.last_build_id
 .dart_tool/
 **/.dart_tool/
@@ -74,6 +80,10 @@ google-services.json
 **/google-services.json
 GoogleService-Info.plist
 **/GoogleService-Info.plist
+demo_phones.json
+**/demo_phones.json
+!demo_phones.example.json
+!**/demo_phones.example.json
 *-firebase-adminsdk-*.json
 service-account*.json
 backend/functions/secrets/
@@ -93,17 +103,73 @@ android/key.properties
 # Generated audit reports and script outputs
 **/scripts/*_audit_results.json
 **/scripts/backfill_profile_claims_report.json
+docs/_*
+docs/_audit_*.json
+docs/audit/_audit_*.json
+docs/audit/_jscpd_features/
+docs/audit/_runs/
+docs/audit/_phase1_sql_policies.json
+docs/_phase1_*.json
+docs/_emulator_test_run.log
+docs/_flutter_test_run.jsonl
+docs/_npm_test_*.log
+docs/_amb_*.txt
+docs/_replay_*.txt
 **/scripts/*_report.json
 **/scripts/*_report.csv
 
 # Temporary and scratch folders
 scratch/
+adapters/scratch/
+.bin/
+*.exe
+*.zip
+backend/supabase/.temp/
+**/supabase/.temp/
 supabase/.temp/
 
 # Debug and output files
-*.diff
+docs/ops/migration_diffs/*.diff
+docs/ops/rls_sql_harness_results.json
+leaks.json
 *.out
+# Generated CI / harness stdout captures (re-run tests locally; not versioned)
+docs/ops/test_runs/
+docs/Medibond_Legal_Review.pdf
+.artifacts/
 auth_otp.diff
 reset.out
 verify.out
 firestore-debug.log
+**/firestore-debug.log
+flutter_*.log
+flutter-web-*.log
+backend/functions/.env.bak*
+baseline_functions.json
+secrets.txt
+secrets*.txt
+
+# Local agent tooling (not project files)
+.agents/skills/gravitas/
+
+# Migration backups and scratch artifacts
+backups/
+.artifacts/
+
+# Local Flutter JSON test reporter output (not committed)
+docs/audit/_*.jsonl
+docs/audit/_*.err
+frontend/flutter_test_out.json
+frontend/flutter_test_out.jsonl
+frontend/flutter_test_err.txt
+frontend/flutter_test*.ndjson
+
+# Terraform local directory
+.terraform/
+infra/aws/.terraform/
+
+# Local RPC diff scratch (regenerate via scripts/db/rpc_proposed_unified_diff.js)
+/_rpc_diff_a.sql
+/_rpc_diff_b.sql
+/rpc_diff_*.txt
+/smoke_out.txt

@@ -11,7 +11,6 @@ void main() {
       'assets/icons/doctor/ambulance.png',
       'assets/icons/doctor/appointment.png',
       'assets/icons/doctor/availability.png',
-      'assets/icons/doctor/digital_pass.png',
       'assets/icons/doctor/done.png',
       'assets/icons/doctor/invite.png',
       'assets/icons/doctor/lab.png',
@@ -33,7 +32,7 @@ void main() {
       }
     });
 
-    test('Digital pass icon in common exists and matches doctor pass', () {
+    test('Digital pass icon in common exists', () {
       for (final iconPath in commonIcons) {
         final file = File(iconPath);
         expect(file.existsSync(), isTrue, reason: '$iconPath does not exist');

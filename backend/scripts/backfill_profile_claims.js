@@ -65,7 +65,10 @@ function initFirebaseAdmin() {
   return admin.initializeApp({ projectId: 'medibond-45fad' });
 }
 
+const { bootstrapMutatingScript } = require('../../scripts/lib/mutating_script_bootstrap');
+
 async function runBackfill() {
+  bootstrapMutatingScript('backend/scripts/backfill_profile_claims.js');
   console.log('======================================================');
   console.log(`    DOCTORNECT PROFILE CLAIMS BACKFILL (${IS_APPLY ? 'APPLY MODE' : 'DRY RUN'})    `);
   console.log('======================================================\n');

@@ -137,7 +137,7 @@ test('Pharmacy Store Sync: Upserts medical_stores with structured address and de
     assert.equal(storeCall.body.owner_uid, '550e8400-e29b-41d4-a716-446655440000');
     assert.equal(storeCall.body.profile_completed, true);
     assert.equal(storeCall.body.verified, true);
-    assert.equal(storeCall.body.deactivated, false);
+    assert.equal(Object.hasOwn(storeCall.body, 'deactivated'), false);
   } finally {
     global.fetch = originalFetch;
   }
@@ -292,6 +292,41 @@ test('Pharmacy Delivery Sync: Upserts header and child delivery medicines', asyn
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+test('Pharmacy Delivery Sync: missing patient name is dead-lettered and not inserted', async () => {
+  process.env.SUPABASE_URL = 'https://fake-project.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'fake-key';
+  const calls = [];
+  global.fetch = async (url, opts) => {
+    calls.push({ url: String(url), method: opts && opts.method, body: opts && opts.body });
+    return { ok: true, status: 200, json: async () => [], text: async () => 'OK' };
+  };
+  try {
+    await syncFirestorePharmacyDeliveryToSupabase({
+      params: { deliveryId: 'deliv-missing' },
+      data: {
+        after: {
+          exists: true,
+          id: 'deliv-missing',
+          data: () => ({
+            prescriptionId: 'rx-1',
+            doctorId: 'doc-1',
+            storeId: 'store-1',
+            patientId: 'pat-1',
+            doctorName: 'Ada',
+            storeName: 'Store',
+          }),
+        },
+      },
+    });
+  } finally {
+    global.fetch = originalFetch;
+  }
+  assert.equal(calls.some((call) => call.method === 'POST' && call.url.includes('/rest/v1/pharmacy_deliveries')), false);
+  const dlq = calls.find((call) => call.url.includes('sync_dead_letter_queue'));
+  assert.ok(dlq);
+  assert.equal(String(dlq.body).includes('Patient'), false);
 });
 
 test('Lab Profile Sync: Upserts labs table with defaults and soft-deletes on removal', async () => {
@@ -477,6 +512,142 @@ test('Lab Booking Sync: Upserts lab_bookings and ensures parent patient & lab re
   }
 });
 
+test('Lab Booking Sync: missing patient name is dead-lettered and not inserted', async () => {
+  process.env.SUPABASE_URL = 'https://fake-project.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'fake-key';
+  const calls = [];
+  global.fetch = async (url, opts) => {
+    calls.push({ url: String(url), method: opts && opts.method, body: opts && opts.body });
+    return { ok: true, status: 200, json: async () => [], text: async () => 'OK' };
+  };
+  try {
+    await syncFirestoreLabBookingToSupabase({
+      params: { bookingId: 'book-missing' },
+      data: {
+        after: {
+          exists: true,
+          id: 'book-missing',
+          data: () => ({
+            patientId: 'pat-1',
+            testId: 'cbc',
+            testName: 'CBC',
+            testNames: ['CBC'],
+            collectionType: 'labVisit',
+            dateTime: '2026-09-15T07:30:00.000Z',
+            slotLabel: '7:30 AM',
+            patientAge: 30,
+          }),
+        },
+      },
+    });
+  } finally {
+    global.fetch = originalFetch;
+  }
+  assert.equal(calls.some((call) => call.method === 'POST' && call.url.includes('/rest/v1/lab_bookings')), false);
+  const dlq = calls.find((call) => call.url.includes('sync_dead_letter_queue'));
+  assert.ok(dlq);
+  assert.equal(String(dlq.body).includes('Patient'), false);
+  assert.match(String(dlq.body), /patient_name/);
+});
+
+async function expectLabSkip(run, tableFragment, reasonPattern) {
+  process.env.SUPABASE_URL = 'https://fake-project.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'fake-key';
+  const calls = [];
+  global.fetch = async (url, opts) => {
+    calls.push({ url: String(url), method: opts && opts.method, body: opts && opts.body });
+    return { ok: true, status: 200, json: async () => [], text: async () => 'OK' };
+  };
+  try {
+    await run();
+  } finally {
+    global.fetch = originalFetch;
+  }
+  assert.equal(
+    calls.some((call) => call.method === 'POST' && call.url.includes(tableFragment)),
+    false,
+  );
+  const dlq = calls.find((call) => call.url.includes('sync_dead_letter_queue'));
+  assert.ok(dlq);
+  assert.match(String(dlq.body), reasonPattern);
+}
+
+function validBooking(overrides) {
+  return {
+    patientId: 'pat-1',
+    patientName: 'Ada',
+    patientAge: 30,
+    testId: 'cbc',
+    testName: 'CBC',
+    testNames: ['CBC'],
+    collectionType: 'labVisit',
+    dateTime: '2026-09-15T07:30:00.000Z',
+    slotLabel: '7:30 AM',
+    ...overrides,
+  };
+}
+
+function validOrder(overrides) {
+  return {
+    doctorId: 'doc-1',
+    doctorName: 'Ada',
+    patientId: 'pat-1',
+    patientName: 'Ben',
+    patientAge: 30,
+    testIds: ['cbc'],
+    testNames: ['CBC'],
+    ...overrides,
+  };
+}
+
+test('Lab Booking Sync: invalid collectionType is dead-lettered and not inserted', async () => {
+  await expectLabSkip(
+    () => syncFirestoreLabBookingToSupabase({
+      params: { bookingId: 'book-coll' },
+      data: { after: { exists: true, id: 'book-coll', data: () => validBooking({ collectionType: 'home' }) } },
+    }),
+    '/rest/v1/lab_bookings',
+    /collection_type/,
+  );
+});
+
+test('Lab Booking Sync: missing dateTime is dead-lettered and not inserted', async () => {
+  const doc = validBooking();
+  delete doc.dateTime;
+  await expectLabSkip(
+    () => syncFirestoreLabBookingToSupabase({
+      params: { bookingId: 'book-time' },
+      data: { after: { exists: true, id: 'book-time', data: () => doc } },
+    }),
+    '/rest/v1/lab_bookings',
+    /date_time/,
+  );
+});
+
+test('Lab Booking Sync: missing slotLabel is dead-lettered and not inserted', async () => {
+  const doc = validBooking();
+  delete doc.slotLabel;
+  await expectLabSkip(
+    () => syncFirestoreLabBookingToSupabase({
+      params: { bookingId: 'book-slot' },
+      data: { after: { exists: true, id: 'book-slot', data: () => doc } },
+    }),
+    '/rest/v1/lab_bookings',
+    /slot_label/,
+  );
+});
+
+test('Lab Booking Sync: unknown status is dead-lettered and not inserted', async () => {
+  await expectLabSkip(
+    () => syncFirestoreLabBookingToSupabase({
+      params: { bookingId: 'book-status' },
+      data: { after: { exists: true, id: 'book-status', data: () => validBooking({ status: 'nope' }) } },
+    }),
+    '/rest/v1/lab_bookings',
+    /status/,
+  );
+});
+
 test('Lab Order Sync: Upserts doctor-initiated lab order with urgency and tests', async () => {
   process.env.SUPABASE_URL = 'https://fake-project.supabase.co';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'fake-key';
@@ -529,6 +700,162 @@ test('Lab Order Sync: Upserts doctor-initiated lab order with urgency and tests'
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+test('Lab Order Sync: missing doctor name is dead-lettered and not inserted', async () => {
+  process.env.SUPABASE_URL = 'https://fake-project.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'fake-key';
+  const calls = [];
+  global.fetch = async (url, opts) => {
+    calls.push({ url: String(url), method: opts && opts.method, body: opts && opts.body });
+    return { ok: true, status: 200, json: async () => [], text: async () => 'OK' };
+  };
+  try {
+    await syncFirestoreLabOrderToSupabase({
+      params: { orderId: 'lorder-missing' },
+      data: {
+        after: {
+          exists: true,
+          id: 'lorder-missing',
+          data: () => ({
+            doctorId: 'doc-1',
+            patientId: 'pat-1',
+            patientName: 'Ada',
+            patientAge: 30,
+            testIds: ['cbc'],
+            testNames: ['CBC'],
+          }),
+        },
+      },
+    });
+  } finally {
+    global.fetch = originalFetch;
+  }
+  assert.equal(calls.some((call) => call.method === 'POST' && call.url.includes('/rest/v1/lab_orders')), false);
+  const dlq = calls.find((call) => call.url.includes('sync_dead_letter_queue'));
+  assert.ok(dlq);
+  assert.equal(String(dlq.body).includes('Doctor'), false);
+  assert.match(String(dlq.body), /doctor_name/);
+});
+
+test('Lab Order Sync: unknown urgency is dead-lettered and not inserted', async () => {
+  await expectLabSkip(
+    () => syncFirestoreLabOrderToSupabase({
+      params: { orderId: 'lorder-urg' },
+      data: { after: { exists: true, id: 'lorder-urg', data: () => validOrder({ urgency: 'asap' }) } },
+    }),
+    '/rest/v1/lab_orders',
+    /urgency/,
+  );
+});
+
+test('Lab Order Sync: empty test list is dead-lettered and not inserted', async () => {
+  await expectLabSkip(
+    () => syncFirestoreLabOrderToSupabase({
+      params: { orderId: 'lorder-tests' },
+      data: { after: { exists: true, id: 'lorder-tests', data: () => validOrder({ testIds: [], testNames: [] }) } },
+    }),
+    '/rest/v1/lab_orders',
+    /test_ids/,
+  );
+});
+
+test('Lab Order Sync: missing patient age is dead-lettered and not inserted', async () => {
+  const doc = validOrder();
+  delete doc.patientAge;
+  await expectLabSkip(
+    () => syncFirestoreLabOrderToSupabase({
+      params: { orderId: 'lorder-age' },
+      data: { after: { exists: true, id: 'lorder-age', data: () => doc } },
+    }),
+    '/rest/v1/lab_orders',
+    /patient_age/,
+  );
+});
+
+test('Lab Catalog Sync: missing name is dead-lettered and not inserted', async () => {
+  await expectLabSkip(
+    () => syncFirestoreLabCatalogTestToSupabase({
+      params: { testId: 'cbc' },
+      data: { after: { exists: true, id: 'cbc', data: () => ({ sampleType: 'blood' }) } },
+    }),
+    '/rest/v1/lab_catalog_tests',
+    /lab_catalog_name_missing/,
+  );
+});
+
+test('Lab Catalog Sync: missing sample type is omitted and an unknown sample type is dead-lettered', async () => {
+  process.env.SUPABASE_URL = 'https://fake-project.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'fake-key';
+  const calls = [];
+  global.fetch = async (url, opts) => {
+    calls.push({
+      url: String(url),
+      method: opts && opts.method,
+      body: opts && opts.body ? JSON.parse(opts.body) : null,
+    });
+    return { ok: true, status: 200, json: async () => [], text: async () => 'OK' };
+  };
+  try {
+    await syncFirestoreLabCatalogTestToSupabase({
+      params: { testId: 'cbc' },
+      data: { after: { exists: true, id: 'cbc', data: () => ({ name: 'CBC' }) } },
+    });
+    const posted = calls.find((call) => call.method === 'POST' && call.url.includes('/rest/v1/lab_catalog_tests'));
+    assert.ok(posted);
+    assert.equal(Object.hasOwn(posted.body[0], 'sample_type'), false);
+    calls.length = 0;
+    await syncFirestoreLabCatalogTestToSupabase({
+      params: { testId: 'cbc' },
+      data: { after: { exists: true, id: 'cbc', data: () => ({ name: 'CBC', sampleType: 'plasma' }) } },
+    });
+  } finally {
+    global.fetch = originalFetch;
+  }
+  assert.equal(calls.some((call) => call.method === 'POST' && call.url.includes('/rest/v1/lab_catalog_tests')), false);
+  const dlq = calls.find((call) => call.url.includes('sync_dead_letter_queue'));
+  assert.ok(dlq);
+  assert.match(JSON.stringify(dlq.body), /sample_type_invalid/);
+});
+
+test('Lab Connection Sync: missing doctor name is dead-lettered and not inserted', async () => {
+  await expectLabSkip(
+    () => syncFirestoreLabConnectionToSupabase({
+      params: { connectionId: 'lconn-missing' },
+      data: {
+        after: {
+          exists: true,
+          id: 'lconn-missing',
+          data: () => ({ doctorId: 'doc-1', labId: 'lab-1', labName: 'City Lab' }),
+        },
+      },
+    }),
+    '/rest/v1/lab_connections',
+    /doctor_name/,
+  );
+});
+
+test('Lab Connection Sync: unknown status is dead-lettered and not inserted', async () => {
+  await expectLabSkip(
+    () => syncFirestoreLabConnectionToSupabase({
+      params: { connectionId: 'lconn-status' },
+      data: {
+        after: {
+          exists: true,
+          id: 'lconn-status',
+          data: () => ({
+            doctorId: 'doc-1',
+            doctorName: 'Ada',
+            labId: 'lab-1',
+            labName: 'City Lab',
+            status: 'nope',
+          }),
+        },
+      },
+    }),
+    '/rest/v1/lab_connections',
+    /status/,
+  );
 });
 
 test('Lab Connection Sync: Upserts lab_connections and hard-deletes on removal', async () => {

@@ -1,9 +1,11 @@
 'use strict';
+require('./firestore_forbidden_guard');
 
 const crypto = require('crypto');
 const { HttpsError } = require('firebase-functions/v2/https');
 const { FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { logUnusualTraffic } = require('./security_logger');
+const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
 
 /** Shared abuse / bot protection rate limits (Firestore-backed). */
 const LIMITS = {
@@ -36,6 +38,10 @@ const LIMITS = {
   payment: {
     ip: { windowMs: 60 * 60 * 1000, max: 30 },
     uid: { windowMs: 60 * 60 * 1000, max: 20 },
+  },
+  booking: {
+    ip: { windowMs: 60 * 1000, max: 60 },
+    uid: { windowMs: 60 * 1000, max: 10 },
   },
 };
 
@@ -81,7 +87,7 @@ async function assertBucket(db, { bucket, windowMs, maxAttempts, message }) {
 }
 
 function getRateLimitBackend() {
-  return String(process.env.RATE_LIMIT_BACKEND || 'firestore').trim().toLowerCase();
+  return String(process.env.RATE_LIMIT_BACKEND || 'redis').trim().toLowerCase();
 }
 
 const LUA_INCR_EXPIRE = `
@@ -131,11 +137,16 @@ async function assertBucketRedis(redisClient, { key, windowMs, maxAttempts, mess
   }
 }
 
+const { redisKey: envRedisKey } = require('./src/config/redis_keys');
+
 async function assertBucketUnified({ db, redisClient, useRedis, bucket, redisKey, windowMs, maxAttempts, message }) {
-  if (useRedis && redisClient) {
+  if (useRedis) {
+    if (!redisClient) {
+      throw new HttpsError('unavailable', 'Rate limit service temporarily unavailable.');
+    }
     try {
       await assertBucketRedis(redisClient, {
-        key: redisKey,
+        key: envRedisKey(redisKey),
         windowMs,
         maxAttempts,
         message,
@@ -145,7 +156,7 @@ async function assertBucketUnified({ db, redisClient, useRedis, bucket, redisKey
       if (err instanceof HttpsError && err.code === 'resource-exhausted') {
         throw err;
       }
-      console.warn(`[abuse_rate_limit] Redis rate limit check failed (${err?.message || err}), falling back to Firestore`);
+      throw new HttpsError('unavailable', 'Rate limit service temporarily unavailable.');
     }
   }
   await assertBucket(db, { bucket, windowMs, maxAttempts, message });
@@ -166,13 +177,18 @@ async function enforceAbuseLimit(db, request, category, {
 
   const ip = clientIpFromRequest(request);
   const uid = request?.auth?.uid || '';
-  const useRedis = getRateLimitBackend() === 'redis';
+  const isCutover = await isDoctorPatientSupabasePrimary();
+  let useRedis = isCutover || getRateLimitBackend() === 'redis' || process.env.FIRESTORE_FORBIDDEN === '1';
   let redisClient = null;
   if (useRedis) {
     try {
       const { redis } = require('./redis');
       redisClient = redis;
     } catch (_) {}
+  }
+  // Unit tests inject Firestore mock db without Redis: fall back to Firestore buckets.
+  if (useRedis && !redisClient && db && typeof db.collection === 'function') {
+    useRedis = false;
   }
 
   try {

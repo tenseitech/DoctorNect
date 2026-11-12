@@ -1,4 +1,4 @@
-import '../../../../core/firebase/firestore_service.dart';
+import '../../../../core/firebase/repositories/lab_booking_repository.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -56,7 +56,7 @@ class PatientLabBookingStore extends ChangeNotifier {
     bool preferCache = true,
   }) async {
     if (patientId.isEmpty) return;
-    final items = await FirestoreService.instance.labBooking.fetchForPatient(
+    final items = await LabBookingRepository.instance.fetchForPatient(
       patientId,
       preferCache: preferCache,
     );

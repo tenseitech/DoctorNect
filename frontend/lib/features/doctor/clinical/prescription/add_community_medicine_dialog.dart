@@ -104,9 +104,15 @@ class _AddCommunityMedicineDialogState
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: _dosageUnit,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Dosage unit'),
               items: kDosageUnits
-                  .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                  .map(
+                    (u) => DropdownMenuItem(
+                      value: u,
+                      child: Text(u, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _dosageUnit = v);
@@ -115,9 +121,15 @@ class _AddCommunityMedicineDialogState
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: _form,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Form'),
               items: kCommunityMedicineForms
-                  .map((f) => DropdownMenuItem(value: f, child: Text(f)))
+                  .map(
+                    (f) => DropdownMenuItem(
+                      value: f,
+                      child: Text(f, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _form = v);

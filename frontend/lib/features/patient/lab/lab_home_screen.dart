@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/lab_catalog_repository.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'dart:async';
@@ -61,7 +61,7 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
         patientId: PatientSession.loggedInPatientId,
       ),
     );
-    _catalogFuture = FirestoreService.instance.labCatalog.fetchCatalog();
+    _catalogFuture = LabCatalogRepository.instance.fetchCatalog();
     unawaited(CommunityInvestigationsRepository.instance.fetchAll());
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isNotEmpty) {

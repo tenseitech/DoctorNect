@@ -214,10 +214,11 @@ test('Ambulance Private Settings Sync: Hashes plaintext PIN, self-heals parent, 
 
     await syncFirestoreAmbulancePrivateSettingsToSupabase(fakeEvent);
 
-    // 1. Should have self-healed parent ambulance
+    // Parent ambulance is not inserted when the Firestore doc lacks required fields.
     const parentPost = calls.find(c => c.url.includes('/rest/v1/ambulances?on_conflict=ambulance_id'));
-    assert.ok(parentPost, 'Should ensure parent ambulance exists in Postgres');
-    assert.equal(parentPost.body.ambulance_id, 'amb-202');
+    assert.equal(parentPost, undefined);
+    const parentDlq = calls.find(c => c.url.includes('sync_dead_letter_queue'));
+    assert.ok(parentDlq);
 
     // 2. Should have upserted ambulance_private_settings
     const settingsPost = calls.find(c => c.url.includes('/rest/v1/ambulance_private_settings?on_conflict=ambulance_id'));
@@ -353,6 +354,11 @@ test('Ambulance Broadcast Sync: Cancels sibling requests in Postgres when broadc
           id: 'bc-777',
           data: () => ({
             broadcastId: 'bc-777',
+            patientId: 'pat-777',
+            patientName: 'Nia',
+            pickupLocation: 'Gate',
+            dropLocation: 'Ward',
+            contactPhone: '9000000005',
             status: 'cancelled',
           }),
         },
@@ -414,10 +420,9 @@ test('Ambulance Request Sync: Upserts per-driver request and self-heals parents'
     assert.ok(parentBc, 'Should self-heal parent broadcast in Postgres');
     assert.equal(parentBc.body.broadcast_id, 'bc-555');
 
-    // 2. Should self-heal parent ambulance
+    // Parent ambulance is not invented when its document lacks required fields.
     const parentAmb = calls.find(c => c.url.includes('/rest/v1/ambulances?on_conflict=ambulance_id'));
-    assert.ok(parentAmb, 'Should self-heal parent ambulance in Postgres');
-    assert.equal(parentAmb.body.ambulance_id, 'amb-driver-9');
+    assert.equal(parentAmb, undefined);
 
     // 3. Should upsert ambulance_requests
     const reqPost = calls.find(c => c.url.includes('/rest/v1/ambulance_requests?on_conflict=request_id'));
@@ -470,10 +475,11 @@ test('Ambulance Invite Sync: Upserts driver invite, maps expired -> cancelled, s
 
     await syncFirestoreAmbulanceInviteToSupabase(fakeInviteEvent);
 
-    // 1. Should self-heal parent doctor
+    // Parent doctor is not invented when its document lacks required fields.
     const parentDoc = calls.find(c => c.url.includes('/rest/v1/doctors?on_conflict=doctor_id'));
-    assert.ok(parentDoc, 'Should self-heal parent doctor in Postgres');
-    assert.equal(parentDoc.body.doctor_id, 'doc-hospital-admin');
+    assert.equal(parentDoc, undefined);
+    const doctorDlq = calls.find(c => String(c.url).includes('sync_dead_letter_queue'));
+    assert.ok(doctorDlq);
 
     // 2. Should upsert ambulance_invites
     const invPost = calls.find(c => c.url.includes('/rest/v1/ambulance_invites?on_conflict=invite_id'));

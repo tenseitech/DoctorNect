@@ -506,15 +506,15 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                 items: const [
                   DropdownMenuItem(
                     value: GlucoseReadingType.fasting,
-                    child: Text('Fasting'),
+                    child: Text('Fasting', overflow: TextOverflow.ellipsis),
                   ),
                   DropdownMenuItem(
                     value: GlucoseReadingType.postPrandial,
-                    child: Text('PP'),
+                    child: Text('PP', overflow: TextOverflow.ellipsis),
                   ),
                   DropdownMenuItem(
                     value: GlucoseReadingType.random,
-                    child: Text('Random'),
+                    child: Text('Random', overflow: TextOverflow.ellipsis),
                   ),
                 ],
                 onChanged: (v) => setState(() => _glucoseType = v!),

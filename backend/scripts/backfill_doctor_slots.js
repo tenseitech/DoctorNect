@@ -31,11 +31,38 @@ if (fs.existsSync(loadEnvPath)) {
   } catch (_) {}
 }
 
-const admin = require('firebase-admin');
+const { createRequire } = require('module');
+let admin;
+let FieldValue;
+try {
+  admin = require('firebase-admin');
+  FieldValue = require('firebase-admin/firestore').FieldValue;
+} catch (_) {
+  try {
+    const fnReq = createRequire(path.resolve(__dirname, '..', 'functions', 'package.json'));
+    admin = fnReq('firebase-admin');
+    FieldValue = fnReq('firebase-admin/firestore').FieldValue;
+  } catch (err) {
+    admin = null;
+    FieldValue = null;
+  }
+}
 
 const args = process.argv.slice(2);
 const IS_APPLY = args.includes('--apply');
 const MAX_PATIENTS_PER_SLOT = 3;
+
+function getProjectArg() {
+  const projectIdx = args.findIndex((a) => a === '--project');
+  if (projectIdx !== -1 && args[projectIdx + 1] && !args[projectIdx + 1].startsWith('--')) {
+    return args[projectIdx + 1].trim();
+  }
+  const eqArg = args.find((a) => a.startsWith('--project='));
+  if (eqArg) {
+    return eqArg.split('=')[1]?.trim() || null;
+  }
+  return null;
+}
 
 function initFirebaseAdmin() {
   if (admin.apps.length > 0) return admin.app();
@@ -52,6 +79,7 @@ function initFirebaseAdmin() {
     const sa = JSON.parse(fs.readFileSync(saPath, 'utf8'));
     return admin.initializeApp({
       credential: admin.credential.cert(sa),
+      projectId: sa.project_id,
     });
   }
 
@@ -60,76 +88,74 @@ function initFirebaseAdmin() {
   });
 }
 
-function toIstDateAndTime(input) {
-  let date;
-  if (!input) return null;
-  if (typeof input.toDate === 'function') {
-    date = input.toDate();
-  } else if (input instanceof Date) {
-    date = input;
-  } else if (typeof input === 'number') {
-    date = new Date(input);
-  } else if (typeof input === 'string') {
-    date = new Date(input);
-  } else if (input._seconds !== undefined) {
-    date = new Date(input._seconds * 1000);
-  } else if (input.seconds !== undefined) {
-    date = new Date(input.seconds * 1000);
-  } else {
-    date = new Date(input);
-  }
+let appointmentSlotsModule;
+try {
+  appointmentSlotsModule = require('../functions/appointment_slots');
+} catch (_) {
+  const fnReq = createRequire(path.resolve(__dirname, '..', 'functions', 'package.json'));
+  appointmentSlotsModule = fnReq('./appointment_slots');
+}
+const { deriveSlotId, toIstDateAndTime } = appointmentSlotsModule;
 
-  if (isNaN(date.getTime())) return null;
+async function backfillSingleSlotTransaction(db, entry) {
+  const slotRef = db.collection('doctor_slots').doc(entry.slotId);
 
-  const formatter = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Kolkata',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
+  return await db.runTransaction(async (tx) => {
+    const snap = await tx.get(slotRef);
+    const existingData = snap.exists ? snap.data() : null;
+    const existingIds = Array.isArray(existingData?.activeAppointmentIds)
+      ? existingData.activeAppointmentIds
+      : [];
+
+    const allCandidateIds = Array.from(new Set([...existingIds, ...entry.activeAppointmentIds]));
+    const verifiedActiveIds = [];
+
+    // Inside transaction, re-read every appointment doc in that slot
+    for (const apptId of allCandidateIds) {
+      const apptSnap = await tx.get(db.collection('appointments').doc(apptId));
+      if (apptSnap.exists) {
+        const apptData = apptSnap.data() || {};
+        const isCancelled = Boolean(apptData.cancellationReason);
+        const doctorMatches = String(apptData.doctorId || '').trim() === entry.doctorId;
+        let slotMatches = false;
+        try {
+          slotMatches = Boolean(apptData.doctorId && apptData.dateTime) &&
+            deriveSlotId(apptData.doctorId, apptData.dateTime) === entry.slotId;
+        } catch (_) {
+          slotMatches = false;
+        }
+
+        // Add ID only if still active (cancellationReason null and doctorId, dateTime still match this slot)
+        if (!isCancelled && doctorMatches && slotMatches) {
+          verifiedActiveIds.push(apptId);
+        }
+      }
+    }
+
+    const isOverflow = verifiedActiveIds.length > MAX_PATIENTS_PER_SLOT;
+
+    tx.set(
+      slotRef,
+      {
+        doctorId: entry.doctorId,
+        date: entry.date,
+        time: entry.time,
+        activeAppointmentIds: verifiedActiveIds,
+        updatedAt: FieldValue.serverTimestamp(),
+        slotOverflow: isOverflow,
+      },
+      { merge: true },
+    );
+
+    return { slotId: entry.slotId, verifiedActiveIds, isOverflow };
   });
-
-  const parts = formatter.formatToParts(date);
-  let year = '', month = '', day = '', hour = '', minute = '';
-  for (const part of parts) {
-    if (part.type === 'year') year = part.value;
-    else if (part.type === 'month') month = part.value;
-    else if (part.type === 'day') day = part.value;
-    else if (part.type === 'hour') hour = part.value;
-    else if (part.type === 'minute') minute = part.value;
-  }
-
-  return {
-    date: `${year}-${month}-${day}`,
-    time: `${hour}:${minute}`,
-  };
 }
 
-function deriveSlotId(doctorId, dateTime) {
-  const cleanDoctorId = String(doctorId || '').trim();
-  if (!cleanDoctorId) return null;
-  const ist = toIstDateAndTime(dateTime);
-  if (!ist) return null;
-  return `${cleanDoctorId}_${ist.date}_${ist.time}`;
-}
-
-async function runBackfill() {
-  console.log(`\n=== Doctor Slots Backfill (Design A) ===`);
-  console.log(`Mode: ${IS_APPLY ? 'APPLY (Writing changes to Firestore)' : 'DRY RUN (Read-only, counts only)'}\n`);
-
-  initFirebaseAdmin();
-  const db = admin.firestore();
-
+async function scanAppointmentsForSlots(db) {
   const appointmentsSnap = await db.collection('appointments').get();
-  console.log(`Total appointments found in Firestore: ${appointmentsSnap.size}`);
-
   let activeCount = 0;
   let cancelledCount = 0;
   let invalidCount = 0;
-
-  // Map of slotId -> { doctorId, date, time, activeAppointmentIds: [] }
   const slotMap = new Map();
 
   for (const doc of appointmentsSnap.docs) {
@@ -146,14 +172,22 @@ async function runBackfill() {
       continue;
     }
 
-    const slotId = deriveSlotId(data.doctorId, data.dateTime);
+    let slotId = null;
+    let ist = null;
+    try {
+      slotId = deriveSlotId(data.doctorId, data.dateTime);
+      ist = toIstDateAndTime(data.dateTime);
+    } catch (_) {
+      invalidCount++;
+      continue;
+    }
+
     if (!slotId) {
       invalidCount++;
       continue;
     }
 
     activeCount++;
-    const ist = toIstDateAndTime(data.dateTime);
 
     if (!slotMap.has(slotId)) {
       slotMap.set(slotId, {
@@ -170,6 +204,59 @@ async function runBackfill() {
       }
     }
   }
+
+  return {
+    totalScanned: appointmentsSnap.size,
+    activeCount,
+    cancelledCount,
+    invalidCount,
+    slotMap,
+  };
+}
+
+const { bootstrapMutatingScript } = require('../../scripts/lib/mutating_script_bootstrap');
+
+async function runBackfill() {
+  bootstrapMutatingScript('backend/scripts/backfill_doctor_slots.js');
+  const app = initFirebaseAdmin();
+  const db = admin.firestore();
+
+  let connectedProjectId = app.options.projectId
+    || (app.options.credential && app.options.credential.projectId)
+    || db.projectId
+    || process.env.GCLOUD_PROJECT
+    || process.env.FIREBASE_PROJECT_ID;
+
+  const projectFlag = getProjectArg();
+
+  console.log(`\n=== Doctor Slots Backfill (Design A) ===`);
+  console.log(`Connected Project ID: ${connectedProjectId || '(unknown)'}`);
+  console.log(`Mode: ${IS_APPLY ? 'APPLY (Writing changes to Firestore)' : 'DRY RUN (Read-only, counts only)'}\n`);
+
+  if (IS_APPLY) {
+    if (!projectFlag) {
+      throw new Error(
+        'Safety check failed: --apply requires explicit --project <projectId> flag (e.g. node backfill_doctor_slots.js --apply --project medibond-45fad). Refusing to run.',
+      );
+    }
+    if (projectFlag !== connectedProjectId) {
+      throw new Error(
+        `Safety check failed: --project flag "${projectFlag}" does not match connected project "${connectedProjectId}". Refusing to run.`,
+      );
+    }
+  }
+
+  // Print project id before any read
+  console.log(`Target project verified: ${connectedProjectId}`);
+  console.log(`Starting Firestore read from 'appointments'...\n`);
+
+  const {
+    totalScanned,
+    activeCount,
+    cancelledCount,
+    invalidCount,
+    slotMap,
+  } = await scanAppointmentsForSlots(db);
 
   const uniqueSlots = slotMap.size;
   const overflowSlots = [];
@@ -198,56 +285,116 @@ async function runBackfill() {
     }
   }
 
-  if (!IS_APPLY) {
-    console.log(`\n[DRY RUN COMPLETED] No writes were performed to Firestore.`);
-    console.log(`To apply these slots to Firestore, run:\n  node backend/scripts/backfill_doctor_slots.js --apply\n`);
-    return;
+  // --- Comparison Mode (Read-Only) ---
+  console.log(`\n--- Stored doctor_slots Comparison (Read-only) ---`);
+  console.log(`Scanning existing 'doctor_slots' collection to detect drift...`);
+
+  const existingSlotsSnap = await db.collection('doctor_slots').get();
+  const existingSlotMap = new Map();
+  for (const doc of existingSlotsSnap.docs) {
+    existingSlotMap.set(doc.id, doc.data() || {});
   }
 
-  console.log(`\nApplying slot documents to collection 'doctor_slots'...`);
-  const slotEntries = Array.from(slotMap.values());
-  const BATCH_SIZE = 400;
-  let batch = db.batch();
-  let opsInBatch = 0;
-  let batchesCommitted = 0;
-  let totalWritten = 0;
+  let matchingCount = 0;
+  let missingInDbCount = 0;
+  let differingCount = 0;
+  let orphanSlotsCount = 0;
+  const diffDetails = [];
 
-  for (const entry of slotEntries) {
-    const slotRef = db.collection('doctor_slots').doc(entry.slotId);
-    const isOverflow = entry.activeAppointmentIds.length > MAX_PATIENTS_PER_SLOT;
+  for (const [slotId, entry] of slotMap.entries()) {
+    const existing = existingSlotMap.get(slotId);
+    if (!existing) {
+      missingInDbCount++;
+      diffDetails.push({
+        slotId,
+        type: 'MISSING_IN_DB',
+        scannedCount: entry.activeAppointmentIds.length,
+        scannedIds: entry.activeAppointmentIds,
+        storedCount: 0,
+        storedIds: [],
+      });
+    } else {
+      const storedIds = Array.isArray(existing.activeAppointmentIds) ? existing.activeAppointmentIds : [];
+      const scannedSet = new Set(entry.activeAppointmentIds);
+      const storedSet = new Set(storedIds);
 
-    batch.set(
-      slotRef,
-      {
-        doctorId: entry.doctorId,
-        date: entry.date,
-        time: entry.time,
-        activeAppointmentIds: entry.activeAppointmentIds,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        slotOverflow: isOverflow,
-      },
-      { merge: true },
-    );
+      const arraysEqual =
+        scannedSet.size === storedSet.size &&
+        [...scannedSet].every((id) => storedSet.has(id));
 
-    opsInBatch++;
-    totalWritten++;
-
-    if (opsInBatch >= BATCH_SIZE) {
-      await batch.commit();
-      batchesCommitted++;
-      console.log(`Committed batch ${batchesCommitted} (${opsInBatch} slots)...`);
-      batch = db.batch();
-      opsInBatch = 0;
+      if (arraysEqual) {
+        matchingCount++;
+      } else {
+        differingCount++;
+        diffDetails.push({
+          slotId,
+          type: 'ARRAY_DIFF',
+          scannedCount: entry.activeAppointmentIds.length,
+          scannedIds: entry.activeAppointmentIds,
+          storedCount: storedIds.length,
+          storedIds,
+        });
+      }
     }
   }
 
-  if (opsInBatch > 0) {
-    await batch.commit();
-    batchesCommitted++;
-    console.log(`Committed final batch ${batchesCommitted} (${opsInBatch} slots)...`);
+  for (const [slotId, data] of existingSlotMap.entries()) {
+    if (!slotMap.has(slotId) && Array.isArray(data.activeAppointmentIds) && data.activeAppointmentIds.length > 0) {
+      orphanSlotsCount++;
+      diffDetails.push({
+        slotId,
+        type: 'ORPHAN_IN_DB',
+        scannedCount: 0,
+        scannedIds: [],
+        storedCount: data.activeAppointmentIds.length,
+        storedIds: data.activeAppointmentIds,
+      });
+    }
   }
 
-  console.log(`\n[APPLY COMPLETED] Successfully created/updated ${totalWritten} doctor_slots across ${batchesCommitted} batches.\n`);
+  console.log(`Stored doctor_slots in DB:     ${existingSlotsSnap.size}`);
+  console.log(`Matching slots (in sync):       ${matchingCount}`);
+  console.log(`Slots missing in DB:            ${missingInDbCount}`);
+  console.log(`Differing slots (drifted):      ${differingCount}`);
+  console.log(`Orphan active slots in DB:      ${orphanSlotsCount}`);
+
+  if (diffDetails.length > 0) {
+    console.log(`\n[DRIFT DETAILS] Differences detected (top 20):`);
+    for (const d of diffDetails.slice(0, 20)) {
+      if (d.type === 'MISSING_IN_DB') {
+        console.log(`  [MISSING] ${d.slotId}: Not in DB (scanned ${d.scannedCount} IDs: ${d.scannedIds.join(', ')})`);
+      } else if (d.type === 'ARRAY_DIFF') {
+        console.log(`  [DIFF]    ${d.slotId}: DB has ${d.storedCount} IDs [${d.storedIds.join(', ')}] vs Scanned ${d.scannedCount} IDs [${d.scannedIds.join(', ')}]`);
+      } else if (d.type === 'ORPHAN_IN_DB') {
+        console.log(`  [ORPHAN]  ${d.slotId}: DB has ${d.storedCount} IDs [${d.storedIds.join(', ')}] but appointments scanned 0 active`);
+      }
+    }
+    if (diffDetails.length > 20) {
+      console.log(`  ... and ${diffDetails.length - 20} more differing slots.`);
+    }
+  } else {
+    console.log(`\nAll doctor_slots match appointments perfectly. Zero drift!`);
+  }
+
+  if (!IS_APPLY) {
+    console.log(`\n[DRY RUN COMPLETED] No writes were performed to Firestore.`);
+    console.log(`To apply these slots safely to Firestore, run:\n  node backend/scripts/backfill_doctor_slots.js --apply --project <projectId>\n`);
+    return;
+  }
+
+  console.log(`\nApplying slot documents to collection 'doctor_slots' safely using transactions...`);
+  const slotEntries = Array.from(slotMap.values());
+  let totalWritten = 0;
+
+  for (const entry of slotEntries) {
+    await backfillSingleSlotTransaction(db, entry);
+    totalWritten++;
+    if (totalWritten % 100 === 0 || totalWritten === slotEntries.length) {
+      console.log(`Committed transaction ${totalWritten}/${slotEntries.length} slots...`);
+    }
+  }
+
+  console.log(`\n[APPLY COMPLETED] Successfully created/merged ${totalWritten} doctor_slots via transactions.\n`);
 }
 
 if (require.main === module) {
@@ -259,6 +406,8 @@ if (require.main === module) {
 
 module.exports = {
   runBackfill,
+  scanAppointmentsForSlots,
+  backfillSingleSlotTransaction,
   deriveSlotId,
   toIstDateAndTime,
 };

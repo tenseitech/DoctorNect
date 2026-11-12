@@ -1,13 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../core/supabase/supabase_bootstrap.dart';
 import '../core/auth/demo_auth_config.dart';
 import '../core/auth/verification_lifecycle.dart';
 import '../core/enums/user_type.dart';
 
 export '../core/auth/verification_lifecycle.dart';
 export '../core/enums/user_type.dart';
-import '../core/firebase/firestore_paths.dart';
+import '../core/supabase/repositories/supabase_user_repository.dart';
+import '../core/firebase/models/medibond_user_profile.dart';
 import '../core/notifications/app_toast.dart';
 import '../core/session/ambulance_session.dart';
 import '../core/session/doctor_session.dart';
@@ -51,41 +52,12 @@ class _VerificationSubmissionCardState
     setState(() => _submitting = true);
 
     try {
-      final batch = FirebaseFirestore.instance.batch();
-      final userRef =
-          FirebaseFirestore.instance.collection(FirestorePaths.users).doc(uid);
-
-      batch.set(
-          userRef,
-          {
-            'verificationStatus': 'submitted_for_verification',
-            'status': 'pending_review',
-            'submittedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
-
-      final roleCol = switch (widget.role) {
-        UserType.doctor => FirestorePaths.doctors,
-        UserType.medicalStore => FirestorePaths.medicalStores,
-        UserType.lab => FirestorePaths.labs,
-        UserType.ambulance => FirestorePaths.ambulances,
-        _ => null,
-      };
-
-      if (roleCol != null && profileId != null && profileId.isNotEmpty) {
-        final roleRef =
-            FirebaseFirestore.instance.collection(roleCol).doc(profileId);
-        batch.set(
-            roleRef,
-            {
-              'verificationStatus': 'submitted_for_verification',
-              'status': 'pending_review',
-              'submittedAt': FieldValue.serverTimestamp(),
-            },
-            SetOptions(merge: true));
+      if (SupabaseBootstrap.isReady) {
+        await SupabaseBootstrap.client.from('users').update({
+          'status': 'pending_review',
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', uid);
       }
-
-      await batch.commit();
 
       if (!context.mounted) return;
       AppToast.info(context, 'Profile submitted for Super Admin verification!');
@@ -109,27 +81,22 @@ class _VerificationSubmissionCardState
 
     final profileId = _resolveProfileId();
 
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection(FirestorePaths.users)
-          .doc(uid)
-          .snapshots(),
+    return StreamBuilder<DoctorNectUserProfile?>(
+      stream: SupabaseUserRepository.instance.watchProfile(uid),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data == null) {
           return const SizedBox.shrink();
         }
-        final data = snapshot.data!.data() ?? {};
-        final mobile = data['mobile'] as String? ?? data['phone'] as String?;
+        final profile = snapshot.data!;
+        final mobile = profile.mobile;
         final isDemoDoctor = widget.role == UserType.doctor &&
             DemoAuthConfig.isDemoDoctorPhone(mobile);
-        final isVerified = data['verified'] == true || isDemoDoctor;
-        final statusStr = data['verificationStatus'] as String? ??
-            data['status'] as String? ??
-            'registered';
+        final statusStr = profile.verificationStatus ?? 'registered';
+        final isVerified = statusStr == 'verified' || statusStr == 'approved' || isDemoDoctor;
         final stage = isVerified
             ? VerificationStage.verified
             : VerificationStage.fromString(statusStr);
-        final reason = isDemoDoctor ? null : data['rejectionReason'] as String?;
+        final reason = isDemoDoctor ? null : profile.rejectionReason;
 
         if (stage == VerificationStage.verified) {
           return const SizedBox.shrink();

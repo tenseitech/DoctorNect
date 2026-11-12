@@ -1,9 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../auth/demo_auth_config.dart';
-import '../firebase_bootstrap.dart';
-import '../firestore_paths.dart';
-import '../firestore_read_helper.dart';
+import '../../supabase/supabase_bootstrap.dart';
 
 class DoctorDeactivationStatus {
   const DoctorDeactivationStatus({
@@ -28,59 +24,47 @@ class DoctorAccountRepository {
     return false;
   }
 
-  DateTime? _readTimestamp(dynamic value) {
-    if (value is Timestamp) return value.toDate();
-    if (value is DateTime) return value;
-    return null;
-  }
-
   Future<DoctorDeactivationStatus> fetchDeactivationStatus(
     String doctorId, {
     bool preferCache = false,
   }) async {
-    if (!FirebaseBootstrap.isReady) {
+    if (!SupabaseBootstrap.isReady) {
       return const DoctorDeactivationStatus(
         deactivated: false,
         canReactivate: false,
       );
     }
-
     try {
-      final snap = await FirestoreReadHelper.getDocument(
-        reference: FirebaseFirestore.instance
-            .collection(FirestorePaths.doctors)
-            .doc(doctorId),
-        preferCache: preferCache,
-      );
-      if (!snap.exists || snap.data() == null) {
+      final res = await SupabaseBootstrap.client
+          .from('doctors')
+          .select('deactivated, reactivate_before, verified')
+          .eq('doctor_id', doctorId)
+          .maybeSingle();
+      if (res == null) {
         return const DoctorDeactivationStatus(
           deactivated: false,
           canReactivate: false,
         );
       }
-
-      final data = snap.data()!;
-      final reactivateBefore = _readTimestamp(data['reactivateBefore']);
-      var deactivated = _isTruthy(data['deactivated']);
-
-      // Fallback: some docs only show reactivateBefore (no boolean toggle in console).
-      if (!deactivated &&
+      final deactivated = _isTruthy(res['deactivated']);
+      final reactivateBefore = res['reactivate_before'] != null
+          ? DateTime.tryParse(res['reactivate_before'] as String)
+          : null;
+      var effectiveDeactivated = deactivated;
+      if (!effectiveDeactivated &&
           reactivateBefore != null &&
-          !_isTruthy(data['verified']) &&
+          !_isTruthy(res['verified']) &&
           DateTime.now().isBefore(reactivateBefore)) {
-        deactivated = true;
+        effectiveDeactivated = true;
       }
-
-      if (!deactivated) {
+      if (!effectiveDeactivated) {
         return const DoctorDeactivationStatus(
           deactivated: false,
           canReactivate: false,
         );
       }
-
-      final canReactivate =
-          reactivateBefore != null && DateTime.now().isBefore(reactivateBefore);
-
+      final canReactivate = reactivateBefore != null &&
+          DateTime.now().isBefore(reactivateBefore);
       return DoctorDeactivationStatus(
         deactivated: true,
         canReactivate: canReactivate,
@@ -106,25 +90,31 @@ class DoctorAccountRepository {
   }
 
   Future<bool> isVerified(String doctorId, {bool preferCache = false}) async {
-    if (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        doctorId.contains(DemoAuthConfig.demoDoctorPhone)) {
+    if (DemoAuthConfig.isDemoAllowed &&
+        (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
+            DemoAuthConfig.isDemoDoctorId(doctorId))) {
       return true;
     }
-    if (!FirebaseBootstrap.isReady) return false;
+    if (!SupabaseBootstrap.isReady) return false;
     try {
-      final snap = await FirestoreReadHelper.getDocument(
-        reference: FirebaseFirestore.instance
-            .collection(FirestorePaths.doctors)
-            .doc(doctorId),
-        preferCache: preferCache,
-      );
-      if (!snap.exists || snap.data() == null) return false;
-      final data = snap.data()!;
-      final mobile = data['mobile'] as String? ?? data['phone'] as String?;
-      if (DemoAuthConfig.isDemoDoctorPhone(mobile)) return true;
-      if (data['verificationStatus'] == 'verified' ||
-          data['status'] == 'approved') return true;
-      return _isTruthy(data['verified']);
+      final res = await SupabaseBootstrap.client
+          .from('doctors')
+          .select('verified, deactivated, mobile, verification_status, status')
+          .eq('doctor_id', doctorId)
+          .maybeSingle();
+      if (res == null) return false;
+      final mobile = res['mobile'] as String?;
+      if (DemoAuthConfig.isDemoAllowed &&
+          DemoAuthConfig.isDemoDoctorPhone(mobile)) {
+        return true;
+      }
+      if (res['verification_status'] == 'verified' ||
+          res['status'] == 'approved') {
+        return true;
+      }
+      final verified = _isTruthy(res['verified']);
+      final deactivated = _isTruthy(res['deactivated']);
+      return verified && !deactivated;
     } catch (_) {
       return false;
     }
@@ -134,68 +124,24 @@ class DoctorAccountRepository {
     required String doctorId,
     required String ownerUid,
   }) async {
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError('Firebase is not available.');
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError('Supabase is not available.');
     }
-
-    final reactivateBefore = DateTime.now().add(const Duration(days: 30));
-    final batch = FirebaseFirestore.instance.batch();
-    final doctorRef = FirebaseFirestore.instance
-        .collection(FirestorePaths.doctors)
-        .doc(doctorId);
-    final userRef = FirebaseFirestore.instance
-        .collection(FirestorePaths.users)
-        .doc(ownerUid);
-
-    batch.update(doctorRef, {
-      'deactivated': true,
-      'verified': false,
-      'deactivatedAt': FieldValue.serverTimestamp(),
-      'reactivateBefore': Timestamp.fromDate(reactivateBefore),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-    batch.update(userRef, {
-      'deactivated': true,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
-    await batch.commit();
+    await SupabaseBootstrap.client.rpc('deactivate_provider_profile');
   }
 
   Future<void> reactivate({
     required String doctorId,
     required String ownerUid,
   }) async {
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError('Firebase is not available.');
-    }
-
     final status = await fetchDeactivationStatus(doctorId);
     if (!status.deactivated) return;
     if (!status.canReactivate) {
       throw StateError('Reactivation window has expired.');
     }
-
-    final batch = FirebaseFirestore.instance.batch();
-    final doctorRef = FirebaseFirestore.instance
-        .collection(FirestorePaths.doctors)
-        .doc(doctorId);
-    final userRef = FirebaseFirestore.instance
-        .collection(FirestorePaths.users)
-        .doc(ownerUid);
-
-    batch.update(doctorRef, {
-      'deactivated': false,
-      'verified':
-          false, // FIXED: reactivation must go through admin re-approval, like registration
-      'reactivatedAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-    batch.update(userRef, {
-      'deactivated': false,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
-    await batch.commit();
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError('Supabase is not available.');
+    }
+    await SupabaseBootstrap.client.rpc('reactivate_provider_profile');
   }
 }

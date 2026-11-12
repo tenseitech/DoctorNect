@@ -1,12 +1,12 @@
-import 'package:medibond/core/firebase/firestore_service.dart';
-
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../config/ambulance_enabled.dart';
 import '../firebase/firebase_bootstrap.dart';
+import '../firebase/repositories/ambulance_repository.dart';
 import '../../features/ambulance/data/ambulance_booking_sync.dart';
 import '../../features/ambulance/data/ambulance_store.dart';
 import '../../features/ambulance/models/ambulance_models.dart';
@@ -30,6 +30,7 @@ abstract final class AmbulancePushService {
 
   static Future<void> initialize() async {
     if (_initialized || kIsWeb) return;
+    if (!AmbulanceEnabled.isOn) return;
     if (!FirebaseBootstrap.isReady) return;
 
     _initialized = true;
@@ -70,6 +71,7 @@ abstract final class AmbulancePushService {
   /// Call after ambulance driver login â€” saves token to Firestore.
   static Future<void> registerDriver(String driverId) async {
     if (driverId.isEmpty || kIsWeb) return;
+    if (!AmbulanceEnabled.isOn) return;
 
     await initialize();
     _activeDriverId = driverId;
@@ -91,10 +93,7 @@ abstract final class AmbulancePushService {
       if (kDebugMode) {
         debugPrint('Ambulance FCM token (copy for Firebase test): [REDACTED]');
       }
-      await FirestoreService.instance.ambulance.saveDriverFcmToken(
-        driverId,
-        token,
-      );
+      await _persistToken(driverId, token);
     } else if (kDebugMode) {
       debugPrint('Ambulance push: FCM token is null or empty');
     }
@@ -105,24 +104,37 @@ abstract final class AmbulancePushService {
       if (kDebugMode) {
         debugPrint('Ambulance FCM token refreshed: [REDACTED]');
       }
-      await FirestoreService.instance.ambulance.saveDriverFcmToken(
-        _activeDriverId!,
-        newToken,
-      );
+      await _persistToken(_activeDriverId!, newToken);
     });
   }
 
   /// Call on ambulance logout â€” removes token from Firestore.
   static Future<void> unregisterDriver() async {
+    if (!AmbulanceEnabled.isOn) {
+      _activeDriverId = null;
+      return;
+    }
     final driverId = _activeDriverId;
     _activeDriverId = null;
     await _tokenRefreshSub?.cancel();
     _tokenRefreshSub = null;
 
     if (driverId == null || driverId.isEmpty) return;
-    await FirestoreService.instance.ambulance.clearDriverFcmToken(driverId);
+    await AmbulanceRepository.instance.clearDriverFcmToken(driverId);
     if (!kIsWeb) {
       await FirebaseMessaging.instance.deleteToken();
+    }
+  }
+
+  static Future<void> _persistToken(String driverId, String token) async {
+    try {
+      await AmbulanceRepository.instance.saveDriverFcmToken(driverId, token);
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint(
+          '[AmbulancePushService] FCM token persist failed (will retry on refresh): $e\n$st',
+        );
+      }
     }
   }
 
@@ -138,6 +150,7 @@ abstract final class AmbulancePushService {
   }
 
   static void _onForegroundMessage(RemoteMessage message) {
+    if (!AmbulanceEnabled.isOn) return;
     if (message.data['type'] != 'ambulance_request') return;
 
     final driverId = _activeDriverId;
@@ -150,6 +163,7 @@ abstract final class AmbulancePushService {
   }
 
   static void _onMessageOpened(RemoteMessage message) {
+    if (!AmbulanceEnabled.isOn) return;
     _storeOpenTarget(message);
     final driverId = _activeDriverId;
     if (driverId != null && driverId.isNotEmpty) {
@@ -196,6 +210,7 @@ abstract final class AmbulancePushService {
   }
 
   static Future<void> _showLocalNotification(RemoteMessage message) async {
+    if (!AmbulanceEnabled.isOn) return;
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
 
     final notification = message.notification;

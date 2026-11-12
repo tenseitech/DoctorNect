@@ -1,4 +1,5 @@
 import '../../../../core/firebase/firestore_service.dart';
+import '../../../../core/firebase/firestore_client.dart';
 
 import 'dart:async';
 
@@ -6,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/config/doctor_patient_cutover_flag.dart';
 import '../../../../core/constants/countries.dart';
 import '../../../../core/auth/demo_auth_config.dart';
 import '../../../../core/auth/profile_completion_service.dart';
@@ -16,6 +18,7 @@ import '../../../../core/location/location_match.dart';
 import '../../../../core/firebase/firestore_read_helper.dart';
 // FIXED: load reviews on login/prefetch
 import '../../../../core/session/doctor_session.dart';
+import '../../../../core/supabase/repositories/supabase_doctor_repository.dart';
 import '../../models/doctor_models.dart';
 import '../models/doctor_profile_data.dart';
 import 'doctor_photo_local_store.dart';
@@ -31,7 +34,7 @@ class DoctorProfileStore extends ChangeNotifier {
   static String? _notificationPrefsLoadedForDoctorId;
   static Future<void>? _notificationPrefsLoadFuture;
 
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _doctorSub;
+  StreamSubscription<dynamic>? _doctorSub;
 
   void reset() {
     _doctorSub?.cancel();
@@ -42,9 +45,42 @@ class DoctorProfileStore extends ChangeNotifier {
   }
 
   void listenToDoctorDocument(String doctorId) {
-    if (doctorId.isEmpty || !FirebaseBootstrap.isReady) return;
+    if (doctorId.isEmpty) return;
     _doctorSub?.cancel();
-    _doctorSub = FirebaseFirestore.instance
+
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      _doctorSub = SupabaseDoctorRepository.instance
+          .watchDoctor(doctorId)
+          .listen((data) {
+        if (data == null) return;
+        final url =
+            (data['photo_url'] as String?) ?? (data['photoUrl'] as String?);
+        final key =
+            (data['photo_key'] as String?) ?? (data['photoKey'] as String?);
+        final storage = (data['photo_storage'] as String?) ??
+            (data['photoStorage'] as String?);
+        bool changed = false;
+        if (url != null && url.isNotEmpty && url != profile.photoUrl) {
+          profile.photoUrl = url;
+          changed = true;
+        }
+        if (key != null && key != profile.photoKey) {
+          profile.photoKey = key;
+          changed = true;
+        }
+        if (storage != null && storage != profile.photoStorage) {
+          profile.photoStorage = storage;
+          changed = true;
+        }
+        if (changed) {
+          notifyListeners();
+        }
+      });
+      return;
+    }
+
+    if (!FirebaseBootstrap.isReady) return;
+    _doctorSub = FirestoreClient.instance
         .collection(FirestorePaths.doctors)
         .doc(doctorId)
         .snapshots()
@@ -89,7 +125,7 @@ class DoctorProfileStore extends ChangeNotifier {
 
   Future<void> _loadNotificationPrefs(String doctorId) async {
     try {
-      final ref = FirebaseFirestore.instance
+      final ref = FirestoreClient.instance
           .collection(FirestorePaths.doctors)
           .doc(doctorId);
       final snap = await FirestoreReadHelper.getDocument(
@@ -371,12 +407,24 @@ class DoctorProfileStore extends ChangeNotifier {
         'registrationCertificate': p.registrationCertificate.trim(),
       if (p.idProof.trim().isNotEmpty) 'idProof': p.idProof.trim(),
     };
-    if (FirebaseBootstrap.isReady) {
-      await FirebaseFirestore.instance
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      await SupabaseDoctorRepository.instance.saveDoctorProfileFields(
+        doctorId,
+        data,
+      );
+      unawaited(
+        ProfileCompletionService.instance.evaluateAndMarkFromRoleDoc(
+          role: UserType.doctor,
+          uid: uid,
+          profileId: doctorId,
+        ),
+      );
+    } else if (FirebaseBootstrap.isReady) {
+      await FirestoreClient.instance
           .collection(FirestorePaths.doctors)
           .doc(doctorId)
           .set(data, SetOptions(merge: true));
-      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
       unawaited(
         ProfileCompletionService.instance.evaluateAndMarkFromRoleDoc(
           role: UserType.doctor,
@@ -410,7 +458,7 @@ class DoctorProfileStore extends ChangeNotifier {
         .toList();
 
     try {
-      final ref = FirebaseFirestore.instance
+      final ref = FirestoreClient.instance
           .collection(FirestorePaths.doctors)
           .doc(doctorId);
       final snap = await FirestoreReadHelper.getDocument(
@@ -445,7 +493,7 @@ class DoctorProfileStore extends ChangeNotifier {
     if (reviewId.isEmpty) {
       throw StateError('Missing review id — reply cannot be saved.');
     }
-    await FirebaseFirestore.instance
+    await FirestoreClient.instance
         .collection(FirestorePaths.reviews)
         .doc(reviewId)
         .update({'doctorReply': reply});
@@ -453,10 +501,10 @@ class DoctorProfileStore extends ChangeNotifier {
 
   Future<void> loadFromFirestore(String doctorId) async {
     final isDemoDoc = DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        doctorId.contains(DemoAuthConfig.demoDoctorPhone) ||
+        DemoAuthConfig.isDemoDoctorId(doctorId) ||
         DemoAuthConfig.isDemoDoctorPhone(profile.mobile) ||
         DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
-        DoctorSession.loggedInDoctorId.contains(DemoAuthConfig.demoDoctorPhone);
+        DemoAuthConfig.isDemoDoctorId(DoctorSession.loggedInDoctorId);
     if (isDemoDoc) {
       profile.verificationStatus = VerificationStatus.verified;
     }
@@ -471,7 +519,7 @@ class DoctorProfileStore extends ChangeNotifier {
         }
       }
 
-      final ref = FirebaseFirestore.instance
+      final ref = FirestoreClient.instance
           .collection(FirestorePaths.doctors)
           .doc(doctorId);
       final snap = await FirestoreReadHelper.getDocument(

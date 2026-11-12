@@ -1,0 +1,5 @@
+# Direct FirebaseFirestore.instance allowed outside repositories (must stay minimal).
+# profile_completion_service uses guarded _effectiveFirestore + test override.
+frontend/lib/core/auth/profile_completion_service.dart
+frontend/lib/core/firebase/firebase_bootstrap.dart
+frontend/lib/core/storage/profile_photo_uploader.dart

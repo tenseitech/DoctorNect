@@ -149,8 +149,10 @@ abstract final class AppointmentFirestoreMapper {
         slotShareReason: data['slotShareReason'] as String?,
         wasRescheduled: data['wasRescheduled'] as bool? ?? false,
       );
-    } catch (e, st) {
-      debugPrint('Failed to map appointment $id: $e\n$st');
+    } catch (e) {
+      debugPrint(
+        '[AppointmentFirestoreMapper.fromMap] Dropping unparseable appointment $id (error: ${e.runtimeType})',
+      );
       return null;
     }
   }

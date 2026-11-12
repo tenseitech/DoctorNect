@@ -19,12 +19,16 @@ class QualificationSelector extends FormField<String> {
     bool isRequired = true,
     Color accentColor = AppColors.doctorBlue,
     String label = 'Qualification',
+    List<String>? items,
     Widget? prefixIcon,
     QualificationDecorationBuilder? decorationBuilder,
     bool registrationStyle = false,
     FormFieldValidator<String>? validator,
   }) : super(
-          initialValue: _initialFieldValue(initialValue),
+          initialValue: _initialFieldValue(
+            initialValue,
+            items ?? AppConstants.doctorQualifications,
+          ),
           autovalidateMode: AutovalidateMode.onUserInteraction,
           validator: validator ??
               (isRequired
@@ -38,26 +42,38 @@ class QualificationSelector extends FormField<String> {
             state: state,
             onChanged: onChanged,
             label: label,
+            items: items ?? AppConstants.doctorQualifications,
             prefixIcon: prefixIcon,
             accentColor: accentColor,
             isRequired: isRequired,
             decorationBuilder: decorationBuilder,
             registrationStyle: registrationStyle,
-            initialCustomValue: _initialCustomValue(initialValue),
+            initialCustomValue: _initialCustomValue(
+              initialValue,
+              items ?? AppConstants.doctorQualifications,
+            ),
           ),
         );
 
-  static String? _initialFieldValue(String? value) {
+  static String? _initialFieldValue(String? value, List<String> list) {
     final trimmed = value?.trim() ?? '';
     if (trimmed.isEmpty) return null;
-    if (AppConstants.isListedDoctorQualification(trimmed)) return trimmed;
+    if (list
+        .where((q) => q != AppConstants.otherDoctorQualification)
+        .contains(trimmed)) {
+      return trimmed;
+    }
     return AppConstants.otherDoctorQualification;
   }
 
-  static String? _initialCustomValue(String? value) {
+  static String? _initialCustomValue(String? value, List<String> list) {
     final trimmed = value?.trim() ?? '';
     if (trimmed.isEmpty) return null;
-    if (AppConstants.isListedDoctorQualification(trimmed)) return null;
+    if (list
+        .where((q) => q != AppConstants.otherDoctorQualification)
+        .contains(trimmed)) {
+      return null;
+    }
     return trimmed;
   }
 }
@@ -67,6 +83,7 @@ class _QualificationSelectorBody extends StatefulWidget {
     required this.state,
     required this.onChanged,
     required this.label,
+    required this.items,
     required this.prefixIcon,
     required this.accentColor,
     required this.isRequired,
@@ -78,6 +95,7 @@ class _QualificationSelectorBody extends StatefulWidget {
   final FormFieldState<String> state;
   final ValueChanged<String?> onChanged;
   final String label;
+  final List<String> items;
   final Widget? prefixIcon;
   final Color accentColor;
   final bool isRequired;
@@ -169,12 +187,13 @@ class _QualificationSelectorBodyState
           dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
           style: textStyle,
           decoration: _decorate(label: label, errorText: errorText),
-          items: AppConstants.doctorQualifications
+          items: widget.items
               .map(
                 (q) => DropdownMenuItem(
                   value: q,
                   child: Text(
                     q,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,

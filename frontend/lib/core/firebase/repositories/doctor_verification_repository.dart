@@ -1,10 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
-import '../firebase_bootstrap.dart';
-import '../firestore_paths.dart';
 import '../../auth/demo_auth_config.dart';
-import 'doctor_account_repository.dart';
+import '../../supabase/repositories/supabase_doctor_repository.dart';
+import '../../supabase/supabase_bootstrap.dart';
 
 /// Real-time doctor admin-approval status for the verification gate.
 class DoctorVerificationRepository {
@@ -13,24 +11,52 @@ class DoctorVerificationRepository {
   static final DoctorVerificationRepository instance =
       DoctorVerificationRepository._();
 
+  static Stream<bool> Function(String doctorId)? _debugWatchVerifiedOverride;
+
   @visibleForTesting
-  static Stream<bool> Function(String doctorId)? debugWatchVerifiedOverride;
+  static Stream<bool> Function(String doctorId)? get debugWatchVerifiedOverride =>
+      _debugWatchVerifiedOverride;
+
+  @visibleForTesting
+  static set debugWatchVerifiedOverride(
+    Stream<bool> Function(String doctorId)? value,
+  ) {
+    assert(() {
+      if (value != null && kReleaseMode) {
+        throw AssertionError(
+          'debugWatchVerifiedOverride must not be set in release mode',
+        );
+      }
+      return true;
+    }());
+    _debugWatchVerifiedOverride = value;
+  }
+
+  /// Test-only: treat runtime as release (ignores [debugWatchVerifiedOverride]).
+  @visibleForTesting
+  static bool debugForceReleaseMode = false;
 
   @visibleForTesting
   static void debugReset() {
-    debugWatchVerifiedOverride = null;
+    _debugWatchVerifiedOverride = null;
+    debugForceReleaseMode = false;
   }
 
-  /// Parses Firestore `verified` field (bool or string) for gate routing.
+  static bool get _effectiveReleaseMode =>
+      kReleaseMode || debugForceReleaseMode;
+
+  /// Parses `verified` field (bool or string) for gate routing.
   @visibleForTesting
   static bool parseVerifiedFromDoctorData(Map<String, dynamic>? data) {
     if (data == null) return false;
-    final mobile = data['mobile'] as String? ?? data['phone'] as String?;
-    if (DemoAuthConfig.isDemoDoctorPhone(mobile)) return true;
-    final docId = data['doctorId'] as String? ?? data['id'] as String?;
-    if (DemoAuthConfig.isDemoDoctorPhone(docId) ||
-        (docId != null && docId.contains(DemoAuthConfig.demoDoctorPhone))) {
-      return true;
+    if (DemoAuthConfig.isDemoAllowed) {
+      final mobile = data['mobile'] as String? ?? data['phone'] as String?;
+      if (DemoAuthConfig.isDemoDoctorPhone(mobile)) return true;
+      final docId = data['doctorId'] as String? ?? data['id'] as String?;
+      if (DemoAuthConfig.isDemoDoctorPhone(docId) ||
+          DemoAuthConfig.isDemoDoctorId(docId)) {
+        return true;
+      }
     }
     final verified = data['verified'];
     if (verified == true) return true;
@@ -43,37 +69,21 @@ class DoctorVerificationRepository {
   }
 
   Stream<bool> watchVerified(String doctorId) {
-    if (debugWatchVerifiedOverride != null) {
-      return debugWatchVerifiedOverride!(doctorId);
+    if (!_effectiveReleaseMode) {
+      final override = _debugWatchVerifiedOverride;
+      if (override != null) {
+        return override(doctorId);
+      }
     }
-
-    if (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        doctorId.contains(DemoAuthConfig.demoDoctorPhone)) {
-      return Stream<bool>.value(true);
+    if (doctorId.isEmpty || !SupabaseBootstrap.isReady) {
+      return Stream.value(false);
     }
-
-    if (!FirebaseBootstrap.isReady || doctorId.isEmpty) {
-      return Stream<bool>.value(false);
-    }
-
-    return FirebaseFirestore.instance
-        .collection(FirestorePaths.doctors)
-        .doc(doctorId)
-        .snapshots()
-        .map((snap) {
-      if (!snap.exists || snap.data() == null) return false;
-      return parseVerifiedFromDoctorData(snap.data());
-    });
+    return SupabaseDoctorRepository.instance
+        .watchDoctor(doctorId)
+        .map(parseVerifiedFromDoctorData);
   }
 
   Future<bool> fetchVerified(String doctorId, {bool preferCache = false}) {
-    if (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        doctorId.contains(DemoAuthConfig.demoDoctorPhone)) {
-      return Future<bool>.value(true);
-    }
-    return DoctorAccountRepository.instance.isVerified(
-      doctorId,
-      preferCache: preferCache,
-    );
+    return SupabaseDoctorRepository.instance.isDoctorVerified(doctorId);
   }
 }

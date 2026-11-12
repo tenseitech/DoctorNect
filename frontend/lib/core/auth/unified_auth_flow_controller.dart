@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../features/ambulance/ambulance_shell.dart';
+import '../../features/dashboard/dashboard_shell.dart';
 import '../../features/ambulance/data/ambulance_login_cache.dart';
 import '../../features/ambulance/data/ambulance_store.dart';
 import '../constants/app_constants.dart';
@@ -12,14 +12,14 @@ import '../firebase/ambulance_auth_helper.dart';
 import '../firebase/firebase_auth_service.dart';
 import '../firebase/firebase_bootstrap.dart';
 import '../firebase/firebase_error_messages.dart';
-import '../firebase/firestore_service.dart';
+import '../firebase/repositories/ambulance_repository.dart';
+import '../config/ambulance_enabled.dart';
 import '../notifications/app_toast.dart';
 import '../session/ambulance_session.dart';
 import '../session/app_session.dart';
 import '../validators/form_validators.dart';
 import '../validators/name_validator.dart';
 import 'demo_auth_config.dart';
-import 'mobile_registration_lookup.dart';
 import 'registration_otp_service.dart';
 import 'unified_auth_coordinator.dart';
 import 'unified_auth_navigation.dart';
@@ -173,6 +173,10 @@ class UnifiedAuthFlowController extends ChangeNotifier {
         AppToast.error(context, UnifiedAuthCoordinator.wrongRoleMessage);
         return;
       }
+      if (path == UnifiedAuthPath.lookupUnavailable) {
+        AppToast.error(context, UnifiedAuthCoordinator.lookupUnavailableMessage);
+        return;
+      }
 
       final res = await RegistrationOtpService.sendOtp(
         digits,
@@ -237,49 +241,34 @@ class UnifiedAuthFlowController extends ChangeNotifier {
         return;
       }
 
-      // Authoritative server-side registration lookup
-      final lookupResult = await MobileRegistrationLookup.lookup(
+      final verifyError = await RegistrationOtpService.verify(
         digits,
-        intent: MobileLookupIntent.login,
+        _otp,
+        role: UserType.patient,
+        otpType: 'auth',
       );
+      if (!context.mounted) return;
+      if (verifyError != null) {
+        AppToast.error(context, verifyError);
+        return;
+      }
 
-      // Handle fetch error state — NEVER route to role selection on error
-      if (lookupResult.isError) {
-        if (!context.mounted) return;
-        AppToast.error(
+      final postVerify = RegistrationOtpService.postVerifyAccountLookup;
+      if (postVerify.exists == true) {
+        final targetRole = postVerify.role ?? UserType.patient;
+        _matchedRole = targetRole;
+        _authPath = UnifiedAuthPath.login;
+        await _completeLoginAfterVerifiedOtp(
           context,
-          lookupResult.errorMessage ??
-              'Could not verify account. Please check your network and try again.',
+          digits,
+          targetRole: targetRole,
         );
         return;
       }
 
-      // Handle confirmed existing user
-      if (lookupResult.exists) {
-        var targetRole = lookupResult.role;
-        // Fallback probe in Firestore if role was somehow omitted in lookup response
-        targetRole ??=
-            await FirestoreService.instance.user.findRoleWithMobile(digits);
-
-        if (targetRole == null) {
-          if (!context.mounted) return;
-          AppToast.error(
-            context,
-            'Account found, but account type could not be determined. Please contact support.',
-          );
-          return;
-        }
-
-        _matchedRole = targetRole;
-        _authPath = UnifiedAuthPath.login;
-        await _completeLogin(context, digits, _otp, targetRole: targetRole);
-        return;
-      }
-
-      // Confirmed NOT FOUND: only a confirmed "no profile exists for this phone" may show role selection
       _matchedRole = null;
       _authPath = UnifiedAuthPath.register;
-      await _completeRegistration(context, digits, _otp);
+      await _openRegistrationAfterVerifiedOtp(context, digits);
     } catch (e) {
       if (!context.mounted) return;
       AppToast.error(
@@ -303,6 +292,14 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     AppSession.clear();
 
     if (effectiveRole == UserType.ambulance) {
+      if (!AmbulanceEnabled.isOn) {
+        if (!context.mounted) return;
+        AppToast.error(
+          context,
+          'Ambulance sign-in is not available in this build.',
+        );
+        return;
+      }
       await completeAmbulanceLogin(context, digits, otp);
       return;
     }
@@ -353,7 +350,7 @@ class UnifiedAuthFlowController extends ChangeNotifier {
       return;
     }
 
-    final login = await FirestoreService.instance.ambulance
+    final login = await AmbulanceRepository.instance
         .verifyDriverMobileLogin(mobile: digits, sessionId: sessionId);
     RegistrationOtpService.clearVerificationSession();
 
@@ -380,7 +377,7 @@ class UnifiedAuthFlowController extends ChangeNotifier {
       serviceName: match.serviceName,
       driverName: match.driverName,
     );
-    await FirestoreService.instance.ambulance.linkDriverAuth(match.id);
+    await AmbulanceRepository.instance.linkDriverAuth(match.id);
 
     final fresh = AmbulanceStore.instance.findAmbulance(match.id) ?? match;
     final realName = fresh.driverName.trim().isNotEmpty
@@ -402,7 +399,9 @@ class UnifiedAuthFlowController extends ChangeNotifier {
 
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => AmbulanceShell(ambulance: fresh)),
+      MaterialPageRoute(
+        builder: (_) => const DashboardShell(userType: UserType.ambulance),
+      ),
       (_) => false,
     );
   }
@@ -454,6 +453,74 @@ class UnifiedAuthFlowController extends ChangeNotifier {
           builder: (_) => WelcomeScreen(
             verifiedMobile: digits,
             verifiedOtp: otp,
+            isNewUser: true,
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _completeLoginAfterVerifiedOtp(
+    BuildContext context,
+    String digits, {
+    required UserType targetRole,
+  }) async {
+    AppSession.clear();
+
+    if (targetRole == UserType.ambulance) {
+      if (!AmbulanceEnabled.isOn) {
+        if (!context.mounted) return;
+        AppToast.error(
+          context,
+          'Ambulance sign-in is not available in this build.',
+        );
+        return;
+      }
+      await completeAmbulanceLogin(context, digits, _otp);
+      return;
+    }
+
+    final result = await FirebaseAuthService.instance.signInWithMobileOtp(
+      expectedRole: targetRole,
+      mobile: digits,
+      otpCode: _otp,
+      skipOtpVerify: true,
+    );
+    if (!context.mounted) return;
+    await UnifiedAuthNavigation.handleSignInResult(
+      context,
+      role: targetRole,
+      result: result,
+    );
+  }
+
+  Future<void> _openRegistrationAfterVerifiedOtp(
+    BuildContext context,
+    String digits,
+  ) async {
+    if (FirebaseAuthService.instance.isSignedIn) {
+      try {
+        await FirebaseAuthService.instance.signOut();
+      } catch (_) {}
+    }
+
+    if (RegistrationOtpService.verificationSessionId == null) {
+      AppToast.error(context, 'OTP session expired. Please request a new OTP.');
+      return;
+    }
+
+    if (role != null) {
+      UnifiedAuthNavigation.openRegistrationForm(
+        context,
+        role: role!,
+        mobileDigits: digits,
+      );
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => WelcomeScreen(
+            verifiedMobile: digits,
+            verifiedOtp: _otp,
             isNewUser: true,
           ),
         ),

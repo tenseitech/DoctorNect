@@ -8,6 +8,13 @@ const MAX_PATIENTS_PER_SLOT = 3;
 const FIRESTORE_TRIGGER_REGION = 'asia-south2';
 const CALLABLE_REGION = 'asia-south1';
 
+const { enforceAbuseLimit, assertAppCheck } = require('./abuse_rate_limit');
+const { resolveCallerIdentity } = require('./caller_identity');
+
+const ENFORCE_ABUSE_APP_CHECK = String(
+  process.env.ENFORCE_ABUSE_APP_CHECK || process.env.ENFORCE_OTP_APP_CHECK || 'true',
+).trim().toLowerCase() !== 'false';
+
 const DEFAULT_DOCTOR_AVAILABILITY = {
   workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
   morningStart: '09:00 AM',
@@ -206,6 +213,7 @@ function buildAppointmentData({
   callerData,
   data,
   dateTimeTimestamp,
+  tokenNumber = 1,
 }) {
   const patientName = String(data?.patientName || callerData?.name || '').trim();
   const patientAge = Number(data?.patientAge) || Number(callerData?.age) || 0;
@@ -213,7 +221,6 @@ function buildAppointmentData({
   const doctorName = String(doctorData?.name || doctorData?.doctorName || data?.doctorName || '').trim();
   const specialization = String(doctorData?.specialization || data?.specialization || '').trim();
   const slotLabel = String(data?.slotLabel || '').trim();
-  const tokenNumber = Number(data?.tokenNumber) || 1;
   const visitType = String(data?.visitType || 'newVisit').trim();
   const patientStatus = String(data?.patientStatus || 'pending').trim();
   const doctorStatus = String(data?.doctorStatus || 'pendingRequest').trim();
@@ -229,7 +236,7 @@ function buildAppointmentData({
     patientGender,
     dateTime: dateTimeTimestamp,
     slotLabel,
-    tokenNumber,
+    tokenNumber: Number(tokenNumber) || 1,
     visitType,
     patientStatus,
     doctorStatus,
@@ -242,7 +249,9 @@ function buildAppointmentData({
       : (data?.reasonForVisit ? [String(data.reasonForVisit).trim()] : []),
     symptoms: Array.isArray(data?.symptoms) ? data.symptoms : [],
     observations: Array.isArray(data?.observations) ? data.observations : [],
-    wasRescheduled: Boolean(data?.wasRescheduled),
+    wasRescheduled: false, // In bookAppointment, always false (reschedule will be a separate callable)
+    // Server-set. data.createdVia is never copied onto the document.
+    createdVia: 'bookAppointment',
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   };
@@ -292,6 +301,7 @@ async function reconcileAppointmentSlotTransaction(db, {
   afterActive,
   afterDoctorId,
   afterDateTime,
+  afterTokenNumber = 0,
 }) {
   const beforeSlotId = beforeActive && beforeDoctorId && beforeDateTime
     ? deriveSlotId(beforeDoctorId, beforeDateTime)
@@ -313,6 +323,26 @@ async function reconcileAppointmentSlotTransaction(db, {
     }
     if (afterSlotId) {
       afterSnap = await tx.get(db.collection('doctor_slots').doc(afterSlotId));
+    }
+
+    // On appointment CREATE or legacy write, raise doctor_day_counters to max(counter, tokenNumber)
+    if (afterActive && afterDoctorId && afterDateTime && afterTokenNumber > 0) {
+      const { date: afterDate } = toIstDateAndTime(afterDateTime);
+      const dayCounterRef = db.collection('doctor_day_counters').doc(`${afterDoctorId}_${afterDate}`);
+      const counterSnap = await tx.get(dayCounterRef);
+      const currentLast = counterSnap.exists ? Number(counterSnap.data()?.lastTokenNumber || 0) : 0;
+      if (afterTokenNumber > currentLast) {
+        tx.set(
+          dayCounterRef,
+          {
+            doctorId: afterDoctorId,
+            date: afterDate,
+            lastTokenNumber: afterTokenNumber,
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+      }
     }
 
     // 1. Remove from before slot if cancelled, deleted, or rescheduled
@@ -369,20 +399,61 @@ async function reconcileAppointmentSlotTransaction(db, {
   return { reconciled: true, beforeSlotId, afterSlotId };
 }
 
+function areDateTimesEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const timeA = typeof a.toMillis === 'function' ? a.toMillis()
+    : a instanceof Date ? a.getTime()
+    : typeof a === 'number' ? a
+    : typeof a._seconds === 'number' ? a._seconds * 1000 + Math.floor((a._nanoseconds || 0) / 1e6)
+    : new Date(a).getTime();
+  const timeB = typeof b.toMillis === 'function' ? b.toMillis()
+    : b instanceof Date ? b.getTime()
+    : typeof b === 'number' ? b
+    : typeof b._seconds === 'number' ? b._seconds * 1000 + Math.floor((b._nanoseconds || 0) / 1e6)
+    : new Date(b).getTime();
+  return !isNaN(timeA) && !isNaN(timeB) && timeA === timeB;
+}
+
 /**
  * Handler for the appointments/{appointmentId} Firestore trigger.
  */
-async function reconcileAppointmentSlotHandler(event, db = getFirestore()) {
+async function reconcileAppointmentSlotHandler(event, db = getFirestore(), handlerOptions = {}) {
+  const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
+  const forceLegacy =
+    handlerOptions.forceLegacy === true || event?.__testOptions?.forceLegacyReconcile === true;
+  const isCutover = forceLegacy ? false : await isDoctorPatientSupabasePrimary();
+  if (isCutover) {
+    return { reconciled: false, reason: 'cutover_supabase_primary' };
+  }
   const before = event.data?.before?.data() || null;
   const after = event.data?.after?.data() || null;
   const appointmentId = event.params?.appointmentId || event.data?.after?.id || event.data?.before?.id;
 
   if (!appointmentId) return;
 
+  if (after && (!after.doctorId || !after.dateTime)) {
+    console.warn(`[reconcileAppointmentSlot] Skipping malformed appointment ${appointmentId}: missing doctorId or dateTime`);
+  }
+
+  // Early return if neither doctorId, dateTime, cancellationReason, nor tokenNumber changed
+  // (e.g. status, clinical notes, symptoms, or prescription updates do not cause slot reads or writes)
+  if (before && after) {
+    const doctorUnchanged = String(before.doctorId || '').trim() === String(after.doctorId || '').trim();
+    const cancelUnchanged = Boolean(before.cancellationReason) === Boolean(after.cancellationReason);
+    const dateTimeUnchanged = areDateTimesEqual(before.dateTime, after.dateTime);
+    const tokenUnchanged = Number(before.tokenNumber || 0) === Number(after.tokenNumber || 0);
+
+    if (doctorUnchanged && cancelUnchanged && dateTimeUnchanged && tokenUnchanged) {
+      return { reconciled: false, reason: 'no_slot_relevant_changes' };
+    }
+  }
+
   const beforeActive = Boolean(before && before.doctorId && before.dateTime && !before.cancellationReason);
   const afterActive = Boolean(after && after.doctorId && after.dateTime && !after.cancellationReason);
+  const afterTokenNumber = Number(after?.tokenNumber || 0);
 
-  await reconcileAppointmentSlotTransaction(db, {
+  return await reconcileAppointmentSlotTransaction(db, {
     appointmentId,
     beforeActive,
     beforeDoctorId: before?.doctorId,
@@ -390,8 +461,47 @@ async function reconcileAppointmentSlotHandler(event, db = getFirestore()) {
     afterActive,
     afterDoctorId: after?.doctorId,
     afterDateTime: after?.dateTime,
+    afterTokenNumber,
   });
 }
+
+function parseAppointmentDateTime(dateTimeRaw) {
+  if (!dateTimeRaw) {
+    throw new HttpsError('invalid-argument', 'dateTime is required.');
+  }
+  if (typeof dateTimeRaw.toDate === 'function') return dateTimeRaw;
+  if (dateTimeRaw instanceof Date) return Timestamp.fromDate(dateTimeRaw);
+  if (typeof dateTimeRaw === 'string' || typeof dateTimeRaw === 'number') {
+    return Timestamp.fromDate(new Date(dateTimeRaw));
+  }
+  if (dateTimeRaw._seconds !== undefined) {
+    return new Timestamp(dateTimeRaw._seconds, dateTimeRaw._nanoseconds || 0);
+  }
+  if (dateTimeRaw.seconds !== undefined) {
+    return new Timestamp(dateTimeRaw.seconds, dateTimeRaw.nanoseconds || 0);
+  }
+  throw new HttpsError('invalid-argument', 'Invalid dateTime format.');
+}
+
+async function allocateNextDayToken(tx, db, doctorId, slotDate) {
+  const dayCounterRef = db.collection('doctor_day_counters').doc(`${doctorId}_${slotDate}`);
+  const counterSnap = await tx.get(dayCounterRef);
+  const lastToken = counterSnap.exists ? Number(counterSnap.data()?.lastTokenNumber || 0) : 0;
+  const assignedTokenNumber = lastToken + 1;
+  tx.set(
+    dayCounterRef,
+    {
+      doctorId,
+      date: slotDate,
+      lastTokenNumber: assignedTokenNumber,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true },
+  );
+  return assignedTokenNumber;
+}
+
+const RESCHEDULE_ALLOWED_STATUSES = new Set(['pendingRequest', 'confirmed', 'waiting']);
 
 /**
  * Handler for the callable bookAppointment.
@@ -401,16 +511,22 @@ async function bookAppointmentHandler(data, auth, db = getFirestore()) {
     throw new HttpsError('unauthenticated', 'User must be authenticated to book an appointment.');
   }
 
-  // 1. Verify caller is a patient
-  const callerSnap = await db.collection('users').doc(auth.uid).get();
-  if (!callerSnap.exists) {
-    throw new HttpsError('permission-denied', 'User profile not found.');
+  // 1. Verify caller is a patient (Supabase `users` when cutover is primary)
+  let callerData;
+  try {
+    callerData = await resolveCallerIdentity({ db, uid: auth.uid });
+  } catch (err) {
+    if (err instanceof HttpsError && err.code === 'unauthenticated') {
+      throw new HttpsError('permission-denied', 'User profile not found.');
+    }
+    throw err;
   }
-  const callerData = callerSnap.data() || {};
   if (callerData.role !== 'patient') {
     throw new HttpsError('permission-denied', 'Only patients can book appointments.');
   }
-  const patientId = String(callerData.profileId || auth.uid).trim();
+  const patientId = String(
+    callerData.profileId || callerData.profile_id || auth.uid,
+  ).trim();
 
   // 2. Verify doctor exists, verified and not deactivated
   const doctorId = String(data?.doctorId || '').trim();
@@ -431,25 +547,7 @@ async function bookAppointmentHandler(data, auth, db = getFirestore()) {
   }
 
   // 3. Verify slot inside doctor availability
-  const dateTimeRaw = data?.dateTime;
-  if (!dateTimeRaw) {
-    throw new HttpsError('invalid-argument', 'dateTime is required.');
-  }
-
-  let dateTimeTimestamp;
-  if (typeof dateTimeRaw.toDate === 'function') {
-    dateTimeTimestamp = dateTimeRaw;
-  } else if (dateTimeRaw instanceof Date) {
-    dateTimeTimestamp = Timestamp.fromDate(dateTimeRaw);
-  } else if (typeof dateTimeRaw === 'string' || typeof dateTimeRaw === 'number') {
-    dateTimeTimestamp = Timestamp.fromDate(new Date(dateTimeRaw));
-  } else if (dateTimeRaw._seconds !== undefined) {
-    dateTimeTimestamp = new Timestamp(dateTimeRaw._seconds, dateTimeRaw._nanoseconds || 0);
-  } else if (dateTimeRaw.seconds !== undefined) {
-    dateTimeTimestamp = new Timestamp(dateTimeRaw.seconds, dateTimeRaw.nanoseconds || 0);
-  } else {
-    throw new HttpsError('invalid-argument', 'Invalid dateTime format.');
-  }
+  const dateTimeTimestamp = parseAppointmentDateTime(data?.dateTime);
 
   const availSnap = await db.collection('doctor_availability').doc(doctorId).get();
   const schedule = availSnap.exists ? availSnap.data() : DEFAULT_DOCTOR_AVAILABILITY;
@@ -466,8 +564,9 @@ async function bookAppointmentHandler(data, auth, db = getFirestore()) {
   const slotRef = db.collection('doctor_slots').doc(slotId);
   const apptRef = db.collection('appointments').doc();
   const appointmentId = apptRef.id;
+  let assignedTokenNumber = 1;
 
-  // 5. In ONE transaction: check capacity, check patient double-booking, create appointment, add to slot
+  // 5. In ONE transaction: check capacity, check patient double-booking, check slotShareReason, increment day counter, create appointment, add to slot
   await db.runTransaction(async (tx) => {
     const slotSnap = await tx.get(slotRef);
     const slotData = slotSnap.exists ? slotSnap.data() : null;
@@ -486,7 +585,12 @@ async function bookAppointmentHandler(data, auth, db = getFirestore()) {
       const existingApptSnap = await tx.get(db.collection('appointments').doc(existingId));
       if (existingApptSnap.exists) {
         const existingData = existingApptSnap.data() || {};
-        if (existingData.patientId === patientId && !existingData.cancellationReason) {
+        const existingName = String(existingData.patientName || '').trim().toLowerCase();
+        const incomingName = String(data?.patientName || callerData?.name || '').trim().toLowerCase();
+        const samePerson = incomingName.length === 0 || existingName === incomingName;
+        // Same account may book a different family member in this slot.
+        // The max-3 cap and slotShareReason checks below still apply.
+        if (existingData.patientId === patientId && !existingData.cancellationReason && samePerson) {
           throw new HttpsError(
             'failed-precondition',
             'You already have an active appointment in this time slot.'
@@ -494,6 +598,20 @@ async function bookAppointmentHandler(data, auth, db = getFirestore()) {
         }
       }
     }
+
+    // Require slotShareReason if slot already has 1 or 2 active bookings (matching UI rule)
+    // Client-supplied wasRescheduled is NOT honored in bookAppointment; always treated as false.
+    if (currentActiveIds.length >= 1) {
+      const slotShareReason = String(data?.slotShareReason || '').trim();
+      if (!slotShareReason) {
+        throw new HttpsError(
+          'invalid-argument',
+          'Please provide a reason for sharing this time slot.',
+        );
+      }
+    }
+
+    assignedTokenNumber = await allocateNextDayToken(tx, db, doctorId, slotDate);
 
     // Build appointment matching AppointmentFirestoreMapper
     const appointmentDoc = buildAppointmentData({
@@ -504,6 +622,7 @@ async function bookAppointmentHandler(data, auth, db = getFirestore()) {
       callerData,
       data,
       dateTimeTimestamp,
+      tokenNumber: assignedTokenNumber,
     });
 
     tx.set(apptRef, appointmentDoc);
@@ -531,6 +650,7 @@ async function bookAppointmentHandler(data, auth, db = getFirestore()) {
     patientId,
     slotDate,
     slotTime,
+    tokenNumber: assignedTokenNumber,
   };
 }
 
@@ -549,12 +669,205 @@ const reconcileAppointmentSlot = onDocumentWritten(
 );
 
 /**
+ * Patient reschedule. Allocates a new day token only when the IST day changes.
+ * Client-sent tokenNumber, patientId, doctorId, and createdVia are ignored.
+ */
+async function rescheduleAppointmentHandler(data, auth, db = getFirestore()) {
+  if (!auth?.uid) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated to reschedule an appointment.');
+  }
+
+  const callerSnap = await db.collection('users').doc(auth.uid).get();
+  if (!callerSnap.exists) {
+    throw new HttpsError('permission-denied', 'User profile not found.');
+  }
+  const callerData = callerSnap.data() || {};
+  if (callerData.role !== 'patient') {
+    throw new HttpsError('permission-denied', 'Only patients can reschedule appointments.');
+  }
+  const callerPatientId = String(callerData.profileId || auth.uid).trim();
+
+  const appointmentId = String(data?.appointmentId || '').trim();
+  if (!appointmentId) {
+    throw new HttpsError('invalid-argument', 'appointmentId is required.');
+  }
+  const slotLabel = String(data?.slotLabel || '').trim();
+  if (!slotLabel) {
+    throw new HttpsError('invalid-argument', 'slotLabel is required.');
+  }
+
+  const dateTimeTimestamp = parseAppointmentDateTime(data?.dateTime);
+  const apptRef = db.collection('appointments').doc(appointmentId);
+  const existingSnap = await apptRef.get();
+  if (!existingSnap.exists) {
+    throw new HttpsError('not-found', 'Appointment not found.');
+  }
+  const existing = existingSnap.data() || {};
+  if (String(existing.patientId || '').trim() !== callerPatientId) {
+    throw new HttpsError('permission-denied', 'You can only reschedule your own appointment.');
+  }
+  const doctorStatus = String(existing.doctorStatus || '').trim();
+  if (!RESCHEDULE_ALLOWED_STATUSES.has(doctorStatus)) {
+    throw new HttpsError(
+      'failed-precondition',
+      'This appointment cannot be rescheduled.',
+    );
+  }
+
+  const doctorId = String(existing.doctorId || '').trim();
+  const doctorSnap = await db.collection('doctors').doc(doctorId).get();
+  if (!doctorSnap.exists) {
+    throw new HttpsError('not-found', 'Doctor not found.');
+  }
+  const doctorData = doctorSnap.data() || {};
+  if (doctorData.verified !== true) {
+    throw new HttpsError('failed-precondition', 'Doctor is not verified.');
+  }
+  if (doctorData.deactivated === true) {
+    throw new HttpsError('failed-precondition', 'Doctor account is deactivated.');
+  }
+
+  const availSnap = await db.collection('doctor_availability').doc(doctorId).get();
+  const schedule = availSnap.exists ? availSnap.data() : DEFAULT_DOCTOR_AVAILABILITY;
+  const availabilityCheck = isSlotInsideDoctorAvailability(schedule, dateTimeTimestamp);
+  if (!availabilityCheck.valid) {
+    throw new HttpsError('failed-precondition', availabilityCheck.reason);
+  }
+
+  const newSlotId = deriveSlotId(doctorId, dateTimeTimestamp);
+  const { date: newDate, time: newTime } = toIstDateAndTime(dateTimeTimestamp);
+  const oldIst = toIstDateAndTime(existing.dateTime);
+  const sameDay = oldIst.date === newDate;
+  let tokenNumber = Number(existing.tokenNumber || 0);
+
+  await db.runTransaction(async (tx) => {
+    const freshSnap = await tx.get(apptRef);
+    if (!freshSnap.exists) {
+      throw new HttpsError('not-found', 'Appointment not found.');
+    }
+    const fresh = freshSnap.data() || {};
+    if (String(fresh.patientId || '').trim() !== callerPatientId) {
+      throw new HttpsError('permission-denied', 'You can only reschedule your own appointment.');
+    }
+    const freshStatus = String(fresh.doctorStatus || '').trim();
+    if (!RESCHEDULE_ALLOWED_STATUSES.has(freshStatus)) {
+      throw new HttpsError(
+        'failed-precondition',
+        'This appointment cannot be rescheduled.',
+      );
+    }
+
+    const oldSlotId = deriveSlotId(doctorId, fresh.dateTime);
+    if (sameDay) {
+      tokenNumber = Number(fresh.tokenNumber || 0);
+    } else {
+      tokenNumber = await allocateNextDayToken(tx, db, doctorId, newDate);
+    }
+
+    if (oldSlotId !== newSlotId) {
+      const newSlotRef = db.collection('doctor_slots').doc(newSlotId);
+      const slotSnap = await tx.get(newSlotRef);
+      const currentActiveIds = (slotSnap.exists ? (slotSnap.data()?.activeAppointmentIds || []) : [])
+        .filter((id) => id !== appointmentId);
+      if (currentActiveIds.length >= MAX_PATIENTS_PER_SLOT) {
+        throw new HttpsError(
+          'resource-exhausted',
+          `This time slot is full. Maximum ${MAX_PATIENTS_PER_SLOT} patients allowed at the same time.`,
+        );
+      }
+      for (const existingId of currentActiveIds) {
+        const existingApptSnap = await tx.get(db.collection('appointments').doc(existingId));
+        if (!existingApptSnap.exists) continue;
+        const existingData = existingApptSnap.data() || {};
+        const existingName = String(existingData.patientName || '').trim().toLowerCase();
+        const incomingName = String(fresh.patientName || callerData?.name || '').trim().toLowerCase();
+        const samePerson = incomingName.length === 0 || existingName === incomingName;
+        if (existingData.patientId === callerPatientId && !existingData.cancellationReason && samePerson) {
+          throw new HttpsError(
+            'failed-precondition',
+            'You already have an active appointment in this time slot.',
+          );
+        }
+      }
+      if (currentActiveIds.length >= 1) {
+        const slotShareReason = String(data?.slotShareReason || '').trim();
+        if (!slotShareReason) {
+          throw new HttpsError(
+            'invalid-argument',
+            'Please provide a reason for sharing this time slot.',
+          );
+        }
+      }
+
+      const oldSlotRef = db.collection('doctor_slots').doc(oldSlotId);
+      tx.set(
+        oldSlotRef,
+        {
+          activeAppointmentIds: FieldValue.arrayRemove(appointmentId),
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      tx.set(
+        newSlotRef,
+        {
+          doctorId,
+          date: newDate,
+          time: newTime,
+          activeAppointmentIds: FieldValue.arrayUnion(appointmentId),
+          updatedAt: FieldValue.serverTimestamp(),
+          slotOverflow: currentActiveIds.length + 1 > MAX_PATIENTS_PER_SLOT,
+        },
+        { merge: true },
+      );
+    }
+
+    tx.set(
+      apptRef,
+      {
+        dateTime: dateTimeTimestamp,
+        slotLabel,
+        tokenNumber,
+        patientStatus: 'confirmed',
+        doctorStatus: 'confirmed',
+        wasRescheduled: true,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+  });
+
+  return {
+    ok: true,
+    appointmentId,
+    doctorId,
+    patientId: callerPatientId,
+    tokenNumber,
+    slotDate: newDate,
+    slotTime: newTime,
+  };
+}
+
+/**
  * Cloud Function Callable bookAppointment in asia-south1.
  */
 const bookAppointment = onCall(
-  { region: CALLABLE_REGION },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
   async (request) => {
-    return await bookAppointmentHandler(request.data, request.auth);
+    assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
+    const db = getFirestore();
+    await enforceAbuseLimit(db, request, 'booking');
+    return await bookAppointmentHandler(request.data, request.auth, db);
+  },
+);
+
+const rescheduleAppointment = onCall(
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  async (request) => {
+    assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
+    const db = getFirestore();
+    await enforceAbuseLimit(db, request, 'booking');
+    return await rescheduleAppointmentHandler(request.data, request.auth, db);
   },
 );
 
@@ -563,6 +876,7 @@ module.exports = {
   DEFAULT_DOCTOR_AVAILABILITY,
   FIRESTORE_TRIGGER_REGION,
   CALLABLE_REGION,
+  ENFORCE_ABUSE_APP_CHECK,
   toIstDateAndTime,
   deriveSlotId,
   parseTimeToMinutes,
@@ -571,6 +885,8 @@ module.exports = {
   reconcileAppointmentSlotTransaction,
   reconcileAppointmentSlotHandler,
   bookAppointmentHandler,
+  rescheduleAppointmentHandler,
   reconcileAppointmentSlot,
   bookAppointment,
+  rescheduleAppointment,
 };

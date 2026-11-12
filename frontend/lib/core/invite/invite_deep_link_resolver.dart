@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config/ambulance_enabled.dart';
 import '../enums/user_type.dart';
 import '../../features/auth/unified_mobile_auth_screen.dart';
 import 'pending_doctor_invite_store.dart';
@@ -34,7 +35,8 @@ abstract final class InviteDeepLinkResolver {
         'pharmacy' => UserType.medicalStore,
         'lab' => UserType.lab,
         'doctor' => UserType.doctor,
-        'ambulance' => UserType.ambulance,
+        'ambulance' when AmbulanceEnabled.isOn => UserType.ambulance,
+        'ambulance' => UserType.patient,
         _ => UserType.patient,
       };
     }

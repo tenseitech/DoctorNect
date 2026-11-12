@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:medibond/core/config/ambulance_enabled.dart';
+import 'package:medibond/core/notifications/app_toast.dart';
 import 'package:medibond/core/constants/ambulance_icons.dart';
 import 'package:medibond/core/constants/app_constants.dart';
 import 'package:medibond/core/constants/app_icons.dart';
@@ -9,7 +11,6 @@ import 'package:medibond/core/data/shared_appointments_store.dart';
 import 'package:medibond/core/firebase/firebase_error_messages.dart';
 import 'package:medibond/core/firebase/firestore_service.dart';
 import 'package:medibond/core/layout/responsive_layout.dart';
-import 'package:medibond/core/notifications/app_toast.dart';
 import 'package:medibond/core/notifications/doctor_notification_emitter.dart';
 import 'package:medibond/core/session/doctor_session.dart';
 import 'package:medibond/core/session/patient_session.dart';
@@ -175,11 +176,17 @@ class _DoctorAppointmentDetailScreenState
   }
 
   static bool _canBookAmbulance(AppointmentStatus status) {
+    if (!AmbulanceEnabled.isOn) return false;
     return status != AppointmentStatus.cancelled &&
         status != AppointmentStatus.noShow;
   }
 
   Future<void> _openBookAmbulance(Appointment appt) async {
+    if (!AmbulanceEnabled.isOn) {
+      if (!mounted) return;
+      AppToast.info(context, 'Ambulance booking is not available in this build.');
+      return;
+    }
     final record = _store.findRecordById(appt.id);
     var name = appt.patientName.trim();
     var phone =
@@ -935,7 +942,9 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
     return appointment;
   }
 
-  bool _isCancelled(PatientAppointment a) => a.cancellationReason != null;
+  bool _isCancelled(PatientAppointment a) =>
+      a.doctorStatus == AppointmentStatus.cancelled ||
+      (a.cancellationReason != null && a.cancellationReason!.trim().isNotEmpty);
 
   bool _isUpcoming(PatientAppointment a) =>
       !_isCancelled(a) &&

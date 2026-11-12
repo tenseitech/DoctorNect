@@ -27,11 +27,11 @@ class AppointmentsSection extends StatelessWidget {
     List<PatientAppointment> all,
   ) {
     final upcoming = all
-        .where((a) => a.cancellationReason == null && a.isUpcoming)
+        .where((a) => !a.isCancelled && a.isUpcoming)
         .toList()
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
     final rest = all
-        .where((a) => a.cancellationReason != null || !a.isUpcoming)
+        .where((a) => a.isCancelled || !a.isUpcoming)
         .toList()
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return [...upcoming, ...rest].take(3).toList();
@@ -451,7 +451,7 @@ String _formatDoctorName(String name) {
 ({String label, Color color}) _appointmentStatusStyle(
   PatientAppointment appointment,
 ) {
-  if (appointment.cancellationReason != null) {
+  if (appointment.isCancelled) {
     return (label: 'Cancelled', color: const Color(0xFFDC2626));
   }
   if (appointment.status == PatientBookingStatus.confirmed) {

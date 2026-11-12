@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/invite/doctor_invite_service.dart';
 import '../../../core/session/doctor_session.dart';
@@ -141,7 +140,7 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
-                        TablerIcons.users_plus,
+                        Icons.group_add_rounded,
                         color: AppColors.doctorBlue,
                       ),
                     ),

@@ -2,7 +2,10 @@ import 'dart:async';
 
 import '../../../core/auth/profile_completion_service.dart';
 import '../../../core/enums/user_type.dart';
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/repositories/lab_repository.dart';
+
+export '../../../core/firebase/repositories/lab_repository.dart'
+    show RegisteredLabProfile;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -28,7 +31,7 @@ class LabRegistry extends ChangeNotifier {
   }
 
   static Future<void> refreshFromFirestore({bool preferCache = true}) async {
-    final labs = await FirestoreService.instance.lab.fetchVerifiedLabs(
+    final labs = await LabRepository.instance.fetchVerifiedLabs(
       preferCache: preferCache,
     );
     instance._labs
@@ -39,7 +42,7 @@ class LabRegistry extends ChangeNotifier {
 
   static Future<void> ensureLabLoaded(String labId) async {
     if (labId.isEmpty || findById(labId) != null) return;
-    final remote = await FirestoreService.instance.lab.fetchLabById(labId);
+    final remote = await LabRepository.instance.fetchLabById(labId);
     if (remote == null) return;
     instance._labs.add(remote);
     instance.notifyListeners();
@@ -93,7 +96,7 @@ class LabRegistry extends ChangeNotifier {
   }) async {
     var index = instance._labs.indexWhere((l) => l.id == labId);
     if (index < 0) {
-      final remote = await FirestoreService.instance.lab.fetchLabById(labId);
+      final remote = await LabRepository.instance.fetchLabById(labId);
       if (remote == null) return 'Lab not found';
       instance._labs.add(remote);
       index = instance._labs.length - 1;
@@ -124,7 +127,7 @@ class LabRegistry extends ChangeNotifier {
     }
 
     try {
-      await FirestoreService.instance.lab.updateLabFields(
+      await LabRepository.instance.updateLabFields(
         labId,
         labName: labName,
         licenseNumber: licenseNumber,
@@ -152,8 +155,7 @@ class LabRegistry extends ChangeNotifier {
       pincode: pincode,
       phone: phone,
       email: normalizedEmail,
-      gstNumber: gstNumber,
-      clearGstNumber: clearGstNumber,
+      gstNumber: clearGstNumber ? null : (gstNumber ?? current.gstNumber),
       verified: verified,
     );
     if (labName != null && labId == LabSession.loggedInLabId) {

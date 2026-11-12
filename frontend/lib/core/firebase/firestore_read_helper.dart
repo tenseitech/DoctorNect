@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../config/firestore_forbidden_guard.dart';
 import 'firebase_bootstrap.dart';
 
 abstract final class FirestoreReadHelper {
@@ -13,6 +14,7 @@ abstract final class FirestoreReadHelper {
     /// keep the default cache-first behaviour.
     bool requireServerIfCacheNonEmpty = false,
   }) async {
+    FirestoreForbiddenGuard.assertNotForbidden('FirestoreReadHelper.getQuery');
     if (preferCache &&
         !requireServerIfCacheNonEmpty &&
         FirebaseBootstrap.isReady) {
@@ -39,6 +41,7 @@ abstract final class FirestoreReadHelper {
     required DocumentReference<T> reference,
     bool preferCache = true,
   }) async {
+    FirestoreForbiddenGuard.assertNotForbidden('FirestoreReadHelper.getDocument');
     if (preferCache && FirebaseBootstrap.isReady) {
       try {
         final cached = await reference.get(

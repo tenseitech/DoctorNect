@@ -1,0 +1,50 @@
+name: Auth Gateway CI & Container Build
+
+on:
+  push:
+    branches: [main, master, staging]
+    paths:
+      - 'services/api-gateway/**'
+      - '.github/workflows/gateway_ci.yml'
+  pull_request:
+    branches: [main, master, staging]
+    paths:
+      - 'services/api-gateway/**'
+      - '.github/workflows/gateway_ci.yml'
+
+jobs:
+  test-and-build:
+    name: Test & Build Gateway Container
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run Gateway Unit & Security Tests
+        working-directory: services/api-gateway
+        run: |
+          node --test test/*.test.js
+
+      - name: Run NPM Security Audit
+        working-directory: services/api-gateway
+        run: |
+          npm audit --audit-level=high
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Gateway Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/api-gateway
+          file: ./services/api-gateway/Dockerfile
+          push: false
+          tags: doctornect/api-gateway:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -10,6 +10,9 @@
     {
       "source": "backend/functions",
       "codebase": "default",
+      "predeploy": [
+        "node scripts/ops/predeploy_notification_outbox_guard.js"
+      ],
       "ignore": [
         "node_modules",
         ".git",
@@ -20,9 +23,13 @@
         ".env.local",
         ".env.production",
         ".env.medibond-45fad",
+        "**/.env*",
+        "**/*.bak*",
+        "**/.secret*",
+        "**/service-account*",
         ".secret.local",
         "secrets/**",
-               "*.p12",
+        "*.p12",
         "service-account*.json"
       ]
     }
@@ -189,6 +196,6 @@
     "ui": {
       "enabled": false
     },
-    "singleProjectMode": true
+    "singleProjectMode": false
   }
 }

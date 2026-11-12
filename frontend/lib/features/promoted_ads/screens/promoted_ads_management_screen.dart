@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import '../../../core/widgets/s3_aware_network_image.dart';
 import '../../../core/models/promoted_ad_model.dart';
 import '../../../core/services/promoted_ads_service.dart';
@@ -300,7 +299,7 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                                 ),
                                 child: Center(
                                   child: Icon(
-                                    TablerIcons.speakerphone,
+                                    Icons.campaign_rounded,
                                     size: 44,
                                     color: isDark
                                         ? const Color(0xFFC7D2FE)
@@ -377,18 +376,13 @@ class _PromotedAdCard extends StatelessWidget {
     final statusColor = switch (ad.status) {
       'active' => const Color(0xFF16A34A),
       'pending_payment' => const Color(0xFFEA580C),
+      'pending_approval' => const Color(0xFFCA8A04),
       'expired' => Colors.grey.shade600,
       'rejected' => Colors.red.shade700,
       _ => Colors.blue.shade700,
     };
 
-    final statusLabel = switch (ad.status) {
-      'active' => 'ACTIVE',
-      'pending_payment' => 'PENDING PAYMENT',
-      'expired' => 'EXPIRED',
-      'rejected' => 'FAILED / REJECTED',
-      _ => 'DRAFT',
-    };
+    final statusLabel = ad.ownerDashboardLabel;
 
     return Container(
       decoration: BoxDecoration(
