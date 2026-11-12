@@ -3346,7 +3346,7 @@ function postOtpAccountFieldsFromSearch(search) {
   return { exists, role };
 }
 
-/** Read-only: whether a mobile conflicts with login/registration intent (no role disclosure). */
+/** Authoritative lookup: conflict flag plus whether mobile exists and registered role (main 4d9f64f, no demo bypass). */
 async function lookupMobileRegistration(db, data) {
   const digits = normalizeMobileDigits(data?.mobile);
   if (!digits) {
@@ -3358,13 +3358,20 @@ async function lookupMobileRegistration(db, data) {
   }
   const requestedRole = normalizeRole(data?.role || '');
   const search = await findUserByMobileDigits(db, digits);
+  const registeredRole = search.found ? normalizeRole(search.role) : null;
+  const exists = Boolean(search.found);
   const conflict = resolveMobileLookupConflict({
-    found: search.found,
-    registeredRole: search.role,
+    found: exists,
+    registeredRole,
     requestedRole,
     intent,
   });
-  return { ok: true, conflict };
+  return {
+    ok: true,
+    conflict,
+    exists,
+    role: exists ? registeredRole : null,
+  };
 }
 
 /**

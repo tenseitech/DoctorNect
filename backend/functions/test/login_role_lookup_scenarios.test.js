@@ -230,7 +230,7 @@ test('verifyUserRegistrationOtp — successful registration OTP returns exists/r
   }
 });
 
-test('lookupMobileRegistration — unauthenticated lookup stays conflict-only (no exists/role)', async () => {
+test('lookupMobileRegistration — returns conflict plus exists/role for client login routing', async () => {
   const res = await lookupMobileRegistration(emptyFirestoreDb(), {
     mobile: '9876543210',
     intent: 'login',
@@ -238,6 +238,6 @@ test('lookupMobileRegistration — unauthenticated lookup stays conflict-only (n
   });
   assert.equal(res.ok, true);
   assert.ok(Object.prototype.hasOwnProperty.call(res, 'conflict'));
-  assert.equal(Object.prototype.hasOwnProperty.call(res, 'exists'), false);
-  assert.equal(Object.prototype.hasOwnProperty.call(res, 'role'), false);
+  assert.equal(res.exists, false);
+  assert.equal(res.role, null);
 });
