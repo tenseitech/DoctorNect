@@ -2,7 +2,7 @@
 
 **Document:** `docs/runbooks/PRODUCTION_CUTOVER_RDS.md`  
 **Target Environment:** AWS Amazon RDS PostgreSQL (Production) + AWS ECS Fargate Option A Access Layer  
-**Staging Environment:** Supabase `rnltknemwnjrjxthtull` (Holds test data only, remains intact)
+**Staging Environment:** Supabase `staging-project-ref` (Holds test data only, remains intact)
 
 ---
 
@@ -148,5 +148,5 @@ Expected output:
 ## 3. Rollback Procedure
 If any fatal failure occurs during cutover prior to public DNS transition:
 1. **Database:** Since no real user data exists yet on RDS, production database can be wiped or recreated from the clean snapshot.
-2. **Staging:** Supabase project `rnltknemwnjrjxthtull` remains completely intact and unaffected.
+2. **Staging:** Supabase project `staging-project-ref` remains completely intact and unaffected.
 3. **App & Functions:** Revert `APP_ENV` to `staging` in Cloud Functions and rebuild app pointing to Supabase.

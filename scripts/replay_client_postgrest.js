@@ -3,7 +3,7 @@
  * Validates that least-privilege grants and RLS policies allow all expected operations
  * across all 5 roles (and pre-login anon) without 403 / 42501 regressions.
  *
- * SAFETY GUARD: NEVER EXECUTE AGAINST PRODUCTION SUPABASE (rnltknemwnjrjxthtull).
+ * SAFETY GUARD: NEVER EXECUTE AGAINST PRODUCTION SUPABASE (use STAGING_SUPABASE_URL anchor only).
  */
 
 const fs = require('fs');

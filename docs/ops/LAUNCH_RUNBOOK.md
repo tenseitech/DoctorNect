@@ -2,7 +2,7 @@
 
 > **Document Type:** Manual Operator Runbook  
 > **Target Release:** DoctorNect Launch-Ready Build (Doctor, Patient, Pharmacy, Lab, Ambulance)  
-> **Database:** Primary Supabase PostgreSQL (`DRNECT-DB`, Project Ref: `rnltknemwnjrjxthtull`)  
+> **Database:** Primary Supabase PostgreSQL (`DRNECT-DB`, Project Ref: `staging-project-ref`)  
 > **Identity:** Firebase Authentication (`medibond-45fad`)  
 > **Cache/Rate Limiting:** Redis / Google Cloud Memorystore  
 > **Storage Mode for Launch:** Firebase Storage (Default, Safe; `use_s3_storage=false`)  
@@ -65,11 +65,11 @@ cd ..
 Verify that all 31 database migrations are applied on remote production Supabase:
 
 ```bash
-npx supabase migration list --workdir backend --project-ref rnltknemwnjrjxthtull
+npx supabase migration list --workdir backend --project-ref staging-project-ref
 ```
 
 **Expected Result:**
-All 31 migrations (`20260923000001` through `20261022000001`) must appear with timestamps in both `Local` and `Remote` columns. If any migration is missing, do NOT run destructive resets; inspect `db/migrations/` and apply missing migrations strictly via `npx supabase db push --workdir backend --project-ref rnltknemwnjrjxthtull`.
+All 31 migrations (`20260923000001` through `20261022000001`) must appear with timestamps in both `Local` and `Remote` columns. If any migration is missing, do NOT run destructive resets; inspect `db/migrations/` and apply missing migrations strictly via `npx supabase db push --workdir backend --project-ref staging-project-ref`.
 
 ---
 
@@ -81,7 +81,7 @@ All 31 migrations (`20260923000001` through `20261022000001`) must appear with t
 Supabase PostgreSQL verifies Firebase Auth JWTs. PostgREST must be authorized to decode tokens minted by Firebase:
 
 1. Open your browser and navigate to:
-   `https://supabase.com/dashboard/project/rnltknemwnjrjxthtull/settings/auth`
+   `https://supabase.com/dashboard/project/staging-project-ref/settings/auth`
 2. Scroll to **Third-Party Auth** (or **Custom JWT Providers** / **Firebase Auth**).
 3. Toggle **Firebase Auth** to **ON**.
 4. Configure the settings:
@@ -97,7 +97,7 @@ Supabase PostgreSQL verifies Firebase Auth JWTs. PostgREST must be authorized to
 - **Estimated Time:** 15-20 minutes total
 - **Reversibility:** Fully Reversible (Can redeploy previous code or roll back)
 
-The 50 Cloud Functions currently in production carry stale references to `irpkyedfmdsuvapfnrim`. They must be redeployed to inject production configuration (`rnltknemwnjrjxthtull`) from `backend/functions/.env`.
+The 50 Cloud Functions currently in production carry stale references to `legacy-staging-ref`. They must be redeployed to inject production configuration (`staging-project-ref`) from `backend/functions/.env`.
 
 ### Secret Sourcing Architecture & Overlap Invariants (Cloud Functions 2nd Gen)
 
@@ -111,7 +111,7 @@ In Google Cloud Functions v2 (backed by Cloud Run), an environment variable name
 2. `serviceConfig.secretEnvironmentVariables` (injected via `defineSecret(...)` / Google Secret Manager).
 
 #### Sourcing Decision (Smallest Safe Change)
-- **`SUPABASE_URL`**: Sourced **exclusively from `backend/functions/.env`** as a plain environment variable across all functions. It is a public, non-sensitive URL (`https://rnltknemwnjrjxthtull.supabase.co`) identical to the client app endpoint. Removing `defineSecret('SUPABASE_URL')` from `delete_my_account.js` eliminated the overlap with zero impact on other functions.
+- **`SUPABASE_URL`**: Sourced **exclusively from `backend/functions/.env`** as a plain environment variable across all functions. It is a public, non-sensitive URL (`https://staging-project-ref.supabase.co`) identical to the client app endpoint. Removing `defineSecret('SUPABASE_URL')` from `delete_my_account.js` eliminated the overlap with zero impact on other functions.
 - **`SUPABASE_SERVICE_ROLE_KEY`**: Sourced **exclusively from Google Secret Manager (`medibond-45fad`, version 2)** via `defineSecret('SUPABASE_SERVICE_ROLE_KEY')`. It was deliberately removed from `backend/functions/.env` to avoid baking the master administrative secret into Cloud Run plain environment variables.
 - **`AWS_ACCESS_KEY_ID` & `AWS_SECRET_ACCESS_KEY`**: Sourced **exclusively from Google Secret Manager (`medibond-45fad`, version 1)** via `defineSecret(...)` on `deleteMyAccount` and S3 storage endpoints. Commented out from `backend/functions/.env` to prevent overlap errors.
 - **`RAZORPAY_WEBHOOK_SECRET`**: Sourced **exclusively from Google Secret Manager** on `razorpayWebhook`.
@@ -161,7 +161,7 @@ firebase deploy --only \
 **Post-Batch Verification:**
 ```bash
 gcloud functions describe completeMobileOtpLogin --gen2 --region asia-south1 --project medibond-45fad --format="value(serviceConfig.environmentVariables.SUPABASE_URL)"
-# Expected Output: https://rnltknemwnjrjxthtull.supabase.co
+# Expected Output: https://staging-project-ref.supabase.co
 ```
 
 ---
@@ -184,7 +184,7 @@ firebase deploy --only \
 **Post-Batch Verification:**
 ```bash
 gcloud functions describe approveUserAccount --gen2 --region asia-south1 --project medibond-45fad --format="value(serviceConfig.environmentVariables.SUPABASE_URL)"
-# Expected Output: https://rnltknemwnjrjxthtull.supabase.co
+# Expected Output: https://staging-project-ref.supabase.co
 ```
 
 ---
@@ -205,7 +205,7 @@ firebase deploy --only \
 **Post-Batch Verification:**
 ```bash
 gcloud functions describe validateField --gen2 --region asia-south1 --project medibond-45fad --format="value(serviceConfig.environmentVariables.SUPABASE_URL)"
-# Expected Output: https://rnltknemwnjrjxthtull.supabase.co
+# Expected Output: https://staging-project-ref.supabase.co
 ```
 
 ---
@@ -227,7 +227,7 @@ firebase deploy --only \
 **Post-Batch Verification:**
 ```bash
 gcloud functions describe aggregateDoctorRatingOnReviewCreate --gen2 --region asia-south1 --project medibond-45fad --format="value(serviceConfig.environmentVariables.SUPABASE_URL)"
-# Expected Output: https://rnltknemwnjrjxthtull.supabase.co
+# Expected Output: https://staging-project-ref.supabase.co
 ```
 
 ---
@@ -247,7 +247,7 @@ firebase deploy --only \
 **Post-Batch Verification:**
 ```bash
 gcloud functions describe notifyAmbulanceDriverOnNewRequest --gen2 --region asia-south1 --project medibond-45fad --format="value(serviceConfig.environmentVariables.SUPABASE_URL)"
-# Expected Output: https://rnltknemwnjrjxthtull.supabase.co
+# Expected Output: https://staging-project-ref.supabase.co
 ```
 
 ---
@@ -272,7 +272,7 @@ firebase deploy --only \
 **Post-Batch Verification:**
 ```bash
 gcloud functions describe notifyDoctorOnAppointmentCreated --gen2 --region asia-south1 --project medibond-45fad --format="value(serviceConfig.environmentVariables.SUPABASE_URL)"
-# Expected Output: https://rnltknemwnjrjxthtull.supabase.co
+# Expected Output: https://staging-project-ref.supabase.co
 ```
 
 ---

@@ -32,7 +32,7 @@ DoctorNect maintains **two strictly isolated environments**: **Staging** and **P
 
 | Component | Staging Environment (`staging`) | Production Environment (`production`) | Enforcement Mechanism |
 |---|---|---|---|
-| **Database** | Current Supabase (`rnltknemwnjrjxthtull`) | New Amazon RDS PostgreSQL 17 (Option A) | Complete database & network segregation |
+| **Database** | Staging Supabase (`staging-project-ref`) | Amazon RDS PostgreSQL 17 (Option A) | Complete database & network segregation |
 | **Access Layer** | Direct Supabase PostgREST | AWS PostgREST + Node.js Auth Gateway | Independent endpoints & JWT signing |
 | **Firebase Auth & Project** | `medibond-45fad` (Shared today) | `medibond-45fad` (Shared today) | Claim/role tagging & separate staging app ID recommended |
 | **AWS S3 Storage Bucket** | `doctornect` (Shared today) | `doctornect-prod-vault` (Dedicated recommended) | S3 key prefix `staging/` or dedicated production bucket |
@@ -97,7 +97,7 @@ Configuration files are maintained in JSON format for compile-time injection:
 ```json
 {
   "APP_ENV": "staging",
-  "SUPABASE_URL": "https://irpkyedfmdsuvapfnrim.supabase.co",
+  "SUPABASE_URL": "https://staging-project-ref.supabase.co",
   "SUPABASE_ANON_KEY": "<STAGING_ANON_KEY>",
   "USE_S3_STORAGE": "true",
   "USE_SUPABASE_DB_DOCTOR_PATIENT": "true",
@@ -112,7 +112,7 @@ Configuration files are maintained in JSON format for compile-time injection:
 ```json
 {
   "APP_ENV": "production",
-  "SUPABASE_URL": "https://rnltknemwnjrjxthtull.supabase.co",
+  "SUPABASE_URL": "https://api.gateway.doctornect.example",
   "SUPABASE_ANON_KEY": "<PROD_ANON_KEY>",
   "USE_S3_STORAGE": "true",
   "USE_SUPABASE_DB_DOCTOR_PATIENT": "true",

@@ -75,9 +75,24 @@ for (const [key, val] of Object.entries(cliOverrides)) {
   }
 }
 
-const STAGING_PROJECT_REF = 'irpkyedfmdsuvapfnrim';
+const {
+  isSupabaseCloudUrl,
+  resolveStagingProjectRefFromEnv,
+  urlContainsStagingProjectRef,
+} = require('../../scripts/lib/infra_url_policy');
+
 const DEFAULT_PLACEHOLDER_URL = 'https://your-project-ref.supabase.co';
 const HEX_TEMPLATE_REGEX = /^[a-fA-F0-9]{20,32}$/;
+
+/** Project ref from STAGING_SUPABASE_URL / STAGING_SUPABASE_DB_URL (env), not hardcoded. */
+function resolveStagingProjectRef(options = {}) {
+  const stagingUrlRes = resolveParam('STAGING_SUPABASE_URL', options);
+  const stagingDbRes = resolveParam('STAGING_SUPABASE_DB_URL', options);
+  return resolveStagingProjectRefFromEnv({
+    STAGING_SUPABASE_URL: stagingUrlRes.value,
+    STAGING_SUPABASE_DB_URL: stagingDbRes.value,
+  });
+}
 
 /**
  * Resolves a configuration key and identifies its source origin
@@ -116,6 +131,9 @@ function verifyProductionConfig(options = {}) {
 
   const errors = [];
   const warnings = [];
+  const stagingProjectRef = resolveStagingProjectRef(options);
+  const prodGatewayRes = resolveParam('PROD_GATEWAY_URL', options);
+  const prodGatewayUrl = prodGatewayRes.value;
 
   // ===========================================================================
   // 1. SUPABASE CLIENT CREDENTIALS (for Flutter release bundle)
@@ -127,23 +145,32 @@ function verifyProductionConfig(options = {}) {
   const supabaseAnonKey = anonRes.value;
 
   console.log('--- 1. Checking Supabase Client Credentials ---');
+  if (stagingProjectRef) {
+    console.log(`  ℹ️  Staging anchor (from env): project ref '${stagingProjectRef.slice(0, 4)}****'`);
+  } else if (!allowStaging) {
+    console.log('  ℹ️  STAGING_SUPABASE_URL not set; staging ref comparisons use *.supabase.co rule only.');
+  }
+
   if (!supabaseUrl) {
     errors.push('[SUPABASE_URL] Missing: SUPABASE_URL is not set in environment or flags.');
-  } else if (supabaseUrl.includes(STAGING_PROJECT_REF)) {
-    if (allowStaging) {
-      warnings.push(`[SUPABASE_URL] Staging Reference Permitted: SUPABASE_URL (${urlRes.source}) contains staging project ref '${STAGING_PROJECT_REF}' because --allow-staging is enabled. (DO NOT submit to Google Play Production track).`);
-      const maskedUrl = supabaseUrl.replace(/^(https:\/\/[a-z0-9]{4})[a-z0-9]+(\..*)$/, '$1****$2');
-      console.log(`  ⚠️  SUPABASE_URL: ${maskedUrl} (STAGING PERMITTED via --allow-staging, Source: ${urlRes.source})`);
-    } else {
-      errors.push(`[SUPABASE_URL] Staging Leak: SUPABASE_URL (${urlRes.source}) contains staging project ref '${STAGING_PROJECT_REF}'. Production builds must point to the production project. Pass --allow-staging only if deliberately packaging a staging test build.`);
-    }
   } else if (supabaseUrl === DEFAULT_PLACEHOLDER_URL || supabaseUrl.includes('your-project-ref')) {
     errors.push(`[SUPABASE_URL] Placeholder Value: SUPABASE_URL (${urlRes.source}) is set to default placeholder text.`);
   } else if (!supabaseUrl.startsWith('https://')) {
     errors.push(`[SUPABASE_URL] Insecure Protocol: SUPABASE_URL (${urlRes.source}) must use https://.`);
+  } else if (!allowStaging && isSupabaseCloudUrl(supabaseUrl)) {
+    errors.push(`[SUPABASE_URL] Supabase Cloud Blocked: Production client builds must use the Auth Gateway (PROD_GATEWAY_URL), not a *.supabase.co REST endpoint. (${urlRes.source})`);
+  } else if (!allowStaging && stagingProjectRef && urlContainsStagingProjectRef(supabaseUrl, stagingProjectRef)) {
+    errors.push(`[SUPABASE_URL] Staging Leak: SUPABASE_URL (${urlRes.source}) matches STAGING_SUPABASE_URL project ref '${stagingProjectRef}'. Pass --allow-staging only for deliberate staging artifacts.`);
+  } else if (allowStaging && (isSupabaseCloudUrl(supabaseUrl) || (stagingProjectRef && urlContainsStagingProjectRef(supabaseUrl, stagingProjectRef)))) {
+    warnings.push(`[SUPABASE_URL] Staging Supabase URL permitted via --allow-staging (${urlRes.source}). DO NOT publish to Play production track.`);
+    const maskedUrl = supabaseUrl.replace(/^(https:\/\/[a-z0-9]{4})[a-z0-9]+(\..*)$/, '$1****$2');
+    console.log(`  ⚠️  SUPABASE_URL: ${maskedUrl} (STAGING PERMITTED, Source: ${urlRes.source})`);
   } else {
     const maskedUrl = supabaseUrl.replace(/^(https:\/\/[a-z0-9]{4})[a-z0-9]+(\..*)$/, '$1****$2');
-    console.log(`  ✓ SUPABASE_URL: ${maskedUrl} (Non-staging verified, Source: ${urlRes.source})`);
+    const label = prodGatewayUrl && supabaseUrl.trim() === prodGatewayUrl.trim()
+      ? 'Auth Gateway aligned'
+      : 'Non-Supabase-cloud client API base';
+    console.log(`  ✓ SUPABASE_URL: ${maskedUrl} (${label}, Source: ${urlRes.source})`);
   }
 
   if (!supabaseAnonKey) {
@@ -240,30 +267,22 @@ function verifyProductionConfig(options = {}) {
     // =========================================================================
     // 4. DATABASE & JWKS STAGING CHECKS
     // =========================================================================
-    const jwksRes = resolveParam('SUPABASE_JWKS_URL', options);
-    if (jwksRes.value && jwksRes.value.includes(STAGING_PROJECT_REF)) {
-      if (allowStaging) {
-        warnings.push(`[SUPABASE_JWKS_URL] Staging Reference Permitted: SUPABASE_JWKS_URL contains staging ref '${STAGING_PROJECT_REF}'.`);
-      } else {
-        errors.push(`[SUPABASE_JWKS_URL] Staging Leak: SUPABASE_JWKS_URL contains staging ref '${STAGING_PROJECT_REF}'.`);
-      }
-    }
+    const backendUrlChecks = [
+      { key: 'SUPABASE_JWKS_URL', res: resolveParam('SUPABASE_JWKS_URL', options) },
+      { key: 'DATABASE_URL', res: resolveParam('DATABASE_URL', options) },
+      { key: 'SUPABASE_DB_URL', res: resolveParam('SUPABASE_DB_URL', options) },
+      { key: 'STAGING_SUPABASE_DB_URL', res: resolveParam('STAGING_SUPABASE_DB_URL', options) },
+    ];
 
-    const dbUrlRes = resolveParam('DATABASE_URL', options);
-    if (dbUrlRes.value && dbUrlRes.value.includes(STAGING_PROJECT_REF)) {
-      if (allowStaging) {
-        warnings.push(`[DATABASE_URL] Staging Reference Permitted: DATABASE_URL contains staging ref '${STAGING_PROJECT_REF}'.`);
-      } else {
-        errors.push(`[DATABASE_URL] Staging Leak: DATABASE_URL contains staging ref '${STAGING_PROJECT_REF}'.`);
-      }
-    }
-
-    const supabaseDbUrlRes = resolveParam('SUPABASE_DB_URL', options);
-    if (supabaseDbUrlRes.value && supabaseDbUrlRes.value.includes(STAGING_PROJECT_REF)) {
-      if (allowStaging) {
-        warnings.push(`[SUPABASE_DB_URL] Staging Reference Permitted: SUPABASE_DB_URL contains staging ref '${STAGING_PROJECT_REF}'.`);
-      } else {
-        errors.push(`[SUPABASE_DB_URL] Staging Leak: SUPABASE_DB_URL contains staging ref '${STAGING_PROJECT_REF}'.`);
+    for (const { key, res } of backendUrlChecks) {
+      const val = res.value;
+      if (!val) continue;
+      if (!allowStaging && isSupabaseCloudUrl(val) && key !== 'STAGING_SUPABASE_DB_URL') {
+        errors.push(`[${key}] Supabase Cloud Blocked: Production must not use hosted Supabase URLs in server config (${res.source}). Use RDS + Auth Gateway.`);
+      } else if (!allowStaging && stagingProjectRef && urlContainsStagingProjectRef(val, stagingProjectRef)) {
+        errors.push(`[${key}] Staging Leak: ${key} (${res.source}) matches staging project ref '${stagingProjectRef}'.`);
+      } else if (allowStaging && stagingProjectRef && urlContainsStagingProjectRef(val, stagingProjectRef)) {
+        warnings.push(`[${key}] Staging reference permitted via --allow-staging.`);
       }
     }
 
@@ -297,7 +316,12 @@ function verifyProductionConfig(options = {}) {
           const env = fn.environmentVariables || {};
           const sUrl = env.SUPABASE_URL || '';
           const jwks = env.SUPABASE_JWKS_URL || '';
-          if (sUrl.includes(STAGING_PROJECT_REF) || jwks.includes(STAGING_PROJECT_REF)) {
+          const hitsSupabaseCloud = isSupabaseCloudUrl(sUrl) || isSupabaseCloudUrl(jwks);
+          const hitsStagingRef = stagingProjectRef && (
+            urlContainsStagingProjectRef(sUrl, stagingProjectRef)
+            || urlContainsStagingProjectRef(jwks, stagingProjectRef)
+          );
+          if (hitsSupabaseCloud || hitsStagingRef) {
             const idParts = (fn.id || fn.entryPoint || fn.name || '').split('/');
             staleFns.push(idParts[idParts.length - 1]);
           }
@@ -305,11 +329,11 @@ function verifyProductionConfig(options = {}) {
 
         if (staleFns.length > 0) {
           if (allowStaging) {
-            warnings.push(`[DEPLOYED_FUNCTIONS_BASELINE] Staging Permitted: ${staleFns.length} deployed Cloud Functions point to staging ref '${STAGING_PROJECT_REF}'.`);
-            console.log(`  ⚠️  DEPLOYED FUNCTIONS: ${staleFns.length} functions point to staging ref '${STAGING_PROJECT_REF}' (STAGING PERMITTED via --allow-staging).`);
+            warnings.push(`[DEPLOYED_FUNCTIONS_BASELINE] Staging Permitted: ${staleFns.length} deployed Cloud Functions still reference *.supabase.co or staging project ref '${stagingProjectRef || '(unknown)'}'.`);
+            console.log(`  ⚠️  DEPLOYED FUNCTIONS: ${staleFns.length} functions reference Supabase cloud/staging (STAGING PERMITTED via --allow-staging).`);
           } else {
-            errors.push(`[DEPLOYED_FUNCTIONS_BASELINE] Staging Leak in Deployed Cloud Functions: ${staleFns.length} deployed Cloud Functions point to stale staging ref '${STAGING_PROJECT_REF}' (e.g. ${staleFns.slice(0, 5).join(', ')}...). These functions must be redeployed with production ref 'rnltknemwnjrjxthtull'.`);
-            console.error(`  ❌ DEPLOYED FUNCTIONS: ${staleFns.length} functions point to stale staging ref '${STAGING_PROJECT_REF}'!`);
+            errors.push(`[DEPLOYED_FUNCTIONS_BASELINE] Staging/Supabase Cloud Leak: ${staleFns.length} deployed Cloud Functions still point at *.supabase.co or staging ref '${stagingProjectRef || '(set STAGING_SUPABASE_URL to detect ref)'}' (e.g. ${staleFns.slice(0, 5).join(', ')}...). Redeploy with PROD_GATEWAY_URL / RDS-backed config.`);
+            console.error(`  ❌ DEPLOYED FUNCTIONS: ${staleFns.length} functions reference Supabase cloud or staging!`);
           }
         } else {
           console.log(`  ✓ DEPLOYED FUNCTIONS: ${list.length} functions checked in ${path.basename(baselineFile)} — 0 staging leaks.`);
@@ -349,7 +373,11 @@ function verifyProductionConfig(options = {}) {
   }
 
   console.log('\n✅ All Critical Pre-Flight Checks PASSED!');
-  console.log('   The configuration is free of staging references and placeholder credentials.');
+  if (allowStaging) {
+    console.log('   Staging-permitted build (--allow-staging). Not for Play production track.');
+  } else {
+    console.log('   Client API base is not Supabase cloud (Auth Gateway / RDS cutover ready).');
+  }
   console.log('   Safe to proceed.\n');
 
   if (require.main === module) {
@@ -362,4 +390,10 @@ if (require.main === module) {
   verifyProductionConfig();
 }
 
-module.exports = { verifyProductionConfig, resolveParam };
+module.exports = {
+  verifyProductionConfig,
+  resolveParam,
+  resolveStagingProjectRef,
+  isSupabaseCloudUrl,
+  urlContainsStagingProjectRef,
+};

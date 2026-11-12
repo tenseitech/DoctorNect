@@ -23,7 +23,7 @@
 2. Firebase Remote Config published with:
    - `use_supabase_db_doctor_patient = true`
    - `use_s3_storage = false`
-3. Third-Party Auth enabled in Supabase Dashboard (`rnltknemwnjrjxthtull`).
+3. Third-Party Auth enabled in Supabase Dashboard (`staging-project-ref`).
 
 ---
 

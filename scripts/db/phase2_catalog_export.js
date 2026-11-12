@@ -234,7 +234,7 @@ async function exportCatalogAndArtifacts() {
 
     // 17. dashboard_config_checklist.md
     let dashMd = `# Supabase Dashboard Configuration Checklist (Form with Blanks)\n\n`;
-    dashMd += `**Project:** \`rnltknemwnjrjxthtull\` (Staging)  \n`;
+    dashMd += `**Project:** \`staging-project-ref\` (Staging)  \n`;
     dashMd += `*Fill in from Supabase Web Dashboard settings to capture non-SQL configurations.*\n\n`;
     dashMd += `## 1. Authentication & Third-Party Auth\n`;
     dashMd += `- Third-Party Auth Provider: [ ] Enabled (Firebase Auth)\n`;
@@ -263,7 +263,7 @@ async function exportCatalogAndArtifacts() {
     // 18. MANIFEST.md draft
     let manifestMd = `# DoctorNect Supabase Backup Manifest\n\n`;
     manifestMd += `- **Timestamp (UTC):** ${new Date().toISOString()}\n`;
-    manifestMd += `- **Source Database:** \`rnltknemwnjrjxthtull\` (PostgreSQL 17.11)\n`;
+    manifestMd += `- **Source Database:** \`staging-project-ref\` (PostgreSQL 17.11)\n`;
     manifestMd += `- **Git Commit:** \`${gitHead}\`\n`;
     manifestMd += `- **Catalog Export:** \`catalog_exports.json\` (${(fs.statSync(path.join(backupDir, 'catalog_exports.json')).size / 1024).toFixed(1)} KB)\n`;
     manifestMd += `- **Migrations Ledger:** \`migrations_ledger.json\` (${localMigrations.length} files)\n`;

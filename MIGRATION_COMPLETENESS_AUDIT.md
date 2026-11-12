@@ -131,10 +131,10 @@ From `db_connectivity_smoke.js --env=staging` (SELECT count only):
 |----------|------|------|
 | `frontend/scripts/release_build.ps1` `-Launch` | Hardcoded staging `SUPABASE_URL` host ref + anon JWT material | **PARTIAL** — dev convenience; must not be used for Play release |
 | `frontend/scripts/release_build.sh` | Default staging URL ref | Same |
-| `scripts/predeploy_secret_check.js` | `PROD_REF = 'rnltknemwnjrjxthtull'` (staging ref used as “prod” label in checker) | **PARTIAL** — naming confusion |
+| `scripts/predeploy_secret_check.js` | Staging ref derived from `STAGING_SUPABASE_URL` (no hardcoded refs) | **FIXED** |
 | `scripts/verify-connections.js`, `set-super-admin.js` | Fallback `medibond-45fad` project id | Low (public id) |
 | `scripts/verify-s3-live.js` | Default Functions URL host `asia-south1-medibond-45fad.cloudfunctions.net` | Low |
-| Docs / comments | Many `rnltknemwnjrjxthtull`, `irpkyedfmdsuvapfnrim` refs | Documentation only |
+| Docs / comments | Legacy real project refs scrubbed to placeholders + `guard_committed_infra_fingerprints.js` | **FIXED** in active paths |
 
 No AWS access keys or service-role keys found in `frontend/lib/**` (grep `SERVICE_ROLE`).
 

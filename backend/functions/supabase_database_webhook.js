@@ -55,9 +55,28 @@ async function markWebhookEventOnce(dedupeKey, options = {}) {
   }
 }
 
+function isLegacyDatabaseWebhookEnabled(options = {}) {
+  if (options.forceEnableLegacyWebhook === true) return true;
+  if (String(process.env.ENABLE_SUPABASE_DATABASE_WEBHOOK || '').trim() === '1') return true;
+  const appEnv = String(process.env.APP_ENV || '').trim().toLowerCase();
+  if (appEnv !== 'production') return true;
+  return false;
+}
+
 async function supabaseDatabaseWebhookHandler(req, res, options = {}) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!isLegacyDatabaseWebhookEnabled(options)) {
+    console.warn(
+      '[supabaseDatabaseWebhook] Rejected: APP_ENV=production and ENABLE_SUPABASE_DATABASE_WEBHOOK≠1 (use notification_outbox worker).',
+    );
+    return res.status(503).json({
+      error: 'Disabled',
+      message:
+        'Legacy Supabase database webhook handler is disabled in production. Use notification_outbox + processNotificationOutboxScheduled.',
+    });
   }
 
   const providedSecret = req.headers['x-supabase-webhook-secret'] || req.headers['x-webhook-secret'];
@@ -127,4 +146,5 @@ module.exports = {
   supabaseDatabaseWebhookHandler,
   safeCompareSecrets,
   supabaseWebhookSecret,
+  isLegacyDatabaseWebhookEnabled,
 };

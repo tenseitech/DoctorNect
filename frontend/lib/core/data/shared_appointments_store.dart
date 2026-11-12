@@ -1125,8 +1125,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
     await _mirrorPatientCancelToSupabase(old.appointmentId, reason);
   }
 
-  /// Firestore is already updated. Supabase is a best-effort mirror (also covered
-  /// bi-directionally by the sync-to-firestore Edge Function reverse bridge).
+  /// Legacy Firestore cancel path only. Primary cutover uses Postgres directly;
+  /// the sync-to-firestore reverse bridge is not deployed (see docs/ops/REMOVAL_PLAN.md).
   Future<void> _mirrorPatientCancelToSupabase(
     String appointmentId,
     String reason,

@@ -83,7 +83,7 @@ Add production RDS host fingerprint to `docs/audit/allowed_host_hashes.txt` befo
 6. **`assertAppEnvDatabaseRouting` skipped in tests** — `backend/functions/index.js` (~L118–128): skipped when `APP_ENV=test` or `NODE_ENV=test`; production/staging deploys must set real `APP_ENV`.
 7. **Gateway allowlist drift** — **FIXED:** scanner failed on **unregistered dynamic table resolvers** (not missing tables). Added `knownNonLiteralResolvers` for `profile_completion_service.dart` (`users`, role tables) and `admin_platform_actions.js` (`roleTable()` → same 5 module tables). Root cause: dynamic `.from(table)` must be explicitly mapped to allowlisted names.
 8. **Health check did not probe DB** — **FIXED** `services/api-gateway/src/server.js` (~L178–198): `/healthz` includes `postgrest` upstream status (503 if unreachable).
-9. **Hardcoded staging project ref in release script** — **FIXED** `frontend/scripts/release_build.ps1` (~L163): removed default `rnltknemwnjrjxthtull` URL; uses `STAGING_SUPABASE_URL` / `SUPABASE_URL` only.
+9. **Hardcoded staging project ref in release script** — **FIXED** `frontend/scripts/release_build.ps1` (~L163): removed hardcoded staging Supabase URL; uses `STAGING_SUPABASE_URL` / `SUPABASE_URL` only.
 10. **Env template gaps** — **FIXED** env templates + `check_env_parity.js` concept groups for staging/production S3 & Redis.
 
 ### Low / informational

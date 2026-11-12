@@ -12,7 +12,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '../..');
 
 const STAGING_MARKERS = [
-  { label: 'Supabase staging project ref', pattern: /irpkyedfmdsuvapfnrim/i },
+  { label: 'Supabase staging project ref', pattern: /staging-project-ref/i },
   { label: 'Firebase staging project id', pattern: /medibond-staging/i },
   { label: 'Razorpay test key', pattern: /rzp_test_/i },
   { label: 'Placeholder Supabase URL', pattern: /your-project-ref\.supabase\.co/i },

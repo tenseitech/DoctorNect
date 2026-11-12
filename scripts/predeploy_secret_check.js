@@ -77,8 +77,11 @@ function listFunctionsSourceFiles(dir, base = '') {
   }
   return out;
 }
-const STAGING_REF = 'irpkyedfmdsuvapfnrim';
-const PROD_REF = 'rnltknemwnjrjxthtull';
+const {
+  isSupabaseCloudUrl,
+  resolveStagingProjectRefFromEnv,
+  urlContainsStagingProjectRef,
+} = require('./lib/infra_url_policy');
 
 function parseDotEnv(content) {
   const env = {};
@@ -101,6 +104,37 @@ function getVarStatus(env, key) {
   if (!(key in env)) return 'MISSING';
   const val = String(env[key] || '').trim();
   return val.length > 0 ? 'PRESENT' : 'EMPTY';
+}
+
+/** @returns {{ errors: string[], warnings: string[] }} */
+function validateSupabaseDeployEnv(env) {
+  const errors = [];
+  const warnings = [];
+  const supabaseUrlStatus = getVarStatus(env, 'SUPABASE_URL');
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  const stagingRef = resolveStagingProjectRefFromEnv({
+    STAGING_SUPABASE_URL: env.STAGING_SUPABASE_URL,
+    STAGING_SUPABASE_DB_URL: env.STAGING_SUPABASE_DB_URL,
+  });
+
+  if (supabaseUrlStatus !== 'PRESENT') {
+    errors.push('SUPABASE_URL is missing or empty in .env.');
+  } else if (appEnv === 'production') {
+    if (isSupabaseCloudUrl(env.SUPABASE_URL)) {
+      errors.push(
+        'SUPABASE_URL must not use *.supabase.co for APP_ENV=production. Set PROD_GATEWAY_URL and point SUPABASE_URL at the Auth Gateway.',
+      );
+    } else if (stagingRef && urlContainsStagingProjectRef(env.SUPABASE_URL, stagingRef)) {
+      errors.push(
+        `SUPABASE_URL matches staging project ref '${stagingRef}' from STAGING_SUPABASE_URL. Production deploy must use PROD_GATEWAY_URL.`,
+      );
+    } else if (!String(env.PROD_GATEWAY_URL || '').trim()) {
+      warnings.push('PROD_GATEWAY_URL is not set for production deploy.');
+    }
+  } else if (isSupabaseCloudUrl(env.SUPABASE_URL)) {
+    warnings.push('SUPABASE_URL uses *.supabase.co (acceptable for staging APP_ENV only).');
+  }
+  return { errors, warnings };
 }
 
 /**
@@ -191,13 +225,17 @@ function runCheck(options = {}) {
   console.log('\n--- 1. Supabase PostgreSQL Configuration ---');
   const supabaseUrlStatus = getVarStatus(env, 'SUPABASE_URL');
   console.log(`  SUPABASE_URL: ${supabaseUrlStatus}`);
-  if (supabaseUrlStatus !== 'PRESENT') {
-    errors.push('SUPABASE_URL is missing or empty in .env.');
-  } else if (env.SUPABASE_URL.includes(STAGING_REF)) {
-    errors.push(`SUPABASE_URL contains stale staging reference '${STAGING_REF}'. Must point to '${PROD_REF}'.`);
-  } else if (!env.SUPABASE_URL.includes(PROD_REF)) {
-    warnings.push(`SUPABASE_URL does not contain expected production project ref '${PROD_REF}'.`);
+  const stagingRef = resolveStagingProjectRefFromEnv({
+    STAGING_SUPABASE_URL: env.STAGING_SUPABASE_URL,
+    STAGING_SUPABASE_DB_URL: env.STAGING_SUPABASE_DB_URL,
+  });
+  if (stagingRef) {
+    console.log(`  STAGING anchor ref (from env): ${stagingRef.slice(0, 4)}****`);
   }
+
+  const supabasePolicy = validateSupabaseDeployEnv(env);
+  errors.push(...supabasePolicy.errors);
+  warnings.push(...supabasePolicy.warnings);
 
   const anonKeyStatus = getVarStatus(env, 'SUPABASE_ANON_KEY');
   console.log(`  SUPABASE_ANON_KEY: ${anonKeyStatus}`);
@@ -347,4 +385,13 @@ for (let i = 0; i < args.length; i++) {
   }
 }
 
-runCheck({ batch });
+if (require.main === module) {
+  runCheck({ batch });
+}
+
+module.exports = {
+  runCheck,
+  validateSupabaseDeployEnv,
+  parseDotEnv,
+  getVarStatus,
+};

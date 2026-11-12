@@ -1,7 +1,7 @@
 /**
  * Comprehensive Live RLS & IDOR Verification Test Suite for DoctorNect
  *
- * SAFETY GUARD: NEVER EXECUTE AGAINST PRODUCTION SUPABASE (rnltknemwnjrjxthtull).
+ * SAFETY GUARD: NEVER EXECUTE AGAINST PRODUCTION SUPABASE (staging project ref from env only).
  * This suite executes strictly against a dedicated staging Supabase environment.
  *
  * Coverage Matrix:

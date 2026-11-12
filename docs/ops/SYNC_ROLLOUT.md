@@ -2,7 +2,7 @@
 
 > **Document Classification:** Operational Runbook / Production Rollout  
 > **Target Function:** `sync-to-firestore` (Supabase Edge Function)  
-> **Production Project Reference:** `rnltknemwnjrjxthtull`  
+> **Staging Project Reference:** `staging-project-ref` (from `STAGING_SUPABASE_URL` in your environment)  
 > **Status:** Edge function deployed (`--no-verify-jwt`), pending secrets configuration and DB webhook binding.
 >
 > **NOTE (CLEAN CUTOVER): NOT REQUIRED FOR LAUNCH**  
@@ -52,16 +52,16 @@ Follow these steps in strict sequence. All remote CLI / dashboard commands are *
   4. Generate a new private JSON key for this service account and download securely.
 
 ### Step 4: Configure Supabase Cloud Secrets (MANUAL)
-- [ ] Set secrets on production project `rnltknemwnjrjxthtull`:
+- [ ] Set secrets on production project `staging-project-ref`:
   ```bash
   # Run from backend/ directory:
-  npx supabase secrets set --project-ref rnltknemwnjrjxthtull \
+  npx supabase secrets set --project-ref staging-project-ref \
     SYNC_TO_FIRESTORE_SECRET="<YOUR_OPENSSL_GENERATED_HEX>" \
     FIREBASE_SERVICE_ACCOUNT_KEY='<MINIFIED_SERVICE_ACCOUNT_JSON>'
   ```
 - [ ] Verify secrets are registered (names present, values hidden):
   ```bash
-  npx supabase secrets list --project-ref rnltknemwnjrjxthtull
+  npx supabase secrets list --project-ref staging-project-ref
   ```
   Expected output:
   - `SYNC_TO_FIRESTORE_SECRET`: Digest present
@@ -75,7 +75,7 @@ Follow these steps in strict sequence. All remote CLI / dashboard commands are *
   4. **Events:** `INSERT`, `UPDATE`
   5. **Type:** HTTP Request
   6. **Method:** `POST`
-  7. **URL:** `https://rnltknemwnjrjxthtull.supabase.co/functions/v1/sync-to-firestore`
+  7. **URL:** `https://staging-project-ref.supabase.co/functions/v1/sync-to-firestore`
   8. **HTTP Headers:**
      - Key: `x-sync-secret`
      - Value: `<YOUR_OPENSSL_GENERATED_HEX>`

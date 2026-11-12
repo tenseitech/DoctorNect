@@ -473,3 +473,75 @@ test('Phase D Webhooks: ambulance_broadcasts UPDATE(accepted) notifies patient',
   assert.equal(sentFCM[0].docId, 'pat_901');
   assert.equal(sentFCM[0].data.type, 'ambulance_accepted');
 });
+
+test('supabaseDatabaseWebhook is disabled in APP_ENV=production unless ENABLE_SUPABASE_DATABASE_WEBHOOK=1', async () => {
+  const {
+    supabaseDatabaseWebhookHandler,
+    isLegacyDatabaseWebhookEnabled,
+  } = require('../supabase_database_webhook');
+
+  const prevApp = process.env.APP_ENV;
+  const prevFlag = process.env.ENABLE_SUPABASE_DATABASE_WEBHOOK;
+  try {
+    process.env.APP_ENV = 'production';
+    delete process.env.ENABLE_SUPABASE_DATABASE_WEBHOOK;
+    assert.equal(isLegacyDatabaseWebhookEnabled(), false);
+
+    let statusCode = null;
+    let body = null;
+    const req = {
+      method: 'POST',
+      headers: { 'x-supabase-webhook-secret': 'any' },
+      body: { type: 'INSERT', table: 'appointments', record: {} },
+    };
+    const res = {
+      status(code) {
+        statusCode = code;
+        return this;
+      },
+      json(payload) {
+        body = payload;
+        return this;
+      },
+    };
+
+    await supabaseDatabaseWebhookHandler(req, res, {
+      expectedSecret: 'any',
+      forceEnableLegacyWebhook: false,
+    });
+    assert.equal(statusCode, 503);
+    assert.match(body.message, /notification_outbox/i);
+
+    process.env.ENABLE_SUPABASE_DATABASE_WEBHOOK = '1';
+    assert.equal(isLegacyDatabaseWebhookEnabled(), true);
+  } finally {
+    if (prevApp === undefined) delete process.env.APP_ENV;
+    else process.env.APP_ENV = prevApp;
+    if (prevFlag === undefined) delete process.env.ENABLE_SUPABASE_DATABASE_WEBHOOK;
+    else process.env.ENABLE_SUPABASE_DATABASE_WEBHOOK = prevFlag;
+  }
+});
+
+test('supabaseDatabaseWebhook rejects missing configured secret with 401 before dispatch', async () => {
+  let statusCode = null;
+  const req = {
+    method: 'POST',
+    headers: {},
+    body: { type: 'INSERT', table: 'appointments', record: { appointment_id: 'x' } },
+  };
+  const res = {
+    status(code) {
+      statusCode = code;
+      return this;
+    },
+    json() {
+      return this;
+    },
+  };
+
+  await supabaseDatabaseWebhookHandler(req, res, {
+    expectedSecret: 'configured-secret-value',
+    forceEnableLegacyWebhook: true,
+  });
+  assert.equal(statusCode, 401);
+});

@@ -15,7 +15,7 @@
 - [ ] **Pre-Launch Manual Snapshot:** Execute a manual snapshot before pointing live DNS/client traffic:
   ```bash
   # Supabase CLI snapshot
-  npx supabase db dump --project-ref rnltknemwnjrjxthtull -f doctornect_prelaunch_baseline.sql
+  npx supabase db dump --project-ref staging-project-ref -f doctornect_prelaunch_baseline.sql
   ```
 
 ### 1.2 Row-Level Security (RLS) Enabled on 100% of Tables
