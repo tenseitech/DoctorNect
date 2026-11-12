@@ -1,3 +1,4 @@
+require('../../scripts/lib/bootstrap_root_env').loadRootEnv();
 const { resolveCallerIdentity } = require('./caller_identity');
 // Deploy: disable OTP App Check until reCAPTCHA is configured.
 require('./firestore_forbidden_guard');
@@ -92,6 +93,7 @@ const {
 } = require('./security_logger');
 const { assertProductionSecrets } = require('./secure_config');
 const { assertProductionOtpSafety } = require('./production_otp_guard');
+const { assertAppEnvDatabaseRouting } = require('./src/db/assert_app_env');
 const {
   enforceAbuseLimit,
   assertAppCheck,
@@ -117,6 +119,20 @@ const {
 
 assertProductionSecrets();
 assertProductionOtpSafety();
+{
+  const appEnvBoot = String(process.env.APP_ENV || 'staging').trim().toLowerCase();
+  const skipDbAssert =
+    String(process.env.SKIP_APP_ENV_DB_ASSERT || '').trim().toLowerCase() === 'true' ||
+    appEnvBoot === 'test' ||
+    String(process.env.NODE_ENV || '').toLowerCase() === 'test';
+  if (!skipDbAssert) {
+    assertAppEnvDatabaseRouting({
+      requireStagingDb: appEnvBoot === 'staging',
+    });
+    const { assertStagingProductionResourceIsolation } = require('./src/db/assert_app_env');
+    assertStagingProductionResourceIsolation();
+  }
+}
 
 /** Firestore triggers must run in the Firestore database location (live: asia-south2); callables in asia-south1. */
 const FIRESTORE_TRIGGER_REGION = String(process.env.FIRESTORE_TRIGGER_REGION || 'asia-south2').trim();
@@ -137,7 +153,7 @@ const MSG91_VPC_OPTIONS = {
   } : {}),
 };
 
-/** Set ENFORCE_OTP_APP_CHECK=false in functions/.env only while App Check is being configured. */
+/** Set ENFORCE_OTP_APP_CHECK=false in repo root .env only while App Check is being configured. */
 const ENFORCE_OTP_APP_CHECK = String(process.env.ENFORCE_OTP_APP_CHECK || 'true')
   .trim()
   .toLowerCase() !== 'false';
@@ -154,7 +170,8 @@ const ENFORCE_AMBULANCE_HTTP_APP_CHECK = isAmbulanceHttpAppCheckEnforced();
 const AMBULANCE_HTTP_ALLOWED_ORIGINS = resolveAmbulanceHttpAllowedOrigins();
 
 function db() {
-  return getFirestore();
+  const { getLegacyFirestoreDb } = require('./legacy_db');
+  return getLegacyFirestoreDb();
 }
 
 /** Compose security logging + abuse limits for callables. */
@@ -469,7 +486,7 @@ exports.sendUserRegistrationOtp = onCall(
     if (ENFORCE_OTP_APP_CHECK && !request.app) {
       logUnusualTraffic(request, { pattern: 'app_check_missing', detail: 'sendUserRegistrationOtp' });
     }
-    const firestore = getFirestore();
+    const firestore = db();
     await enforceSendUserRegistrationOtpRateLimit(firestore, request);
     return await sendUserRegistrationOtp(firestore, request.data || {}, {
       clientIp: getCallableClientIp(request),
@@ -489,7 +506,7 @@ exports.lookupMobileRegistration = onCall(
   withSecurityLogging('lookupMobileRegistration', async (request) => {
     try {
       assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
-      const firestore = getFirestore();
+      const firestore = db();
       await enforceAbuseLimit(firestore, request, 'api', {
         message: 'Too many requests. Please try again later.',
       });
@@ -524,7 +541,7 @@ exports.verifyUserRegistrationOtp = onCall(
       platform: request.rawRequest?.headers?.['x-client-platform'] || 'unknown',
     });
     try {
-      const firestore = getFirestore();
+      const firestore = db();
       await enforceAbuseLimit(firestore, request, 'api', {
         message: 'Too many OTP verification attempts. Please try again later.',
       });
@@ -558,7 +575,7 @@ exports.finalizePatientOtpVerification = onCall(
   { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
   protectCallable('finalizePatientOtpVerification', { category: 'api' }, async (request) => {
     requireAuth(request);
-    const firestore = getFirestore();
+    const firestore = db();
     return finalizePatientOtpVerification(firestore, request.data || {}, request.auth);
   }),
 );
@@ -571,7 +588,7 @@ exports.cleanupPendingRegistration = onCall(
     if (ENFORCE_OTP_APP_CHECK && !request.app) {
       throw new HttpsError('failed-precondition', 'App Check verification required.');
     }
-    const firestore = getFirestore();
+    const firestore = db();
     await enforceAbuseLimit(firestore, request, 'api', {
       message: 'Too many registration cleanup attempts. Please try again later.',
     });
@@ -587,7 +604,7 @@ exports.resetAmbulanceDriverPin = onCall(
       if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Anonymous sign-in required.');
       }
-      const firestore = getFirestore();
+      const firestore = db();
       return await resetAmbulanceDriverPin(firestore, request.data || {}, request.auth, {
         clientIp: getCallableClientIp(request),
       });
@@ -604,7 +621,7 @@ exports.resetUserPasswordWithOtp = onCall(
   { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('resetUserPasswordWithOtp', async (request) => {
     try {
-      const firestore = getFirestore();
+      const firestore = db();
       await enforceAbuseLimit(firestore, request, 'login', {
         identifier: request.data?.identifier || request.data?.mobile || request.data?.email,
         message: 'Too many password reset attempts. Please try again later.',
@@ -637,7 +654,7 @@ exports.completeMobileOtpLogin = onCall(
   { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('completeMobileOtpLogin', async (request) => {
     try {
-      const firestore = getFirestore();
+      const firestore = db();
       await enforceAbuseLimit(firestore, request, 'login', {
         identifier: request.data?.mobile || request.data?.identifier,
         message: 'Too many login attempts. Please try again later.',
@@ -669,7 +686,7 @@ exports.completeMobileOtpLogin = onCall(
 exports.assertLoginAllowed = onCall(
   { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('assertLoginAllowed', async (request) => {
-  const firestore = getFirestore();
+  const firestore = db();
   await enforceAbuseLimit(firestore, request, 'login', {
     identifier: request.data?.identifier || request.data?.email,
     message: 'Too many login attempts. Please try again later.',
@@ -696,7 +713,7 @@ exports.assertLoginAllowed = onCall(
 exports.recordFailedLogin = onCall(
   { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   protectCallable('recordFailedLogin', { category: 'api' }, async (request) => {
-  const firestore = getFirestore();
+  const firestore = db();
   logAuthAttempt(request, {
     outcome: 'failure',
     method: 'email_password',
@@ -713,7 +730,7 @@ exports.recordFailedLogin = onCall(
 exports.clearFailedLogins = onCall(
   { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
   protectCallable('clearFailedLogins', { category: 'api' }, async (request) => {
-  const firestore = getFirestore();
+  const firestore = db();
   logAuthAttempt(request, {
     outcome: 'success',
     method: 'email_password',
@@ -731,7 +748,7 @@ exports.getAmbulanceInvite = onCall(
   { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('getAmbulanceInvite', async (request) => {
   assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
-  await enforceAbuseLimit(getFirestore(), request, 'api');
+  await enforceAbuseLimit(db(), request, 'api');
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Sign-in required to open an invite.');
   }
@@ -769,7 +786,7 @@ exports.getAmbulanceInvite = onCall(
     return { ok: true, inviteId: inv.invite_id, invite: inv };
   }
 
-  const firestore = getFirestore();
+  const firestore = db();
   const snap = await firestore.collection('ambulance_invites').doc(inviteId).get();
   if (!snap.exists) {
     throw new HttpsError('not-found', 'Invite not found.');
@@ -800,7 +817,7 @@ exports.approveUserAccount = onCall(
   { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   protectCallable('approveUserAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
-    const firestore = getFirestore();
+    const firestore = db();
     return approveUserAccount(firestore, request.data || {}, request.auth);
   }),
 );
@@ -810,7 +827,7 @@ exports.approvePatientAccount = onCall(
   { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
   protectCallable('approvePatientAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
-    const firestore = getFirestore();
+    const firestore = db();
     return approvePatientAccount(firestore, request.data || {}, request.auth);
   }),
 );
@@ -963,7 +980,7 @@ exports.verifyAmbulanceDriverLogin = onCall(
   { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public', secrets: [supabaseServiceRoleKey] },
   withSecurityLogging('verifyAmbulanceDriverLogin', async (request) => {
   try {
-  const firestore = getFirestore();
+  const firestore = db();
   const clientIp = getCallableClientIp(request);
   return await runVerifyAmbulanceDriverLogin(
     firestore,
@@ -1014,7 +1031,7 @@ exports.verifyAmbulanceDriverLoginHttp = onRequest(
 
     try {
       await assertAmbulanceHttpAppCheck(req, { enforce: ENFORCE_AMBULANCE_HTTP_APP_CHECK });
-      const firestore = getFirestore();
+      const firestore = db();
       const payload = req.body?.data ?? req.body ?? {};
       const result = await runVerifyAmbulanceDriverLogin(
         firestore,
@@ -1049,7 +1066,7 @@ exports.completeAmbulanceMobileOtpLogin = onCall(
   { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public' },
   withSecurityLogging('completeAmbulanceMobileOtpLogin', async (request) => {
     try {
-      const firestore = getFirestore();
+      const firestore = db();
       return await completeAmbulanceMobileOtpLogin(
         firestore,
         request.data || {},
@@ -1078,7 +1095,7 @@ exports.submitAmbulanceRating = onCall(
   const stars = requireStars(request.data?.stars);
   const review = sanitizeReview(request.data?.review || '');
 
-  const db = getFirestore();
+  const db = db();
   const uid = request.auth.uid;
 
   const profile = await resolveCallerIdentity({ db, uid });
@@ -1180,7 +1197,7 @@ exports.resyncAmbulanceAuthUid = onCall(
   const username = requireUsername(request.data?.username);
   const pin = requireAmbulancePassword(request.data?.pin, 'password');
 
-  const firestore = getFirestore();
+  const firestore = db();
   const verified = await verifyAmbulanceCredentials(firestore, username, pin);
   if (!verified.ok) {
     throw new HttpsError('permission-denied', 'Incorrect username or PIN.');
@@ -1228,7 +1245,7 @@ exports.backfillPatientCareTeams = onCall(
     throw new HttpsError('invalid-argument', 'Pass { confirm: true } to run migration.');
   }
 
-  const db = getFirestore();
+  const db = db();
   let lastDoc = null;
   let scanned = 0;
   let updated = 0;
@@ -1370,6 +1387,18 @@ exports.processMailQueueScheduled = onSchedule(
   },
 );
 
+const {
+  adminUpdateUserRole,
+  adminToggleUserSuspension,
+  adminUpdateUserPhone,
+  adminUpdateOwnProfile,
+  adminSetProviderVerification,
+  adminUpdateBannerConfig,
+  adminMutatePromotedAd,
+  adminLogAuditEvent,
+} = require('./admin_platform_actions');
+const { adminConsoleRead } = require('./admin_console_read_api');
+
 const { processNotificationOutboxBatch } = require('./notification_outbox_worker');
 
 /** Poll notification_outbox → FCM (RDS + staging; same path as SQL triggers). */
@@ -1383,6 +1412,16 @@ exports.processNotificationOutboxScheduled = onSchedule(
     await processNotificationOutboxBatch();
   },
 );
+
+exports.adminUpdateUserRole = adminUpdateUserRole;
+exports.adminToggleUserSuspension = adminToggleUserSuspension;
+exports.adminUpdateUserPhone = adminUpdateUserPhone;
+exports.adminUpdateOwnProfile = adminUpdateOwnProfile;
+exports.adminSetProviderVerification = adminSetProviderVerification;
+exports.adminUpdateBannerConfig = adminUpdateBannerConfig;
+exports.adminMutatePromotedAd = adminMutatePromotedAd;
+exports.adminLogAuditEvent = adminLogAuditEvent;
+exports.adminConsoleRead = adminConsoleRead;
 
 /** HTTPS webhook: Postgres change events → FCM (see supabase_database_webhook.js). */
 exports.supabaseDatabaseWebhook = onRequest(

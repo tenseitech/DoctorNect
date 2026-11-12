@@ -320,6 +320,7 @@ if (!EMULATOR_RUNNING) {
 // Calls the real exported functions from ../promoted_ads.
 // Stubs: firebase-admin Firestore (in-memory mock store) & Razorpay HTTP API.
 // ----------------------------------------------------------------------------
+process.env.FIRESTORE_FORBIDDEN = '0';
 
 // Mock abuse rate limiter so unit tests don't depend on abuse_rate_limits
 require.cache[require.resolve('../abuse_rate_limit')] = {

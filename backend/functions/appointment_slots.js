@@ -418,7 +418,7 @@ function areDateTimesEqual(a, b) {
 /**
  * Handler for the appointments/{appointmentId} Firestore trigger.
  */
-async function reconcileAppointmentSlotHandler(event, db = getFirestore(), handlerOptions = {}) {
+async function reconcileAppointmentSlotHandler(event, db = require('./legacy_db').getLegacyFirestoreDb(), handlerOptions = {}) {
   const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
   const forceLegacy =
     handlerOptions.forceLegacy === true || event?.__testOptions?.forceLegacyReconcile === true;
@@ -506,7 +506,7 @@ const RESCHEDULE_ALLOWED_STATUSES = new Set(['pendingRequest', 'confirmed', 'wai
 /**
  * Handler for the callable bookAppointment.
  */
-async function bookAppointmentHandler(data, auth, db = getFirestore()) {
+async function bookAppointmentHandler(data, auth, db = require('./legacy_db').getLegacyFirestoreDb()) {
   if (!auth?.uid) {
     throw new HttpsError('unauthenticated', 'User must be authenticated to book an appointment.');
   }
@@ -672,7 +672,7 @@ const reconcileAppointmentSlot = onDocumentWritten(
  * Patient reschedule. Allocates a new day token only when the IST day changes.
  * Client-sent tokenNumber, patientId, doctorId, and createdVia are ignored.
  */
-async function rescheduleAppointmentHandler(data, auth, db = getFirestore()) {
+async function rescheduleAppointmentHandler(data, auth, db = require('./legacy_db').getLegacyFirestoreDb()) {
   if (!auth?.uid) {
     throw new HttpsError('unauthenticated', 'User must be authenticated to reschedule an appointment.');
   }
@@ -855,7 +855,15 @@ const bookAppointment = onCall(
   { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
   async (request) => {
     assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
-    const db = getFirestore();
+    const { isFirestoreForbidden } = require('./firestore_forbidden_guard');
+    if (isFirestoreForbidden() || (await require('./sync_flags').isDoctorPatientSupabasePrimary())) {
+      throw new (require('firebase-functions/v2/https').HttpsError)(
+        'failed-precondition',
+        'Appointment booking uses Postgres RPC book_appointment_atomic via the API gateway.',
+      );
+    }
+    const { getLegacyFirestoreDb } = require('./legacy_db');
+    const db = getLegacyFirestoreDb();
     await enforceAbuseLimit(db, request, 'booking');
     return await bookAppointmentHandler(request.data, request.auth, db);
   },
@@ -865,7 +873,15 @@ const rescheduleAppointment = onCall(
   { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
   async (request) => {
     assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
-    const db = getFirestore();
+    const { isFirestoreForbidden } = require('./firestore_forbidden_guard');
+    if (isFirestoreForbidden() || (await require('./sync_flags').isDoctorPatientSupabasePrimary())) {
+      throw new (require('firebase-functions/v2/https').HttpsError)(
+        'failed-precondition',
+        'Appointment reschedule uses Postgres RPC reschedule_appointment_atomic via the API gateway.',
+      );
+    }
+    const { getLegacyFirestoreDb } = require('./legacy_db');
+    const db = getLegacyFirestoreDb();
     await enforceAbuseLimit(db, request, 'booking');
     return await rescheduleAppointmentHandler(request.data, request.auth, db);
   },

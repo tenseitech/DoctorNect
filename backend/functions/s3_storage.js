@@ -82,15 +82,19 @@ function getSupabaseAdminClient() {
 }
 
 async function resolveStorageContext(dbOrOptions) {
+  const { getLegacyFirestoreDb } = require('./legacy_db');
+  const { isFirestoreForbidden } = require('./firestore_forbidden_guard');
   const isExplicitFirestoreDb =
     dbOrOptions && typeof dbOrOptions.collection === 'function';
   const db = isExplicitFirestoreDb
     ? dbOrOptions
-    : (dbOrOptions?.db || getFirestore());
+    : (dbOrOptions?.db || getLegacyFirestoreDb());
   const options = isExplicitFirestoreDb ? {} : (dbOrOptions || {});
   const isSupabase = options.isSupabasePrimary !== undefined
     ? options.isSupabasePrimary
-    : (isExplicitFirestoreDb ? false : await isDoctorPatientSupabasePrimary());
+    : (isExplicitFirestoreDb
+      ? false
+      : isFirestoreForbidden() || (await isDoctorPatientSupabasePrimary()));
   const supabase = options.supabaseClient || getSupabaseAdminClient();
   return { db, options, isSupabase, supabase };
 }
@@ -1495,35 +1499,40 @@ const CALLABLE_OPTIONS = {
 
 exports.getS3UploadUrl = onCall(CALLABLE_OPTIONS, async (request) => {
   requireAuth(request);
-  const db = getFirestore();
+  const { getLegacyFirestoreDb } = require('./legacy_db');
+  const db = getLegacyFirestoreDb();
   await enforceAbuseLimit(db, request, 'api');
   return getS3UploadUrlHandler(request.data, request.auth, db);
 });
 
 exports.getS3DownloadUrl = onCall(CALLABLE_OPTIONS, async (request) => {
   requireAuth(request);
-  const db = getFirestore();
+  const { getLegacyFirestoreDb } = require('./legacy_db');
+  const db = getLegacyFirestoreDb();
   await enforceAbuseLimit(db, request, 'api');
   return getS3DownloadUrlHandler(request.data, request.auth, db);
 });
 
 exports.getS3DownloadUrls = onCall(CALLABLE_OPTIONS, async (request) => {
   requireAuth(request);
-  const db = getFirestore();
+  const { getLegacyFirestoreDb } = require('./legacy_db');
+  const db = getLegacyFirestoreDb();
   await enforceAbuseLimit(db, request, 'api');
   return getS3DownloadUrlsHandler(request.data, request.auth, db);
 });
 
 exports.deleteS3Object = onCall(CALLABLE_OPTIONS, async (request) => {
   requireAuth(request);
-  const db = getFirestore();
+  const { getLegacyFirestoreDb } = require('./legacy_db');
+  const db = getLegacyFirestoreDb();
   await enforceAbuseLimit(db, request, 'api');
   return deleteS3ObjectHandler(request.data, request.auth, db);
 });
 
 exports.confirmS3Upload = onCall(CALLABLE_OPTIONS, async (request) => {
   requireAuth(request);
-  const db = getFirestore();
+  const { getLegacyFirestoreDb } = require('./legacy_db');
+  const db = getLegacyFirestoreDb();
   await enforceAbuseLimit(db, request, 'api');
   return confirmS3UploadHandler(request.data, request.auth, db);
 });

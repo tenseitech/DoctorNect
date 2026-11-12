@@ -1392,6 +1392,8 @@ test('booking rate limit: production default Redis path enforces limits', async 
 });
 
 test('booking rate limit: fallback Firestore path enforces limits when RATE_LIMIT_BACKEND=firestore', async () => {
+  const prevForbidden = process.env.FIRESTORE_FORBIDDEN;
+  process.env.FIRESTORE_FORBIDDEN = '0';
   process.env.RATE_LIMIT_BACKEND = 'firestore';
   const db = createConcurrentMockFirestore();
   const req = {
@@ -1413,6 +1415,8 @@ test('booking rate limit: fallback Firestore path enforces limits when RATE_LIMI
   );
   const fsKeys = [...db.docs.keys()].filter((k) => k.startsWith('abuse_rate_limits/'));
   assert.ok(fsKeys.length >= 1, 'Expected Firestore abuse_rate_limits document to be written');
+  if (prevForbidden === undefined) delete process.env.FIRESTORE_FORBIDDEN;
+  else process.env.FIRESTORE_FORBIDDEN = prevForbidden;
 });
 
 test.after(async () => {

@@ -10,10 +10,13 @@ process.env.APP_ENV = process.env.APP_ENV || 'test';
 
 const TEST_DEFAULTS = {
   S3_BUCKET: 'unit-test-s3-bucket',
+  S3_BUCKET_STAGING: 'unit-test-s3-bucket',
+  REDIS_HOST_STAGING: '127.0.0.1',
   OTP_REDIS_MIRROR: 'off',
   USE_S3_STORAGE: 'false',
   ENABLE_SUPABASE_SYNC: '0',
   FORCE_ENABLE_SUPABASE_SYNC_IN_PROD: '0',
+  FIRESTORE_FORBIDDEN: '1',
 };
 
 for (const [key, value] of Object.entries(TEST_DEFAULTS)) {

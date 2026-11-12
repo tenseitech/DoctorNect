@@ -79,8 +79,11 @@ async function resolveCallerIdentity({ db, uid, supabaseClient = null, forceSupa
   }
 
   if (!db) {
-    const { getFirestore } = require('firebase-admin/firestore');
-    db = getFirestore();
+    const { getLegacyFirestoreDb } = require('./legacy_db');
+    db = getLegacyFirestoreDb();
+    if (!db) {
+      throw new HttpsError('failed-precondition', 'Firestore profile lookup is disabled (Postgres-only).');
+    }
   }
 
   const userSnap = await db.collection('users').doc(uid).get();

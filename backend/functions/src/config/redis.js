@@ -135,8 +135,21 @@ function readRedisCaCertificate() {
  * @param {Record<string, any>} [overrides={}]
  * @returns {import('ioredis').RedisOptions}
  */
+function resolveRedisHostForAppEnv() {
+  try {
+    const { getRedisHost, resolveAppEnv } = require('./app_resources');
+    const appEnv = resolveAppEnv(process.env);
+    if (appEnv === 'test') {
+      return resolveSecretValue(redisHostSecret, 'REDIS_HOST', '127.0.0.1');
+    }
+    return getRedisHost(process.env);
+  } catch (_) {
+    return resolveSecretValue(redisHostSecret, 'REDIS_HOST', '127.0.0.1');
+  }
+}
+
 function buildRedisOptions(overrides = {}) {
-  const rawHost = overrides.host || resolveSecretValue(redisHostSecret, 'REDIS_HOST', '127.0.0.1');
+  const rawHost = overrides.host || resolveRedisHostForAppEnv();
   const rawPort = overrides.port || resolveSecretValue(redisPortSecret, 'REDIS_PORT', '6379');
   const { host, port } = parseRedisEndpoint(rawHost, rawPort);
 

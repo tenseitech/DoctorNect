@@ -160,7 +160,7 @@ const createRazorpayOrder = onCall(
     throw new HttpsError('unauthenticated', 'Authentication required to create payment order.');
   }
   assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
-  await enforceAbuseLimit(getFirestore(), request, 'payment', {
+  await enforceAbuseLimit(require('./legacy_db').getLegacyFirestoreDb(), request, 'payment', {
     message: 'Too many payment attempts. Please try again later.',
   });
 
@@ -173,7 +173,7 @@ const createRazorpayOrder = onCall(
   );
   const amountINR = AD_PRICING_TABLE[hours];
 
-  const db = getFirestore();
+  const db = require('./legacy_db').getLegacyFirestoreDb();
   const adRef = db.collection('promotedAds').doc(safeAdId);
   const adSnap = await adRef.get();
 
@@ -589,7 +589,7 @@ const verifyRazorpayPayment = onCall(
     throw new HttpsError('unauthenticated', 'Authentication required to verify payment.');
   }
   assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
-  await enforceAbuseLimit(getFirestore(), request, 'payment');
+  await enforceAbuseLimit(require('./legacy_db').getLegacyFirestoreDb(), request, 'payment');
 
   const { adId, orderId, paymentId, signature } = request.data || {};
   const safeAdId = requireDocId(adId, 'adId');
@@ -601,7 +601,7 @@ const verifyRazorpayPayment = onCall(
     pattern: /^[a-fA-F0-9]+$/,
   });
 
-  const db = getFirestore();
+  const db = require('./legacy_db').getLegacyFirestoreDb();
   const adRef = db.collection('promotedAds').doc(safeAdId);
   const adSnap = await adRef.get();
 
@@ -870,7 +870,7 @@ async function razorpayWebhookHandler(req, res, db) {
     }
   }
 
-  const firestore = db || getFirestore();
+  const firestore = db || require('./legacy_db').getLegacyFirestoreDb();
 
   if (!adId || !providerUid || !durationHours) {
     return recordWebhookRejection(firestore, {
@@ -1095,7 +1095,7 @@ const razorpayWebhook = onRequest(
     invoker: 'public',
   },
   async (req, res) => {
-    return razorpayWebhookHandler(req, res, getFirestore());
+    return razorpayWebhookHandler(req, res, require('./legacy_db').getLegacyFirestoreDb());
   }
 );
 
@@ -1242,10 +1242,10 @@ const reviewPromotedAd = onCall(
       throw new HttpsError('unauthenticated', 'Authentication required.');
     }
     assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
-    await enforceAbuseLimit(getFirestore(), request, 'api', {
+    await enforceAbuseLimit(require('./legacy_db').getLegacyFirestoreDb(), request, 'api', {
       message: 'Too many requests. Please try again later.',
     });
-    return reviewPromotedAdHandler(getFirestore(), request.data || {}, request.auth);
+    return reviewPromotedAdHandler(require('./legacy_db').getLegacyFirestoreDb(), request.data || {}, request.auth);
   },
 );
 
@@ -1293,7 +1293,7 @@ async function expirePromotedAdsHandler(db, customNow, chunkSize = EXPIRE_BATCH_
  * Runs hourly to set status = 'expired' on any active ad whose endTime has passed.
  */
 const expirePromotedAds = onSchedule({ schedule: '0 * * * *', region: 'asia-south1' }, async () => {
-  const db = getFirestore();
+  const db = require('./legacy_db').getLegacyFirestoreDb();
 
   try {
     const { totalExpired, batchCount } = await expirePromotedAdsHandler(db);

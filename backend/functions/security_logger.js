@@ -97,7 +97,9 @@ async function persistSecurityEvent(payload) {
       }
     }
 
-    const db = getFirestore();
+    const { getLegacyFirestoreDb } = require('./legacy_db');
+    const db = getLegacyFirestoreDb();
+    if (!db) return;
     await db.collection('security_events').add({
       ...payload,
       createdAt: FieldValue.serverTimestamp(),

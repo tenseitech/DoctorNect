@@ -17,7 +17,8 @@ require('./firestore_forbidden_guard');
  *    writer origin cannot be determined (those rows are not guessed).
  */
 
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { FieldValue } = require('firebase-admin/firestore');
+const { getLegacyFirestoreDb } = require('./legacy_db');
 const crypto = require('crypto');
 const { toUserUuid, executeUserSyncWithEmailFallback } = require('./user_id_bridge');
 const { readSupabaseServiceRoleKey } = require('./secure_config');
@@ -136,9 +137,10 @@ async function recordDlqFailure({ direction, entityType, entityId, payload, erro
     } catch (_) {}
   }
 
-  // 3. Fallback to Firestore _sync_dlq collection
+  // 3. Fallback to Firestore _sync_dlq collection (skipped when FIRESTORE_FORBIDDEN=1)
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
+    if (!db) return;
     await db.collection('_sync_dlq').doc(`${entityType}_${entityId}_${Date.now()}`).set({
       ...dlqEntry,
       fallbackSavedAt: FieldValue.serverTimestamp(),
@@ -1093,7 +1095,7 @@ async function ensureDoctorExistsInPostgres(doctorId, { url, key, pool }) {
   // 2. Doctor not in Postgres; check Firestore for existing doc data
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('doctors').doc(doctorId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -1660,7 +1662,7 @@ async function ensureMedicalStoreExistsInPostgres(storeId, fallbackData = {}, { 
 
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('medical_stores').doc(storeId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -1726,7 +1728,7 @@ async function ensureLabExistsInPostgres(labId, fallbackData = {}, { url, key, p
 
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('labs').doc(labId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -1792,7 +1794,7 @@ async function ensurePatientExistsInPostgres(patientId, fallbackData = {}, { url
 
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('patients').doc(patientId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -1868,7 +1870,7 @@ async function ensurePrescriptionExistsInPostgres(prescriptionId, fallbackData =
 
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('prescriptions').doc(prescriptionId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -3348,7 +3350,7 @@ async function ensureAmbulanceExistsInPostgres(ambulanceId, fallbackData = {}, {
 
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('ambulances').doc(ambulanceId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -3423,7 +3425,7 @@ async function ensureAmbulanceBroadcastExistsInPostgres(broadcastId, fallbackDat
 
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('ambulance_broadcasts').doc(broadcastId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -3706,7 +3708,7 @@ async function syncFirestoreAmbulancePrivateSettingsToSupabase(event) {
   // Fallback check from Firestore ambulances/{ambulanceId}/private/settings if still missing
   if (!pinHash) {
     try {
-      const db = getFirestore();
+      const db = getLegacyFirestoreDb();
       const privSnap = await db.collection('ambulances').doc(ambulanceId).collection('private').doc('settings').get();
       const privPin = privSnap.data()?.pin || privSnap.data()?.pinHash;
       if (isAmbulancePinHash(privPin)) pinHash = String(privPin).trim();
