@@ -125,6 +125,10 @@ test('migrate: applySingleMigration throws if ledger verification row is absent 
 
 test('migrate: computeChecksum normalizes CRLF and LF to identical SHA-256 digest', () => {
   const { computeChecksum } = require('../db/migrate');
+  const {
+    computeLegacyRawChecksum,
+    ledgerChecksumMatches,
+  } = require('../lib/migration_checksum');
   const lfContent = '-- migration\nSELECT 1;\nSELECT 2;\n';
   const crlfContent = '-- migration\r\nSELECT 1;\r\nSELECT 2;\r\n';
 
@@ -134,6 +138,12 @@ test('migrate: computeChecksum normalizes CRLF and LF to identical SHA-256 diges
   assert.equal(typeof lfChecksum, 'string');
   assert.equal(lfChecksum.length, 64);
   assert.equal(crlfChecksum, lfChecksum, 'CRLF and LF must produce byte-identical SHA-256 hashes');
+
+  const legacyCrlf = computeLegacyRawChecksum(crlfContent);
+  assert.notEqual(legacyCrlf, lfChecksum, 'legacy raw CRLF hash must differ from normalized hash');
+  assert.ok(ledgerChecksumMatches(crlfContent, lfChecksum), 'ledger accepts normalized checksum');
+  assert.ok(ledgerChecksumMatches(crlfContent, legacyCrlf), 'ledger accepts legacy raw-byte checksum');
+  assert.ok(!ledgerChecksumMatches(crlfContent, '0'.repeat(64)), 'rejects unrelated checksum');
 });
 
 
