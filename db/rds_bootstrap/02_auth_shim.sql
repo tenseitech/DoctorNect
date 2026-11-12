@@ -18,16 +18,17 @@ AS $$
   )::jsonb;
 $$;
 
--- auth.uid() returns the caller UID from JWT 'sub' claim as UUID (Supabase parity)
-CREATE OR REPLACE FUNCTION auth.uid()
-RETURNS uuid
+-- auth.uid() returns Firebase UID from JWT 'sub' (TEXT; public.users.id is TEXT)
+DROP FUNCTION IF EXISTS auth.uid();
+CREATE FUNCTION auth.uid()
+RETURNS text
 LANGUAGE sql
 STABLE
 AS $$
   SELECT COALESCE(
     NULLIF(current_setting('request.jwt.claim.sub', true), ''),
-    (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')
-  )::uuid;
+  (NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')
+  );
 $$;
 
 -- auth.role() returns the effective database role
@@ -54,7 +55,7 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA auth TO PUBLIC, anon, authenticated, se
 DO $$
 DECLARE
   v_test_claims text := '{"sub":"a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11","role":"authenticated","app_role":"patient","user_role":"patient"}';
-  v_uid uuid;
+  v_uid text;
   v_role text;
   v_jwt jsonb;
 BEGIN
@@ -77,7 +78,7 @@ BEGIN
   -- Test 2: Valid plural claims return correct sub and role
   PERFORM set_config('request.jwt.claims', v_test_claims, true);
   v_uid := auth.uid();
-  IF v_uid != 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'::uuid THEN
+  IF v_uid != 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' THEN
     RAISE EXCEPTION 'auth.uid() failed: expected a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11, got %', v_uid;
   END IF;
 
@@ -96,7 +97,7 @@ BEGIN
   PERFORM set_config('request.jwt.claim.role', 'service_role', true);
 
   v_uid := auth.uid();
-  IF v_uid != 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22'::uuid THEN
+  IF v_uid != 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22' THEN
     RAISE EXCEPTION 'auth.uid() singular failed: expected b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22, got %', v_uid;
   END IF;
 
