@@ -1,8 +1,26 @@
 # DoctorNect: Environment Architecture & Configuration Guide
 
-**Document Version:** 1.0.0  
+**Document Version:** 1.1.0  
 **Environments:** Staging (`staging`) vs Production (`production`)  
 **Target Architecture:** Firebase Auth + Supabase PostgreSQL + AWS S3 + Redis
+
+---
+
+## 0. Single source of truth (repo root)
+
+| File | Git | Purpose |
+|---|---|---|
+| **`.env.example`** | Committed | Every variable name + safe placeholder; one line comment per key |
+| **`.env`** | **Gitignored** | Real values for **both** staging and production (`APP_ENV` selects runtime behavior) |
+
+All Node scripts, migration tooling, Cloud Functions (local + deploy materialization), API gateway, and Flutter release builds load **only** the repo root `.env`. Legacy paths (`.env.migration`, `backend/functions/.env`, `frontend/.env`) are removed — deploy generates a transient `backend/functions/.env` from root `.env` and deletes it after Firebase deploy.
+
+Verification (local):
+
+```bash
+npm run env:verify
+node scripts/env/verify_env_file_policy.js
+```
 
 ---
 

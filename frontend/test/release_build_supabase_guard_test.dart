@@ -21,7 +21,7 @@ void main() {
       expect(sh.contains('== "1"'), isTrue);
 
       final ps1Maps = ps1.indexOf("foreach (\$name in @('GOOGLE_MAPS_API_KEY'");
-      final ps1SupabaseGate = ps1.indexOf("ENABLE_SUPABASE -eq '1'");
+      final ps1SupabaseGate = ps1.indexOf('BLD-01:');
       final ps1SupabaseDefine = ps1.indexOf('--dart-define=SUPABASE_URL=');
       expect(ps1Maps, greaterThan(0));
       expect(ps1SupabaseGate, greaterThan(ps1Maps));
@@ -58,6 +58,28 @@ void main() {
         sh.contains('SUPABASE_SERVICE_ROLE_KEY detected in environment'),
         isTrue,
         reason: 'release_build.sh must abort if SUPABASE_SERVICE_ROLE_KEY is present',
+      );
+    });
+
+    test('(e) endpoint isolation without STAGING_SUPABASE_URL anchor', () {
+      expect(
+        ps1.contains('Production release must not use a *.supabase.co SUPABASE_URL'),
+        isTrue,
+        reason: 'production must block Supabase cloud even when STAGING_SUPABASE_URL is unset',
+      );
+      expect(
+        ps1.contains('Staging or -Launch release requires STAGING_SUPABASE_URL'),
+        isTrue,
+        reason: 'staging/Launch builds must require STAGING_SUPABASE_URL',
+      );
+      expect(sh.contains('release_api_endpoint_isolation'), isTrue);
+      expect(
+        sh.contains('Staging or --launch release requires STAGING_SUPABASE_URL'),
+        isTrue,
+      );
+      expect(
+        sh.contains('Production release must not use a *.supabase.co SUPABASE_URL'),
+        isTrue,
       );
     });
 
@@ -166,6 +188,43 @@ void main() {
         isTrue,
         reason: 'Error message must explicitly mention debug token security error',
       );
+
+      // (e) APP_ENV=production + Supabase cloud URL blocked when STAGING_SUPABASE_URL is empty
+      final resE = await Process.run(
+        pwshCmd,
+        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/release_build.ps1', '-DryRun'],
+        environment: {
+          ...baseEnv,
+          'APP_ENV': 'production',
+          'ENABLE_SUPABASE': '1',
+          'STAGING_SUPABASE_URL': '',
+          'SUPABASE_URL': 'https://example-ref.supabase.co',
+          'SUPABASE_ANON_KEY': 'dummy_anon_key_for_isolation_test_only',
+          'PROD_GATEWAY_URL': 'https://gateway.prod.example',
+        },
+      );
+      expect(resE.exitCode, isNot(0), reason: 'Production build must reject *.supabase.co without staging anchor: ${resE.stderr}');
+      expect(
+        '${resE.stderr}${resE.stdout}'.contains('.supabase.co'),
+        isTrue,
+        reason: 'Failure must cite Supabase cloud endpoint policy',
+      );
+
+      // (f) -Launch requires STAGING_SUPABASE_URL when not in .env
+      final resF = await Process.run(
+        pwshCmd,
+        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/release_build.ps1', '-DryRun', '-Launch'],
+        environment: {
+          ...baseEnv,
+          'STAGING_SUPABASE_URL': '',
+          'STAGING_SUPABASE_ANON_KEY': '',
+        },
+      );
+      expect(resF.exitCode, isNot(0), reason: '-Launch must fail when STAGING_SUPABASE_URL is missing');
+      expect(
+        '${resF.stderr}${resF.stdout}'.contains('STAGING_SUPABASE_URL'),
+        isTrue,
+      );
     });
 
     test('Bash release_build.sh behavioral test', () async {
@@ -228,6 +287,31 @@ void main() {
         isTrue,
         reason: 'Error message must explicitly mention debug token security error',
       );
+
+      final resE = await Process.run(
+        'bash',
+        ['scripts/release_build.sh', '--dry-run'],
+        environment: {
+          ...baseEnv,
+          'APP_ENV': 'production',
+          'ENABLE_SUPABASE': '1',
+          'STAGING_SUPABASE_URL': '',
+          'SUPABASE_URL': 'https://example-ref.supabase.co',
+          'SUPABASE_ANON_KEY': 'dummy_anon_key_for_isolation_test_only',
+          'PROD_GATEWAY_URL': 'https://gateway.prod.example',
+        },
+      );
+      expect(resE.exitCode, isNot(0), reason: 'Production build must reject *.supabase.co: ${resE.stderr}');
+
+      final resF = await Process.run(
+        'bash',
+        ['scripts/release_build.sh', '--dry-run', '--launch'],
+        environment: {
+          ...baseEnv,
+          'STAGING_SUPABASE_URL': '',
+        },
+      );
+      expect(resF.exitCode, isNot(0), reason: '--launch must fail when STAGING_SUPABASE_URL is missing');
     });
   });
 }

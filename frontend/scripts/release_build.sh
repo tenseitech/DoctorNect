@@ -29,15 +29,6 @@ for arg in "$@"; do
     --allow-staging) ALLOW_STAGING=1 ;;
     --launch)
       LAUNCH=1
-      export ENABLE_SUPABASE=1
-      export USE_SUPABASE_DB_DOCTOR_PATIENT="true"
-      if [[ -z "${SUPABASE_URL:-}" ]]; then
-        export SUPABASE_URL="https://rnltknemwnjrjxthtull.supabase.co"
-      fi
-      if [[ -z "${SUPABASE_ANON_KEY:-}" ]]; then
-        export SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJubHRrbmVtd25qcmp4dGh0dWxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NjM3MjIsImV4cCI6MjEwNjUzOTcyMn0.d4bALRDReFuGSNKpxz0iOTyHpaE95Tlpd3DfDxvzvAY"
-      fi
-      echo "LAUNCH PROFILE ACTIVE: Building release with Supabase primary database enabled." >&2
       ;;
     --dart-define=*) EXTRA_DEFINES+=("$arg") ;;
     *)
@@ -193,13 +184,71 @@ EOF
   echo "Configured Dart define keys: ${intended_keys[*]}"
 }
 
+is_supabase_cloud_url() {
+  local url="${1:-}"
+  [[ -z "$url" ]] && return 1
+  [[ "$url" =~ \.supabase\.co ]]
+}
+
+release_api_endpoint_isolation() {
+  local app_env="${APP_ENV:-staging}"
+  app_env="$(printf '%s' "$app_env" | tr '[:upper:]' '[:lower:]')"
+  local enable_supabase=0
+  [[ "${ENABLE_SUPABASE:-}" == "1" ]] && enable_supabase=1
+  local allow_staging_artifact=0
+  [[ "$ALLOW_STAGING" -eq 1 || "${ALLOW_STAGING_BUILD:-}" == "true" ]] && allow_staging_artifact=1
+  local staging_profile=0
+  [[ "$LAUNCH" -eq 1 || "$allow_staging_artifact" -eq 1 || "$app_env" == "staging" ]] && staging_profile=1
+  local production_release=0
+  [[ "$app_env" == "production" && "$allow_staging_artifact" -eq 0 ]] && production_release=1
+
+  if [[ "$staging_profile" -eq 1 && ( "$LAUNCH" -eq 1 || "$enable_supabase" -eq 1 ) ]]; then
+    if [[ -z "${STAGING_SUPABASE_URL:-}" ]]; then
+      echo "FAIL-FAST SECURITY GATE: Staging or --launch release requires STAGING_SUPABASE_URL (set in repo root .env or shell)." >&2
+      exit 1
+    fi
+  fi
+
+  if [[ "$production_release" -eq 1 ]]; then
+    if [[ "$enable_supabase" -eq 1 && -z "${PROD_GATEWAY_URL:-}" ]]; then
+      echo "FAIL-FAST SECURITY GATE: APP_ENV=production release requires PROD_GATEWAY_URL (not Supabase cloud)." >&2
+      exit 1
+    fi
+    if is_supabase_cloud_url "${SUPABASE_URL:-}"; then
+      echo "FAIL-FAST SECURITY GATE: Production release must not use a *.supabase.co SUPABASE_URL. Set PROD_GATEWAY_URL and dart-define SUPABASE_URL to the Auth Gateway base URL." >&2
+      exit 1
+    fi
+    if [[ "$enable_supabase" -eq 1 ]]; then
+      local endpoint="${SUPABASE_URL:-${PROD_GATEWAY_URL:-}}"
+      if is_supabase_cloud_url "$endpoint"; then
+        echo "FAIL-FAST SECURITY GATE: Production release must not use a *.supabase.co endpoint. Set PROD_GATEWAY_URL and dart-define SUPABASE_URL to the Auth Gateway base URL." >&2
+        exit 1
+      fi
+      if [[ -n "${STAGING_SUPABASE_URL:-}" && -n "$endpoint" && "$endpoint" == "$STAGING_SUPABASE_URL" ]]; then
+        echo "FAIL-FAST SECURITY GATE: Production release cannot target the staging Supabase URL." >&2
+        exit 1
+      fi
+    elif is_supabase_cloud_url "${PROD_GATEWAY_URL:-}"; then
+      echo "FAIL-FAST SECURITY GATE: Production release must not use a *.supabase.co endpoint." >&2
+      exit 1
+    fi
+  fi
+
+  if [[ "$staging_profile" -eq 1 && -n "${PROD_GATEWAY_URL:-}" && -n "${SUPABASE_URL:-}" ]]; then
+    if [[ "$SUPABASE_URL" == "$PROD_GATEWAY_URL" && "$allow_staging_artifact" -eq 0 ]]; then
+      echo "FAIL-FAST SECURITY GATE: Staging release build must not point at PROD_GATEWAY_URL without --allow-staging." >&2
+      exit 1
+    fi
+  fi
+}
+
 validate_production_build_config() {
   # Only validate API endpoint when Supabase/Gateway connectivity is enabled or targeting production
   if [[ "${ENABLE_SUPABASE:-}" != "1" && "${APP_ENV:-}" != "production" ]]; then
     return 0
   fi
 
-  local staging_url="${STAGING_SUPABASE_URL:-https://rnltknemwnjrjxthtull.supabase.co}"
+  local staging_anchor="${STAGING_SUPABASE_URL:-}"
   local prod_endpoint="${PROD_GATEWAY_URL:-${SUPABASE_URL:-}}"
 
   if [[ "$ALLOW_STAGING" -ne 1 && "${ALLOW_STAGING_BUILD:-}" != "true" ]]; then
@@ -207,7 +256,11 @@ validate_production_build_config() {
       echo "FAIL-FAST SECURITY GATE: Production release build requires a dedicated production API endpoint (PROD_GATEWAY_URL). None configured. Release build aborted." >&2
       exit 1
     fi
-    if [[ "$prod_endpoint" == "$staging_url" || "$prod_endpoint" =~ rnltknemwnjrjxthtull ]]; then
+    if [[ "$prod_endpoint" =~ \.supabase\.co ]]; then
+      echo "FAIL-FAST SECURITY GATE: Production release must not use a *.supabase.co endpoint. Configure PROD_GATEWAY_URL and a gateway-backed SUPABASE_URL." >&2
+      exit 1
+    fi
+    if [[ -n "$staging_anchor" && "$prod_endpoint" == "$staging_anchor" ]]; then
       echo "FAIL-FAST SECURITY GATE: Production release build detected STAGING endpoint ($prod_endpoint). Production build must point to dedicated production access layer and differ from staging. Pass --allow-staging if building a staging artifact." >&2
       exit 1
     fi
@@ -237,6 +290,24 @@ import_dotenv "$PROJECT_ROOT/.env"
 if [[ ! -f "$PROJECT_ROOT/.env" && -f "$PROJECT_ROOT/../.env" ]]; then
   import_dotenv "$PROJECT_ROOT/../.env"
 fi
+
+if [[ "$LAUNCH" -eq 1 ]]; then
+  export ENABLE_SUPABASE=1
+  export USE_SUPABASE_DB_DOCTOR_PATIENT="true"
+  if [[ -z "${STAGING_SUPABASE_URL:-}" ]]; then
+    echo "FAIL-FAST SECURITY GATE: --launch release requires STAGING_SUPABASE_URL (set in repo root .env or shell)." >&2
+    exit 1
+  fi
+  if [[ -z "${SUPABASE_URL:-}" ]]; then
+    export SUPABASE_URL="$STAGING_SUPABASE_URL"
+  fi
+  if [[ -z "${SUPABASE_ANON_KEY:-}" && -n "${STAGING_SUPABASE_ANON_KEY:-}" ]]; then
+    export SUPABASE_ANON_KEY="$STAGING_SUPABASE_ANON_KEY"
+  fi
+  echo "LAUNCH PROFILE ACTIVE: Building release with Supabase primary database enabled." >&2
+fi
+
+release_api_endpoint_isolation
 build_dart_defines
 validate_production_build_config
 read_version

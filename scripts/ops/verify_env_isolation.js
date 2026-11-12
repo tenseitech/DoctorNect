@@ -19,13 +19,9 @@ const STAGING_MARKERS = [
 ];
 
 function loadEnvFiles() {
-  const chunks = [];
-  for (const rel of ['.env', 'frontend/.env', 'backend/functions/.env']) {
-    const p = path.join(ROOT, rel);
-    if (!fs.existsSync(p)) continue;
-    chunks.push(fs.readFileSync(p, 'utf8'));
-  }
-  return chunks.join('\n');
+  const p = path.join(ROOT, '.env');
+  if (!fs.existsSync(p)) return '';
+  return fs.readFileSync(p, 'utf8');
 }
 
 function main() {

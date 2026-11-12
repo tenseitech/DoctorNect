@@ -55,7 +55,11 @@ const TEST_ONLY_VARS = new Set([
 
 // One canonical name per concept — duplicate names in .env.example must fail the check.
 const ENV_CONCEPT_GROUPS = [
+  { canonical: 'S3_BUCKET_STAGING', aliases: ['STAGING_S3_BUCKET'] },
+  { canonical: 'S3_BUCKET_PRODUCTION', aliases: ['PRODUCTION_S3_BUCKET'] },
   { canonical: 'S3_BUCKET', aliases: ['S3_BUCKET_NAME', 'AWS_S3_VAULT_BUCKET'] },
+  { canonical: 'REDIS_HOST_STAGING', aliases: ['STAGING_REDIS_HOST'] },
+  { canonical: 'REDIS_HOST_PRODUCTION', aliases: ['PRODUCTION_REDIS_HOST'] },
   { canonical: 'MSG91_AUTH_KEY', aliases: ['MSG91_AUTHKEY', 'AUTH_KEY'] },
   { canonical: 'SUPABASE_SERVICE_ROLE_KEY', aliases: ['SUPABASE_SECRET_KEY', 'SUPABASE_SERVICE_KEY'] },
   { canonical: 'DEMO_PHONE_PATIENT', aliases: ['GOOGLE_PLAY_REVIEW_PHONE'] },
@@ -181,11 +185,7 @@ function checkEnvParity() {
   console.log('================================================================\n');
 
   // 1. Gather declared keys across all .env.example files
-  const exampleFiles = [
-    path.join(ROOT_DIR, 'backend', 'functions', '.env.example'),
-    path.join(ROOT_DIR, 'frontend', '.env.example'),
-    path.join(ROOT_DIR, 'backend', '.env.migration.example'),
-  ];
+  const exampleFiles = [path.join(ROOT_DIR, '.env.example')];
 
   const declaredInExamples = new Map(); // key -> list of files
   for (const ef of exampleFiles) {

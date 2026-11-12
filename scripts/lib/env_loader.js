@@ -1,33 +1,14 @@
 'use strict';
 
-const fs = require('fs');
 const path = require('path');
+const { findRepoRoot } = require('./repo_root');
+const { parseEnvFile } = require('./parse_env_file');
+const { loadRootEnv } = require('./bootstrap_root_env');
 
-function parseEnvFile(filePath) {
-  if (!fs.existsSync(filePath)) return {};
-  const content = fs.readFileSync(filePath, 'utf8');
-  const env = {};
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx !== -1) {
-      const key = trimmed.slice(0, eqIdx).trim();
-      let val = trimmed.slice(eqIdx + 1).trim();
-      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-        val = val.slice(1, -1);
-      }
-      env[key] = val;
-    }
-  }
-  return env;
-}
-
-const rootDir = path.resolve(__dirname, '../..');
+const rootDir = findRepoRoot(path.join(__dirname, '..'));
+loadRootEnv({ startDir: rootDir });
 const rootEnv = parseEnvFile(path.join(rootDir, '.env'));
-const migEnv = parseEnvFile(path.join(rootDir, '.env.migration'));
-const backendEnv = parseEnvFile(path.join(rootDir, 'backend/functions/.env'));
-const mergedEnv = { ...rootEnv, ...migEnv, ...backendEnv, ...process.env };
+const mergedEnv = { ...rootEnv, ...process.env };
 
 function getEnv(key) {
   if (Object.prototype.hasOwnProperty.call(process.env, key) && process.env[key] !== '') {

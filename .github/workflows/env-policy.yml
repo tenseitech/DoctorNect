@@ -1,0 +1,34 @@
+name: Env file policy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.env.example'
+      - 'scripts/env/**'
+      - 'scripts/lib/env_loader.js'
+      - 'scripts/lib/bootstrap_root_env.js'
+      - '.github/workflows/env-policy.yml'
+  pull_request:
+    paths:
+      - '.env.example'
+      - 'scripts/env/**'
+      - 'scripts/lib/env_loader.js'
+      - 'scripts/lib/bootstrap_root_env.js'
+      - '.github/workflows/env-policy.yml'
+
+jobs:
+  env-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Env policy checks
+        run: node scripts/env/ci_env_checks.js
+      - name: Functions env parity test
+        working-directory: backend/functions
+        run: |
+          npm ci
+          npm test -- test/env_parity.test.js

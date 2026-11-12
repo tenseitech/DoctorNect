@@ -30,7 +30,29 @@ function Get-ProjectRoot {
     return $root.Path
 }
 
-function Import-DotEnv {
+function Get-RepoRoot {
+    return (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+}
+
+# Client-safe keys only — never load service-role / RDS / AWS secrets into the release build process.
+$script:ClientReleaseEnvAllowlist = @(
+    'APP_ENV',
+    'ALLOW_STAGING_BUILD',
+    'ENABLE_SUPABASE',
+    'USE_SUPABASE_DB_DOCTOR_PATIENT',
+    'FIREBASE_API_KEY_ANDROID',
+    'FIREBASE_API_KEY_IOS',
+    'FIREBASE_API_KEY_WEB',
+    'GOOGLE_MAPS_API_KEY',
+    'RECAPTCHA_SITE_KEY',
+    'SUPABASE_URL',
+    'STAGING_SUPABASE_URL',
+    'SUPABASE_ANON_KEY',
+    'STAGING_SUPABASE_ANON_KEY',
+    'PROD_GATEWAY_URL'
+)
+
+function Import-ClientReleaseDotEnv {
     param([string]$Path)
 
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -44,14 +66,75 @@ function Import-DotEnv {
         }
         if ($line -match '^(?<name>[^=]+)=(?<value>.*)$') {
             $name = $Matches['name'].Trim()
+            if ($script:ClientReleaseEnvAllowlist -notcontains $name) {
+                return
+            }
             $value = $Matches['value'].Trim()
             if (($value.StartsWith('"') -and $value.EndsWith('"')) -or
                 ($value.StartsWith("'") -and $value.EndsWith("'"))) {
                 $value = $value.Substring(1, $value.Length - 2)
             }
-            if (-not (Test-Path -Path "Env:$name")) {
-                Set-Item -Path "Env:$name" -Value $value
+            $existing = [Environment]::GetEnvironmentVariable($name, 'Process')
+            if ($null -ne $existing) {
+                return
             }
+            Set-Item -Path "Env:$name" -Value $value
+        }
+    }
+}
+
+function Test-ReleaseApiEndpointIsolation {
+    param(
+        [switch]$AllowStaging,
+        [switch]$Launch
+    )
+
+    $prodGateway = $env:PROD_GATEWAY_URL
+    $supabaseUrl = $env:SUPABASE_URL
+    $stagingAnchor = $env:STAGING_SUPABASE_URL
+    $appEnv = if ([string]::IsNullOrWhiteSpace($env:APP_ENV)) { 'staging' } else { $env:APP_ENV.Trim().ToLower() }
+    $enableSupabase = ($env:ENABLE_SUPABASE -eq '1')
+    $allowStagingArtifact = $AllowStaging -or ($env:ALLOW_STAGING_BUILD -eq 'true')
+    $stagingProfile = $Launch -or $allowStagingArtifact -or ($appEnv -eq 'staging')
+    $productionRelease = ($appEnv -eq 'production') -and -not $allowStagingArtifact
+
+    function Is-SupabaseCloudUrl {
+        param([string]$Url)
+        if ([string]::IsNullOrWhiteSpace($Url)) { return $false }
+        return ($Url.Trim().ToLower() -match '\.supabase\.co')
+    }
+
+    if ($stagingProfile -and ($Launch -or $enableSupabase)) {
+        if ([string]::IsNullOrWhiteSpace($stagingAnchor)) {
+            throw 'FAIL-FAST SECURITY GATE: Staging or -Launch release requires STAGING_SUPABASE_URL (set in repo root .env or shell).'
+        }
+    }
+
+    if ($productionRelease) {
+        if ($enableSupabase -and [string]::IsNullOrWhiteSpace($prodGateway)) {
+            throw 'FAIL-FAST SECURITY GATE: APP_ENV=production release requires PROD_GATEWAY_URL (not Supabase cloud).'
+        }
+
+        if (Is-SupabaseCloudUrl $supabaseUrl) {
+            throw 'FAIL-FAST SECURITY GATE: Production release must not use a *.supabase.co SUPABASE_URL. Set PROD_GATEWAY_URL and dart-define SUPABASE_URL to the Auth Gateway base URL.'
+        }
+
+        if ($enableSupabase) {
+            $endpoint = if (-not [string]::IsNullOrWhiteSpace($supabaseUrl)) { $supabaseUrl } else { $prodGateway }
+            if (Is-SupabaseCloudUrl $endpoint) {
+                throw 'FAIL-FAST SECURITY GATE: Production release must not use a *.supabase.co endpoint. Set PROD_GATEWAY_URL and dart-define SUPABASE_URL to the Auth Gateway base URL.'
+            }
+            if (-not [string]::IsNullOrWhiteSpace($stagingAnchor) -and -not [string]::IsNullOrWhiteSpace($endpoint) -and $endpoint.Trim().ToLower() -eq $stagingAnchor.Trim().ToLower()) {
+                throw 'FAIL-FAST SECURITY GATE: Production release cannot target the staging Supabase URL.'
+            }
+        } elseif (Is-SupabaseCloudUrl $prodGateway) {
+            throw 'FAIL-FAST SECURITY GATE: Production release must not use a *.supabase.co endpoint.'
+        }
+    }
+
+    if ($stagingProfile -and -not [string]::IsNullOrWhiteSpace($prodGateway) -and -not [string]::IsNullOrWhiteSpace($supabaseUrl)) {
+        if ($supabaseUrl.Trim().ToLower() -eq $prodGateway.Trim().ToLower() -and -not $allowStagingArtifact) {
+            throw 'FAIL-FAST SECURITY GATE: Staging release build must not point at PROD_GATEWAY_URL without -AllowStaging.'
         }
     }
 }
@@ -65,26 +148,22 @@ function Get-FlutterDartDefines {
 
     $androidKey = $env:FIREBASE_API_KEY_ANDROID
     if ([string]::IsNullOrWhiteSpace($androidKey)) {
-        $rootEnv = Join-Path (Get-ProjectRoot) '.env'
-        if (-not (Test-Path -LiteralPath $rootEnv)) {
-            $parentEnv = Join-Path (Get-ProjectRoot) '..\.env'
-            if (Test-Path -LiteralPath $parentEnv) {
-                $rootEnv = $parentEnv
-            }
-        }
+        $rootEnv = Join-Path (Get-RepoRoot) '.env'
         $hint = if (-not (Test-Path -LiteralPath $rootEnv)) {
 @"
 
-Project root .env is missing (functions/.env is for Cloud Functions only).
+Repo root .env is missing.
 Create it from the template, then set your Android Firebase API key:
 
+  cd (repo root)
   Copy-Item .env.example .env
   # Edit .env and set FIREBASE_API_KEY_ANDROID=<Android app API key from Firebase Console>
 "@
         } else {
 @"
 
-Set FIREBASE_API_KEY_ANDROID in project root .env (not functions/.env), or export it in your shell.
+Set FIREBASE_API_KEY_ANDROID in repo root .env, or export it in your shell.
+Optional: node scripts/env/generate_flutter_dart_defines.js (client-safe keys only).
 "@
         }
 
@@ -108,7 +187,7 @@ Set FIREBASE_API_KEY_ANDROID in project root .env (not functions/.env), or expor
         throw "SECURITY ERROR: SUPABASE_SERVICE_ROLE_KEY detected in environment. Service role keys must NEVER be present during client builds."
     }
 
-    # Never pass USE_SUPABASE_AUTH. Inject Supabase compile-time config only when
+    # BLD-01: Never pass USE_SUPABASE_AUTH. Inject Supabase compile-time config only when
     # ENABLE_SUPABASE=1 is set explicitly for this release.
     if ($env:ENABLE_SUPABASE -eq '1') {
         Write-Host 'WARNING: ENABLE_SUPABASE=1 — injecting SUPABASE_URL and SUPABASE_ANON_KEY dart-defines into this release build.' -ForegroundColor Yellow
@@ -160,14 +239,17 @@ function Test-ProductionBuildConfig {
         return
     }
 
-    $stagingUrl = if (-not [string]::IsNullOrWhiteSpace($env:STAGING_SUPABASE_URL)) { $env:STAGING_SUPABASE_URL } else { "https://rnltknemwnjrjxthtull.supabase.co" }
     $prodEndpoint = if (-not [string]::IsNullOrWhiteSpace($env:PROD_GATEWAY_URL)) { $env:PROD_GATEWAY_URL } else { $env:SUPABASE_URL }
+    $stagingAnchor = $env:STAGING_SUPABASE_URL
 
     if (-not $AllowStaging -and ($env:ALLOW_STAGING_BUILD -ne 'true')) {
         if ([string]::IsNullOrWhiteSpace($prodEndpoint)) {
             throw "FAIL-FAST SECURITY GATE: Production release build requires a dedicated production API endpoint (PROD_GATEWAY_URL). None configured. Release build aborted."
         }
-        if ($prodEndpoint.Trim().ToLower() -eq $stagingUrl.Trim().ToLower() -or $prodEndpoint -like "*rnltknemwnjrjxthtull*") {
+        if ($prodEndpoint -match '(?i)\.supabase\.co') {
+            throw "FAIL-FAST SECURITY GATE: Production release must not use a *.supabase.co endpoint. Configure PROD_GATEWAY_URL and a gateway-backed SUPABASE_URL."
+        }
+        if (-not [string]::IsNullOrWhiteSpace($stagingAnchor) -and ($prodEndpoint.Trim().ToLower() -eq $stagingAnchor.Trim().ToLower())) {
             throw "FAIL-FAST SECURITY GATE: Production release build detected STAGING endpoint ($prodEndpoint). Production build must point to dedicated production access layer and differ from staging. Pass -AllowStaging if building a staging artifact."
         }
     }
@@ -240,21 +322,23 @@ $projectRoot = Get-ProjectRoot
 Push-Location $projectRoot
 
 try {
+    $repoRoot = Get-RepoRoot
+    Import-ClientReleaseDotEnv -Path (Join-Path $repoRoot '.env')
     if ($Launch) {
         $env:ENABLE_SUPABASE = '1'
         $env:USE_SUPABASE_DB_DOCTOR_PATIENT = 'true'
-        if ([string]::IsNullOrWhiteSpace($env:SUPABASE_URL)) {
-            $env:SUPABASE_URL = 'https://rnltknemwnjrjxthtull.supabase.co'
+        if ([string]::IsNullOrWhiteSpace($env:STAGING_SUPABASE_URL)) {
+            throw 'FAIL-FAST SECURITY GATE: -Launch release requires STAGING_SUPABASE_URL (set in repo root .env or shell).'
         }
-        if ([string]::IsNullOrWhiteSpace($env:SUPABASE_ANON_KEY)) {
-            $env:SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJubHRrbmVtd25qcmp4dGh0dWxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5NjM3MjIsImV4cCI6MjEwNjUzOTcyMn0.d4bALRDReFuGSNKpxz0iOTyHpaE95Tlpd3DfDxvzvAY'
+        if ([string]::IsNullOrWhiteSpace($env:SUPABASE_URL)) {
+            $env:SUPABASE_URL = $env:STAGING_SUPABASE_URL
+        }
+        if ([string]::IsNullOrWhiteSpace($env:SUPABASE_ANON_KEY) -and -not [string]::IsNullOrWhiteSpace($env:STAGING_SUPABASE_ANON_KEY)) {
+            $env:SUPABASE_ANON_KEY = $env:STAGING_SUPABASE_ANON_KEY
         }
         Write-Host "LAUNCH PROFILE ACTIVE: Building release with Supabase primary database enabled." -ForegroundColor Green
     }
-    Import-DotEnv -Path (Join-Path $projectRoot '.env')
-    if (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.env'))) {
-        Import-DotEnv -Path (Join-Path $projectRoot '..\.env')
-    }
+    Test-ReleaseApiEndpointIsolation -AllowStaging:$AllowStaging -Launch:$Launch
     Test-ProductionBuildConfig -AllowStaging:$AllowStaging
     $dartDefines = Get-FlutterDartDefines -ExtraArgs $ExtraArgs
     $pubspecPath = Join-Path $projectRoot 'pubspec.yaml'

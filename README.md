@@ -63,8 +63,8 @@ Use the release script so you do not have to bump it manually before every uploa
 
 **Setup (once):**
 
-1. Copy `.env.example` to `.env` if you have not already.
-2. Set `FIREBASE_API_KEY_ANDROID` in `.env` (required for release builds).
+1. At the **repo root**, copy `.env.example` to `.env` (this is the **only** local secrets file; see `ENV_CONSOLIDATION_REPORT.md`).
+2. Set `FIREBASE_API_KEY_ANDROID` in that root `.env` (required for release builds).
 
 **Windows:**
 

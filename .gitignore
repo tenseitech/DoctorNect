@@ -57,22 +57,16 @@ app.*.map.json
 **/android/app/release
 *.hprof
 
-# Secrets
+# Secrets — only root .env.example is committed
 .env
 **/.env
 .env.*
 **/.env.*
-.env.migration
-**/.env.migration
-!.env.example
-!**/.env.example
-!.env.migration.example
-!**/.env.migration.example
-frontend/lib/firebase_options.secrets.dart
-**/firebase_options.secrets.dart
+*.env
+!/.env.example
 backend/functions/.env
 backend/functions/.env.*
-!backend/functions/.env.example
+frontend/build/dart_defines.local.json
 backend/functions/.secret.local
 **/.secret.local
 !backend/functions/.secret.local.example
@@ -173,3 +167,6 @@ infra/aws/.terraform/
 /_rpc_diff_b.sql
 /rpc_diff_*.txt
 /smoke_out.txt
+
+frontend/lib/firebase_options.secrets.dart
+docs/reports/rls_coverage_audit.json

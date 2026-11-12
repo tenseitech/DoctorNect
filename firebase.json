@@ -11,7 +11,11 @@
       "source": "backend/functions",
       "codebase": "default",
       "predeploy": [
+        "node scripts/env/materialize_functions_env.js",
         "node scripts/ops/predeploy_notification_outbox_guard.js"
+      ],
+      "postdeploy": [
+        "node scripts/env/cleanup_functions_env.js"
       ],
       "ignore": [
         "node_modules",

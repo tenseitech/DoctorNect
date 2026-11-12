@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "test:rules": "npx firebase-tools emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node scripts/run_rules_tests.js\"",
-    "audit:firestore-reachability": "node scripts/audit/scan_firestore_release_reachability.js"
+    "audit:firestore-reachability": "node scripts/audit/scan_firestore_release_reachability.js",
+    "env:verify": "node scripts/env/verify_env_file_policy.js && node scripts/env/guard_env_example_secrets.js && node scripts/env/verify_env_key_parity.js",
+    "env:ci": "node scripts/env/ci_env_checks.js"
   },
   "devDependencies": {
     "libpg-query": "^18.2.1"
