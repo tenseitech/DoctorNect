@@ -10,28 +10,11 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 
-// Load environment from .env.migration or process.env
-const envMigrationPath = path.resolve('.env.migration');
+const { loadRootEnv } = require('./lib/bootstrap_root_env');
+loadRootEnv();
 let stagingUrl = process.env.STAGING_SUPABASE_URL;
 let stagingAnonKey = process.env.STAGING_SUPABASE_ANON_KEY;
 let stagingJwtSecret = process.env.STAGING_SUPABASE_JWT_SECRET;
-
-if (fs.existsSync(envMigrationPath)) {
-  const envContent = fs.readFileSync(envMigrationPath, 'utf8');
-  for (const line of envContent.split('\n')) {
-    const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith('#')) {
-      const idx = trimmed.indexOf('=');
-      if (idx !== -1) {
-        const k = trimmed.substring(0, idx).trim();
-        const v = trimmed.substring(idx + 1).trim();
-        if (k === 'STAGING_SUPABASE_URL' && !stagingUrl) stagingUrl = v;
-        if (k === 'STAGING_SUPABASE_ANON_KEY' && !stagingAnonKey) stagingAnonKey = v;
-        if (k === 'STAGING_SUPABASE_JWT_SECRET' && !stagingJwtSecret) stagingJwtSecret = v;
-      }
-    }
-  }
-}
 
 const { assertDatabaseGuard } = require('./lib/env_guard');
 const { bootstrapMutatingScript } = require('./lib/mutating_script_bootstrap');
@@ -94,7 +77,7 @@ async function runReplay() {
     if (specs.forbidden_tables) console.log(`  - Forbidden tables (expect 403): ${specs.forbidden_tables.length}`);
   }
 
-  console.log('\nReady to execute when staging credentials are supplied in .env.migration.');
+  console.log('\nReady to execute when staging credentials are supplied in repo root .env.');
 }
 
 if (require.main === module) {

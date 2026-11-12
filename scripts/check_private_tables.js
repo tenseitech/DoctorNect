@@ -1,9 +1,14 @@
 const { Client } = require('pg');
-const fs = require('fs');
+const { loadRootEnv } = require('./lib/bootstrap_root_env');
+const { getEnv } = require('./lib/env_loader');
 
-const content = fs.readFileSync('.env.migration', 'utf8');
-const match = content.match(/PROD_SUPABASE_DB_URL=([^\r\n]+)/);
-const client = new Client({ connectionString: match[1].trim(), ssl: { rejectUnauthorized: false } });
+loadRootEnv();
+const dbUrl = getEnv('PROD_SUPABASE_DB_URL') || getEnv('STAGING_SUPABASE_DB_URL');
+if (!dbUrl) {
+  console.error('PROD_SUPABASE_DB_URL or STAGING_SUPABASE_DB_URL missing in repo root .env');
+  process.exit(1);
+}
+const client = new Client({ connectionString: dbUrl.trim(), ssl: { rejectUnauthorized: false } });
 
 async function check() {
   await client.connect();

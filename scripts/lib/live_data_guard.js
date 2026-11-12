@@ -15,6 +15,12 @@ function hostHash8(hostname) {
 }
 
 function resolveLiveDataHostHash() {
+  const targetArg = process.argv.find((a) => a.startsWith('--target='));
+  const target = targetArg ? targetArg.split('=')[1].toLowerCase() : '';
+  if (target === 'production' || target === 'rehearsal') {
+    const rds = getEnv('PROD_RDS_HOST');
+    return hostHash8(rds);
+  }
   const restUrl =
     getEnv('STAGING_SUPABASE_URL') ||
     getEnv('SUPABASE_URL') ||
@@ -57,12 +63,27 @@ function assertConfirmLiveData(scriptName) {
 
   if (!args.includes('--confirm-live-data')) {
     const label = hash || 'ADC_ONLY';
-    console.error(`${label} ${scriptName}`);
+  console.error(
+    `[LIVE DATA GUARD] Refusing to run ${scriptName} against live staging (host fingerprint ${label}).`,
+  );
+  console.error(
+    'Staging DB/Supabase env is configured. Add --confirm-live-data to acknowledge live data access.',
+  );
+  console.error(
+    'To apply migrations: node scripts/db/migrate.js --target=staging --execute --confirm-live-data --confirm-staging',
+  );
+  console.error(
+    'Dry-run only (rollback): node scripts/db/migrate.js --target=staging --dry-run-all --confirm-live-data',
+  );
+  console.error(`${label} ${scriptName}`);
     process.exit(1);
   }
 
   const allowed = loadAllowedHashes();
   if (hash && allowed.size > 0 && !allowed.has(hash)) {
+    console.error(
+      `[LIVE DATA GUARD] Host fingerprint ${hash} is not in docs/audit/allowed_host_hashes.txt for ${scriptName}.`,
+    );
     console.error(`${hash} ${scriptName}`);
     process.exit(1);
   }

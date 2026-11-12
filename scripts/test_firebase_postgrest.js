@@ -27,9 +27,9 @@ function parseEnvFile(filePath) {
   return env;
 }
 
-const rootEnv = parseEnvFile(path.resolve(ROOT_DIR, '.env'));
-const backendEnv = parseEnvFile(path.resolve(ROOT_DIR, 'backend/functions/.env'));
-const mergedEnv = { ...rootEnv, ...backendEnv, ...process.env };
+const { loadRootEnv } = require('./lib/bootstrap_root_env');
+loadRootEnv();
+const mergedEnv = { ...process.env };
 
 async function checkPostgrestFirebaseToken() {
   bootstrapMutatingScript('scripts/test_firebase_postgrest.js');

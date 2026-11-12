@@ -1,5 +1,6 @@
 'use strict';
 
+require('../../../scripts/lib/bootstrap_root_env').loadRootEnv();
 const http = require('node:http');
 const path = require('node:path');
 const config = require('./config');
@@ -175,11 +176,29 @@ function createGatewayServer(overrides = {}) {
     } catch (_) {}
     let cleanPath = path.posix.normalize(decodedPath).replace(/^\/+/, '/').replace(/\/+$/, '') || '/';
 
-    // Health check
+    // Health check (gateway + PostgREST upstream)
     if (cleanPath === '/healthz') {
-      return sendJson(200, {
-        status: 'healthy',
+      let postgrest = { ok: false, status: 'unknown' };
+      const pgRoot = String(cfg.postgrestUrl || '').replace(/\/+$/, '');
+      if (pgRoot) {
+        try {
+          const upstream = await fetch(`${pgRoot}/`, {
+            method: 'GET',
+            signal: AbortSignal.timeout(3000),
+          });
+          postgrest = {
+            ok: upstream.ok || upstream.status === 404 || upstream.status === 405,
+            status: upstream.status,
+          };
+        } catch (err) {
+          postgrest = { ok: false, status: 'unreachable', message: err.message };
+        }
+      }
+      const healthy = postgrest.ok;
+      return sendJson(healthy ? 200 : 503, {
+        status: healthy ? 'healthy' : 'degraded',
         service: 'doctornect-auth-gateway',
+        postgrest,
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
       });

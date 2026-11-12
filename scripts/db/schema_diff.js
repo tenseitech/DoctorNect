@@ -285,31 +285,57 @@ async function run() {
       process.exit(0);
     }
     targetUri = `postgresql://${rdsUser}:${encodeURIComponent(rdsPass)}@${rdsHost}:${rdsPort}/doctornect_rehearsal?sslmode=require`;
+  } else if (target === 'fresh' || target === 'fresh_local') {
+    targetUri = getEnv('LOCAL_FRESH_DB_URL');
+    if (!targetUri) {
+      const base = getEnv('REPLAY_DB_URL') || '';
+      const dbName = process.env.FRESH_LOCAL_DB_NAME || 'doctornect_fresh_zero';
+      if (!base) {
+        console.error('Error: set LOCAL_FRESH_DB_URL or REPLAY_DB_URL (fresh DB name via FRESH_LOCAL_DB_NAME).');
+        process.exit(1);
+      }
+      const u = new URL(base.replace(/^postgres:\/\//i, 'postgresql://'));
+      u.pathname = `/${dbName}`;
+      targetUri = u.toString();
+    }
   } else if (target === 'production') {
-    const rdsHost = getEnv('PROD_RDS_HOST');
-    const rdsPort = getEnv('PROD_RDS_PORT') || '5432';
-    const rdsUser = getEnv('PROD_RDS_USER') || 'postgres';
-    const rdsPass = getEnv('PROD_RDS_PASSWORD');
-    const rdsDb = getEnv('PROD_RDS_DB') || 'doctornect';
-    if (!rdsHost || !rdsPass) {
+    const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
+    const { assertProductionRdsTarget, verifyConnectedRdsSession } = require('../lib/rds_connect_guard');
+    try {
+      const cfg = buildRdsPoolConfig({ database: getEnv('PROD_RDS_DB') || 'doctornect' });
+      targetUri = maskRdsTarget(cfg);
+    } catch (_) {
       console.log(`[SKIPPED] Target "production" is not configured yet.`);
       process.exit(0);
     }
-    targetUri = `postgresql://${rdsUser}:${encodeURIComponent(rdsPass)}@${rdsHost}:${rdsPort}/${rdsDb}?sslmode=require`;
   }
 
   console.log(`Staging: ${maskConnectionString(stagingUri)}`);
   console.log(`Target:  ${maskConnectionString(targetUri)}`);
 
   const sClient = new Client({ connectionString: stagingUri, ssl: { rejectUnauthorized: false } });
-  const tClient = new Client({
-    connectionString: targetUri,
-    ssl: { ca: fs.readFileSync(path.resolve(__dirname, '../../infra/aws/global-bundle.pem'), 'utf8'), rejectUnauthorized: true },
-  });
+  const isLocalFresh = target === 'fresh' || target === 'fresh_local';
+  let tClient;
+  if (isLocalFresh) {
+    tClient = new Client({ connectionString: targetUri });
+  } else if (target === 'production') {
+    const { buildRdsPoolConfig } = require('../lib/rds_pool_config');
+    const prodCfg = buildRdsPoolConfig({ database: getEnv('PROD_RDS_DB') || 'doctornect' });
+    assertProductionRdsTarget(prodCfg);
+    tClient = new Client(prodCfg);
+  } else {
+    tClient = new Client({
+      connectionString: targetUri,
+      ssl: { ca: fs.readFileSync(path.resolve(__dirname, '../../infra/aws/global-bundle.pem'), 'utf8'), rejectUnauthorized: true },
+    });
+  }
 
   try {
     await sClient.connect();
     await tClient.connect();
+    if (target === 'production') {
+      await verifyConnectedRdsSession(tClient, buildRdsPoolConfig({ database: getEnv('PROD_RDS_DB') || 'doctornect' }));
+    }
 
     console.log('\nFetching catalogs from both databases...');
     const [stagingCat, targetCat] = await Promise.all([fetchCatalog(sClient), fetchCatalog(tClient)]);

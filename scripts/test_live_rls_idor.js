@@ -59,10 +59,9 @@ function parseEnvFile(filePath) {
   return env;
 }
 
-const rootEnv = parseEnvFile(path.join(__dirname, '../.env'));
-const migEnv = parseEnvFile(path.join(__dirname, '../.env.migration'));
-const backendEnv = parseEnvFile(path.join(__dirname, '../backend/functions/.env'));
-const mergedEnv = { ...rootEnv, ...migEnv, ...backendEnv, ...process.env };
+const { loadRootEnv } = require('./lib/bootstrap_root_env');
+loadRootEnv();
+const mergedEnv = { ...process.env };
 
 const STAGING_URL = mergedEnv.STAGING_SUPABASE_URL;
 const STAGING_DB_URL = mergedEnv.STAGING_SUPABASE_DB_URL;

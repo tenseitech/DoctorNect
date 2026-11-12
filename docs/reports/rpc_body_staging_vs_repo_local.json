@@ -1,0 +1,126 @@
+{
+  "generatedAt": "2026-11-12T11:21:01.070Z",
+  "results": [
+    {
+      "function": "accept_ambulance_request",
+      "stagingArgs": "p_broadcast_id character varying, p_request_id character varying",
+      "localArgs": "p_broadcast_id character varying, p_request_id character varying",
+      "rawHashStaging": "79edf02d15c56f0d",
+      "rawHashLocal": "f53360ee11ed382d",
+      "normHashStaging": "b947c27c403f083c",
+      "normHashLocal": "b947c27c403f083c",
+      "normalizedMatch": true,
+      "firstDiff": null
+    },
+    {
+      "function": "book_appointment_atomic",
+      "stagingArgs": "p_appointment_id character varying, p_doctor_id character varying, p_doctor_name character varying, p_specialization character varying, p_patient_name character varying, p_patient_age integer, p_patient_gender character varying, p_date_time timestamp with time zone, p_slot_label character varying, p_visit_type character varying, p_token_number integer, p_clinic_name character varying, p_clinic_address text, p_sync_origin character varying, p_patient_id character varying",
+      "localArgs": "p_appointment_id character varying, p_doctor_id character varying, p_doctor_name character varying, p_specialization character varying, p_patient_name character varying, p_patient_age integer, p_patient_gender character varying, p_date_time timestamp with time zone, p_slot_label character varying, p_visit_type character varying, p_token_number integer, p_clinic_name character varying, p_clinic_address text, p_sync_origin character varying, p_patient_id character varying",
+      "rawHashStaging": "1178785b5e2404e3",
+      "rawHashLocal": "00ee21204cc92c5a",
+      "normHashStaging": "356f362d9d7e6b23",
+      "normHashLocal": "356f362d9d7e6b23",
+      "normalizedMatch": true,
+      "firstDiff": null
+    },
+    {
+      "function": "cancel_ambulance_broadcast",
+      "stagingArgs": "p_broadcast_id character varying, p_reason text",
+      "localArgs": "p_broadcast_id character varying, p_reason text",
+      "rawHashStaging": "bd756f2c547c1199",
+      "rawHashLocal": "4059053507516932",
+      "normHashStaging": "448fd3b161a4f582",
+      "normHashLocal": "448fd3b161a4f582",
+      "normalizedMatch": true,
+      "firstDiff": null
+    },
+    {
+      "function": "complete_ambulance_trip",
+      "stagingArgs": "p_broadcast_id character varying",
+      "localArgs": "p_broadcast_id character varying",
+      "rawHashStaging": "a487842b43f6fba0",
+      "rawHashLocal": "58c43a35ea29aaf3",
+      "normHashStaging": "a081ffb7c66bb072",
+      "normHashLocal": "a081ffb7c66bb072",
+      "normalizedMatch": true,
+      "firstDiff": null
+    },
+    {
+      "function": "get_ambulance_trip_contact",
+      "stagingArgs": "p_broadcast_id character varying",
+      "localArgs": "p_broadcast_id character varying",
+      "rawHashStaging": "e800200e6786fe4f",
+      "rawHashLocal": "9df44552080c9164",
+      "normHashStaging": "2e107810a9096684",
+      "normHashLocal": "2e107810a9096684",
+      "normalizedMatch": true,
+      "firstDiff": null
+    },
+    {
+      "function": "get_ambulance_trip_location",
+      "stagingArgs": "p_broadcast_id character varying",
+      "localArgs": "p_broadcast_id character varying",
+      "rawHashStaging": "d9b211b31a967805",
+      "rawHashLocal": "9337568c774ce363",
+      "normHashStaging": "1bc80d9a57cebf59",
+      "normHashLocal": "1bc80d9a57cebf59",
+      "normalizedMatch": true,
+      "firstDiff": null
+    },
+    {
+      "function": "reschedule_appointment_atomic",
+      "stagingArgs": "p_appointment_id character varying, p_doctor_id character varying, p_new_date date, p_new_slot character varying, p_rescheduled_by character varying, p_reason text",
+      "localArgs": "p_appointment_id character varying, p_doctor_id character varying, p_new_date date, p_new_slot character varying, p_rescheduled_by character varying, p_reason text",
+      "rawHashStaging": "cb8ffcc4ddba35ce",
+      "rawHashLocal": "bbc4e20d99a9b60a",
+      "normHashStaging": "32c2458869f57d0c",
+      "normHashLocal": "32c2458869f57d0c",
+      "normalizedMatch": true,
+      "firstDiff": null
+    },
+    {
+      "function": "update_ambulance_location",
+      "stagingArgs": "p_broadcast_id character varying, p_latitude double precision, p_longitude double precision, p_heading double precision, p_speed double precision",
+      "localArgs": "p_broadcast_id character varying, p_latitude double precision, p_longitude double precision, p_heading double precision, p_speed double precision",
+      "rawHashStaging": "843e487cc7e7e8c8",
+      "rawHashLocal": "4511002aa93a8320",
+      "normHashStaging": "1e8ab858c6c8f0ed",
+      "normHashLocal": "1e8ab858c6c8f0ed",
+      "normalizedMatch": true,
+      "firstDiff": null
+    },
+    {
+      "function": "update_lab_booking_status",
+      "stagingArgs": "p_booking_id character varying, p_new_status character varying, p_notes text",
+      "localArgs": "p_booking_id character varying, p_new_status character varying, p_notes text",
+      "rawHashStaging": "2a766272dd568e12",
+      "rawHashLocal": "93bec47a88a69f47",
+      "normHashStaging": "fe181f45fbca2f08",
+      "normHashLocal": "fe181f45fbca2f08",
+      "normalizedMatch": true,
+      "firstDiff": null
+    },
+    {
+      "function": "update_lab_order_status",
+      "stagingArgs": "p_order_id character varying, p_new_status character varying, p_notes text",
+      "localArgs": "p_order_id character varying, p_new_status character varying, p_notes text",
+      "rawHashStaging": "bf3e3ae59cb61a16",
+      "rawHashLocal": "361079abd313f002",
+      "normHashStaging": "63e739a54eff8868",
+      "normHashLocal": "63e739a54eff8868",
+      "normalizedMatch": true,
+      "firstDiff": null
+    },
+    {
+      "function": "update_pharmacy_delivery_status",
+      "stagingArgs": "p_delivery_id character varying, p_new_status character varying, p_notes text, p_medicine_lines jsonb",
+      "localArgs": "p_delivery_id character varying, p_new_status character varying, p_notes text, p_medicine_lines jsonb",
+      "rawHashStaging": "c5270a04f598fd4c",
+      "rawHashLocal": "a9446dd82b3a6a0a",
+      "normHashStaging": "44fc85a703438bc8",
+      "normHashLocal": "44fc85a703438bc8",
+      "normalizedMatch": true,
+      "firstDiff": null
+    }
+  ]
+}

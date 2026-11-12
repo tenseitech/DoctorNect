@@ -170,6 +170,21 @@ describe('Gateway Allowlist Completeness Scanner', () => {
       'frontend/lib/core/supabase/supabase_stream_table.dart': [
         // Generic helper; callers pass literal table names audited by clientTables scanner
       ],
+      'frontend/lib/core/auth/profile_completion_service.dart': [
+        'users',
+        'doctors',
+        'medical_stores',
+        'labs',
+        'ambulances',
+      ],
+      'backend/functions/admin_platform_actions.js': [
+        'users',
+        'doctors',
+        'labs',
+        'medical_stores',
+        'ambulances',
+        'patients',
+      ],
       'frontend/lib/features/profile/profile_completion_modal.dart': [
         'doctors',
         'patients',

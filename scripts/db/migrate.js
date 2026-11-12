@@ -2,9 +2,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 const { Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
+const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
 const { assertDatabaseGuard, getHostFingerprint } = require('../lib/env_guard');
 const { assertSessionCapableConnection, SESSION_CONNECTION_DOC } = require('../lib/db_connection_guard');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
@@ -50,13 +50,32 @@ async function splitSqlStatements(sqlText) {
   return statements;
 }
 
-function computeChecksum(content) {
-  const normalized = typeof content === 'string' ? content.replace(/\r\n/g, '\n') : content;
-  return crypto.createHash('sha256').update(normalized, 'utf8').digest('hex');
+const {
+  computeChecksum,
+  ledgerChecksumMatches,
+} = require('../lib/migration_checksum');
+
+function buildStagingPoolConfig(dbUrl) {
+  const config = { connectionString: dbUrl };
+  try {
+    const parsed = new URL(dbUrl.replace(/^postgres:\/\//i, 'postgresql://'));
+    const sslmode = (parsed.searchParams.get('sslmode') || '').toLowerCase();
+    if (sslmode === 'require' || sslmode === 'verify-ca' || sslmode === 'verify-full' || parsed.hostname.includes('supabase')) {
+      config.ssl = { rejectUnauthorized: false };
+    }
+  } catch (_) {
+    config.ssl = { rejectUnauthorized: false };
+  }
+  return config;
+}
+
+function listPendingMigrationFiles(appliedMap) {
+  const migrationsDir = path.resolve('db/migrations');
+  const files = fs.readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort();
+  return files.filter((f) => !appliedMap.has(f.split('_')[0]));
 }
 
 async function runMigrations() {
-  bootstrapMutatingScript('scripts/db/migrate.js');
   const args = process.argv.slice(2);
   const isDryRun =
     args.includes('--dry-run') ||
@@ -69,15 +88,30 @@ async function runMigrations() {
   console.log(`\n======================================================`);
   console.log(`DoctorNect Migration Runner (Target: ${target.toUpperCase()}${isDryRun ? ' [DRY-RUN]' : ''})`);
   console.log(`======================================================`);
+  console.log(`Mode: ${isDryRunAll ? '--dry-run-all (statement test + rollback)' : isDryRun ? 'dry-run (list only)' : '--execute (will commit)'}`);
+  console.log(`Env files: repo root .env only (scripts/lib/env_loader.js)`);
+  const stagingUrlKey = getEnv('STAGING_SUPABASE_DB_URL') ? 'STAGING_SUPABASE_DB_URL' : (getEnv('PROD_SUPABASE_DB_URL') ? 'PROD_SUPABASE_DB_URL' : null);
+  if (target === 'staging') {
+    console.log(`Staging DB URL variable: ${stagingUrlKey || '[MISSING — set STAGING_SUPABASE_DB_URL in root .env]'}`);
+  }
+
+  bootstrapMutatingScript('scripts/db/migrate.js');
 
   let dbUrl;
   let poolConfig;
+  let targetHostLabel = '';
 
   if (target === 'staging') {
     dbUrl = getEnv('STAGING_SUPABASE_DB_URL') || getEnv('PROD_SUPABASE_DB_URL');
+    if (!dbUrl) {
+      console.error('\n[FATAL] STAGING_SUPABASE_DB_URL is not set. Cannot connect.');
+      process.exit(1);
+    }
     const targetHost = getHostFingerprint(dbUrl);
-    assertDatabaseGuard({ targetKind: 'staging', operationName: 'Run Migrations', allowDestructive: !isDryRun && !isDryRunAll, targetHost });
-    poolConfig = { connectionString: dbUrl };
+    targetHostLabel = targetHost;
+    const guard = assertDatabaseGuard({ targetKind: 'staging', operationName: 'Run Migrations', allowDestructive: !isDryRun && !isDryRunAll, targetHost });
+    console.log(`Target host (staging): ${guard.host}`);
+    poolConfig = buildStagingPoolConfig(dbUrl);
   } else if (target === 'replay' || target === 'replay_check') {
     const rawReplayUrl = getEnv('REPLAY_DB_URL');
     if (!rawReplayUrl) {
@@ -97,24 +131,10 @@ async function runMigrations() {
   } else if (target === 'rehearsal' || target === 'production') {
     const host = getEnv('PROD_RDS_HOST');
     assertDatabaseGuard({ targetKind: 'production', operationName: `Run Migrations on ${target}`, allowDestructive: false, targetHost: host });
-    const port = parseInt(getEnv('PROD_RDS_PORT') || '5432', 10);
-    const database = target === 'rehearsal' ? 'doctornect_rehearsal' : (getEnv('PROD_RDS_DB') || 'postgres');
-    const user = getEnv('PROD_RDS_USER') || 'postgres';
-    const password = getEnv('PROD_RDS_PASSWORD');
-    const certPath = getEnv('PROD_RDS_SSL_ROOT_CERT') || path.resolve(__dirname, '../../infra/aws/global-bundle.pem');
-
-    poolConfig = {
-      host,
-      port,
-      database,
-      user,
-      password,
-      ssl: {
-        rejectUnauthorized: true,
-        ca: fs.readFileSync(certPath),
-      },
-    };
-    dbUrl = `postgresql://${user}:****@${host}:${port}/${database}`;
+    const database = target === 'rehearsal' ? 'doctornect_rehearsal' : (getEnv('PROD_RDS_DB') || 'doctornect');
+    poolConfig = buildRdsPoolConfig({ database });
+    dbUrl = maskRdsTarget(poolConfig);
+    targetHostLabel = poolConfig.logicalHost;
   } else {
     console.error(`Invalid target: ${target}. Must be staging, rehearsal, or production.`);
     process.exit(1);
@@ -124,8 +144,17 @@ async function runMigrations() {
   console.log(`Target Connection: ${maskConnectionString(dbUrl)}`);
   console.log(SESSION_CONNECTION_DOC);
 
-  const pool = new Pool(poolConfig);
-  const client = await pool.connect();
+  let pool;
+  let client;
+  try {
+    pool = new Pool(poolConfig);
+    client = await pool.connect();
+    console.log('✔ Database connection established.');
+  } catch (connErr) {
+    console.error(`\n[FATAL] Could not connect to database (${targetHostLabel || target}): ${connErr.code || ''} ${connErr.message}`);
+    console.error('Check STAGING_SUPABASE_DB_URL uses session pooler port 5432 and network access.');
+    process.exit(1);
+  }
 
   try {
     // 1. Ensure migrations ledger exists
@@ -151,6 +180,7 @@ async function runMigrations() {
           INSERT INTO public._schema_migrations (version, name, checksum)
           SELECT version, COALESCE(name, version), 'legacy_supabase'
           FROM supabase_migrations.schema_migrations
+          WHERE version <> '20261104000001'
           ON CONFLICT (version) DO NOTHING;
         `);
       }
@@ -168,6 +198,15 @@ async function runMigrations() {
     const migrationsDir = path.resolve('db/migrations');
     const overridesDir = path.resolve('db/rds_overrides');
     const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
+    const pendingFilesPreview = listPendingMigrationFiles(appliedMap);
+    console.log(`\nPending migration files (${pendingFilesPreview.length}):`);
+    if (pendingFilesPreview.length === 0) {
+      console.log('  (none — schema is at head)');
+    } else {
+      for (const f of pendingFilesPreview) {
+        console.log(`  - ${f}`);
+      }
+    }
 
     // Check if pg_cron extension is available on this PostgreSQL instance
     const hasCronExtRes = await client.query(`
@@ -176,6 +215,7 @@ async function runMigrations() {
     const lacksPgCron = hasCronExtRes.rows.length === 0;
 
     let pendingCount = 0;
+    let appliedThisRun = 0;
 
     if (isDryRunAll) {
       console.log(`\n--- EXECUTING --dry-run-all (Statement-level testing inside single rollback transaction) ---`);
@@ -234,6 +274,7 @@ async function runMigrations() {
           Message: e.message,
           Statement: e.snippet,
         })));
+        throw new Error(`dry-run-all failed with ${allErrors.length} statement error(s)`);
       } else {
         console.log('\n✔ ZERO ERRORS DETECTED across all pending migration statements.');
       }
@@ -254,7 +295,7 @@ async function runMigrations() {
 
       if (appliedMap.has(version)) {
         const recordedChecksum = appliedMap.get(version);
-        if (recordedChecksum !== 'legacy_supabase' && recordedChecksum !== checksum) {
+        if (!ledgerChecksumMatches(sqlContent, recordedChecksum)) {
           console.error(`\n[FATAL CHECKSUM MISMATCH] Migration ${file} (version ${version}) has been altered!`);
           console.error(`Recorded checksum: ${recordedChecksum}`);
           console.error(`Current checksum:  ${checksum}`);
@@ -275,6 +316,7 @@ async function runMigrations() {
       // Execute in a transaction
       console.log(`Applying ${file}...`);
       await applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists, lacksPgCron });
+      appliedThisRun++;
     }
 
     if (!isDryRun) {
@@ -285,7 +327,20 @@ async function runMigrations() {
       } catch (_) {}
     }
 
-    console.log(`\nMigration run completed. Total pending applied: ${pendingCount}`);
+    const finalLedger = await client.query(
+      `SELECT version, name, applied_at FROM public._schema_migrations ORDER BY version DESC LIMIT 15;`,
+    );
+    console.log(`\n=== MIGRATION RUN SUMMARY ===`);
+    console.log(`Target: ${target} | Host: ${targetHostLabel || '(see connection mask above)'}`);
+    console.log(`Pending seen this run: ${pendingCount} | Applied this run: ${isDryRun ? 0 : appliedThisRun}`);
+    console.log(`Ledger total versions: ${appliedMap.size + (isDryRun ? 0 : appliedThisRun)}`);
+    if (finalLedger.rows.length) {
+      console.log('\nMost recent _schema_migrations rows:');
+      for (const row of finalLedger.rows) {
+        console.log(`  ${row.version}  ${row.name}  @ ${row.applied_at}`);
+      }
+    }
+    console.log(`\nMigration run completed.`);
 
   } finally {
     client.release();
@@ -348,10 +403,20 @@ async function applySingleMigration({ client, version, file, sqlContent, checksu
 }
 
 if (require.main === module) {
-  runMigrations().catch(err => {
-    console.error('Migration runner failed:', err.message);
-    process.exit(1);
-  });
+  runMigrations()
+    .then((result) => {
+      if (result?.errors?.length) {
+        process.exit(1);
+      }
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('\n[MIGRATION RUNNER FAILED]', err.message);
+      if (err.stack && process.env.DEBUG_MIGRATE === '1') {
+        console.error(err.stack);
+      }
+      process.exit(1);
+    });
 }
 
 module.exports = { runMigrations, applySingleMigration, computeChecksum };

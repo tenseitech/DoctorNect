@@ -36,9 +36,9 @@ function parseEnv(filePath) {
   return env;
 }
 
-const rootEnv = parseEnv(path.join(__dirname, '../.env'));
-const backendEnv = parseEnv(path.join(__dirname, '../backend/functions/.env'));
-const merged = { ...rootEnv, ...backendEnv, ...process.env };
+const { loadRootEnv } = require('./lib/bootstrap_root_env');
+loadRootEnv();
+const merged = { ...process.env };
 
 const FIREBASE_API_KEY = merged.FIREBASE_API_KEY_WEB || process.env.FIREBASE_API_KEY;
 const FUNCTIONS_URL = process.env.FUNCTIONS_BASE_URL || 'https://asia-south1-medibond-45fad.cloudfunctions.net';

@@ -40,10 +40,9 @@ function loadEnvFile(filePath) {
   return env;
 }
 
-// Load env hierarchy: process.env > backend/functions/.env > root .env
-const rootEnv = loadEnvFile(path.resolve(ROOT_DIR, '.env'));
-const functionsEnv = loadEnvFile(path.resolve(ROOT_DIR, 'backend/functions/.env'));
-const mergedEnv = { ...rootEnv, ...functionsEnv, ...process.env };
+const { loadRootEnv } = require('./lib/bootstrap_root_env');
+loadRootEnv();
+const mergedEnv = { ...process.env };
 
 function maskSecret(val) {
   if (!val) return '[NOT_SET]';

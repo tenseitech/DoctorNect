@@ -1,0 +1,41 @@
+{
+  "at": "2026-11-12T11:41:09.021Z",
+  "matrix": [
+    {
+      "test": "anon doctor_directory",
+      "verdict": "PASS",
+      "http": 200,
+      "detail": ""
+    },
+    {
+      "test": "patient own patients row",
+      "verdict": "PASS",
+      "http": 200
+    },
+    {
+      "test": "patient cross-user patients",
+      "verdict": "PASS",
+      "http": 200
+    },
+    {
+      "test": "no token rejected",
+      "verdict": "PASS",
+      "http": 401
+    },
+    {
+      "test": "expired token rejected",
+      "verdict": "PASS",
+      "http": 401
+    },
+    {
+      "test": "service key sync_dead_letter_queue",
+      "verdict": "PASS",
+      "http": 200
+    },
+    {
+      "test": "book_appointment_atomic via gateway",
+      "verdict": "PASS",
+      "http": 200
+    }
+  ]
+}

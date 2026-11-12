@@ -1,0 +1,349 @@
+{
+  "at": "2026-11-12T11:22:09.044Z",
+  "db": "doctornect_fresh_zero",
+  "matrix": [
+    {
+      "module": "doctor",
+      "rule": "(1) own read/update",
+      "subject": "doctors",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "doctor",
+      "rule": "(1) own read/update",
+      "subject": "doctors UPDATE",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "doctor",
+      "rule": "(2) cross-user deny",
+      "subject": "doctors SELECT B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "doctor",
+      "rule": "(2) cross-user deny",
+      "subject": "doctors UPDATE B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "doctor",
+      "rule": "(2) cross-user deny",
+      "subject": "doctors DELETE B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "doctor",
+      "rule": "(3) cross-module deny",
+      "subject": "patients",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "doctor",
+      "rule": "(4) no JWT claims (SQL)",
+      "subject": "doctors",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "patient",
+      "rule": "(1) own read/update",
+      "subject": "patients",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "patient",
+      "rule": "(1) own read/update",
+      "subject": "patients UPDATE",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "patient",
+      "rule": "(2) cross-user deny",
+      "subject": "patients SELECT B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "patient",
+      "rule": "(2) cross-user deny",
+      "subject": "patients UPDATE B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "patient",
+      "rule": "(2) cross-user deny",
+      "subject": "patients DELETE B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "patient",
+      "rule": "(3) cross-module deny",
+      "subject": "doctors",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "patient",
+      "rule": "(4) no JWT claims (SQL)",
+      "subject": "patients",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "pharmacy",
+      "rule": "(1) own read/update",
+      "subject": "medical_stores",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "pharmacy",
+      "rule": "(1) own read/update",
+      "subject": "medical_stores UPDATE",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "pharmacy",
+      "rule": "(2) cross-user deny",
+      "subject": "pharmacy_deliveries SELECT B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "pharmacy",
+      "rule": "(2) cross-user deny",
+      "subject": "pharmacy_deliveries UPDATE B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "pharmacy",
+      "rule": "(2) cross-user deny",
+      "subject": "pharmacy_deliveries DELETE B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "pharmacy",
+      "rule": "(3) cross-module deny",
+      "subject": "lab_bookings",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "pharmacy",
+      "rule": "(4) no JWT claims (SQL)",
+      "subject": "medical_stores",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "lab",
+      "rule": "(1) own read/update",
+      "subject": "labs",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "lab",
+      "rule": "(1) own read/update",
+      "subject": "labs UPDATE",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "lab",
+      "rule": "(2) cross-user deny",
+      "subject": "lab_bookings SELECT B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "lab",
+      "rule": "(2) cross-user deny",
+      "subject": "lab_bookings UPDATE B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "lab",
+      "rule": "(2) cross-user deny",
+      "subject": "lab_bookings DELETE B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "lab",
+      "rule": "(3) cross-module deny",
+      "subject": "pharmacy_deliveries",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "lab",
+      "rule": "(4) no JWT claims (SQL)",
+      "subject": "labs",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "ambulance",
+      "rule": "(1) own read/update",
+      "subject": "ambulances",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "ambulance",
+      "rule": "(1) own read/update",
+      "subject": "ambulances UPDATE",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "ambulance",
+      "rule": "(2) cross-user deny",
+      "subject": "ambulance_requests SELECT B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "ambulance",
+      "rule": "(2) cross-user deny",
+      "subject": "ambulance_requests UPDATE B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "ambulance",
+      "rule": "(2) cross-user deny",
+      "subject": "ambulance_requests DELETE B",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "ambulance",
+      "rule": "(3) cross-module deny",
+      "subject": "lab_bookings",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "ambulance",
+      "rule": "(4) no JWT claims (SQL)",
+      "subject": "ambulances",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "all",
+      "rule": "(5) service-role only",
+      "subject": "notification_outbox SELECT",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "all",
+      "rule": "(5) service-role only",
+      "subject": "enqueue_notification_outbox()",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "all",
+      "rule": "(6) admin_audit INSERT deny",
+      "subject": "admin_audit_logs",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "medical",
+      "rule": "(1) own read",
+      "subject": "appointments",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "medical",
+      "rule": "(2) cross-user deny",
+      "subject": "appointments",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "medical",
+      "rule": "(1) own read",
+      "subject": "prescriptions",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "medical",
+      "rule": "(2) cross-user deny",
+      "subject": "prescriptions",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "medical",
+      "rule": "(1) own read",
+      "subject": "health_records",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "medical",
+      "rule": "(2) cross-user deny",
+      "subject": "health_records",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "medical",
+      "rule": "(1) own read",
+      "subject": "support_tickets",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "medical",
+      "rule": "(2) cross-user deny",
+      "subject": "support_tickets",
+      "verdict": "PASS",
+      "note": ""
+    },
+    {
+      "module": "gateway",
+      "rule": "(4) no Firebase token",
+      "subject": "GET /rest/v1/patients",
+      "verdict": "PASS",
+      "note": "HTTP 401"
+    },
+    {
+      "module": "gateway",
+      "rule": "(4) expired Firebase token",
+      "subject": "GET /rest/v1/patients",
+      "verdict": "PASS",
+      "note": "HTTP 401"
+    },
+    {
+      "module": "gateway",
+      "rule": "(4) invalid/revoked-like token",
+      "subject": "GET /rest/v1/patients",
+      "verdict": "PASS",
+      "note": "HTTP 401"
+    }
+  ]
+}
