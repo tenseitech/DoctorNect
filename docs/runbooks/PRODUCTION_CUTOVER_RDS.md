@@ -48,7 +48,7 @@ Populate the secrets generated in Step 1:
 
 ### Step 4: Bootstrap & Migrate Production RDS Database
 1. **Pre-Flight Inspection: Verify Actual RDS Engine Version & Parameter Group**:
-   Run AWS CLI check to confirm the RDS instance identifier (`var.rds_instance_identifier`), engine version (PostgreSQL 17+), and parameter group status:
+   Run AWS CLI check to confirm the RDS instance identifier (`var.rds_instance_identifier`), engine version (**PostgreSQL 18.3** / documented `PROD_PG_VERSION`), and parameter group status:
    ```bash
    aws rds describe-db-instances \
      --db-instance-identifier ${var.rds_instance_identifier} \
@@ -57,15 +57,15 @@ Populate the secrets generated in Step 1:
    ```
    *Verification criteria:*
    - `Engine`: `postgres`
-   - `EngineVersion`: `17.*` (or major version >= 15)
+   - `EngineVersion`: `18.3` (document in `PROD_PG_VERSION`)
    - `Status`: `available`
 
 2. **Apply RDS Parameter Group for `pg_cron`**:
-   Ensure the RDS PostgreSQL instance is associated with `aws_db_parameter_group.doctornect_pg17` (`doctornect-production-pg17-cron` configuring `shared_preload_libraries = "pg_stat_statements,pg_cron"` and `cron.database_name = "postgres"`).
+   Ensure the RDS PostgreSQL instance is associated with `aws_db_parameter_group.doctornect_pg18` (`doctornect-production-pg18-cron` configuring `shared_preload_libraries = "pg_stat_statements,pg_cron"` and `cron.database_name = "postgres"`).
    ```bash
    aws rds modify-db-instance \
      --db-instance-identifier ${var.rds_instance_identifier} \
-     --db-parameter-group-name doctornect-production-pg17-cron \
+     --db-parameter-group-name doctornect-production-pg18-cron \
      --apply-immediately
    ```
 3. **Reboot RDS Instance**:

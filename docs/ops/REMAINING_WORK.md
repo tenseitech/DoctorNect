@@ -133,7 +133,7 @@
     - **Domain KYC Immutability**: Deployed `20261102000001_round6_guards_and_kyc.sql` locking council numbers, licenses, vehicle registrations once `verified=true`. 8 deny/allow test cases pass.
     - **Provider Lifecycle RPCs**: Added owner-bound `deactivate_provider_profile()` and `reactivate_provider_profile()` with bypass config; verified in harness.
     - **Reviews & Appointments Policies**: Updated `appointments_select` and `reviews_select` to permit family member appointment and review visibility; verified in harness.
-    - **AWS RDS Parameter Group**: Added `aws_db_parameter_group.doctornect_pg15` to `infra/aws/rds.tf` (`shared_preload_libraries = "pg_stat_statements,pg_cron"`). Updated runbook `docs/runbooks/PRODUCTION_CUTOVER_RDS.md`.
+    - **AWS RDS Parameter Group** (historical): early cutover notes referenced `postgres15`; **current** Terraform uses `doctornect_pg18` / `postgres18` for production **18.3**. Staging Supabase was **not** PG15 — verified **17.11**.
 
 12. **Round 8 Replay Compatibility, Invariant Upserts, Ambulance Linking, and Verification**:
     - **Credentials Hygiene (`local test output (re-run the cited command; not stored in git)`)**: Removed shell history scanning from `scripts/lib/env_loader.js`; added unit test `scripts/test/env_loader.test.js` (2/2 PASS). Scanned 1581 files: 0 production passwords leaked, 0 private key leaks.

@@ -7,7 +7,8 @@ const { loadRootEnv } = require('./bootstrap_root_env');
 
 const rootDir = findRepoRoot(path.join(__dirname, '..'));
 loadRootEnv({ startDir: rootDir });
-const rootEnv = parseEnvFile(path.join(rootDir, '.env'));
+const rootEnvPath = path.join(rootDir, '.env');
+const rootEnv = parseEnvFile(rootEnvPath, { failOnProductionDuplicateKeys: true });
 const mergedEnv = { ...rootEnv, ...process.env };
 
 function getEnv(key) {

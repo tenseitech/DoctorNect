@@ -71,7 +71,7 @@ Live compare: **`docs/reports/anon_authenticated_grant_diff_staging.json`** → 
 
 | Source | Count | Notes |
 |--------|------:|-------|
-| `fresh_local_vs_staging_schema_diff.json` (cached, pre–staging head) | **11 × `FUNCTION_BODY`** | Hash noise on PG17 local vs PG15 staging |
+| `fresh_local_vs_staging_schema_diff.json` (cached, pre–staging head) | **11 × `FUNCTION_BODY`** | **Catalog / `pg_get_functiondef` text** noise and stale staging head — **not** PG15 vs PG17 (staging is **17.11**, same as historical local replay) |
 | Same file | **1 × `FUNCTION_MISSING`** | `rls_auto_enable` (Supabase-only; not in repo) |
 | Prior doc typo | **“10”** | Counted bodies only and dropped one name |
 
@@ -80,7 +80,7 @@ Live compare: **`docs/reports/anon_authenticated_grant_diff_staging.json`** → 
 
 Functions: `accept_ambulance_request`, `book_appointment_atomic`, `cancel_ambulance_broadcast`, `complete_ambulance_trip`, `get_ambulance_trip_contact`, `get_ambulance_trip_location`, `reschedule_appointment_atomic`, `update_ambulance_location`, `update_lab_booking_status`, `update_lab_order_status`, `update_pharmacy_delivery_status`.
 
-**Conclusion:** No logic drift between staging and repo migrations at current head; earlier hash diffs were **not** substantive once staging caught up (and/or normalization).
+**Conclusion:** No logic drift between staging and repo migrations at current head; earlier hash diffs were **not** substantive once staging caught up (and/or normalization). **Production gate:** PG **18.3** replay must pass before prod migrations — see [STAGING_VS_PRODUCTION_PG_GAP.md](./STAGING_VS_PRODUCTION_PG_GAP.md) (staging **17.11** ≠ production **18.3**).
 
 ---
 

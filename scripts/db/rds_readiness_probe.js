@@ -10,13 +10,15 @@ const { Client } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
 const { assertProductionRdsTarget, verifyConnectedRdsSession } = require('../lib/rds_connect_guard');
-const { assertDatabaseGuard } = require('../lib/env_guard');
+const { assertDatabaseGuard, getHostFingerprint } = require('../lib/env_guard');
+const { getProdPgMajor, getProdPgVersion } = require('../lib/pg_version_policy');
+const { verifyRdsPgCronReadiness } = require('../lib/pg_cron_policy');
 
 const REQUIRED_EXTENSIONS = [
   { name: 'pgcrypto', required: true, note: 'migrations + notification_outbox' },
   { name: 'uuid-ossp', required: true, note: 'legacy UUID helpers' },
   { name: 'pg_stat_statements', required: false, note: 'bootstrap 01; optional on RDS' },
-  { name: 'pg_cron', required: false, note: '20260923000003; needs shared_preload_libraries on RDS' },
+  { name: 'pg_cron', required: true, note: '20260923000003; shared_preload_libraries + cron.database_name=PROD_RDS_DB' },
 ];
 
 async function main() {
@@ -48,6 +50,9 @@ async function main() {
     process.exit(1);
   }
   console.log('RDS readiness probe (read-only)');
+  console.log(
+    `Documented production engine: PROD_PG_MAJOR=${getProdPgMajor()} PROD_PG_VERSION=${getProdPgVersion()}`,
+  );
   console.log(`Logical host: ${cfg.logicalHost}`);
   console.log(`Connect: ${maskRdsTarget(cfg)}\n`);
 
@@ -62,11 +67,6 @@ async function main() {
   console.log(`✔ TCP connected in ${Date.now() - t0}ms`);
 
   await verifyConnectedRdsSession(client, cfg);
-
-  const major = await client.query(`SHOW server_version_num`);
-  const num = parseInt(major.rows[0].server_version_num, 10);
-  const majorVer = Math.floor(num / 10000);
-  console.log(majorVer === 15 ? '✔ Major version 15' : `⚠ Major version ${majorVer} (expected 15.x)`);
 
   const ext = await client.query(`SELECT name, installed_version FROM pg_available_extensions ORDER BY name`);
   const installed = new Map(ext.rows.filter((r) => r.installed_version).map((r) => [r.name, r.installed_version]));
@@ -99,7 +99,21 @@ async function main() {
   );
   console.log(`_schema_migrations table: ${mig.rows[0].n ? 'yes' : 'no (migrations not applied yet)'}`);
 
+  console.log(`\npg_cron RDS parameters (PROD_RDS_DB=${getEnv('PROD_RDS_DB') || 'doctornect'}):`);
+  const cronReady = await verifyRdsPgCronReadiness(client);
+  for (const line of cronReady.lines) {
+    console.log(`  ${line}`);
+  }
+  if (!cronReady.ok) {
+    process.exitCode = 1;
+    console.log('\n⚠ READINESS incomplete (pg_cron / cron jobs)');
+  }
+
   await client.end();
+  if (process.exitCode === 1) {
+    console.log('\n⚠ READINESS PROBE finished with warnings/errors');
+    return;
+  }
   console.log('\n✅ READINESS PROBE OK');
 }
 

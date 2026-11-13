@@ -1,12 +1,25 @@
 'use strict';
 
 const fs = require('fs');
+const {
+  assertNoProductionDuplicateKeys,
+  findDuplicateEnvKeysInContent,
+} = require('./env_duplicate_keys');
 
-function parseEnvFile(filePath) {
+/**
+ * @param {string} filePath
+ * @param {{ failOnProductionDuplicateKeys?: boolean }} [options]
+ */
+function parseEnvFile(filePath, options = {}) {
   if (!filePath || !fs.existsSync(filePath)) return {};
   const content = fs.readFileSync(filePath, 'utf8');
+  const failOnProductionDuplicateKeys = options.failOnProductionDuplicateKeys !== false;
+  if (failOnProductionDuplicateKeys) {
+    assertNoProductionDuplicateKeys(filePath);
+  }
   const env = {};
-  for (const line of content.split(/\r?\n/)) {
+  const lines = content.split(/\r?\n/);
+  for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
     const eqIdx = trimmed.indexOf('=');
@@ -37,4 +50,8 @@ function serializeEnvFile(sections) {
   return `${lines.join('\n').trim()}\n`;
 }
 
-module.exports = { parseEnvFile, serializeEnvFile };
+module.exports = {
+  parseEnvFile,
+  serializeEnvFile,
+  findDuplicateEnvKeysInContent,
+};

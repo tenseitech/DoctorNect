@@ -5,7 +5,7 @@
   "scripts": {
     "test:rules": "npx firebase-tools emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node scripts/run_rules_tests.js\"",
     "audit:firestore-reachability": "node scripts/audit/scan_firestore_release_reachability.js",
-    "env:verify": "node scripts/env/verify_env_file_policy.js && node scripts/env/guard_env_example_secrets.js && node scripts/env/guard_committed_infra_fingerprints.js && node scripts/env/verify_env_key_parity.js",
+    "env:verify": "node scripts/env/verify_env_duplicate_keys.js && node scripts/env/verify_env_file_policy.js && node scripts/env/guard_env_example_secrets.js && node scripts/env/guard_committed_infra_fingerprints.js && node scripts/env/verify_env_key_parity.js",
     "env:ci": "node scripts/env/ci_env_checks.js"
   },
   "devDependencies": {

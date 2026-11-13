@@ -1,6 +1,14 @@
 'use strict';
 
 const { getEnv } = require('./env_loader');
+const {
+  evaluatePgMajor,
+  getProdPgMajor,
+  getProdPgVersion,
+  parseServerRelease,
+  serverVersionMatchesProdTarget,
+  isLocalReplayPort,
+} = require('./pg_version_policy');
 
 const LOCAL_CONNECT_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
 
@@ -21,6 +29,15 @@ function assertProductionRdsTarget(cfg, options = {}) {
   const connectHost = String(cfg.host || '').trim().toLowerCase();
   const port = parseInt(String(cfg.port), 10);
   const localPort = parseLocalDevPgPort();
+
+  if (isLocalReplayPort(port) && LOCAL_CONNECT_HOSTS.has(connectHost) && !options.allowLocalDev) {
+    const err = new Error(
+      `Refusing production RDS probe: port ${port} is reserved for local PG${getProdPgMajor()} replay ` +
+        `(LOCAL_REPLAY_PG_PORT). Use PROD_RDS_PORT for the RDS tunnel (typically 5433).`,
+    );
+    err.code = 'RDS_REPLAY_PORT_TRAP';
+    throw err;
+  }
 
   const prodPortRaw = getEnv('PROD_RDS_PORT');
   if (!prodPortRaw || String(prodPortRaw).trim() === '') {
@@ -58,10 +75,17 @@ function assertProductionRdsTarget(cfg, options = {}) {
 /**
  * After connect: print server identity (no secrets) and verify SSL + RDS-ish identity.
  */
-async function verifyConnectedRdsSession(client, cfg) {
+async function verifyConnectedRdsSession(client, cfg, options = {}) {
   const ver = await client.query('SELECT version() AS v');
   const versionLine = ver.rows[0].v.split(',')[0];
+  const svRes = await client.query('SHOW server_version');
+  const serverVersion = String(svRes.rows[0].server_version).trim();
+  const release = parseServerRelease(serverVersion) || parseServerRelease(versionLine);
   console.log(`PostgreSQL (verified remote): ${versionLine}`);
+  console.log(`SHOW server_version: ${serverVersion}`);
+  console.log(
+    `Production documented target: PROD_PG_MAJOR=${getProdPgMajor()} PROD_PG_VERSION=${getProdPgVersion()}`,
+  );
 
   let sslOn = false;
   try {
@@ -82,7 +106,36 @@ async function verifyConnectedRdsSession(client, cfg) {
     const major = await client.query('SHOW server_version_num');
     const num = parseInt(major.rows[0].server_version_num, 10);
     const majorVer = Math.floor(num / 10000);
-    console.log(`Server major version: ${majorVer}`);
+    console.log(`Server major version: ${majorVer} (PROD_PG_MAJOR=${getProdPgMajor()})`);
+    if (options.enforceProdPgMajor !== false) {
+      evaluatePgMajor(
+        { serverVersionNum: majorVer },
+        { enforce: true, expectedMajor: getProdPgMajor(), label: cfg.logicalHost || 'RDS' },
+      );
+      console.log(`✔ PostgreSQL major matches PROD_PG_MAJOR=${getProdPgMajor()}`);
+    }
+    if (options.enforceProdPgVersion !== false) {
+      const target = getProdPgVersion();
+      const ok = serverVersionMatchesProdTarget(serverVersion, target);
+      console.log(
+        ok
+          ? `✔ Server release matches PROD_PG_VERSION=${target}`
+          : `✖ Server release ${release?.label || serverVersion} (expected PROD_PG_VERSION=${target})`,
+      );
+      if (!ok) {
+        throw Object.assign(
+          new Error(
+            `RDS version ${release?.label || serverVersion} does not match documented PROD_PG_VERSION=${target}.`,
+          ),
+          { code: 'PG_VERSION_MISMATCH' },
+        );
+      }
+    }
+  } else if (options.reportVersion !== false) {
+    const major = await client.query('SHOW server_version_num');
+    const num = parseInt(major.rows[0].server_version_num, 10);
+    const majorVer = Math.floor(num / 10000);
+    console.log(`Server major version (report-only): ${majorVer}`);
   }
 
   const instance = await client.query(
@@ -95,7 +148,10 @@ async function verifyConnectedRdsSession(client, cfg) {
     );
   }
 
-  return { versionLine, sslOn };
+  const connectHost = String(cfg.host || '').toLowerCase();
+  console.log(`Verified host fingerprint: logical=${logicalHost || '(n/a)'} connect=${connectHost}:${cfg.port}`);
+
+  return { versionLine, serverVersion, release, sslOn, logicalHost, connectHost, port: cfg.port };
 }
 
 module.exports = {

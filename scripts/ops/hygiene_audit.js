@@ -5,7 +5,7 @@
  * 
  * Round 10 Item 7: Hygiene and PII / Secrets Audit
  * Scans all tracked git files for:
- * 1. Forbidden staging project refs (see infra_url_policy.FORBIDDEN_SUPABASE_REFS)
+ * 1. Forbidden staging project refs (see infra_url_policy.scanTextForInfraFingerprints)
  * 2. Pooler hostnames ('pooler.supabase.com')
  * 3. Phone numbers (e.g. +91XXXXXXXXXX)
  * 
@@ -30,7 +30,7 @@ function runAudit() {
   const files = getTrackedFiles();
   console.log(`Total Tracked Files in Git: ${files.length}\n`);
 
-  const { FORBIDDEN_SUPABASE_REFS } = require('../lib/infra_url_policy');
+  const { scanTextForInfraFingerprints } = require('../lib/infra_url_policy');
   const POOLER_HOST = 'pooler.supabase.com';
   const PHONE_REGEX = /(\+91[6-9]\d{9}|[6-9]\d{9})/g;
 
@@ -51,11 +51,11 @@ function runAudit() {
       continue;
     }
 
-    for (const ref of FORBIDDEN_SUPABASE_REFS) {
-      if (content.includes(ref)) {
-        const occurrences = (content.match(new RegExp(ref, 'g')) || []).length;
-        matchesRef.push({ file, ref, occurrences });
-      }
+    const refHits = scanTextForInfraFingerprints(content, file).filter(
+      (h) => h.kind === 'supabase_ref',
+    );
+    if (refHits.length) {
+      matchesRef.push({ file, ref: refHits[0].value, occurrences: refHits.length });
     }
 
     if (content.includes(POOLER_HOST)) {

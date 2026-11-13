@@ -15,6 +15,7 @@ const { getEnv, maskConnectionString, printEnvSummary } = require('../lib/env_lo
 const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
 const { assertProductionRdsTarget, verifyConnectedRdsSession } = require('../lib/rds_connect_guard');
 const { getHostFingerprint } = require('../lib/env_guard');
+const { getProdPgMajor, getProdPgVersion } = require('../lib/pg_version_policy');
 
 const MODULE_PROBES = [
   { module: 'doctor', table: 'doctors', column: 'id' },
@@ -36,6 +37,15 @@ async function smokeStagingPostgres() {
   });
   await client.connect();
   try {
+    const ver = await client.query('SELECT version() AS v, current_setting(\'server_version_num\') AS num');
+    const major = Math.floor(parseInt(ver.rows[0].num, 10) / 10000);
+    console.log(`Staging PostgreSQL (report-only): ${ver.rows[0].v.split(',')[0]}`);
+    const sv = await client.query('SHOW server_version');
+    console.log(`SHOW server_version: ${String(sv.rows[0].server_version).trim()}`);
+    console.log(
+      `Staging major version: ${major} (not enforced — production target PROD_PG_MAJOR=${getProdPgMajor()} PROD_PG_VERSION=${getProdPgVersion()})`,
+    );
+
     const mig = await client.query(
       'SELECT count(*)::int AS n FROM public._schema_migrations',
     );

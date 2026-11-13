@@ -1,5 +1,7 @@
 'use strict';
 
+const crypto = require('crypto');
+
 /** Neutral placeholders allowed in committed docs/tests (never real project refs). */
 const ALLOWED_SUPABASE_PROJECT_REFS = new Set([
   'your-project-ref',
@@ -10,16 +12,24 @@ const ALLOWED_SUPABASE_PROJECT_REFS = new Set([
 
 const ALLOWED_RDS_HOST_PATTERN = /^example-db\.xxxxxxxx\.ap-south-1\.rds\.amazonaws\.com$/i;
 
-/** Known real refs — always forbidden in git (guard + hygiene). */
-const FORBIDDEN_SUPABASE_REFS = new Set([
-  'rnltknemwnjrjxthtull',
-  'irpkyedfmdsuvapfnrim',
+/**
+ * SHA-256(project_ref)[0:8] uppercase — forbidden Supabase refs (no plaintext refs in repo).
+ */
+const FORBIDDEN_SUPABASE_REF_HASHES = new Set([
+  '750202DA',
+  'F1A1FE09',
 ]);
 
 const SUPABASE_CLOUD_HOST_RE = /\.supabase\.co\b/i;
 const RDS_HOST_RE = /\.rds\.amazonaws\.com\b/i;
 const SUPABASE_REF_IN_URL_RE = /([a-z0-9]{12,30})\.supabase\.co/gi;
 const RDS_HOST_CAPTURE_RE = /([a-z0-9.-]+)\.rds\.amazonaws\.com/gi;
+
+function infraTokenHash8(token) {
+  if (!token) return '';
+  const normalized = String(token).trim().toLowerCase();
+  return crypto.createHash('sha256').update(normalized, 'utf8').digest('hex').slice(0, 8).toUpperCase();
+}
 
 function isSupabaseCloudUrl(url) {
   if (!url || typeof url !== 'string') return false;
@@ -56,10 +66,17 @@ function urlContainsStagingProjectRef(url, stagingRef) {
   );
 }
 
+function isForbiddenSupabaseProjectRef(ref) {
+  if (!ref) return false;
+  const r = ref.toLowerCase();
+  if (ALLOWED_SUPABASE_PROJECT_REFS.has(r)) return false;
+  return FORBIDDEN_SUPABASE_REF_HASHES.has(infraTokenHash8(r));
+}
+
 function isAllowedSupabaseProjectRef(ref) {
   if (!ref) return false;
   const r = ref.toLowerCase();
-  if (FORBIDDEN_SUPABASE_REFS.has(r)) return false;
+  if (isForbiddenSupabaseProjectRef(r)) return false;
   return ALLOWED_SUPABASE_PROJECT_REFS.has(r);
 }
 
@@ -79,20 +96,43 @@ function isForbiddenRdsHostname(host) {
   return !isAllowedRdsHostname(host);
 }
 
+function collectSupabaseRefCandidates(text) {
+  const candidates = new Set();
+  if (!text || typeof text !== 'string') return candidates;
+
+  let m;
+  const urlRe = new RegExp(SUPABASE_REF_IN_URL_RE.source, 'gi');
+  while ((m = urlRe.exec(text)) !== null) {
+    candidates.add(m[1].toLowerCase());
+  }
+
+  const tokenRe = /\b([a-z0-9]{12,30})\b/gi;
+  while ((m = tokenRe.exec(text)) !== null) {
+    const t = m[1].toLowerCase();
+    if (t.length >= 18) candidates.add(t);
+  }
+
+  return candidates;
+}
+
 function scanTextForInfraFingerprints(text, relPath = '') {
   const hits = [];
   if (!text || typeof text !== 'string') return hits;
 
-  for (const ref of FORBIDDEN_SUPABASE_REFS) {
-    if (text.toLowerCase().includes(ref)) {
-      hits.push({ kind: 'supabase_ref', value: ref, path: relPath });
+  for (const ref of collectSupabaseRefCandidates(text)) {
+    if (isForbiddenSupabaseProjectRef(ref)) {
+      hits.push({
+        kind: 'supabase_ref',
+        value: infraTokenHash8(ref),
+        path: relPath,
+      });
     }
   }
 
-  let m;
+  let rdsM;
   const rdsRe = new RegExp(RDS_HOST_CAPTURE_RE.source, 'gi');
-  while ((m = rdsRe.exec(text)) !== null) {
-    const host = m[0].toLowerCase();
+  while ((rdsM = rdsRe.exec(text)) !== null) {
+    const host = rdsM[0].toLowerCase();
     if (isForbiddenRdsHostname(host)) {
       hits.push({ kind: 'rds_host', value: host, path: relPath });
     }
@@ -104,10 +144,12 @@ function scanTextForInfraFingerprints(text, relPath = '') {
 module.exports = {
   ALLOWED_SUPABASE_PROJECT_REFS,
   ALLOWED_RDS_HOST_PATTERN,
-  FORBIDDEN_SUPABASE_REFS,
+  FORBIDDEN_SUPABASE_REF_HASHES,
+  infraTokenHash8,
   isSupabaseCloudUrl,
   resolveStagingProjectRefFromEnv,
   urlContainsStagingProjectRef,
+  isForbiddenSupabaseProjectRef,
   isAllowedSupabaseProjectRef,
   isAllowedRdsHostname,
   scanTextForInfraFingerprints,

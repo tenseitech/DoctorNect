@@ -10,7 +10,20 @@ Use when RDS **`Publicly accessible = No`**.
 | Session Manager plugin | [Install for Windows](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) |
 | IAM | `ssm:StartSession` on bastion instance; RDS security group ingress **5432** from **bastion SG** and **gateway/ECS SG** only — never `0.0.0.0/0` |
 | CA bundle | `infra/aws/README_CA_BUNDLE.md` → `global-bundle.pem` |
-| Repo root `.env` | `PROD_RDS_HOST` = real endpoint; `PROD_RDS_CONNECT_HOST=127.0.0.1`; **`PROD_RDS_PORT=5433` (required — no default 5432)** |
+| Repo root `.env` | `PROD_RDS_HOST` = real endpoint; `PROD_RDS_CONNECT_HOST=127.0.0.1`; **`PROD_RDS_PORT=5433` (required — no default 5432)**; `PROD_PG_MAJOR=18`; **`PROD_PG_VERSION=18.3`** |
+| Local PG18 replay | **`LOCAL_REPLAY_PG_PORT=5440`** + `REPLAY_DB_URL` on `127.0.0.1:5440` — scripts **refuse** production RDS probes on this port (trap vs tunnel) |
+
+## Local PostgreSQL 18 replay (Windows, not RDS)
+
+Use for migration replay / parity — **never** use port `5433` (reserved for the RDS tunnel) or `5432` (local dev default).
+
+```powershell
+docker run -d --name doctornect-pg18-replay -e POSTGRES_PASSWORD=postgres -p 5440:5432 postgres:18.3
+# .env:
+# LOCAL_REPLAY_PG_PORT=5440
+# REPLAY_PG_MAJOR=18
+# REPLAY_DB_URL=postgresql://postgres:postgres@127.0.0.1:5440/postgres
+```
 
 ## Option A — SSM port forward (recommended)
 
@@ -63,11 +76,14 @@ Same `repo root `.env`` tunnel vars as Option A.
 
 ## Production migrate / bootstrap guards
 
-Add RDS host fingerprint (8 chars) to `docs/audit/allowed_host_hashes.txt` after first connect:
+Add RDS host fingerprint (8-char SHA-256 prefix) to `docs/audit/allowed_host_hashes.txt` after first connect (must match `live_data_guard.js`):
 
 ```powershell
-node -e "const c=require('crypto');const h=require('./scripts/lib/env_loader').getEnv('PROD_RDS_HOST');console.log(c.createHash('sha256').update(h.trim().toLowerCase()).digest('hex').slice(0,8).toUpperCase());"
+cd c:\Users\khije\Downloads\DoctorNect\doctor
+node -e "const crypto=require('crypto');const {getEnv}=require('./scripts/lib/env_loader');const h=String(getEnv('PROD_RDS_HOST')).trim().toLowerCase();console.log(crypto.createHash('sha256').update(h,'utf8').digest('hex').slice(0,8).toUpperCase());"
 ```
+
+Append the printed line to `docs/audit/allowed_host_hashes.txt` (one hash per line). Migration `--confirm=` still uses the **full** `PROD_RDS_HOST` hostname.
 
 Execute migrations (operator confirms each step):
 

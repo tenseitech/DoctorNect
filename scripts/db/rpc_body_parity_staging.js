@@ -28,7 +28,9 @@ const FN_NAMES = [
 const DB_NAME = process.env.FRESH_LOCAL_DB_NAME || 'doctornect_fresh_zero';
 
 function localUrl() {
-  const base = getEnv('REPLAY_DB_URL') || 'postgresql://postgres:postgres@localhost:5432/postgres';
+  const port = getEnv('LOCAL_REPLAY_PG_PORT') || '5440';
+  const base =
+    getEnv('REPLAY_DB_URL') || `postgresql://postgres:postgres@127.0.0.1:${port}/postgres`;
   const u = new URL(base.replace(/^postgres:\/\//i, 'postgresql://'));
   u.pathname = `/${DB_NAME}`;
   return u.toString();

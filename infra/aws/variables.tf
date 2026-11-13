@@ -50,7 +50,7 @@ variable "gateway_image" {
 variable "postgrest_image" {
   type        = string
   description = "PostgREST official container image (pinned to 12.2.3 matching local binary)"
-  default     = "postgrest/postgrest:v12.2.3"
+  default     = "postgrest/postgrest:v16.5"
 }
 
 variable "rds_endpoint" {

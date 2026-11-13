@@ -13,7 +13,7 @@ function loadRootEnv(options = {}) {
   if (loaded && !options.force) return findRepoRoot();
   const root = findRepoRoot(options.startDir);
   const envPath = path.join(root, '.env');
-  const parsed = parseEnvFile(envPath);
+  const parsed = parseEnvFile(envPath, { failOnProductionDuplicateKeys: true });
   for (const [key, value] of Object.entries(parsed)) {
     if (options.override || process.env[key] === undefined || String(process.env[key]).trim() === '') {
       process.env[key] = value;

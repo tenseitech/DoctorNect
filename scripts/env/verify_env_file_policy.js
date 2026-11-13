@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { findRepoRoot } = require('../lib/repo_root');
+const { verifyRootEnvFilesNoDuplicateKeys, formatDuplicateEnvReport } = require('../lib/env_duplicate_keys');
 
 const EXCLUDED_DIRS = new Set(['node_modules', '.git', 'build', '.dart_tool', '.gradle', 'coverage']);
 
@@ -31,6 +32,15 @@ function walkEnvFiles(dir, root, out) {
 
 function main() {
   const root = findRepoRoot();
+  const dupFailures = verifyRootEnvFilesNoDuplicateKeys(root);
+  if (dupFailures.length) {
+    console.error('❌ Duplicate env keys (names and line numbers only):\n');
+    for (const f of dupFailures) {
+      console.error(formatDuplicateEnvReport(f.file, f.duplicates));
+    }
+    process.exit(1);
+  }
+
   const found = [];
   walkEnvFiles(root, root, found);
 

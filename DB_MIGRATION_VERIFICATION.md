@@ -41,7 +41,7 @@ Operator applied `20261112000006`, `20261113000002`, `20261113000003`. Automated
 | `grant_matrix_audit.js --compare-staging --confirm-live-data` | **64** table diffs, all `service_role` staging **≥** local (Supabase default `REFERENCES`/`TRIGGER`/`TRUNCATE`); **0** staging grant gaps for app paths |
 | `anon` / `authenticated` table grants | **0** diffs vs local replay — RDS inherits migrations; `04` only re-tightens `anon` |
 | `rpc_body_parity_staging.js --confirm-live-data` | **11/11** RPC bodies **normalized MATCH** vs `doctornect_fresh_zero` |
-| Cached `fresh_local_vs_staging_schema_diff.json` | **11** `FUNCTION_BODY` + **1** `FUNCTION_MISSING` (`rls_auto_enable`) — stale vs current staging; live RPC check supersedes |
+| Cached `fresh_local_vs_staging_schema_diff.json` | **11** `FUNCTION_BODY` + **1** `FUNCTION_MISSING` (`rls_auto_enable`) — stale vs current staging / catalog text noise (**not** “PG15 vs PG17”; staging is **17.11**); live RPC check supersedes |
 
 Detail: [docs/reports/STAGING_VERIFIED_AFTER_20261113000003.md](docs/reports/STAGING_VERIFIED_AFTER_20261113000003.md).
 
@@ -72,7 +72,7 @@ Add production RDS host fingerprint to `docs/audit/allowed_host_hashes.txt` befo
 
 1. ~~**Staging schema behind repo (9 migrations)**~~ **RESOLVED 2026-11-12** — applied via `node scripts/db/migrate.js --target=staging --execute --confirm-live-data --confirm-staging`. Ledger **56** rows; head `20261112000005`. Stray row `20261104000001` (legacy duplicate of anon cleanup) remains — reconcile before prod cutover.
 2. **RDS schema parity unverified on rehearsal** — `schema_diff --target=rehearsal` still requires bastion/SSM (not run here). Staging at migration head; grants/RPC logic match local replay (§Staging verified).
-3. **Staging vs local PG major version** — Staging **PostgreSQL 15**; local default **17**. **Recommend RDS `15.x`**. Cached parity file still lists **11** `FUNCTION_BODY` hashes — **live staging vs replay: 11/11 normalized MATCH** after staging head; PG15 container replay optional for non-RPC catalog noise.
+3. **Staging vs production PG** — Staging **17.11**; production **18.3**. **Mandatory prod gate:** PG18.3 replay only (see [STAGING_VS_PRODUCTION_PG_GAP.md](docs/reports/STAGING_VS_PRODUCTION_PG_GAP.md)). Cached `schema_diff` / `FUNCTION_BODY` hashes vs staging are **not** authoritative for prod; **11/11** RPC normalized MATCH is read-only on PG17-era local DB. Full PG18.3 replay **BLOCKED** (Docker down on audit machine).
 4. ~~**Windows `migrate.js --dry-run` TLS / `40D01C23`**~~ **CLARIFIED** — `40D01C23` is the **live-data guard** host fingerprint (`scripts/lib/live_data_guard.js`), not an OpenSSL error. Add `--confirm-live-data`; for apply add `--execute --confirm-staging`. `migrate.js` sets `rejectUnauthorized: false` for Supabase on Windows when needed.
 5. ~~**Staging grant matrix diff**~~ **RESOLVED (read-only 2026-11-12)** — see §Staging verified; `docs/reports/grant_matrix_local.json`.
 6. **Firestore server paths** — **FIXED (production template):** `FIRESTORE_FORBIDDEN=1` + `legacy_db.getLegacyFirestoreDb()`; callables use Postgres/Redis. Legacy Firestore code remains for **tests/emulator** (`__TEST_FORCE_LEGACY_DOCTOR_PATIENT=1`, `FIRESTORE_FORBIDDEN=0`). See §Firestore inventory below.
@@ -304,7 +304,7 @@ node scripts/db/schema_diff.js --target=rehearsal
 
 | Verdict | **NO-GO** for production user traffic on RDS |
 |---------|---------------------------------------------|
-| Blockers (2026-11-12) | RDS `schema_diff` / rehearsal not run from operator network; staging vs local **grant matrix** not compared live; PG15 container parity not re-run (Docker down on audit machine) |
+| Blockers (2026-11-12) | RDS `schema_diff` / rehearsal not run from operator network; staging vs local **grant matrix** not compared live; **PG18.3** replay chain not re-run (Docker down on audit machine) |
 
 **Local pre-checks done:** `04_rds_runtime_grants.sql`, **10/10** service paths, **49/49** auth matrix, **7/7** real-path e2e, **67/67** RLS coverage.
 

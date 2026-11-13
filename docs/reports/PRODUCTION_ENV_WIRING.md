@@ -9,6 +9,9 @@
 | `PROD_GATEWAY_URL` | Flutter release, Functions production, `db_connectivity_smoke` | repo root `.env` (materialized to `backend/functions/.env` at deploy only) + `frontend` dart-define / CI |
 | `PROD_GATEWAY_SERVICE_KEY` | Functions service-role HTTP to gateway | repo root `.env` (materialized to `backend/functions/.env` at deploy only) + gateway deploy secret |
 | `PROD_GATEWAY_ANON_KEY` | Gateway anon mint / smoke | repo root `.env` (materialized to `backend/functions/.env` at deploy only) |
+| `PROD_PG_MAJOR` | `rds_readiness_probe`, `rds_connect_guard`, production smoke | Repo root `.env` (`18` for production RDS) |
+| `PROD_PG_VERSION` | Production minor enforcement + probe output | Repo root `.env` (`18.3`) |
+| `REPLAY_PG_MAJOR` / `REPLAY_PG_DOCKER_TAG` / `LOCAL_REPLAY_PG_PORT` / `REPLAY_DB_URL` | Local replay (`postgres:18.3` on **5440**) | Repo root `.env` |
 | `PROD_RDS_HOST` | `migrate.js`, `schema_diff`, guards, TLS SNI | Repo root `.env` |
 | `PROD_RDS_CONNECT_HOST` | `rds_pool_config.js` (tunnel TCP) | Repo root `.env` (`127.0.0.1` when tunneled) |
 | `PROD_RDS_PORT` | All RDS `pg` clients | Repo root `.env` (`5433` local tunnel) |

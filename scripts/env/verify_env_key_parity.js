@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { findRepoRoot } = require('../lib/repo_root');
 const { parseEnvFile } = require('../lib/parse_env_file');
+const { verifyRootEnvFilesNoDuplicateKeys, formatDuplicateEnvReport } = require('../lib/env_duplicate_keys');
 
 function envKeys(filePath) {
   return new Set(Object.keys(parseEnvFile(filePath)));
@@ -11,6 +12,15 @@ function envKeys(filePath) {
 
 function main() {
   const root = findRepoRoot();
+  const dupFailures = verifyRootEnvFilesNoDuplicateKeys(root);
+  if (dupFailures.length) {
+    console.error('❌ Duplicate env keys (names and line numbers only):\n');
+    for (const f of dupFailures) {
+      console.error(formatDuplicateEnvReport(f.file, f.duplicates));
+    }
+    process.exit(1);
+  }
+
   const examplePath = path.join(root, '.env.example');
   const envPath = path.join(root, '.env');
 

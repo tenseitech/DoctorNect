@@ -11,7 +11,9 @@ const { Client } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { fetchCatalog, compareCatalogs } = require('./schema_diff');
 
-const ADMIN_URL = getEnv('REPLAY_DB_URL') || 'postgresql://postgres:postgres@localhost:5432/postgres';
+const ADMIN_URL =
+  getEnv('REPLAY_DB_URL') ||
+  `postgresql://postgres:postgres@127.0.0.1:${getEnv('LOCAL_REPLAY_PG_PORT') || '5440'}/postgres`;
 const DB_NAME = process.env.FRESH_LOCAL_DB_NAME || 'doctornect_fresh_zero';
 
 function buildDbUrl(dbName) {

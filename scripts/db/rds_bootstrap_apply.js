@@ -22,11 +22,24 @@ const BOOTSTRAP_FILES = [
   '04_rds_runtime_grants.sql',
 ];
 
+function printBootstrapSqlSummary() {
+  const child = require('child_process');
+  child.spawnSync(process.execPath, [path.join(__dirname, 'rds_bootstrap_print_summary.js')], {
+    stdio: 'inherit',
+  });
+}
+
 async function main() {
+  const args = process.argv.slice(2);
+  if (args.includes('--print-summary')) {
+    printBootstrapSqlSummary();
+    return;
+  }
+
   bootstrapMutatingScript('scripts/db/rds_bootstrap_apply.js');
 
-  const args = process.argv.slice(2);
   const execute = args.includes('--execute');
+  const preMigrateOnly = args.includes('--pre-migrate-only');
   const targetArg = args.find((a) => a.startsWith('--target='));
   const target = targetArg ? targetArg.split('=')[1] : 'production';
 
@@ -43,20 +56,26 @@ async function main() {
 
   console.log(`RDS bootstrap (target=${target}, mode=${execute ? 'EXECUTE' : 'DRY-RUN'})`);
   console.log(maskRdsTarget(cfg));
-  for (const f of BOOTSTRAP_FILES) {
+  const preMigrateFiles = BOOTSTRAP_FILES.filter((f) => f !== '04_rds_runtime_grants.sql');
+  const filesToRun = preMigrateOnly ? preMigrateFiles : BOOTSTRAP_FILES;
+
+  for (const f of filesToRun) {
     const p = path.join(bootstrapDir, f);
-    console.log(`  - ${f} (${fs.statSync(p).size} bytes)`);
+    console.log(`  - ${f} (${fs.statSync(p).size} bytes)${f === '04_rds_runtime_grants.sql' ? ' [POST-MIGRATE]' : ''}`);
   }
 
   if (!execute) {
-    console.log('\nDry-run only. To apply: add --execute --target=production --confirm=<PROD_RDS_HOST>');
+    console.log('\nDry-run only. To apply pre-migrate 01–03: --execute --pre-migrate-only --confirm-live-data --confirm=<PROD_RDS_HOST>');
+    console.log('Full 01–04 after migrations: --execute --confirm-live-data --confirm=<PROD_RDS_HOST>');
+    console.log('SQL summary without RDS: --print-summary');
     return;
   }
 
   const client = new Client(cfg);
   await client.connect();
   try {
-    for (const f of BOOTSTRAP_FILES) {
+    const applyList = preMigrateOnly ? preMigrateFiles : BOOTSTRAP_FILES;
+    for (const f of applyList) {
       const sql = fs.readFileSync(path.join(bootstrapDir, f), 'utf8');
       console.log(`\nApplying ${f}...`);
       await client.query(sql);

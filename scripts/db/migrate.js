@@ -54,6 +54,12 @@ const {
   computeChecksum,
   ledgerChecksumMatches,
 } = require('../lib/migration_checksum');
+const {
+  assertProductionPgCronOrThrow,
+  shouldSkipMigrationFile,
+  queryPgCronCatalog,
+  allowNoCronFromArgv,
+} = require('../lib/pg_cron_policy');
 
 function buildStagingPoolConfig(dbUrl) {
   const config = { connectionString: dbUrl };
@@ -208,11 +214,15 @@ async function runMigrations() {
       }
     }
 
-    // Check if pg_cron extension is available on this PostgreSQL instance
-    const hasCronExtRes = await client.query(`
-      SELECT 1 FROM pg_available_extensions WHERE name = 'pg_cron';
-    `);
-    const lacksPgCron = hasCronExtRes.rows.length === 0;
+    const pgCronCatalog = await queryPgCronCatalog(client);
+    const allowNoCron = allowNoCronFromArgv();
+    const pgCronPolicy = assertProductionPgCronOrThrow({
+      target,
+      available: pgCronCatalog.available,
+      installed: pgCronCatalog.installed,
+      allowNoCron,
+    });
+    const skipCronMigration = pgCronPolicy.skipCronMigration;
 
     let pendingCount = 0;
     let appliedThisRun = 0;
@@ -227,14 +237,15 @@ async function runMigrations() {
       let totalStatements = 0;
 
       for (const file of pendingFiles) {
+        if (shouldSkipMigrationFile(file, skipCronMigration)) {
+          console.log(`\n[SKIPPED — --allow-no-cron] ${file}`);
+          continue;
+        }
         const baseSqlPath = path.join(migrationsDir, file);
         const overrideSqlPath = path.join(overridesDir, file);
         const useOverride = (target === 'production' || target === 'rehearsal' || target === 'replay' || target === 'replay_check') && fs.existsSync(overrideSqlPath);
         const activeFilePath = useOverride ? overrideSqlPath : baseSqlPath;
-        let sqlContent = fs.readFileSync(activeFilePath, 'utf8');
-        if (lacksPgCron && file === '20260923000003_doctornect_cron.sql') {
-          sqlContent = sqlContent.replace(/CREATE EXTENSION IF NOT EXISTS pg_cron;/g, '-- [NO PG_CRON AVAILABLE] skipped extension creation');
-        }
+        const sqlContent = fs.readFileSync(activeFilePath, 'utf8');
 
         console.log(`\nParsing & testing statements in ${file}...`);
         const stmts = await splitSqlStatements(sqlContent);
@@ -308,6 +319,11 @@ async function runMigrations() {
       pendingCount++;
       console.log(`\n[Pending Migration] -> ${file} (checksum: ${checksum.slice(0, 8)}...) ${useOverride ? '[RDS OVERRIDE]' : ''}`);
 
+      if (shouldSkipMigrationFile(file, skipCronMigration)) {
+        console.log(`[SKIPPED — --allow-no-cron] Would skip: ${file}`);
+        continue;
+      }
+
       if (isDryRun) {
         console.log(`[DRY-RUN] Would apply: ${file}`);
         continue;
@@ -315,7 +331,7 @@ async function runMigrations() {
 
       // Execute in a transaction
       console.log(`Applying ${file}...`);
-      await applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists, lacksPgCron });
+      await applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists });
       appliedThisRun++;
     }
 
@@ -348,19 +364,10 @@ async function runMigrations() {
   }
 }
 
-async function applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists = false, lacksPgCron = false }) {
+async function applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists = false }) {
   await client.query('BEGIN');
   try {
-    let sqlToExecute = sqlContent;
-    if (lacksPgCron && file === '20260923000003_doctornect_cron.sql') {
-      sqlToExecute = sqlToExecute.replace(/CREATE EXTENSION IF NOT EXISTS pg_cron;/g, () => `
-        CREATE SCHEMA IF NOT EXISTS cron;
-        CREATE TABLE IF NOT EXISTS cron.job (jobid bigint, schedule text, command text, nodename text, nodeport integer, database text, username text, active boolean, jobname text);
-        CREATE OR REPLACE FUNCTION cron.schedule(text, text, text) RETURNS bigint LANGUAGE sql AS $$ SELECT 1::bigint; $$;
-        CREATE OR REPLACE FUNCTION cron.schedule(text, text) RETURNS bigint LANGUAGE sql AS $$ SELECT 1::bigint; $$;
-      `);
-    }
-    await client.query(sqlToExecute);
+    await client.query(sqlContent);
     await client.query(
       `INSERT INTO public._schema_migrations (version, name, checksum) VALUES ($1, $2, $3);`,
       [version, file, checksum]

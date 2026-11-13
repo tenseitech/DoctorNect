@@ -1,2 +1,4 @@
-# SHA-256(hostname)[0:8] uppercase — live-legacy Supabase REST (until RDS cutover)
+# SHA-256(hostname)[0:8] uppercase — live-data guard allowlist (hash lines only)
 40D01C23
+# Production RDS endpoint fingerprint
+C2F996DB

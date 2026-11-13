@@ -7,6 +7,19 @@ const { parseEnvFile } = require('../lib/parse_env_file');
 
 const PLACEHOLDER_OK = /^(|your-|placeholder|changeme|xxx|<.*>|example|test-|dummy|fake|none|false|true|\d+)$/i;
 
+/** Committed template URLs only — bracket credentials + local replay host/port pattern. */
+const REPLAY_DB_URL_PLACEHOLDER = /^postgres(ql)?:\/\/\[USER\]:\[PASSWORD\]@127\.0\.0\.1:\[PORT\]\/\[DB\]$/i;
+
+function isPostgresUrlPlaceholder(value) {
+  const v = String(value || '').trim();
+  if (!/^postgres(ql)?:\/\//i.test(v)) return false;
+  if (v.includes('****')) return true;
+  if (REPLAY_DB_URL_PLACEHOLDER.test(v)) return true;
+  if (/\[PASSWORD\]/i.test(v)) return true;
+  if (/\[USER\]/i.test(v) && /\[(PORT|DB)\]/i.test(v)) return true;
+  return false;
+}
+
 function looksSecret(key, value) {
   const v = String(value || '').trim();
   if (!v) return false;
@@ -19,14 +32,15 @@ function looksSecret(key, value) {
   if ((key.includes('SECRET') || key.includes('SERVICE_ROLE') || key.includes('SERVICE_KEY')) && v.length >= 24) return true;
   if (key.startsWith('AWS_') && key.includes('KEY') && v.length >= 16 && !v.startsWith('your')) return true;
   if (/^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/m.test(v)) return true;
-  if (/^postgresql:\/\/.+:.+@/i.test(v) && !v.includes('****') && !/\[PASSWORD\]/i.test(v)) return true;
+  if (isPostgresUrlPlaceholder(v)) return false;
+  if (/^postgres(ql)?:\/\/.+:.+@/i.test(v)) return true;
   return false;
 }
 
 function main() {
   const root = findRepoRoot();
   const examplePath = path.join(root, '.env.example');
-  const parsed = parseEnvFile(examplePath);
+  const parsed = parseEnvFile(examplePath, { failOnProductionDuplicateKeys: true });
   const flagged = [];
   for (const [key, value] of Object.entries(parsed)) {
     if (looksSecret(key, value)) flagged.push(key);
@@ -39,4 +53,8 @@ function main() {
   console.log('✅ .env.example secret heuristic OK');
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = { looksSecret, isPostgresUrlPlaceholder, REPLAY_DB_URL_PLACEHOLDER };

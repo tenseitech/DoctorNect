@@ -76,7 +76,7 @@ From `db_connectivity_smoke.js --env=staging` (SELECT count only):
 |-------|----------|--------|
 | `rds_readiness_probe.js --target=production --confirm=<fingerprint>` | **Follow-up:** `scripts/lib/rds_connect_guard.js` blocks **localhost:5432** trap when `PROD_RDS_HOST` is RDS; **`PROD_RDS_PORT` required** (no default 5432). Tunnel still required to validate live RDS. | **BLOCKED** (manual tunnel) |
 | Likely cause | SSM/SSH tunnel not active; set `PROD_RDS_CONNECT_HOST=127.0.0.1`, **`PROD_RDS_PORT=5433`** (`docs/runbooks/RDS_PROD_TUNNEL_WINDOWS.md`) | **BLOCKED** (manual) |
-| PostgreSQL 15.x target | **Not verified** (no successful connect) | **BLOCKED** |
+| PostgreSQL 18.x production RDS (`PROD_PG_MAJOR=18`) | **BLOCKED** — tunnel not up on audit machine (`PROD_RDS_PORT` must be `5433`, not `5432`) | **BLOCKED** |
 
 ### B5. Bootstrap, ledger, schema diff
 
@@ -91,11 +91,11 @@ From `db_connectivity_smoke.js --env=staging` (SELECT count only):
 
 | Setting | In repo | Status |
 |---------|---------|--------|
-| `rds.force_ssl` / parameter enforcement | `infra/aws/rds.tf` defines **parameter group** (`postgres17` family) only; **no** `aws_db_instance` with `storage_encrypted`, `backup_retention_period`, `deletion_protection`, or `rds.force_ssl` | **BLOCKED** — confirm in **RDS console** / live Terraform state |
+| `rds.force_ssl` / parameter enforcement | `infra/aws/rds.tf` defines **parameter group** (`postgres18` family, `doctornect_pg18`) only; **no** `aws_db_instance` with `storage_encrypted`, `backup_retention_period`, `deletion_protection`, or `rds.force_ssl` in Terraform | **BLOCKED** — confirm in **RDS console** / live Terraform state |
 | Deletion protection | `infra/aws/alb.tf` ALB `enable_deletion_protection = true` (ALB only, not RDS) | **BLOCKED** for RDS instance |
 | Encryption at rest | Not declared on RDS in tracked `.tf` | **BLOCKED** (console) |
 | Automated backups / PITR | Referenced in docs/runbooks; not verifiable from repo alone | **BLOCKED** (console) |
-| Engine version | Code/docs target **PostgreSQL 15.x** (audit charter); `infra/aws/rds.tf` comment references **PostgreSQL 17** parameter family | **PARTIAL** (version drift in docs/infra) |
+| Engine version | Production **PostgreSQL 18.x** (`PROD_PG_MAJOR=18`, `postgres18` parameter group); staging Supabase major reported read-only (not enforced) | **PARTIAL** — live RDS major verified only when tunnel + `rds_readiness_probe` succeed |
 
 **Manual (AWS console):** Confirm RDS instance encryption, backup window/retention, deletion protection, `rds.force_ssl`, actual engine major version (15 vs 17), security groups, and private subnet reachability.
 
@@ -231,7 +231,7 @@ No AWS access keys or service-role keys found in `frontend/lib/**` (grep `SERVIC
 4. **Client Firestore surface** remains broad; production requires `FIRESTORE_FORBIDDEN=1` **and** completion of Postgres/gateway wiring per screen or runtime failures.
 5. **`real_path_authorization_e2e`** fails without local Gateway+PostgREST — HTTP path not re-verified live.
 6. **Ghost ledger version `20261104000001`** vs repo file `20261103000008` — reconcile before prod ledger hygiene.
-7. **Engine/version documentation drift** (15.x charter vs `postgres17` parameter family in `infra/aws/rds.tf`).
+7. **PG18 replay gate** — full suite on `postgres:18` / port `5440` not run on audit machine (Docker unavailable); staging remains PG17.x while production targets PG18.
 
 ### Manual steps (you), in order
 

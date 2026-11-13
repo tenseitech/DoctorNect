@@ -1,4 +1,4 @@
-# AWS RDS Parameter Group for DoctorNect PostgreSQL 17+
+# AWS RDS Parameter Group for DoctorNect PostgreSQL 18+
 # Enables native pg_cron background worker and performance monitoring.
 #
 # Attachment to Existing RDS Instance:
@@ -6,19 +6,19 @@
 #   1. Associate parameter group:
 #      aws rds modify-db-instance \
 #        --db-instance-identifier ${var.rds_instance_identifier} \
-#        --db-parameter-group-name ${aws_db_parameter_group.doctornect_pg17.name} \
+#        --db-parameter-group-name ${aws_db_parameter_group.doctornect_pg18.name} \
 #        --apply-immediately
 #   2. Reboot instance to load shared_preload_libraries (pending-reboot):
 #      aws rds reboot-db-instance \
 #        --db-instance-identifier ${var.rds_instance_identifier}
 #
 # Option B (Terraform-managed DB Instance):
-#   Set `parameter_group_name = aws_db_parameter_group.doctornect_pg17.name` on the `aws_db_instance` resource.
+#   Set `parameter_group_name = aws_db_parameter_group.doctornect_pg18.name` on the `aws_db_instance` resource.
 
-resource "aws_db_parameter_group" "doctornect_pg17" {
-  name        = "${var.project_name}-${var.environment}-pg17-cron"
-  family      = "postgres17"
-  description = "Custom RDS parameter group enabling pg_cron and pg_stat_statements for PostgreSQL 17"
+resource "aws_db_parameter_group" "doctornect_pg18" {
+  name        = "${var.project_name}-${var.environment}-pg18-cron"
+  family      = "postgres18"
+  description = "Custom RDS parameter group enabling pg_cron and pg_stat_statements for PostgreSQL 18"
 
   # 1. Mandatory shared preload libraries (requires RDS reboot)
   parameter {
@@ -46,6 +46,18 @@ resource "aws_db_parameter_group" "doctornect_pg17" {
     name         = "cron.timezone"
     value        = "UTC"
     apply_method = "immediate"
+  }
+
+  parameter {
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "pending-reboot"
+  }
+
+  parameter {
+    name         = "password_encryption"
+    value        = "scram-sha-256"
+    apply_method = "pending-reboot"
   }
 
   tags = {

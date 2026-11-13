@@ -3,6 +3,9 @@
 **Scope:** Move production Postgres from Supabase (staging reference) to AWS RDS with Auth Gateway + PostgREST.  
 **Safety:** No destructive SQL on production without verified backup. Staging touches require explicit approval and `--confirm-live-data`.
 
+**Version facts:** Staging Supabase **PostgreSQL 17.11**; production RDS **PostgreSQL 18.3** (`PROD_PG_VERSION=18.3`).  
+**Gate:** The **PG18.3 local replay** (`postgres:18.3` on port **5440**) must pass bootstrap → migrations → parity/auth suites **before every production migration apply**. Staging read-only checks do **not** replace this gate. See [STAGING_VS_PRODUCTION_PG_GAP.md](../reports/STAGING_VS_PRODUCTION_PG_GAP.md).
+
 ---
 
 ## 0. Preconditions (repo)
@@ -20,26 +23,31 @@
 
 **Staging verified (2026-11-12):** After `20261113000003`, read-only checks — **0** `anon`/`authenticated` grant diffs; **64** `service_role`-only staging supersets (expected); **11/11** RPC bodies normalized-match vs local replay. See [STAGING_VERIFIED_AFTER_20261113000003.md](../reports/STAGING_VERIFIED_AFTER_20261113000003.md).
 
-**Staging Postgres:** Supabase project **PostgreSQL 15** (see `scripts/db/generate_schema_diff_breakdown.js`).  
-**RDS recommendation:** `engine_version = 15.x` (match staging major; minor can be latest 15 available in region).
+**Staging Postgres:** Supabase — **report-only** major via `node scripts/db/db_connectivity_smoke.js --env=staging` (version not enforced).  
+**Production RDS:** **PostgreSQL 18.3** — set `PROD_PG_MAJOR=18` and `PROD_PG_VERSION=18.3` in repo root `.env`; `rds_readiness_probe` and production smoke **assert** major == `PROD_PG_MAJOR`, minor == `PROD_PG_VERSION`, and print full `version()`, `SHOW server_version`, SSL status, and verified remote host fingerprint.
 
-**PG17 vs PG15:** Local dev may use PostgreSQL 17; cached `schema_diff` may still list **11** `FUNCTION_BODY` hashes. **Live check with staging at head: 11/11 normalized MATCH** (`rpc_body_parity_staging.js`). Optional PG15 container replay for full catalog diff:
+**Staging vs production major gap:** Staging may run a different major (e.g. 17.x) than production 18.x. Use **PostgreSQL 18** local replay as the production-like gate (`REPLAY_PG_MAJOR=18`, port **5440** — never `5432` or tunnel `5433`):
 
 ```powershell
-# When Docker Desktop is running:
-$env:FRESH_LOCAL_DB_NAME="doctornect_fresh_pg15"
-docker run -d --name doctornect-pg15 -e POSTGRES_PASSWORD=postgres -p 5433:5432 postgres:15
-$env:REPLAY_DB_URL="postgresql://postgres:postgres@127.0.0.1:5433/postgres"
+# When Docker Desktop is running (isolated replay — not the RDS tunnel):
+docker run -d --name doctornect-pg18-replay -e POSTGRES_PASSWORD=postgres -p 5440:5432 postgres:18.3
+$env:LOCAL_REPLAY_PG_PORT="5440"
+$env:REPLAY_DB_URL="postgresql://postgres:postgres@127.0.0.1:5440/postgres"
+$env:FRESH_LOCAL_DB_NAME="doctornect_fresh_pg18"
+node scripts/db/replay_from_scratch.js
 node scripts/db/fresh_local_parity_test.js
 node scripts/db/schema_diff.js --target=fresh_local
+node scripts/db/rpc_body_parity_staging.js --confirm-live-data
 ```
+
+Cached `schema_diff` noise (version formatting, extension helpers, internal NOT NULL names) is expected across majors; **11 RPC bodies** should still **MATCH** after normalization vs staging at head.
 
 ---
 
 ## 1. Create RDS instance (AWS console / Terraform)
 
-1. Apply `infra/aws/rds.tf` (or console equivalent): PostgreSQL **15.x**, storage encrypted, multi-AZ per policy.
-2. Parameter group: include `shared_preload_libraries` = `pg_stat_statements,pg_cron` and `cron.database_name` = `postgres` (reboot required for `pg_cron`).
+1. Apply `infra/aws/rds.tf` (or console equivalent): PostgreSQL **18.3** (or latest **18.x** minor in region; document actual in `PROD_PG_VERSION`), `family = postgres18`, storage encrypted, multi-AZ per policy.
+2. Parameter group `doctornect_pg18`: include `shared_preload_libraries` = `pg_stat_statements,pg_cron` and `cron.database_name` = **`doctornect`** (must match `PROD_RDS_DB`; reboot required for `pg_cron`); `rds.force_ssl=1`; password encryption **scram-sha-256**.
 3. Security group: ingress **5432** only from bastion, gateway VPC, or Cloud Functions VPC connector — **not** `0.0.0.0/0`.
 4. Download CA bundle: `infra/aws/global-bundle.pem`.
 5. Create databases: `doctornect` (prod), `doctornect_rehearsal` (optional).
@@ -79,6 +87,25 @@ node scripts/db/db_connectivity_smoke.js --env=production --mode=postgres
 node scripts/db/rds_readiness_probe.js --target=production --confirm=<PROD_RDS_HOST>
 ```
 
+### 2c. RDS host fingerprint (`allowed_host_hashes.txt`)
+
+`migrate.js` and other production mutators require an **8-character SHA-256 prefix** of `PROD_RDS_HOST` in `docs/audit/allowed_host_hashes.txt` (matches `scripts/lib/live_data_guard.js`).
+
+**Compute hash (PowerShell, project root):**
+
+```powershell
+cd c:\Users\khije\Downloads\DoctorNect\doctor
+node -e "const crypto=require('crypto');const {getEnv}=require('./scripts/lib/env_loader');const h=String(getEnv('PROD_RDS_HOST')).trim().toLowerCase();console.log(crypto.createHash('sha256').update(h,'utf8').digest('hex').slice(0,8).toUpperCase());"
+```
+
+Append the single line output (e.g. `A1B2C3D4`) to `docs/audit/allowed_host_hashes.txt`, then re-run:
+
+```powershell
+npm run env:verify
+```
+
+`--confirm=<PROD_RDS_HOST>` on bootstrap/migrate must still be the **full RDS hostname** (not the hash).
+
 ---
 
 ## 2b. Manual RDS settings (console / Terraform)
@@ -87,7 +114,7 @@ Confirm before production traffic:
 
 | Setting | Recommendation |
 |---------|----------------|
-| Engine | PostgreSQL **15.x** |
+| Engine | PostgreSQL **18.3** (`PROD_PG_VERSION`; latest 18.x minor in region if 18.3 unavailable) |
 | Storage encryption | On |
 | Automated backups | On; retention per policy (e.g. 7–35 days) |
 | PITR | Enabled |
@@ -97,24 +124,37 @@ Confirm before production traffic:
 | CloudWatch alarms | CPU, free storage, `DatabaseConnections` |
 | Public access | **Off** (use SSM tunnel for operators) |
 
-## 3. Bootstrap empty RDS (production greenfield)
+## 3. Greenfield production order (database `doctornect`)
 
-Create database (once, as master, via tunnel):
+`migrate.js` connects to **`PROD_RDS_DB`**. It **cannot** run meaningfully until:
 
-```sql
-CREATE DATABASE doctornect ENCODING 'UTF8';
-```
+1. The **`doctornect`** database exists (create while connected to `postgres`).
+2. **`PROD_RDS_DB=doctornect`** is set in repo root `.env`.
+3. Bootstrap **01–03** has been applied on **`doctornect`** (roles, extensions, `auth` shim, legacy compat).  
+   Without 01–03, `--dry-run-all` will fail on migrations that reference `auth.uid()`, roles, or `auth.users`.
 
-**Dry-run bootstrap list:**
+**`--dry-run-all` before `doctornect` exists:** connection error (`database "doctornect" does not exist`).  
+**`--dry-run-all` on `postgres` without bootstrap:** misleading failures — do **not** use `postgres` as the migration target.
+
+| Step | Action | Writes RDS? |
+|------|--------|-------------|
+| 0 | Tunnel + `docs/audit/allowed_host_hashes.txt` (see §2c below) | No |
+| 1 | `CREATE DATABASE doctornect ENCODING 'UTF8';` (session on `postgres`) | **Yes** |
+| 2 | Set `PROD_RDS_DB=doctornect` in `.env` | No |
+| 3 | Print bootstrap SQL summary (no DB): `node scripts/db/rds_bootstrap_print_summary.js` | No |
+| 4 | Bootstrap **01–03**: `node scripts/db/rds_bootstrap_apply.js --target=production --execute --pre-migrate-only --confirm-live-data --confirm=<PROD_RDS_HOST>` | **Yes** |
+| 5 | `node scripts/db/migrate.js --target=production --dry-run-all --confirm-live-data` | No (rollback) |
+| 6 | `node scripts/db/migrate.js --target=production --execute --confirm-live-data` | **Yes** |
+| 7 | Bootstrap **04**: `node scripts/db/rds_bootstrap_apply.js --target=production --execute --confirm-live-data --confirm=<PROD_RDS_HOST>` | **Yes** |
+| 8 | `node scripts/db/rds_readiness_probe.js --target=production --confirm=<PROD_RDS_HOST>` (pg_cron params + 4 cron jobs) | No |
+
+**pg_cron:** Production migrate **refuses** to stub cron. If `pg_cron` is missing from `pg_available_extensions`, migrate **fails** unless you pass **`--allow-no-cron`** (loud warning; skips `20260923000003_doctornect_cron.sql`).
+
+**Dry-run bootstrap list (no SQL executed):**
 
 ```powershell
+node scripts/db/rds_bootstrap_apply.js --print-summary
 node scripts/db/rds_bootstrap_apply.js --target=production --confirm=<PROD_RDS_HOST>
-```
-
-**Execute** only after operator approval:
-
-```powershell
-node scripts/db/rds_bootstrap_apply.js --target=production --execute --confirm-live-data --confirm=<PROD_RDS_HOST>
 ```
 
 ## 3b. Bootstrap empty RDS (rehearsal first)
