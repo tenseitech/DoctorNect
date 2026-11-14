@@ -24,6 +24,36 @@ const path = require('node:path');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard } = require('../lib/env_guard');
 
+/** Extensions present on Supabase-managed Postgres but not required on RDS parity checks. */
+const SUPABASE_ONLY_EXTENSIONS = new Set([
+  'pg_graphql',
+  'supabase_vault',
+  'pg_net',
+  'wrappers',
+  'pgsodium',
+  'vault',
+]);
+
+/** Schemas owned by Supabase platform — excluded from object-level drift reporting. */
+const SUPABASE_ONLY_SCHEMAS = new Set([
+  'auth',
+  'extensions',
+  'graphql',
+  'graphql_public',
+  'pgbouncer',
+  'pgsodium',
+  'pgsodium_masks',
+  'realtime',
+  '_realtime',
+  'storage',
+  'supabase_functions',
+  'supabase_migrations',
+  'vault',
+]);
+
+const EXPECTED_POSTGREST_ROLES = ['anon', 'authenticated', 'service_role', 'authenticator'];
+const EXPECTED_AUTH_SHIM_FUNCTIONS = ['jwt', 'uid', 'role'];
+
 async function fetchCatalog(client) {
   const catalog = {};
 
@@ -104,7 +134,7 @@ async function fetchCatalog(client) {
   `);
   catalog.views = viewsRes.rows;
 
-  // 7. Extensions
+  // 7. Extensions (Supabase-only names filtered at compare time)
   const extRes = await client.query(`
     SELECT extname, extversion FROM pg_extension ORDER BY extname;
   `);
@@ -129,6 +159,116 @@ async function fetchCatalog(client) {
   catalog.grants = grantsRes.rows;
 
   return catalog;
+}
+
+async function fetchInfraCatalog(client) {
+  const authFuncsRes = await client.query(`
+    SELECT p.proname,
+           pg_get_functiondef(p.oid) AS definition
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'auth' AND p.prokind = 'f'
+    ORDER BY p.proname;
+  `);
+  const authFunctions = authFuncsRes.rows.map((r) => ({
+    proname: r.proname,
+    def_hash: crypto.createHash('sha256').update(r.definition || '').digest('hex').slice(0, 16),
+  }));
+
+  const rolesRes = await client.query(`
+    SELECT rolname, rolcanlogin
+    FROM pg_roles
+    WHERE rolname = ANY($1::text[])
+    ORDER BY rolname;
+  `, [EXPECTED_POSTGREST_ROLES]);
+  const roles = rolesRes.rows;
+
+  const authGrantsRes = await client.query(`
+    SELECT grantee, privilege_type
+    FROM information_schema.usage_privileges
+    WHERE object_schema = 'auth'
+    ORDER BY grantee, privilege_type;
+  `);
+  const authFunctionGrantsRes = await client.query(`
+    SELECT grantee, specific_name, privilege_type
+    FROM information_schema.routine_privileges
+    WHERE routine_schema = 'auth'
+    ORDER BY specific_name, grantee, privilege_type;
+  `);
+
+  return {
+    authFunctions,
+    roles,
+    authSchemaGrants: authGrantsRes.rows,
+    authFunctionGrants: authFunctionGrantsRes.rows,
+  };
+}
+
+function filterComparableExtensions(extensions) {
+  return (extensions || []).filter((e) => !SUPABASE_ONLY_EXTENSIONS.has(e.extname));
+}
+
+function compareInfraCatalogs(stagingInfra, targetInfra, targetName) {
+  const diffs = [];
+
+  for (const name of EXPECTED_AUTH_SHIM_FUNCTIONS) {
+    const sFn = stagingInfra.authFunctions.find((f) => f.proname === name);
+    const tFn = targetInfra.authFunctions.find((f) => f.proname === name);
+    if (!tFn) {
+      diffs.push({
+        category: 'AUTH_SHIM_MISSING',
+        key: `auth.${name}()`,
+        diff: `Missing auth shim in ${targetName} (see db/rds_bootstrap/02_auth_shim.sql)`,
+      });
+    } else if (sFn && sFn.def_hash !== tFn.def_hash) {
+      diffs.push({
+        category: 'AUTH_SHIM_BODY',
+        key: `auth.${name}()`,
+        diff: `auth.${name}() body hash mismatch staging=${sFn?.def_hash || 'n/a'} ${targetName}=${tFn.def_hash}`,
+      });
+    }
+  }
+
+  const stagingRoles = new Map(stagingInfra.roles.map((r) => [r.rolname, r]));
+  const targetRoles = new Map(targetInfra.roles.map((r) => [r.rolname, r]));
+  for (const rolename of EXPECTED_POSTGREST_ROLES) {
+    if (!targetRoles.has(rolename)) {
+      diffs.push({
+        category: 'ROLE_MISSING',
+        key: rolename,
+        diff: `PostgREST role missing in ${targetName}`,
+      });
+    } else if (stagingRoles.has(rolename)) {
+      const s = stagingRoles.get(rolename);
+      const t = targetRoles.get(rolename);
+      if (Boolean(s.rolcanlogin) !== Boolean(t.rolcanlogin)) {
+        diffs.push({
+          category: 'ROLE_LOGIN',
+          key: rolename,
+          diff: `rolcanlogin mismatch staging=${s.rolcanlogin} ${targetName}=${t.rolcanlogin}`,
+        });
+      }
+    }
+  }
+
+  const stagingAuthGrants = new Set(
+    (stagingInfra.authSchemaGrants || []).map((g) => `${g.grantee}:${g.privilege_type}`),
+  );
+  const targetAuthGrants = new Set(
+    (targetInfra.authSchemaGrants || []).map((g) => `${g.grantee}:${g.privilege_type}`),
+  );
+  for (const g of stagingAuthGrants) {
+    if (!targetAuthGrants.has(g)) {
+      diffs.push({ category: 'AUTH_GRANT_MISSING', key: g, diff: `auth schema grant missing in ${targetName}` });
+    }
+  }
+  for (const g of targetAuthGrants) {
+    if (!stagingAuthGrants.has(g)) {
+      diffs.push({ category: 'AUTH_GRANT_EXTRA', key: g, diff: `Extra auth schema grant in ${targetName}` });
+    }
+  }
+
+  return diffs;
 }
 
 function compareCatalogs(staging, target, targetName) {
@@ -257,7 +397,37 @@ function compareCatalogs(staging, target, targetName) {
     }
   }
 
+  const stagingExt = new Map(
+    filterComparableExtensions(staging.extensions).map((e) => [e.extname, e.extversion]),
+  );
+  const targetExt = new Map(
+    filterComparableExtensions(target.extensions).map((e) => [e.extname, e.extversion]),
+  );
+  for (const [name, ver] of stagingExt) {
+    if (!targetExt.has(name)) {
+      diffs.push({ category: 'EXTENSION_MISSING', key: name, diff: `Extension missing in ${targetName}` });
+    } else if (targetExt.get(name) !== ver) {
+      diffs.push({
+        category: 'EXTENSION_VERSION',
+        key: name,
+        diff: `Version mismatch staging=${ver} ${targetName}=${targetExt.get(name)}`,
+      });
+    }
+  }
+  for (const [name] of targetExt) {
+    if (!stagingExt.has(name)) {
+      diffs.push({ category: 'EXTENSION_EXTRA', key: name, diff: `Extra extension in ${targetName}` });
+    }
+  }
+
   return diffs;
+}
+
+function mergeCatalogDiffs(stagingCat, targetCat, stagingInfra, targetInfra, targetName) {
+  return [
+    ...compareCatalogs(stagingCat, targetCat, targetName),
+    ...compareInfraCatalogs(stagingInfra, targetInfra, targetName),
+  ];
 }
 
 async function run() {
@@ -274,17 +444,19 @@ async function run() {
     process.exit(1);
   }
 
+  const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
+
   let targetUri;
+  let rehearsalCfg = null;
+  let productionCfg = null;
   if (target === 'rehearsal') {
-    const rdsHost = getEnv('PROD_RDS_HOST');
-    const rdsPort = getEnv('PROD_RDS_PORT') || '5432';
-    const rdsUser = getEnv('PROD_RDS_USER') || 'postgres';
-    const rdsPass = getEnv('PROD_RDS_PASSWORD');
-    if (!rdsHost || !rdsPass) {
-      console.log(`[SKIPPED] Target "${target}" is not configured yet (PROD_RDS_HOST or password missing).`);
+    try {
+      rehearsalCfg = buildRdsPoolConfig({ database: 'doctornect_rehearsal' });
+      targetUri = maskRdsTarget(rehearsalCfg);
+    } catch (_) {
+      console.log(`[SKIPPED] Target "rehearsal" is not configured yet (PROD_RDS_* missing).`);
       process.exit(0);
     }
-    targetUri = `postgresql://${rdsUser}:${encodeURIComponent(rdsPass)}@${rdsHost}:${rdsPort}/doctornect_rehearsal?sslmode=require`;
   } else if (target === 'fresh' || target === 'fresh_local') {
     targetUri = getEnv('LOCAL_FRESH_DB_URL');
     if (!targetUri) {
@@ -299,11 +471,9 @@ async function run() {
       targetUri = u.toString();
     }
   } else if (target === 'production') {
-    const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
-    const { assertProductionRdsTarget, verifyConnectedRdsSession } = require('../lib/rds_connect_guard');
     try {
-      const cfg = buildRdsPoolConfig({ database: getEnv('PROD_RDS_DB') || 'doctornect' });
-      targetUri = maskRdsTarget(cfg);
+      productionCfg = buildRdsPoolConfig({ database: getEnv('PROD_RDS_DB') || 'doctornect' });
+      targetUri = maskRdsTarget(productionCfg);
     } catch (_) {
       console.log(`[SKIPPED] Target "production" is not configured yet.`);
       process.exit(0);
@@ -316,13 +486,17 @@ async function run() {
   const sClient = new Client({ connectionString: stagingUri, ssl: { rejectUnauthorized: false } });
   const isLocalFresh = target === 'fresh' || target === 'fresh_local';
   let tClient;
+  const { assertProductionRdsTarget, verifyConnectedRdsSession } = require('../lib/rds_connect_guard');
   if (isLocalFresh) {
     tClient = new Client({ connectionString: targetUri });
   } else if (target === 'production') {
-    const { buildRdsPoolConfig } = require('../lib/rds_pool_config');
-    const prodCfg = buildRdsPoolConfig({ database: getEnv('PROD_RDS_DB') || 'doctornect' });
+    const prodCfg = productionCfg || buildRdsPoolConfig({ database: getEnv('PROD_RDS_DB') || 'doctornect' });
     assertProductionRdsTarget(prodCfg);
     tClient = new Client(prodCfg);
+  } else if (target === 'rehearsal') {
+    const cfg = rehearsalCfg || buildRdsPoolConfig({ database: 'doctornect_rehearsal' });
+    assertProductionRdsTarget(cfg);
+    tClient = new Client(cfg);
   } else {
     tClient = new Client({
       connectionString: targetUri,
@@ -334,16 +508,35 @@ async function run() {
     await sClient.connect();
     await tClient.connect();
     if (target === 'production') {
-      await verifyConnectedRdsSession(tClient, buildRdsPoolConfig({ database: getEnv('PROD_RDS_DB') || 'doctornect' }));
+      await verifyConnectedRdsSession(
+        tClient,
+        productionCfg || buildRdsPoolConfig({ database: getEnv('PROD_RDS_DB') || 'doctornect' }),
+      );
+    } else if (target === 'rehearsal') {
+      await verifyConnectedRdsSession(
+        tClient,
+        rehearsalCfg || buildRdsPoolConfig({ database: 'doctornect_rehearsal' }),
+      );
     }
 
+    console.log(
+      `\nSupabase-only schemas ignored for object drift: ${[...SUPABASE_ONLY_SCHEMAS].sort().join(', ')}`,
+    );
     console.log('\nFetching catalogs from both databases...');
-    const [stagingCat, targetCat] = await Promise.all([fetchCatalog(sClient), fetchCatalog(tClient)]);
+    const [stagingCat, targetCat, stagingInfra, targetInfra] = await Promise.all([
+      fetchCatalog(sClient),
+      fetchCatalog(tClient),
+      fetchInfraCatalog(sClient),
+      fetchInfraCatalog(tClient),
+    ]);
 
     console.log(`Staging: ${stagingCat.columns.length} columns, ${stagingCat.policies.length} policies, ${stagingCat.functions.length} functions.`);
     console.log(`${target}: ${targetCat.columns.length} columns, ${targetCat.policies.length} policies, ${targetCat.functions.length} functions.`);
+    console.log(
+      `Auth shim: staging=${stagingInfra.authFunctions.map((f) => f.proname).join(',') || 'none'}; ${target}=${targetInfra.authFunctions.map((f) => f.proname).join(',') || 'none'}`,
+    );
 
-    const diffs = compareCatalogs(stagingCat, targetCat, target);
+    const diffs = mergeCatalogDiffs(stagingCat, targetCat, stagingInfra, targetInfra, target);
 
     console.log('\n--- PARITY AUDIT RESULTS ---');
     if (diffs.length === 0) {
@@ -369,5 +562,11 @@ if (require.main === module) {
 
 module.exports = {
   fetchCatalog,
+  fetchInfraCatalog,
   compareCatalogs,
+  compareInfraCatalogs,
+  mergeCatalogDiffs,
+  filterComparableExtensions,
+  SUPABASE_ONLY_EXTENSIONS,
+  SUPABASE_ONLY_SCHEMAS,
 };
