@@ -111,7 +111,7 @@ test('live_data_guard: rehearsal refusal names RDS not staging', () => {
     PROD_RDS_HOST: process.env.PROD_RDS_HOST,
     STAGING_SUPABASE_URL: process.env.STAGING_SUPABASE_URL,
   };
-  process.env.PROD_RDS_HOST = 'doctornect-db.example.ap-south-1.rds.amazonaws.com';
+  process.env.PROD_RDS_HOST = 'example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com';
   delete process.env.STAGING_SUPABASE_URL;
   try {
     const expectedHash = hostHash8(process.env.PROD_RDS_HOST);
@@ -154,13 +154,13 @@ test('live_data_guard: production/rehearsal require distinct --confirm-db', () =
     STAGING_SUPABASE_URL: process.env.STAGING_SUPABASE_URL,
   };
   const allowFile = path.join(require('os').tmpdir(), `doctornect-allow-db-${Date.now()}.txt`);
-  process.env.PROD_RDS_HOST = 'doctornect-db.example.ap-south-1.rds.amazonaws.com';
+  process.env.PROD_RDS_HOST = 'example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com';
   delete process.env.STAGING_SUPABASE_URL;
   fs.writeFileSync(allowFile, `${hostHash8(process.env.PROD_RDS_HOST)}\n`);
   process.env.DOCTORNECT_ALLOWED_HOST_HASHES = allowFile;
   try {
     const missingDb = runWithArgs(
-      ['--target=rehearsal', '--confirm-live-data', '--confirm=doctornect-db.example.ap-south-1.rds.amazonaws.com'],
+      ['--target=rehearsal', '--confirm-live-data', '--confirm=example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com'],
       () => assertConfirmLiveData('scripts/db/migrate.js'),
     );
     assert.equal(missingDb.exitCode, 1);
@@ -266,7 +266,7 @@ test('live_data_guard: ADC cannot skip --confirm-db on RDS targets', () => {
   };
   const allowFile = path.join(require('os').tmpdir(), `doctornect-allow-adc-${Date.now()}.txt`);
   process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-sa.json';
-  process.env.PROD_RDS_HOST = 'doctornect-db.example.ap-south-1.rds.amazonaws.com';
+  process.env.PROD_RDS_HOST = 'example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com';
   delete process.env.STAGING_SUPABASE_URL;
   fs.writeFileSync(allowFile, `${hostHash8(process.env.PROD_RDS_HOST)}\n`);
   process.env.DOCTORNECT_ALLOWED_HOST_HASHES = allowFile;

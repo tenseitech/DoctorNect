@@ -1,32 +1,28 @@
 'use strict';
 
 /**
- * Build unified root .env.example from legacy template files + key union from root .env.
+ * Build unified root .env.example from section templates + optional key union.
+ * NEVER reads secret values from .env or existing .env.example — placeholders only.
+ *
+ * Usage: node scripts/env/build_env_example_from_templates.js --force
  */
 
 const fs = require('fs');
 const path = require('path');
 const { findRepoRoot } = require('../lib/repo_root');
-const { parseEnvFile } = require('../lib/parse_env_file');
 
-const LEGACY = [
-  'backend/functions/.env.example',
-  'frontend/.env.example',
-  'backend/.env.migration.example',
-  '.env.migration.example',
-  '.env.example',
-];
+const SECRET_VALUE_HEURISTIC = /^(AKIA[0-9A-Z]{16}|sk_(live|test)_[A-Za-z0-9]+|eyJ[A-Za-z0-9_-]{20,}|sb_secret_[A-Za-z0-9]+)/;
 
 const PLACEHOLDERS = {
   APP_ENV: 'staging',
   STAGING_SUPABASE_URL: 'https://your-project-ref.supabase.co',
   STAGING_SUPABASE_ANON_KEY: 'your-staging-anon-key',
-  STAGING_SUPABASE_SERVICE_ROLE_KEY: 'your-staging-service-role-key',
+  STAGING_SUPABASE_SERVICE_ROLE_KEY: 'your-service-role-key',
   STAGING_SUPABASE_DB_URL: 'postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require',
   PROD_GATEWAY_URL: 'https://api.doctornect.com',
   PROD_GATEWAY_ANON_KEY: 'your-production-gateway-anon-key',
-  PROD_GATEWAY_SERVICE_KEY: 'your-production-gateway-service-key',
-  PROD_RDS_HOST: 'your-db.xxxxx.ap-south-1.rds.amazonaws.com',
+  PROD_GATEWAY_SERVICE_KEY: 'your-gateway-service-key',
+  PROD_RDS_HOST: 'example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com',
   PROD_RDS_CONNECT_HOST: '127.0.0.1',
   PROD_RDS_PORT: '5433',
   PROD_RDS_DB: 'doctornect',
@@ -34,30 +30,88 @@ const PLACEHOLDERS = {
   PROD_RDS_PASSWORD: '',
   PROD_RDS_SSL_ROOT_CERT: 'infra/aws/global-bundle.pem',
   PROD_RDS_SSLMODE: 'verify-full',
-  PROD_RDS_SSL_SERVERNAME: 'your-db.xxxxx.ap-south-1.rds.amazonaws.com',
+  PROD_RDS_SSL_SERVERNAME: 'example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com',
+  REPLAY_DB_URL: 'postgresql://[USER]:[PASSWORD]@127.0.0.1:[PORT]/[DB]',
   FIREBASE_PROJECT_ID: 'medibond-45fad',
   FIREBASE_SERVICE_ACCOUNT_PATH: './scripts/service-account.json',
+  LOCAL_REPLAY_PG_PORT: '5440',
+  FIRESTORE_FORBIDDEN: '1',
 };
 
-function extractTemplateLines(filePath) {
-  if (!fs.existsSync(filePath)) return {};
-  const map = {};
+const LEGACY_KEY_SOURCES = [
+  'backend/functions/.env.example',
+  'frontend/.env.example',
+  'backend/.env.migration.example',
+  '.env.migration.example',
+];
+
+function extractKeyNamesOnly(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  const keys = [];
   const content = fs.readFileSync(filePath, 'utf8');
   for (const line of content.split(/\r?\n/)) {
-    const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
-    if (m) map[m[1]] = m[2];
+    const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=/);
+    if (m) keys.push(m[1]);
   }
-  return map;
+  return keys;
+}
+
+function extractEnvKeysOnly(envPath) {
+  if (!fs.existsSync(envPath)) return [];
+  return extractKeyNamesOnly(envPath);
+}
+
+function isSensitiveEnvKey(key) {
+  const k = String(key);
+  if (k.includes('SECRET') || k.includes('SERVICE_ROLE') || k.includes('SERVICE_KEY')) return true;
+  if (k.endsWith('_PASSWORD') || k === 'PROD_RDS_PASSWORD') return true;
+  if (k.startsWith('AWS_') && k.includes('KEY')) return true;
+  if (k.includes('WEBHOOK_SECRET')) return true;
+  return false;
+}
+
+function placeholderForKey(key) {
+  if (Object.prototype.hasOwnProperty.call(PLACEHOLDERS, key)) {
+    return PLACEHOLDERS[key];
+  }
+  if (isSensitiveEnvKey(key)) {
+    return 'your-secret';
+  }
+  const k = String(key);
+  if (k.includes('TEMPLATE_ID')) {
+    return 'your-template-id';
+  }
+  return `your-${String(key).toLowerCase().replace(/_/g, '-')}`;
+}
+
+function auditOutputForRealSecrets(lines) {
+  const flagged = [];
+  for (const line of lines) {
+    const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$/);
+    if (!m) continue;
+    const val = String(m[2] || '').trim();
+    if (!val) continue;
+    if (SECRET_VALUE_HEURISTIC.test(val)) flagged.push(m[1]);
+  }
+  return flagged;
 }
 
 function main() {
-  const root = findRepoRoot();
-  const templates = {};
-  for (const rel of LEGACY) {
-    Object.assign(templates, extractTemplateLines(path.join(root, rel)));
+  const force = process.argv.includes('--force');
+  if (!force) {
+    console.error(
+      'Refusing to write .env.example without --force (prevents accidental overwrite with local secrets).',
+    );
+    console.error('Usage: node scripts/env/build_env_example_from_templates.js --force');
+    process.exit(1);
   }
-  const envKeys = parseEnvFile(path.join(root, '.env'));
-  const allKeys = new Set([...Object.keys(templates), ...Object.keys(envKeys), ...Object.keys(PLACEHOLDERS)]);
+
+  const root = findRepoRoot();
+  const allKeys = new Set();
+  for (const rel of LEGACY_KEY_SOURCES) {
+    for (const k of extractKeyNamesOnly(path.join(root, rel))) allKeys.add(k);
+  }
+  for (const k of extractEnvKeysOnly(path.join(root, '.env'))) allKeys.add(k);
 
   const sections = [
     {
@@ -108,6 +162,7 @@ function main() {
         'PROD_RDS_SSLMODE',
         'PROD_RDS_SSL_SERVERNAME',
         'REPLAY_DB_URL',
+        'LOCAL_REPLAY_PG_PORT',
         'LOCAL_FRESH_DB_URL',
         'FRESH_LOCAL_DB_NAME',
       ],
@@ -118,7 +173,7 @@ function main() {
     },
     {
       title: 'Redis',
-      keys: ['REDIS_HOST_STAGING', 'REDIS_HOST_PRODUCTION', 'REDIS_HOST', 'REDIS_PORT', 'REDIS_PASSWORD', 'REDIS_TLS', 'REDIS_CA_CERT', 'REDIS_CA_PATH', 'OTP_REDIS_MIRROR', 'RATE_LIMIT_BACKEND'],
+      keys: ['REDIS_HOST_STAGING', 'REDIS_HOST_PRODUCTION', 'REDIS_HOST', 'REDIS_PORT', 'REDIS_PASSWORD', 'REDIS_TLS', 'REDIS_CA_CERT', 'REDIS_CA_PATH', 'OTP_REDIS_MIRROR', 'RATE_LIMIT_BACKEND', 'OTP_HMAC_SECRET'],
     },
     {
       title: 'AWS S3',
@@ -156,7 +211,6 @@ function main() {
         'ENABLE_SUPABASE',
         'USE_SUPABASE_AUTH',
         'USE_SUPABASE_DB_DOCTOR_PATIENT',
-        'FIRESTORE_FORBIDDEN',
         'AMBULANCE_ENABLED',
         'ENABLE_DEMO_AUTH',
         'ENABLE_DEMO_SUPER_ADMIN',
@@ -198,6 +252,10 @@ function main() {
     },
   ];
 
+  for (const sec of sections) {
+    for (const k of sec.keys) allKeys.add(k);
+  }
+
   const used = new Set();
   const lines = [
     '# =============================================================================',
@@ -209,26 +267,39 @@ function main() {
 
   for (const sec of sections) {
     lines.push(`# --- ${sec.title} ---`);
-  for (const key of sec.keys) {
+    for (const key of sec.keys) {
       used.add(key);
-      const val = templates[key] ?? PLACEHOLDERS[key] ?? '';
-      lines.push(`${key}=${val}`);
+      lines.push(`${key}=${placeholderForKey(key)}`);
     }
     lines.push('');
   }
 
   const extra = [...allKeys].filter((k) => !used.has(k)).sort();
   if (extra.length) {
-    lines.push('# --- Other keys (from legacy templates / local .env) ---');
+    lines.push('# --- Other keys (union from legacy templates / local .env key names only) ---');
     for (const key of extra) {
-      lines.push(`${key}=${templates[key] ?? PLACEHOLDERS[key] ?? ''}`);
+      lines.push(`${key}=${placeholderForKey(key)}`);
     }
     lines.push('');
   }
 
+  const flagged = auditOutputForRealSecrets(lines);
+  if (flagged.length) {
+    console.error('Refusing to write .env.example: output looks like real secrets for keys:', flagged.join(', '));
+    process.exit(1);
+  }
+
   const out = path.join(root, '.env.example');
   fs.writeFileSync(out, `${lines.join('\n')}\n`);
-  console.log(`Wrote ${out} (${allKeys.size} unique keys)`);
+  console.log(`Wrote ${out} (${allKeys.size} unique keys, placeholders only)`);
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  placeholderForKey,
+  auditOutputForRealSecrets,
+  SECRET_VALUE_HEURISTIC,
+};
