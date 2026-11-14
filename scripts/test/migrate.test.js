@@ -7,6 +7,7 @@ const {
   parseMigrationCliArgs,
   assertPendingMigrationsInOrder,
   loadAppliedMigrationsMap,
+  shouldAcquireMigrationAdvisoryLock,
 } = require('../db/migrate');
 
 test('migrate: applySingleMigration succeeds without supabase_migrations schema', async () => {
@@ -126,6 +127,15 @@ test('migrate: applySingleMigration throws if ledger verification row is absent 
     },
     /FATAL: Migration ledger check failed/
   );
+});
+
+test('shouldAcquireMigrationAdvisoryLock: only on --execute for staging and RDS targets', () => {
+  assert.equal(shouldAcquireMigrationAdvisoryLock('staging', false), false);
+  assert.equal(shouldAcquireMigrationAdvisoryLock('staging', true), true);
+  assert.equal(shouldAcquireMigrationAdvisoryLock('production', true), true);
+  assert.equal(shouldAcquireMigrationAdvisoryLock('rehearsal', true), true);
+  assert.equal(shouldAcquireMigrationAdvisoryLock('replay', true), true);
+  assert.equal(shouldAcquireMigrationAdvisoryLock('replay_check', true), true);
 });
 
 test('parseMigrationCliArgs: --execute with --dry-run or --dry-run-all forces dry-run (no execute)', () => {

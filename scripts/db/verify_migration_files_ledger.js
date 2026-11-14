@@ -2,42 +2,90 @@
 'use strict';
 
 /**
- * Read-only: verify repo migration SQL files against staging _schema_migrations (checksums).
- * Usage: node scripts/db/verify_migration_files_ledger.js --confirm-live-data
+ * Read-only: verify repo migration SQL files against _schema_migrations (checksums).
+ *
+ *   node scripts/db/verify_migration_files_ledger.js --target=staging --confirm-live-data
+ *   node scripts/db/verify_migration_files_ledger.js --target=rehearsal --confirm-live-data --confirm=<PROD_RDS_HOST>
+ *   node scripts/db/verify_migration_files_ledger.js --target=production --confirm-live-data --confirm=<PROD_RDS_HOST>
  */
 
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
+const { buildRdsPoolConfig } = require('../lib/rds_pool_config');
+const { assertDatabaseGuard } = require('../lib/env_guard');
 const {
   computeChecksum,
   computeLegacyRawChecksum,
   ledgerChecksumMatches,
 } = require('../lib/migration_checksum');
-
+const { GHOST_STAGING_LEDGER_VERSION } = require('../lib/live_data_guard');
 const { listMigrationsForTarget, migrationRelPathToAbs } = require('../lib/migration_file_list');
 
-function listRepoMigrations() {
+const STAGING_GHOST_VERSIONS = new Set([GHOST_STAGING_LEDGER_VERSION]);
+
+function resolveCliTarget() {
+  const arg = process.argv.find((a) => a.startsWith('--target='));
+  return arg ? arg.split('=')[1].toLowerCase() : 'staging';
+}
+
+function listRepoMigrationsForVerifyTarget(target) {
+  if (target === 'staging') {
+    return listMigrationsForTarget('staging');
+  }
   return listMigrationsForTarget('production');
 }
 
-async function main() {
-  if (!process.argv.includes('--confirm-live-data')) {
-    console.error('Refusing live staging read without --confirm-live-data');
-    process.exit(1);
+async function connectForTarget(target) {
+  if (target === 'staging') {
+    const url = getEnv('STAGING_SUPABASE_DB_URL');
+    if (!url) {
+      throw new Error('STAGING_SUPABASE_DB_URL missing');
+    }
+    assertDatabaseGuard({
+      targetKind: 'staging',
+      operationName: 'verify_migration_files_ledger',
+      allowDestructive: false,
+      targetHost: null,
+    });
+    const client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+    await client.connect();
+    return { client, mask: maskConnectionString(url), label: 'staging Supabase' };
   }
-  const url = getEnv('STAGING_SUPABASE_DB_URL');
-  if (!url) {
-    console.error('STAGING_SUPABASE_DB_URL missing');
+  if (target === 'production' || target === 'rehearsal') {
+    const dbName = target === 'rehearsal' ? 'doctornect_rehearsal' : getEnv('PROD_RDS_DB') || 'doctornect';
+    assertDatabaseGuard({
+      targetKind: 'production',
+      operationName: `verify_migration_files_ledger (${target})`,
+      allowDestructive: false,
+      targetHost: getEnv('PROD_RDS_HOST'),
+    });
+    const cfg = buildRdsPoolConfig({ database: dbName });
+    const client = new Client(cfg);
+    await client.connect();
+    return { client, mask: maskConnectionString(`postgresql://****@${cfg.host}:${cfg.port}/${dbName}`), label: target };
+  }
+  throw new Error(`Unsupported --target=${target} (use staging, rehearsal, or production)`);
+}
+
+async function main() {
+  const target = resolveCliTarget();
+  if (!process.argv.includes('--confirm-live-data')) {
+    console.error(`Refusing live ${target} read without --confirm-live-data`);
     process.exit(1);
   }
 
-  const files = listRepoMigrations();
-  const client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
-  await client.connect();
-  const res = await client.query('SELECT version, name, checksum FROM public._schema_migrations ORDER BY version');
-  await client.end();
+  const files = listRepoMigrationsForVerifyTarget(target);
+  const { client, mask, label } = await connectForTarget(target);
+  let res;
+  try {
+    res = await client.query(
+      'SELECT version, name, checksum FROM public._schema_migrations ORDER BY version',
+    );
+  } finally {
+    await client.end();
+  }
 
   const ledger = new Map();
   for (const row of res.rows) ledger.set(row.version, row);
@@ -73,33 +121,45 @@ async function main() {
     });
   }
 
-  const ghost = res.rows.filter((r) => !files.some((f) => f.startsWith(`${r.version}_`)));
+  const ghost = res.rows.filter(
+    (r) =>
+      !files.some((f) => path.basename(f).split('_')[0] === r.version) &&
+      !(target === 'staging' && STAGING_GHOST_VERSIONS.has(r.version)),
+  );
   const drift = report.filter((r) => r.inLedger && r.checksumMatch === false);
   const notInLedger = report.filter((r) => !r.inLedger && !r.file.startsWith('rds/'));
   const rdsOnly = report.filter((r) => !r.inLedger && r.file.startsWith('rds/'));
 
-  console.log(`Staging: ${maskConnectionString(url)}`);
+  console.log(`Target: ${label} (${mask})`);
   console.log(`Ledger rows: ${res.rows.length} | Repo SQL files: ${files.length}`);
   for (const row of report) {
     const status = !row.inLedger ? 'NOT_IN_LEDGER' : row.checksumMatch ? 'OK' : 'CHECKSUM_DRIFT';
     console.log(`${status.padEnd(16)} ${row.version} ${row.file}`);
   }
   if (ghost.length) {
-    console.log('\nLedger versions without repo file (expected ghost handling for 20261104000001):');
+    console.log('\nLedger versions without repo file (unexpected ghosts):');
     for (const g of ghost) console.log(`  - ${g.version} (${g.name})`);
   }
-  if (rdsOnly.length) {
+  if (target === 'staging' && rdsOnly.length) {
     console.log(`\nRDS-only (expected NOT on staging Supabase): ${rdsOnly.map((r) => r.file).join(', ')}`);
   }
+  if (target !== 'staging' && rdsOnly.length) {
+    console.error(`\n${rdsOnly.length} RDS-only migration(s) missing from ${target} ledger — run migrate after bootstrap.`);
+    process.exit(1);
+  }
   if (notInLedger.length) {
-    console.error(`\n${notInLedger.length} repo file(s) not in staging ledger`);
+    console.error(`\n${notInLedger.length} shared repo file(s) not in ${target} ledger`);
     process.exit(1);
   }
   if (drift.length) {
     console.error(`\n${drift.length} checksum drift(s)`);
     process.exit(1);
   }
-  console.log('\n✅ All repo migration files present on staging with matching checksums');
+  if (ghost.length) {
+    console.error(`\n${ghost.length} unexpected ghost ledger version(s) on ${target}`);
+    process.exit(1);
+  }
+  console.log(`\n✅ All repo migration files for --target=${target} match ledger checksums`);
 }
 
 main().catch((e) => {

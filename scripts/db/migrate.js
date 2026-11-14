@@ -170,8 +170,21 @@ async function loadAppliedMigrationsMap(client, isExecute) {
   return { appliedMap, supabaseMigExists };
 }
 
-async function tryAcquireMigrationAdvisoryLock(client, target) {
-  if (!MIGRATION_ADVISORY_TARGETS.has(target)) {
+function shouldAcquireMigrationAdvisoryLock(target, isExecute) {
+  if (!isExecute) {
+    return false;
+  }
+  return (
+    target === 'staging' ||
+    target === 'production' ||
+    target === 'rehearsal' ||
+    target === 'replay' ||
+    target === 'replay_check'
+  );
+}
+
+async function tryAcquireMigrationAdvisoryLock(client, target, isExecute) {
+  if (!shouldAcquireMigrationAdvisoryLock(target, isExecute)) {
     return false;
   }
   const lockRow = await client.query(
@@ -342,6 +355,8 @@ async function runMigrations() {
     pool = new Pool(poolConfig);
     client = await pool.connect();
     console.log('✔ Database connection established.');
+    const { assertConnectedDatabaseMatchesConfirm } = require('../lib/live_data_guard');
+    await assertConnectedDatabaseMatchesConfirm(client, 'scripts/db/migrate.js');
   } catch (connErr) {
     console.error(`\n[FATAL] Could not connect to database (${targetHostLabel || target}): ${connErr.code || ''} ${connErr.message}`);
     printConnectionFailureHint(target);
@@ -350,7 +365,7 @@ async function runMigrations() {
 
   let lockHeld = false;
   try {
-    lockHeld = await tryAcquireMigrationAdvisoryLock(client, target);
+    lockHeld = await tryAcquireMigrationAdvisoryLock(client, target, isExecute);
 
     const { appliedMap, supabaseMigExists } = await loadAppliedMigrationsMap(client, isExecute);
     console.log(`Existing Applied Migrations in Ledger: ${appliedMap.size}`);
@@ -600,4 +615,5 @@ module.exports = {
   parseMigrationCliArgs,
   assertPendingMigrationsInOrder,
   loadAppliedMigrationsMap,
+  shouldAcquireMigrationAdvisoryLock,
 };
