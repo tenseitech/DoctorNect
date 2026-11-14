@@ -24,10 +24,14 @@ const fs = require('fs');
 const path = require('path');
 const { Client, Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
-const { assertDatabaseGuard } = require('../lib/env_guard');
+const { getHostFingerprint } = require('../lib/env_guard');
 const { assertReplayDatabaseUrlSafe } = require('../lib/replay_connection_guard');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 const { fetchCatalog, compareCatalogs } = require('./schema_diff');
+const {
+  listMigrationsForTarget,
+  resolveMigrationSqlPath,
+} = require('../lib/migration_file_list');
 
 let parse;
 try {
@@ -89,6 +93,15 @@ function classifyDiff(diff) {
 }
 
 const TARGET_DB_NAME = 'replay_check';
+
+/** Used before pg_cron checks; exported for static import regression tests (no DB). */
+function isRdsReplayTargetHost(hostname, prodRdsHost = getEnv('PROD_RDS_HOST')) {
+  const host = String(hostname || '').toLowerCase();
+  return (
+    host.includes('.rds.amazonaws.com')
+    || Boolean(prodRdsHost && host === getHostFingerprint(prodRdsHost))
+  );
+}
 
 async function preflightChecks(adminClient) {
   console.log('--- PRE-FLIGHT CHECKS ON RDS INSTANCE ---');
@@ -201,8 +214,7 @@ async function runRdsScratchReplay() {
 
       // Verify pg_cron availability: on RDS targets, pg_cron MUST be available or replay fails immediately.
       // On local/scratch non-RDS environments, install a labeled TEST-ONLY mock recorder.
-      const isRdsHost = parsedAdmin.hostname.includes('.rds.amazonaws.com') ||
-        (getEnv('PROD_RDS_HOST') && parsedAdmin.hostname === getHostFingerprint(getEnv('PROD_RDS_HOST')));
+      const isRdsHost = isRdsReplayTargetHost(parsedAdmin.hostname);
 
       const hasCronExtRes = await replayClient.query(`
         SELECT 1 FROM pg_available_extensions WHERE name = 'pg_cron';
@@ -255,17 +267,18 @@ async function runRdsScratchReplay() {
         console.log('✔ TEST-ONLY cron recorder installed in replay_check.\n');
       }
 
-      // 2. Apply Migrations in chronological sequence with statement-level error capturing
-      const migrationsDir = path.resolve(__dirname, '../../db/migrations');
-      const migrationFiles = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
-      console.log(`Applying ${migrationFiles.length} migrations in chronological sequence...`);
+      // 2. Apply migrations (shared + db/migrations/rds/) with RDS overrides
+      const migrationFiles = listMigrationsForTarget('replay');
+      console.log(`Applying ${migrationFiles.length} migrations in chronological sequence (target=replay)...`);
 
       const migrationErrors = [];
       let totalReplayedStmts = 0;
 
-      for (const file of migrationFiles) {
-        process.stdout.write(`  -> Applying ${file}... `);
-        let sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+      for (const relPath of migrationFiles) {
+        const file = path.basename(relPath);
+        const { sqlPath, useOverride } = resolveMigrationSqlPath({ relPath, target: 'replay' });
+        process.stdout.write(`  -> Applying ${relPath}${useOverride ? ' [RDS override]' : ''}... `);
+        let sql = fs.readFileSync(sqlPath, 'utf8');
         if (lacksPgCron && file === '20260923000003_doctornect_cron.sql') {
           // If server lacks pg_cron, replace unguarded CREATE EXTENSION with no-op in replay
           sql = sql.replace(/CREATE EXTENSION IF NOT EXISTS pg_cron;/g, '-- [REPLAY TEST-ONLY] Skipped pg_cron extension creation');
@@ -292,7 +305,7 @@ async function runRdsScratchReplay() {
             await replayClient.query(`ROLLBACK TO SAVEPOINT ${spName}`);
             fileFailedStmts++;
             migrationErrors.push({
-              file,
+              file: relPath,
               line: stmt.line,
               sqlstate: stmtErr.code || 'UNKNOWN',
               message: stmtErr.message,
@@ -486,5 +499,5 @@ if (require.main === module) {
   });
 }
 
-module.exports = { runRdsScratchReplay };
+module.exports = { runRdsScratchReplay, isRdsReplayTargetHost };
 

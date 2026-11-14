@@ -12,11 +12,18 @@ const {
 
 const LOCAL_CONNECT_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
 
-function parseLocalDevPgPort() {
-  const explicit = getEnv('LOCAL_DEV_PG_PORT');
+function envLookup(envOverride, key) {
+  if (envOverride && Object.prototype.hasOwnProperty.call(envOverride, key)) {
+    return envOverride[key];
+  }
+  return getEnv(key);
+}
+
+function parseLocalDevPgPort(envOverride) {
+  const explicit = envLookup(envOverride, 'LOCAL_DEV_PG_PORT');
   if (explicit) return parseInt(explicit, 10);
-  const replay = getEnv('REPLAY_DB_URL') || getEnv('LOCAL_FRESH_DB_URL') || '';
-  const m = replay.match(/:(\d+)\//);
+  const replay = envLookup(envOverride, 'REPLAY_DB_URL') || envLookup(envOverride, 'LOCAL_FRESH_DB_URL') || '';
+  const m = String(replay).match(/:(\d+)\//);
   if (m) return parseInt(m[1], 10);
   return 5432;
 }
@@ -25,10 +32,14 @@ function parseLocalDevPgPort() {
  * Fail fast before opening a production RDS pool if the target is clearly local dev Postgres.
  */
 function assertProductionRdsTarget(cfg, options = {}) {
-  const logicalHost = String(cfg.logicalHost || getEnv('PROD_RDS_HOST') || '').trim().toLowerCase();
+  const envOverride = options.env;
+  const logicalHost = String(cfg.logicalHost || envLookup(envOverride, 'PROD_RDS_HOST') || '').trim().toLowerCase();
   const connectHost = String(cfg.host || '').trim().toLowerCase();
   const port = parseInt(String(cfg.port), 10);
-  const localPort = parseLocalDevPgPort();
+  const localPort =
+    options.localDevPgPort != null
+      ? parseInt(String(options.localDevPgPort), 10)
+      : parseLocalDevPgPort(envOverride);
 
   if (isLocalReplayPort(port) && LOCAL_CONNECT_HOSTS.has(connectHost) && !options.allowLocalDev) {
     const err = new Error(
@@ -39,7 +50,7 @@ function assertProductionRdsTarget(cfg, options = {}) {
     throw err;
   }
 
-  const prodPortRaw = getEnv('PROD_RDS_PORT');
+  const prodPortRaw = envLookup(envOverride, 'PROD_RDS_PORT');
   if (!prodPortRaw || String(prodPortRaw).trim() === '') {
     const err = new Error(
       'PROD_RDS_PORT is required for production RDS connections (no default). ' +
