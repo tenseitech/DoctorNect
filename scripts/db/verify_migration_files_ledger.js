@@ -16,13 +16,10 @@ const {
   ledgerChecksumMatches,
 } = require('../lib/migration_checksum');
 
+const { listMigrationsForTarget, migrationRelPathToAbs } = require('../lib/migration_file_list');
+
 function listRepoMigrations() {
-  const dir = path.resolve('db/migrations');
-  const top = fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
-  const sub = fs.existsSync(path.join(dir, 'rds'))
-    ? fs.readdirSync(path.join(dir, 'rds')).filter((f) => f.endsWith('.sql')).map((f) => `rds/${f}`)
-    : [];
-  return [...top, ...sub.sort()];
+  return listMigrationsForTarget('production');
 }
 
 async function main() {
@@ -48,7 +45,7 @@ async function main() {
   const report = [];
   for (const rel of files) {
     const version = path.basename(rel).split('_')[0];
-    const full = path.join('db/migrations', rel.replace(/\//g, path.sep));
+    const full = migrationRelPathToAbs(rel);
     const sqlContent = fs.readFileSync(full, 'utf8');
     const checksum = computeChecksum(sqlContent);
     const row = ledger.get(version);

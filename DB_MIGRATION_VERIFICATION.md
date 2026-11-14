@@ -1,8 +1,8 @@
 # DB Migration Verification — DoctorNect
 
 **Branch audited:** `fix/pre-accept-gate-lab-auth`  
-**Date:** 2026-11-12  
-**Auditor:** Automated repo audit + live staging probes (no destructive DB ops)  
+**Date:** 2026-11-13 (re-audit; prior pass 2026-11-12)  
+**Auditor:** Automated repo audit + live staging probes (no destructive DB ops on Supabase/RDS)  
 **Target architecture:** Staging = Supabase Postgres · Production = AWS RDS Postgres · Auth = Firebase · OTP = MSG91 · Cache = Redis · Files = S3 · Scope = Doctor, Patient, Pharmacy, Lab, Ambulance (not Admin app)
 
 ---
@@ -13,8 +13,8 @@
 |---|------|--------|-------|
 | 1 | DB touchpoints inventory | **PASS** | Documented below; single routing via `APP_ENV` + gateway |
 | 2 | Environment selection | **FIXED** | Added `assertAppEnvDatabaseRouting`; see §2 |
-| 3 | Staging Supabase | **PASS** | At repo head incl. `20261112000006`, `20261113000002`, `20261113000003` (operator); read-only grant + RPC parity below |
-| 4 | Production RDS | **IN PROGRESS** | Instance created; repo wired (`rds_pool_config.js`, tunnel runbook). **BLOCKED-NET** from laptop until SSM tunnel (§Production RDS setup) |
+| 3 | Staging Supabase | **PASS** | Live: PostgreSQL **17.11**, `_schema_migrations` **59** rows, **0 pending** SQL files (`migrate.js --dry-run-all --confirm-live-data` 2026-11-13) |
+| 4 | Production RDS | **FAIL (network)** | Config present in `.env`; `db_connectivity_smoke --env=production` → `ECONNREFUSED 127.0.0.1:5433` (SSM tunnel down); `schema_diff` not run |
 | 12 | RDS grant matrix | **PASS (staging read)** | Live compare: **64** `service_role`-only diffs (staging superset); **0** `anon`/`authenticated` diffs; **0** anon surprises local |
 | 13 | Service-role paths | **PASS (local)** | `service_role_paths_test.js` — **10/10** incl. `book_appointment_atomic`, admin audit, outbox (`20261113000002`) |
 | 14 | RLS coverage | **PASS (local)** | `rls_coverage_audit.js` — 67 public tables, **0** errors |
@@ -24,8 +24,8 @@
 | 6 | Authorization (Firebase UID) | **PASS** (design) | Gateway mints JWT → `auth.uid()` shim on RDS; RLS harness docs exist — **re-run on RDS after apply** |
 | 7 | Connection pooling / SSL | **PASS** (config) | Supabase session pooler documented; RDS SSL via `global-bundle.pem` in `migrate.js` |
 | 8 | Secrets in repo | **PASS*** | `scan_passwords.js`: no real private keys; 5 placeholder patterns in docs/tests only |
-| 9 | Staging/prod isolation | **FIXED** | `S3_BUCKET_STAGING` / `S3_BUCKET_PRODUCTION`, `REDIS_HOST_STAGING` / `REDIS_HOST_PRODUCTION` + cross-env guards (`app_resources.js`) |
-| 10 | Migration tooling | **PASS** | `db/migrations/` (55 files) + `migrate.js` + RDS bootstrap/overrides |
+| 9 | Staging/prod isolation | **PASS** | `backend/functions/src/config/app_resources.js` — `getS3BucketName()` / `getRedisHost()` + `assertStagingProductionResourceIsolation()` on Functions cold start (`index.js` ~L122–134) |
+| 10 | Migration tooling | **FIXED** | **58** shared `db/migrations/*.sql` + **1** RDS-only `db/migrations/rds/*.sql`; `migrate.js` applies `rds/` on `production`/`rehearsal`/`replay*` only (`scripts/lib/migration_file_list.js`) |
 | 11 | Backup / health | **FIXED** | Gateway `/healthz` now checks PostgREST upstream; staging smoke script added |
 
 **Final go/no-go for RDS production traffic:** **NO-GO** until operator runs [RDS_CUTOVER_STEPS.md](docs/runbooks/RDS_CUTOVER_STEPS.md): rehearsal migrate + `04` grants + live `schema_diff` (needs network) + VPC gateway smoke. **Staging read-only verification done 2026-11-12** after `20261113000003` (§Staging verified).
@@ -70,9 +70,9 @@ Add production RDS host fingerprint to `docs/audit/allowed_host_hashes.txt` befo
 
 ### Critical / cutover blockers
 
-1. ~~**Staging schema behind repo (9 migrations)**~~ **RESOLVED 2026-11-12** — applied via `node scripts/db/migrate.js --target=staging --execute --confirm-live-data --confirm-staging`. Ledger **56** rows; head `20261112000005`. Stray row `20261104000001` (legacy duplicate of anon cleanup) remains — reconcile before prod cutover.
+1. **Staging at repo migration head** — **PASS 2026-11-13**: ledger **59** rows (**58** shared files + ghost `20261104000001` duplicate of `20261103000008`; no repo file `20261104000001_*.sql`; harmless for fresh RDS).
 2. **RDS schema parity unverified on rehearsal** — `schema_diff --target=rehearsal` still requires bastion/SSM (not run here). Staging at migration head; grants/RPC logic match local replay (§Staging verified).
-3. **Staging vs production PG** — Staging **17.11**; production **18.3**. **Mandatory prod gate:** PG18.3 replay only (see [STAGING_VS_PRODUCTION_PG_GAP.md](docs/reports/STAGING_VS_PRODUCTION_PG_GAP.md)). Cached `schema_diff` / `FUNCTION_BODY` hashes vs staging are **not** authoritative for prod; **11/11** RPC normalized MATCH is read-only on PG17-era local DB. Full PG18.3 replay **BLOCKED** (Docker down on audit machine).
+3. **Staging vs production PG** — Staging **17.11**; production target **18.3**. Mandatory prod gate: PG18.3 local replay (`rds_scratch_replay.js`, port **5440**). **BLOCKED 2026-11-13:** Docker Desktop engine not running (`npipe://dockerDesktopLinuxEngine` missing).
 4. ~~**Windows `migrate.js --dry-run` TLS / `40D01C23`**~~ **CLARIFIED** — `40D01C23` is the **live-data guard** host fingerprint (`scripts/lib/live_data_guard.js`), not an OpenSSL error. Add `--confirm-live-data`; for apply add `--execute --confirm-staging`. `migrate.js` sets `rejectUnauthorized: false` for Supabase on Windows when needed.
 5. ~~**Staging grant matrix diff**~~ **RESOLVED (read-only 2026-11-12)** — see §Staging verified; `docs/reports/grant_matrix_local.json`.
 6. **Firestore server paths** — **FIXED (production template):** `FIRESTORE_FORBIDDEN=1` + `legacy_db.getLegacyFirestoreDb()`; callables use Postgres/Redis. Legacy Firestore code remains for **tests/emulator** (`__TEST_FORCE_LEGACY_DOCTOR_PATIENT=1`, `FIRESTORE_FORBIDDEN=0`). See §Firestore inventory below.
@@ -85,6 +85,9 @@ Add production RDS host fingerprint to `docs/audit/allowed_host_hashes.txt` befo
 8. **Health check did not probe DB** — **FIXED** `services/api-gateway/src/server.js` (~L178–198): `/healthz` includes `postgrest` upstream status (503 if unreachable).
 9. **Hardcoded staging project ref in release script** — **FIXED** `frontend/scripts/release_build.ps1` (~L163): removed hardcoded staging Supabase URL; uses `STAGING_SUPABASE_URL` / `SUPABASE_URL` only.
 10. **Env template gaps** — **FIXED** env templates + `check_env_parity.js` concept groups for staging/production S3 & Redis.
+14. **`db/migrations/rds/` skipped by `migrate.js` on production** — **FIXED** `scripts/lib/migration_file_list.js` + `migrate.js` (2026-11-13).
+15. **`03_legacy_compat.sql` hard `GRANT … TO postgres`** — **FIXED** conditional block when role exists (`db/rds_bootstrap/03_legacy_compat.sql` ~L61–66).
+16. **`infra/aws/global-bundle.pem` missing locally** — **FAIL (operator)** — required for RDS TLS verify-full.
 
 ### Low / informational
 
@@ -131,17 +134,18 @@ Compile-time Flutter: `--dart-define=APP_ENV=...`, `verify_production_build_conf
 
 ---
 
-## 3. Staging verification (live probe, 2026-11-12)
+## 3. Staging verification (live probe, 2026-11-13)
 
 Command: `node scripts/db/db_connectivity_smoke.js --env=staging`
 
 | Check | Result |
 |-------|--------|
-| TCP + SSL to session pooler | OK |
-| `_schema_migrations` rows | 47 |
-| Module table reads | `doctors` 2, `medical_stores` 2, others 0 (test data) |
-| Pending migrations | **9 files** (see §b.1) |
-| `validate_migration_sql.js` | **55 files, 0 parse failures** |
+| TCP + SSL to session pooler (5432) | OK |
+| `server_version` | **17.11** |
+| `_schema_migrations` rows | **59** |
+| Pending migrations (`migrate.js --dry-run-all --confirm-live-data`) | **0** |
+| Module table reads | `doctors` 2, `medical_stores` 2, `patients`/`labs`/`ambulances` 0 (test data) |
+| `validate_migration_sql.js` | **59** files (58 shared + 1 RDS-only SQL validated), **0** parse failures |
 
 ---
 
@@ -173,7 +177,7 @@ Command: `node scripts/db/db_connectivity_smoke.js --env=staging`
 
 - **Client:** Firebase ID token → Gateway → short-lived PostgREST JWT with `app_role` / `sub` (UID).
 - **RLS:** Policies use `auth.uid()` shim; validated by `scripts/db/rls_sql_harness.js` (documented 208 PASS on staging 2026-10-31).
-- **Gateway allowlist:** `config.js` `clientDirectAllowedTables`, `serviceRoleOnlyTables`, `clientAllowedRpcs` — **drift test failing** (see §b.7).
+- **Gateway allowlist:** `config.js` `clientDirectAllowedTables`, `serviceRoleOnlyTables`, `clientAllowedRpcs` — **PASS** (scanner 2026-11-13).
 - **Admin tables:** service-role only on gateway; not exposed to anon.
 
 ---
@@ -200,8 +204,8 @@ Command: `node scripts/db/db_connectivity_smoke.js --env=staging`
 | Resource | Isolated? | Evidence |
 |----------|-----------|----------|
 | DB | **Yes** (when configured) | Separate URLs; `assert_app_env.js` blocks `*.supabase.co` gateway |
-| S3 | **Partial** | Templates now `STAGING_S3_BUCKET` / `PRODUCTION_S3_BUCKET`; code uses `S3_BUCKET` |
-| Redis | **Partial** | Templates added; code uses `REDIS_HOST` |
+| S3 | **Yes** | `getS3BucketName()` → `S3_BUCKET_STAGING` \| `S3_BUCKET_PRODUCTION` (`s3_bucket.js`) |
+| Redis | **Yes** | `getRedisHost()` → `REDIS_HOST_STAGING` \| `REDIS_HOST_PRODUCTION` (`redis.js`) |
 | Firebase | Shared project possible | Release script blocks staging URL in prod builds |
 
 ---
@@ -239,14 +243,15 @@ Command: `node scripts/db/db_connectivity_smoke.js --env=staging`
 
 | File | Change |
 |------|--------|
-| `backend/functions/src/db/assert_app_env.js` | **NEW** — fail-fast `APP_ENV` DB routing |
-| `backend/functions/test/assert_app_env.test.js` | **NEW** — unit tests |
-| `backend/functions/index.js` | Wire assert on cold start (skip in test) |
-| `scripts/db/db_connectivity_smoke.js` | **NEW** — per-env, per-module read smoke |
-| `services/api-gateway/src/server.js` | `/healthz` checks PostgREST upstream |
-| Root `.env.example` | Staging/prod RDS, gateway, S3, Redis, Functions (names only) |
-| `frontend/scripts/release_build.ps1` | Remove hardcoded staging URL |
-| `DB_MIGRATION_VERIFICATION.md` | This document |
+| `scripts/lib/migration_file_list.js` | **NEW** — single list: staging = shared SQL only; RDS targets include `db/migrations/rds/` |
+| `scripts/db/migrate.js` | Use `migration_file_list`; RDS-only file applied on production/rehearsal/replay |
+| `scripts/db/validate_migration_sql.js` | Validate all **59** migration paths (incl. `rds/`) |
+| `scripts/db/verify_migration_files_ledger.js` | Delegate file list to `migration_file_list.js` |
+| `scripts/test/migration_file_list.test.js` | **NEW** — staging excludes `rds/` |
+| `db/rds_bootstrap/03_legacy_compat.sql` | Conditional grant to `postgres` role (replay/RDS bootstrap) |
+| `DB_MIGRATION_VERIFICATION.md` | Re-audit 2026-11-13 (this document) |
+
+*(Earlier on this branch: `assert_app_env.js`, `db_connectivity_smoke.js`, gateway `/healthz`, `.env.example`, release build guards.)*
 
 ---
 
@@ -254,9 +259,10 @@ Command: `node scripts/db/db_connectivity_smoke.js --env=staging`
 
 | Run | Outcome |
 |-----|---------|
-| `schema_diff.js --target=rehearsal` | **Not completed** — RDS `ETIMEDOUT` from audit environment |
-| Staging catalog (prior doc) | `docs/ops/staging_migration_drift.json`: 69 tables, 184 policies, 73 functions |
-| Pending SQL vs staging | **9 migrations** not applied (list in §b.1) |
+| `schema_diff.js --target=rehearsal` | **Not completed** — RDS unreachable (`ECONNREFUSED` tunnel) |
+| `schema_diff.js --target=production` | **Not completed** — same |
+| Staging vs repo SQL | **At head** (0 pending) |
+| Expected RDS-only delta | After shared migrations, prod applies `rds/20261113000001_*` (not on Supabase staging ledger — intentional policy/trigger hardening for plain Postgres) |
 
 **Re-run after fixes (from VPC/bastion):**
 
@@ -269,34 +275,33 @@ node scripts/db/schema_diff.js --target=rehearsal
 
 ## (e) Manual steps (ordered)
 
-1. **Apply staging migrations** (from machine with session pooler access):
+1. ~~Staging migrations~~ **done** (optional re-check): `node scripts/db/migrate.js --target=staging --dry-run-all --confirm-live-data`
+2. **Download RDS CA:** `infra/aws/global-bundle.pem` per [README_CA_BUNDLE.md](infra/aws/README_CA_BUNDLE.md).
+3. **SSM tunnel** — [RDS_PROD_TUNNEL_WINDOWS.md](docs/runbooks/RDS_PROD_TUNNEL_WINDOWS.md); `PROD_RDS_CONNECT_HOST=127.0.0.1`, `PROD_RDS_PORT=5433`.
+4. Add host hash to `docs/audit/allowed_host_hashes.txt` (see cutover runbook).
+5. **RDS bootstrap pre-migrate** (empty DB):
    ```bash
-   node scripts/db/migrate.js --target=staging --dry-run-all
-   node scripts/db/migrate.js --target=staging   # follow env_guard confirmations
-   node scripts/db/rls_sql_harness.js --target=staging
-   node scripts/db/db_connectivity_smoke.js --env=staging
+   node scripts/db/rds_bootstrap_apply.js --target=production --execute --pre-migrate-only --confirm-live-data --confirm=<PROD_RDS_HOST>
    ```
-2. **RDS reachable host** — VPN/bastion/SSM; security group allows your IP or tunnel.
-3. **RDS bootstrap** (empty prod): run `db/rds_bootstrap/01–03.sql` as master user.
-4. **Apply migrations to RDS**:
+6. **Apply migrations to RDS** (includes `db/migrations/rds/` automatically):
    ```bash
-   node scripts/db/migrate.js --target=production --dry-run-all
-   node scripts/db/migrate.js --target=production
+   node scripts/db/migrate.js --target=production --dry-run-all --confirm-live-data --confirm=<PROD_RDS_HOST>
+   node scripts/db/migrate.js --target=production --execute --confirm-live-data --confirm=<PROD_RDS_HOST>
+   node scripts/db/rds_bootstrap_apply.js --target=production --execute --confirm-live-data --confirm=<PROD_RDS_HOST>
    ```
-5. **Schema parity**:
+7. **PG18.3 replay gate** (local Docker): `node scripts/db/rds_scratch_replay.js` — start Docker Desktop first.
+8. **Schema parity** (from tunnel/VPC):
    ```bash
-   node scripts/db/schema_diff.js --target=production
+   node scripts/db/schema_diff.js --target=production --confirm-live-data --confirm=<PROD_RDS_HOST>
    ```
-6. **Deploy Auth Gateway + PostgREST** against RDS; set `PROD_GATEWAY_URL`, secrets in GCP/AWS.
-7. **Production smoke** (non-destructive with service key):
+9. **Deploy Auth Gateway + PostgREST** against RDS; set `PROD_GATEWAY_URL`, secrets in GCP/AWS.
+10. **Production smoke** (non-destructive):
    ```bash
    node scripts/db/db_connectivity_smoke.js --env=production
    node scripts/verify/prod_smoke.js
    ```
-8. **Cloud Functions** — set `APP_ENV=production`, `PROD_GATEWAY_*`, disable `FIRESTORE_FORBIDDEN=0`, set production Redis/S3.
-9. **Flutter release** — `APP_ENV=production`, `PROD_GATEWAY_URL` / anon key via release script; verify `verify_production_build_config.js`.
-10. **Fix gateway allowlist test** — align `services/api-gateway/src/config.js` with scanner output.
-11. **Optional:** wire `STAGING_S3_BUCKET` / `PRODUCTION_S3_BUCKET` and Redis hosts in `s3_storage.js` / `redis.js`.
+11. **Cloud Functions** — `APP_ENV=production`, `PROD_GATEWAY_*`, `FIRESTORE_FORBIDDEN=1`, `REDIS_HOST_PRODUCTION`, `S3_BUCKET_PRODUCTION`; remove plain-env duplicates that overlap Secret Manager (`node scripts/predeploy_secret_check.js` must pass).
+12. **Flutter release** — `APP_ENV=production`, gateway URL/anon via `frontend/scripts/release_build.ps1`; `node backend/scripts/verify_production_build_config.js`.
 
 ---
 
@@ -304,7 +309,7 @@ node scripts/db/schema_diff.js --target=rehearsal
 
 | Verdict | **NO-GO** for production user traffic on RDS |
 |---------|---------------------------------------------|
-| Blockers (2026-11-12) | RDS `schema_diff` / rehearsal not run from operator network; staging vs local **grant matrix** not compared live; **PG18.3** replay chain not re-run (Docker down on audit machine) |
+| Blockers (2026-11-13) | RDS never migrated from this machine (tunnel down); `global-bundle.pem` missing locally; `schema_diff` not run; PG18.3 Docker replay not run (Docker engine stopped); prod gateway HTTP smoke fails (`fetch failed` — endpoint not deployed/reachable) |
 
 **Local pre-checks done:** `04_rds_runtime_grants.sql`, **10/10** service paths, **49/49** auth matrix, **7/7** real-path e2e, **67/67** RLS coverage.
 
@@ -316,11 +321,15 @@ node scripts/db/schema_diff.js --target=rehearsal
 
 | Command | Result |
 |---------|--------|
-| `backend/functions` `npm test` | **PASS** (0 fail; `FIRESTORE_FORBIDDEN=1` default in `setup_env.js`) |
-| `services/api-gateway` `npm test` | **PASS** (0 fail; allowlist scanner green) |
-| `node scripts/db/db_connectivity_smoke.js --env=staging` | PASS (5 modules) |
-| `node scripts/check_env_parity.js` | PASS |
-| `node scripts/db/schema_diff.js` | BLOCKED (RDS private network) |
+| `backend/functions` `npm test` | **PASS** (0 fail) — 2026-11-13 |
+| `services/api-gateway` `npm test` | **PASS** (68 tests) — 2026-11-13 |
+| `node scripts/db/db_connectivity_smoke.js --env=staging` | **PASS** — PG 17.11, 59 ledger rows, 5 modules |
+| `node scripts/db/db_connectivity_smoke.js --env=production` | **FAIL** — tunnel `127.0.0.1:5433` refused; gateway fetch failed |
+| `node scripts/check_env_parity.js` | **PASS** |
+| `node scripts/db/validate_migration_sql.js` | **PASS** — 59 files |
+| `node scripts/test/migration_file_list.test.js` | **PASS** |
+| `node scripts/predeploy_secret_check.js` (local `.env`) | **FAIL** — Secret Manager overlap warnings (staging deploy hygiene; fix before prod `firebase deploy`) |
+| `node scripts/db/schema_diff.js` | **BLOCKED** — RDS private network |
 
 ---
 
@@ -354,4 +363,4 @@ node scripts/db/schema_diff.js --target=rehearsal
 
 ---
 
-*Updated after code-level blocker fixes on `fix/pre-accept-gate-lab-auth`. Re-run after staging migration apply.*
+*Re-audited 2026-11-13 on `fix/pre-accept-gate-lab-auth`. Staging schema at repo head; RDS cutover steps remain operator-blocked on network/TLS/Docker.*

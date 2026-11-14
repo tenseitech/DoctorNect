@@ -57,7 +57,13 @@ CREATE SCHEMA IF NOT EXISTS private;
 
 -- Permissions
 GRANT USAGE ON SCHEMA auth TO PUBLIC, anon, authenticated, service_role;
-GRANT ALL ON auth.users TO postgres, service_role;
+GRANT ALL ON auth.users TO service_role;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'postgres') THEN
+    GRANT ALL ON auth.users TO postgres;
+  END IF;
+END $$;
 GRANT SELECT ON auth.users TO authenticated;
 GRANT USAGE ON SCHEMA private TO PUBLIC, anon, authenticated, service_role;
 
