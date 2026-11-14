@@ -1,5 +1,7 @@
 'use strict';
 
+/** Shared-instance warning: docs/runbooks/RDS_SHARED_INSTANCE_SCRIPTS.md */
+
 /**
  * DoctorNect Schema Parity Comparison Tool
  * Compares normalized database catalogs between Staging and Target (Rehearsal or Production).

@@ -1,5 +1,7 @@
 'use strict';
 
+/** Shared-instance warning: docs/runbooks/RDS_SHARED_INSTANCE_SCRIPTS.md */
+
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
