@@ -38,6 +38,7 @@ Legend: **S** = required in staging, **P** = required in production, **O** = opt
 | `REDIS_PASSWORD` | Redis AUTH | Functions | **S** | **P** | secret |
 | `REDIS_TLS` | Enable TLS | Functions | O | O | `true` |
 | `REDIS_CA_PATH` | Custom CA for Redis TLS | Functions | O | O | file path |
+| `OTP_HMAC_SECRET` | HMAC pepper for OTP challenge hashing (replaces unsalted SHA-256) | Functions (`registration_otp.js`) | **S** | **P** | 32+ random bytes via **GCP Secret Manager** / Firebase params (never commit). **Rotation:** rotating invalidates in-flight OTP challenges still in Redis/Postgres until TTL expires — plan maintenance window. |
 | `OTP_REDIS_MIRROR` | Mirror OTP challenges to Redis | Functions | O | O | `on` \| `off` |
 | `RATE_LIMIT_BACKEND` | Rate limit store | Functions | **S** | **P** | `redis` (preferred) |
 | `AWS_REGION` | S3 region | Functions | **S** | **P** | `ap-south-1` |

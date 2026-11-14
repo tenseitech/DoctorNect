@@ -6,6 +6,8 @@ const {
   assertAppEnvDatabaseRouting,
   assertProductionRedisTls,
   assertProductionOtpHmacOnly,
+  warnProductionOtpHmacFallback,
+  assertProductionReviewOtpDisabled,
 } = require('../src/db/assert_app_env');
 
 describe('assertAppEnvDatabaseRouting', () => {
@@ -120,5 +122,67 @@ describe('assertProductionOtpHmacOnly', () => {
     process.env.APP_ENV = 'staging';
     process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH = 'true';
     assert.doesNotThrow(() => assertProductionOtpHmacOnly());
+  });
+});
+
+describe('warnProductionOtpHmacFallback', () => {
+  const original = { ...process.env };
+
+  beforeEach(() => {
+    process.env = { ...original };
+  });
+
+  afterEach(() => {
+    process.env = original;
+  });
+
+  it('warns in production when MSG91 is set without OTP_HMAC_SECRET', () => {
+    process.env.APP_ENV = 'production';
+    process.env.MSG91_AUTH_KEY = 'placeholder-key';
+    delete process.env.OTP_HMAC_SECRET;
+    const warnings = [];
+    warnProductionOtpHmacFallback(process.env, (msg) => warnings.push(msg));
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /OTP_HMAC_SECRET/);
+  });
+
+  it('does not warn when OTP_HMAC_SECRET is configured', () => {
+    process.env.APP_ENV = 'production';
+    process.env.MSG91_AUTH_KEY = 'placeholder-key';
+    process.env.OTP_HMAC_SECRET = 'a'.repeat(32);
+    const warnings = [];
+    warnProductionOtpHmacFallback(process.env, (msg) => warnings.push(msg));
+    assert.equal(warnings.length, 0);
+  });
+});
+
+describe('assertProductionReviewOtpDisabled', () => {
+  const original = { ...process.env };
+
+  beforeEach(() => {
+    process.env = { ...original };
+  });
+
+  afterEach(() => {
+    process.env = original;
+  });
+
+  it('production rejects REVIEWER_OTP_ENABLED', () => {
+    process.env.APP_ENV = 'production';
+    process.env.REVIEWER_OTP_ENABLED = 'true';
+    assert.throws(() => assertProductionReviewOtpDisabled(), /REVIEWER_OTP_ENABLED/);
+  });
+
+  it('production rejects REVIEW_FIXED_OTP', () => {
+    process.env.APP_ENV = 'production';
+    process.env.REVIEW_FIXED_OTP = '123456';
+    assert.throws(() => assertProductionReviewOtpDisabled(), /REVIEW_FIXED_OTP/);
+  });
+
+  it('staging allows reviewer OTP flags', () => {
+    process.env.APP_ENV = 'staging';
+    process.env.REVIEWER_OTP_ENABLED = 'true';
+    process.env.REVIEW_FIXED_OTP = '123456';
+    assert.doesNotThrow(() => assertProductionReviewOtpDisabled());
   });
 });

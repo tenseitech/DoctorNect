@@ -133,10 +133,14 @@ assertProductionOtpSafety();
       assertStagingProductionResourceIsolation,
       assertProductionRedisTls,
       assertProductionOtpHmacOnly,
+      warnProductionOtpHmacFallback,
+      assertProductionReviewOtpDisabled,
     } = require('./src/db/assert_app_env');
     assertStagingProductionResourceIsolation();
     assertProductionRedisTls();
     assertProductionOtpHmacOnly();
+    warnProductionOtpHmacFallback();
+    assertProductionReviewOtpDisabled();
   }
 }
 

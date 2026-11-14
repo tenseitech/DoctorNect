@@ -173,6 +173,51 @@ function assertProductionOtpHmacOnly(env = process.env) {
   }
 }
 
+function isTruthyEnvFlag(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  return raw === 'true' || raw === '1' || raw === 'on' || raw === 'yes';
+}
+
+/**
+ * Warn (do not fail) when production relies on MSG91 without OTP HMAC pepper configured.
+ */
+function warnProductionOtpHmacFallback(env = process.env, logFn = console.warn) {
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  if (appEnv !== 'production') return;
+
+  const hmac = String(env.OTP_HMAC_SECRET || '').trim();
+  const msg91 = String(env.MSG91_AUTH_KEY || '').trim();
+  if (!hmac && msg91) {
+    logFn(
+      '[AppEnv] WARNING: APP_ENV=production has MSG91_AUTH_KEY but OTP_HMAC_SECRET is unset. '
+        + 'Configure OTP_HMAC_SECRET (32+ bytes, Secret Manager) before relying on OTP verification.',
+    );
+  }
+}
+
+/**
+ * Hard fail when review / fixed OTP backdoors are enabled in production routing.
+ */
+function assertProductionReviewOtpDisabled(env = process.env) {
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  if (appEnv !== 'production') return;
+
+  const violations = [];
+  if (isTruthyEnvFlag(env.REVIEWER_OTP_ENABLED)) {
+    violations.push('REVIEWER_OTP_ENABLED=true');
+  }
+  if (String(env.REVIEW_FIXED_OTP || '').trim()) {
+    violations.push('REVIEW_FIXED_OTP is set');
+  }
+  if (violations.length) {
+    const err = new Error(
+      `[AppEnv] APP_ENV=production must not enable reviewer OTP bypass (${violations.join(', ')}).`,
+    );
+    err.code = 'failed-precondition';
+    throw err;
+  }
+}
+
 module.exports = {
   assertAppEnvDatabaseRouting,
   assertStagingProductionResourceIsolation,
@@ -183,6 +228,9 @@ module.exports = {
   assertPlaintextRedisEndpointForbidden,
   assertRedisClientTlsVerificationEnabled,
   assertProductionOtpHmacOnly,
+  warnProductionOtpHmacFallback,
+  assertProductionReviewOtpDisabled,
+  isTruthyEnvFlag,
   isLegacyUnsaltedOtpHashEnabled,
   normalizeBaseUrl,
 };
