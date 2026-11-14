@@ -17,13 +17,15 @@
  * 9. Teardown: Drops database 'replay_check' to ensure zero residual state.
  * 
  * GUARD RULE: Refuses production DBs; strictly requires isolated execution.
+ * Shared RDS instance: docs/runbooks/RDS_SHARED_INSTANCE_SCRIPTS.md
  */
 
 const fs = require('fs');
 const path = require('path');
 const { Client, Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
-const { getHostFingerprint, assertDatabaseGuard } = require('../lib/env_guard');
+const { assertDatabaseGuard } = require('../lib/env_guard');
+const { assertReplayDatabaseUrlSafe } = require('../lib/replay_connection_guard');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 const { fetchCatalog, compareCatalogs } = require('./schema_diff');
 
@@ -130,23 +132,14 @@ async function runRdsScratchReplay() {
   console.log('DoctorNect: AWS RDS Scratch Replay & Security Parity Verification');
   console.log('================================================================\n');
 
+  const allowNonstandardReplayPort = process.argv.includes('--allow-nonstandard-replay-port');
   const rdsAdminUrl = getEnv('REPLAY_DB_URL') || getEnv('RDS_ADMIN_DB_URL') || getEnv('RDS_MASTER_URL');
-  if (!rdsAdminUrl) {
-    console.error('[ERROR] Missing replay admin connection string (REPLAY_DB_URL, RDS_ADMIN_DB_URL, or RDS_MASTER_URL).');
-    console.error('Provide connection string pointing to postgres/template1 on the target host (e.g. localhost or RDS).');
-    process.exit(1);
-  }
-
-  // Safety assertions: Verify host is valid replay host and not staging or production Supabase
-  const stagingUrl = getEnv('STAGING_SUPABASE_DB_URL');
-  if (stagingUrl && getHostFingerprint(rdsAdminUrl) === getHostFingerprint(stagingUrl)) {
-    console.error('[FATAL GUARD] Target replay URL matches STAGING_SUPABASE_DB_URL! Replay refused.');
-    process.exit(1);
-  }
-
-  const prodUrl = getEnv('PROD_SUPABASE_DB_URL');
-  if (prodUrl && getHostFingerprint(rdsAdminUrl) === getHostFingerprint(prodUrl)) {
-    console.error('[FATAL GUARD] Target replay URL matches PROD_SUPABASE_DB_URL! Replay refused.');
+  const replayGuard = assertReplayDatabaseUrlSafe({
+    replayUrl: rdsAdminUrl,
+    allowNonstandardReplayPort,
+  });
+  if (!replayGuard.ok) {
+    console.error(`[FATAL GUARD] ${replayGuard.message} (${replayGuard.code})`);
     process.exit(1);
   }
 
