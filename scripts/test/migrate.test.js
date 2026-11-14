@@ -2,7 +2,12 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { applySingleMigration } = require('../db/migrate');
+const {
+  applySingleMigration,
+  parseMigrationCliArgs,
+  assertPendingMigrationsInOrder,
+  loadAppliedMigrationsMap,
+} = require('../db/migrate');
 
 test('migrate: applySingleMigration succeeds without supabase_migrations schema', async () => {
   const executedQueries = [];
@@ -120,6 +125,107 @@ test('migrate: applySingleMigration throws if ledger verification row is absent 
       });
     },
     /FATAL: Migration ledger check failed/
+  );
+});
+
+test('parseMigrationCliArgs: --execute with --dry-run or --dry-run-all forces dry-run (no execute)', () => {
+  assert.deepEqual(parseMigrationCliArgs(['--execute', '--dry-run']), {
+    isExecute: false,
+    isDryRun: true,
+    isDryRunAll: false,
+    allowOutOfOrder: false,
+  });
+  assert.deepEqual(parseMigrationCliArgs(['--execute', '--dry-run-all']), {
+    isExecute: false,
+    isDryRun: true,
+    isDryRunAll: true,
+    allowOutOfOrder: false,
+  });
+  assert.deepEqual(parseMigrationCliArgs(['--execute']), {
+    isExecute: true,
+    isDryRun: false,
+    isDryRunAll: false,
+    allowOutOfOrder: false,
+  });
+});
+
+test('loadAppliedMigrationsMap: isExecute=false skips CREATE TABLE (dry-run path)', async () => {
+  const executed = [];
+  const mockClient = {
+    query: async (sql) => {
+      executed.push(String(sql));
+      if (sql.includes("table_name = '_schema_migrations'")) {
+        return { rows: [] };
+      }
+      return { rows: [] };
+    },
+  };
+  const { appliedMap, supabaseMigExists } = await loadAppliedMigrationsMap(mockClient, false);
+  assert.equal(appliedMap.size, 0);
+  assert.equal(supabaseMigExists, false);
+  assert.ok(!executed.some((q) => q.includes('CREATE TABLE IF NOT EXISTS public._schema_migrations')));
+  assert.ok(!executed.some((q) => q.includes('supabase_migrations')));
+});
+
+test('loadAppliedMigrationsMap: supabase_migrations sync failure is logged and rethrown', async () => {
+  const mockClient = {
+    query: async (sql) => {
+      if (sql.includes('CREATE TABLE IF NOT EXISTS public._schema_migrations')) {
+        return { rows: [] };
+      }
+      if (sql.includes("table_schema = 'supabase_migrations'")) {
+        return { rows: [{ '?column?': 1 }] };
+      }
+      if (sql.includes('INSERT INTO public._schema_migrations')) {
+        throw new Error('permission denied for schema supabase_migrations');
+      }
+      if (sql.includes('SELECT version, checksum FROM public._schema_migrations')) {
+        return { rows: [] };
+      }
+      return { rows: [] };
+    },
+  };
+  await assert.rejects(
+    () => loadAppliedMigrationsMap(mockClient, true),
+    /permission denied for schema supabase_migrations/,
+  );
+});
+
+test('assertPendingMigrationsInOrder: rejects older pending on production/rehearsal', () => {
+  const appliedMap = new Map([
+    ['20261001000001', 'abc'],
+    ['20261001000003', 'def'],
+  ]);
+  const files = [
+    '20261001000001_first.sql',
+    '20261001000002_gap.sql',
+    '20261001000003_third.sql',
+  ];
+  assert.throws(
+    () =>
+      assertPendingMigrationsInOrder({
+        files,
+        appliedMap,
+        target: 'production',
+        allowOutOfOrder: false,
+      }),
+    /Out-of-order pending migration.*20261001000002_gap/,
+  );
+  assert.doesNotThrow(() =>
+    assertPendingMigrationsInOrder({
+      files,
+      appliedMap,
+      target: 'production',
+      allowOutOfOrder: true,
+    }),
+  );
+  assert.doesNotThrow(() =>
+    assertPendingMigrationsInOrder({
+      files,
+      appliedMap,
+      target: 'staging',
+      allowOutOfOrder: false,
+    }),
   );
 });
 
