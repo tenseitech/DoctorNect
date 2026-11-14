@@ -198,6 +198,58 @@ function warnProductionOtpHmacFallback(env = process.env, logFn = console.warn) 
 /**
  * Hard fail when review / fixed OTP backdoors are enabled in production routing.
  */
+function isProductionSecretEnvKey(key) {
+  const k = String(key);
+  if (k.includes('SECRET') || k.includes('SERVICE_ROLE') || k.includes('SERVICE_KEY')) return true;
+  if (k.endsWith('_PASSWORD') || k === 'PROD_RDS_PASSWORD') return true;
+  if (k.startsWith('AWS_') && k.includes('KEY')) return true;
+  if (k.includes('WEBHOOK_SECRET')) return true;
+  if (
+    k === 'MSG91_AUTH_KEY'
+    || k === 'REDIS_PASSWORD'
+    || k === 'PGRST_JWT_SECRET'
+    || k === 'OTP_HMAC_SECRET'
+    || k === 'PROXY_SECRET'
+    || k === 'RAZORPAY_KEY_SECRET'
+    || k === 'SUPABASE_WEBHOOK_SECRET'
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function isPlaceholderSecretValue(value) {
+  const v = String(value || '').trim();
+  if (!v) return false;
+  const lower = v.toLowerCase();
+  if (lower === 'your-secret') return true;
+  if (/^your[-_]/i.test(v)) return true;
+  return false;
+}
+
+/**
+ * Production must not ship template placeholder strings as secret values.
+ */
+function assertProductionNoPlaceholderSecrets(env = process.env) {
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  if (appEnv !== 'production') return;
+
+  const violations = [];
+  for (const key of Object.keys(env)) {
+    if (!isProductionSecretEnvKey(key)) continue;
+    if (isPlaceholderSecretValue(env[key])) {
+      violations.push(key);
+    }
+  }
+  if (violations.length) {
+    const err = new Error(
+      `[AppEnv] APP_ENV=production secret(s) still use .env.example placeholders: ${violations.join(', ')}`,
+    );
+    err.code = 'failed-precondition';
+    throw err;
+  }
+}
+
 function assertProductionReviewOtpDisabled(env = process.env) {
   const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
   if (appEnv !== 'production') return;
@@ -230,6 +282,9 @@ module.exports = {
   assertProductionOtpHmacOnly,
   warnProductionOtpHmacFallback,
   assertProductionReviewOtpDisabled,
+  assertProductionNoPlaceholderSecrets,
+  isProductionSecretEnvKey,
+  isPlaceholderSecretValue,
   isTruthyEnvFlag,
   isLegacyUnsaltedOtpHashEnabled,
   normalizeBaseUrl,

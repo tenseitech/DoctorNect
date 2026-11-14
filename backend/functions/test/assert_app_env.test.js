@@ -8,6 +8,7 @@ const {
   assertProductionOtpHmacOnly,
   warnProductionOtpHmacFallback,
   assertProductionReviewOtpDisabled,
+  assertProductionNoPlaceholderSecrets,
 } = require('../src/db/assert_app_env');
 
 describe('assertAppEnvDatabaseRouting', () => {
@@ -184,5 +185,36 @@ describe('assertProductionReviewOtpDisabled', () => {
     process.env.REVIEWER_OTP_ENABLED = 'true';
     process.env.REVIEW_FIXED_OTP = '123456';
     assert.doesNotThrow(() => assertProductionReviewOtpDisabled());
+  });
+});
+
+describe('assertProductionNoPlaceholderSecrets', () => {
+  const original = { ...process.env };
+
+  beforeEach(() => {
+    process.env = { ...original };
+  });
+
+  afterEach(() => {
+    process.env = original;
+  });
+
+  it('production rejects your-secret on MSG91_AUTH_KEY', () => {
+    process.env.APP_ENV = 'production';
+    process.env.MSG91_AUTH_KEY = 'your-secret';
+    assert.throws(() => assertProductionNoPlaceholderSecrets(), /placeholders/);
+  });
+
+  it('production rejects your-prefix on OTP_HMAC_SECRET', () => {
+    process.env.APP_ENV = 'production';
+    process.env.OTP_HMAC_SECRET = 'your-otp-hmac-secret';
+    assert.throws(() => assertProductionNoPlaceholderSecrets(), /OTP_HMAC_SECRET/);
+  });
+
+  it('production accepts real configured secrets', () => {
+    process.env.APP_ENV = 'production';
+    process.env.MSG91_AUTH_KEY = 'configured-msg91-key-value';
+    process.env.OTP_HMAC_SECRET = 'a'.repeat(32);
+    assert.doesNotThrow(() => assertProductionNoPlaceholderSecrets());
   });
 });

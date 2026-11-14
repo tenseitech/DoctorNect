@@ -13,15 +13,32 @@ const { findRepoRoot } = require('../lib/repo_root');
 
 const SECRET_VALUE_HEURISTIC = /^(AKIA[0-9A-Z]{16}|sk_(live|test)_[A-Za-z0-9]+|eyJ[A-Za-z0-9_-]{20,}|sb_secret_[A-Za-z0-9]+)/;
 
-const PLACEHOLDERS = {
+/** Committed safe defaults (aligned with a768210 .env.example); secrets stay empty. */
+const SAFE_DEFAULTS = {
   APP_ENV: 'staging',
+  SKIP_APP_ENV_DB_ASSERT: 'false',
+  FIREBASE_PROJECT_ID: 'medibond-45fad',
+  FIREBASE_SERVICE_ACCOUNT_PATH: './scripts/service-account.json',
+  FIREBASE_API_KEY_ANDROID: '',
+  FIREBASE_API_KEY_IOS: '',
+  FIREBASE_API_KEY_WEB: '',
+  FIREBASE_STORAGE_BUCKET: '',
+  FIREBASE_APPCHECK_RECAPTCHA_SITE_KEY: '',
+  FIREBASE_APPCHECK_DEBUG_TOKEN: '',
+  RECAPTCHA_SITE_KEY: '',
+  APP_CHECK_DEBUG_TOKEN: '',
+  GOOGLE_MAPS_API_KEY: '',
+  FIREBASE_REVOCATION_CHECK: 'true',
   STAGING_SUPABASE_URL: 'https://your-project-ref.supabase.co',
-  STAGING_SUPABASE_ANON_KEY: 'your-staging-anon-key',
-  STAGING_SUPABASE_SERVICE_ROLE_KEY: 'your-service-role-key',
+  STAGING_SUPABASE_ANON_KEY: '',
+  STAGING_SUPABASE_SERVICE_ROLE_KEY: '',
   STAGING_SUPABASE_DB_URL: 'postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require',
-  PROD_GATEWAY_URL: 'https://api.doctornect.com',
-  PROD_GATEWAY_ANON_KEY: 'your-production-gateway-anon-key',
-  PROD_GATEWAY_SERVICE_KEY: 'your-gateway-service-key',
+  SUPABASE_URL: '',
+  SUPABASE_ANON_KEY: '',
+  SUPABASE_SERVICE_ROLE_KEY: '',
+  SUPABASE_DB_URL: '',
+  DATABASE_URL: '',
+  SUPABASE_WEBHOOK_SECRET: '',
   PROD_RDS_HOST: 'example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com',
   PROD_RDS_CONNECT_HOST: '127.0.0.1',
   PROD_RDS_PORT: '5433',
@@ -31,11 +48,103 @@ const PLACEHOLDERS = {
   PROD_RDS_SSL_ROOT_CERT: 'infra/aws/global-bundle.pem',
   PROD_RDS_SSLMODE: 'verify-full',
   PROD_RDS_SSL_SERVERNAME: 'example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com',
-  REPLAY_DB_URL: 'postgresql://[USER]:[PASSWORD]@127.0.0.1:[PORT]/[DB]',
-  FIREBASE_PROJECT_ID: 'medibond-45fad',
-  FIREBASE_SERVICE_ACCOUNT_PATH: './scripts/service-account.json',
+  PROD_PG_MAJOR: '18',
+  PROD_PG_VERSION: '18.3',
+  REPLAY_PG_MAJOR: '18',
+  REPLAY_PG_DOCKER_TAG: '18.3',
   LOCAL_REPLAY_PG_PORT: '5440',
+  REPLAY_DB_URL: 'postgresql://[USER]:[PASSWORD]@127.0.0.1:[PORT]/[DB]',
+  LOCAL_FRESH_DB_URL: '',
+  FRESH_LOCAL_DB_NAME: '',
+  PROD_GATEWAY_URL: 'https://api.doctornect.com',
+  PROD_GATEWAY_SERVICE_KEY: '',
+  PROD_GATEWAY_ANON_KEY: '',
+  PGRST_URL: 'http://127.0.0.1:3001',
+  PGRST_JWT_SECRET: '',
+  PGRST_JWT_AUD: 'authenticated',
+  REDIS_HOST_STAGING: '',
+  REDIS_HOST_PRODUCTION: '',
+  REDIS_HOST: '',
+  REDIS_PORT: '6379',
+  REDIS_PASSWORD: '',
+  REDIS_TLS: 'true',
+  REDIS_CA_CERT: '',
+  REDIS_CA_PATH: '',
+  OTP_REDIS_MIRROR: 'on',
+  RATE_LIMIT_BACKEND: 'redis',
+  OTP_HMAC_SECRET: '',
+  AWS_ACCESS_KEY_ID: '',
+  AWS_SECRET_ACCESS_KEY: '',
+  AWS_REGION: 'ap-south-1',
+  S3_BUCKET_STAGING: '',
+  S3_BUCKET_PRODUCTION: '',
+  S3_BUCKET: '',
+  S3_URL_CACHE: 'on',
+  USE_S3_STORAGE: 'true',
+  MSG91_AUTH_KEY: '',
+  MSG91_TEMPLATE_ID: '',
+  MSG91_TEMPLATE_ID_REGISTRATION: '',
+  MSG91_TEMPLATE_ID_LOGIN: '',
+  MSG91_TEMPLATE_ID_PASSWORD_RESET: '',
+  MSG91_SENDER_ID: 'DRNECT',
+  MSG91_FROM_EMAIL: 'no-reply@mail.doctornect.com',
+  MSG91_EMAIL_DOMAIN: 'mail.doctornect.com',
+  MSG91_PROXY_URL: '',
+  PROXY_SECRET: '',
+  MSG91_TEMPLATE_ID_APPROVAL: '',
+  MSG91_TEMPLATE_ID_REJECTION: '',
+  VPC_CONNECTOR: '',
+  ALLOW_LEGACY_UNSALTED_OTP_HASH: 'false',
+  OTP_TEST_MODE: 'false',
+  ENFORCE_OTP_APP_CHECK: 'false',
+  ENFORCE_ABUSE_APP_CHECK: 'true',
+  RAZORPAY_KEY_ID: '',
+  RAZORPAY_KEY_SECRET: '',
+  RAZORPAY_WEBHOOK_SECRET: '',
+  ENABLE_SUPABASE: '1',
+  USE_SUPABASE_AUTH: 'false',
+  USE_SUPABASE_DB_DOCTOR_PATIENT: '',
   FIRESTORE_FORBIDDEN: '1',
+  AMBULANCE_ENABLED: 'false',
+  ENABLE_DEMO_AUTH: 'false',
+  ENABLE_DEMO_SUPER_ADMIN: 'false',
+  ENABLE_SUPABASE_SYNC: '0',
+  FORCE_ENABLE_SUPABASE_SYNC_IN_PROD: '0',
+  ENABLE_REVIEW_DEMO: '',
+  FIRESTORE_TRIGGER_REGION: 'asia-south2',
+  NOTIFICATION_DISPATCH_MODE: 'outbox',
+  ENABLE_SUPABASE_DATABASE_WEBHOOK: '0',
+  DEMO_PHONE_PATIENT: '',
+  DEMO_PHONE_DOCTOR: '',
+  DEMO_PHONE_MEDICAL_STORE: '',
+  DEMO_PHONE_LAB: '',
+  DEMO_PHONE_AMBULANCE: '',
+  DEMO_PHONE_SUPER_ADMIN: '',
+  REVIEWER_OTP_ENABLED: 'false',
+  REVIEW_ACCESS_UNTIL: '',
+  REVIEW_FIXED_OTP: '',
+  REVIEW_PATIENT_PHONES: '',
+  REVIEW_DOCTOR_PHONES: '',
+  REVIEW_LAB_PHONES: '',
+  REVIEW_MEDICAL_STORE_PHONES: '',
+  REVIEW_AMBULANCE_PHONES: '',
+  ACCOUNT_APPROVAL_ADMIN_EMAILS: '',
+  PATIENT_APPROVAL_ADMIN_EMAILS: '',
+  BACKFILL_ADMIN_EMAILS: '',
+  ADMIN_CONSOLE_CORS_ORIGINS_STAGING: '',
+  ADMIN_CONSOLE_CORS_ORIGINS_PRODUCTION: '',
+  ADMIN_CONSOLE_CORS_ORIGINS: '',
+  ENFORCE_AMBULANCE_HTTP_APP_CHECK: 'false',
+  AMBULANCE_HTTP_ALLOWED_ORIGINS: '',
+  FIRESTORE_TEST_COLLECTION_PREFIX: 'test_rollback_',
+  ANON_KEY: '',
+  CORS_ALLOWED_ORIGINS: '',
+  REVIEW_TEST_NUMBERS: '',
+  SERVICE_ROLE_KEY: '',
+  SUPABASE_JWKS_URL: '',
+  SUPABASE_PUBLISHABLE_KEY: '',
+  SUPER_ADMIN_EMAIL: '',
+  SUPER_ADMIN_PASSWORD: '',
 };
 
 const LEGACY_KEY_SOURCES = [
@@ -67,21 +176,19 @@ function isSensitiveEnvKey(key) {
   if (k.endsWith('_PASSWORD') || k === 'PROD_RDS_PASSWORD') return true;
   if (k.startsWith('AWS_') && k.includes('KEY')) return true;
   if (k.includes('WEBHOOK_SECRET')) return true;
+  if (k === 'MSG91_AUTH_KEY' || k === 'REDIS_PASSWORD' || k === 'PGRST_JWT_SECRET' || k === 'OTP_HMAC_SECRET') return true;
+  if (k === 'PROXY_SECRET' || k === 'RAZORPAY_KEY_SECRET' || k === 'SUPABASE_WEBHOOK_SECRET') return true;
   return false;
 }
 
 function placeholderForKey(key) {
-  if (Object.prototype.hasOwnProperty.call(PLACEHOLDERS, key)) {
-    return PLACEHOLDERS[key];
+  if (Object.prototype.hasOwnProperty.call(SAFE_DEFAULTS, key)) {
+    return SAFE_DEFAULTS[key];
   }
   if (isSensitiveEnvKey(key)) {
-    return 'your-secret';
+    return '';
   }
-  const k = String(key);
-  if (k.includes('TEMPLATE_ID')) {
-    return 'your-template-id';
-  }
-  return `your-${String(key).toLowerCase().replace(/_/g, '-')}`;
+  return '';
 }
 
 function auditOutputForRealSecrets(lines) {
@@ -161,8 +268,12 @@ function main() {
         'PROD_RDS_SSL_ROOT_CERT',
         'PROD_RDS_SSLMODE',
         'PROD_RDS_SSL_SERVERNAME',
-        'REPLAY_DB_URL',
+        'PROD_PG_MAJOR',
+        'PROD_PG_VERSION',
+        'REPLAY_PG_MAJOR',
+        'REPLAY_PG_DOCKER_TAG',
         'LOCAL_REPLAY_PG_PORT',
+        'REPLAY_DB_URL',
         'LOCAL_FRESH_DB_URL',
         'FRESH_LOCAL_DB_NAME',
       ],
@@ -173,7 +284,7 @@ function main() {
     },
     {
       title: 'Redis',
-      keys: ['REDIS_HOST_STAGING', 'REDIS_HOST_PRODUCTION', 'REDIS_HOST', 'REDIS_PORT', 'REDIS_PASSWORD', 'REDIS_TLS', 'REDIS_CA_CERT', 'REDIS_CA_PATH', 'OTP_REDIS_MIRROR', 'RATE_LIMIT_BACKEND', 'OTP_HMAC_SECRET'],
+      keys: ['REDIS_HOST_STAGING', 'REDIS_HOST_PRODUCTION', 'REDIS_HOST', 'REDIS_PORT', 'REDIS_PASSWORD', 'REDIS_TLS', 'REDIS_CA_CERT', 'REDIS_CA_PATH', 'OTP_REDIS_MIRROR', 'RATE_LIMIT_BACKEND'],
     },
     {
       title: 'AWS S3',
@@ -182,6 +293,7 @@ function main() {
     {
       title: 'MSG91 OTP',
       keys: [
+        'OTP_HMAC_SECRET',
         'MSG91_AUTH_KEY',
         'MSG91_TEMPLATE_ID',
         'MSG91_TEMPLATE_ID_REGISTRATION',
@@ -211,6 +323,7 @@ function main() {
         'ENABLE_SUPABASE',
         'USE_SUPABASE_AUTH',
         'USE_SUPABASE_DB_DOCTOR_PATIENT',
+        'FIRESTORE_FORBIDDEN',
         'AMBULANCE_ENABLED',
         'ENABLE_DEMO_AUTH',
         'ENABLE_DEMO_SUPER_ADMIN',
@@ -222,9 +335,9 @@ function main() {
     {
       title: 'Functions ops / review / admin',
       keys: [
-        'FIRESTORE_FORBIDDEN',
         'FIRESTORE_TRIGGER_REGION',
         'NOTIFICATION_DISPATCH_MODE',
+        'ENABLE_SUPABASE_DATABASE_WEBHOOK',
         'DEMO_PHONE_PATIENT',
         'DEMO_PHONE_DOCTOR',
         'DEMO_PHONE_MEDICAL_STORE',
@@ -302,4 +415,6 @@ module.exports = {
   placeholderForKey,
   auditOutputForRealSecrets,
   SECRET_VALUE_HEURISTIC,
+  SAFE_DEFAULTS,
+  isSensitiveEnvKey,
 };

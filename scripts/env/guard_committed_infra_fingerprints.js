@@ -8,7 +8,6 @@ const { findRepoRoot } = require('../lib/repo_root');
 const { scanTextForInfraFingerprints } = require('../lib/infra_url_policy');
 
 const SKIP_PATH_PREFIXES = [
-  'docs/archive/',
   'baseline_functions.json',
 ];
 

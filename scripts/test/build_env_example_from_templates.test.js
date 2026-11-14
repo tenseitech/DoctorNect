@@ -37,12 +37,26 @@ test('auditOutputForRealSecrets flags realistic tokens only', () => {
   assert.deepEqual(ok, []);
 });
 
+test('boolean and enum keys use safe defaults not your-* placeholders', () => {
+  for (const key of [
+    'REDIS_TLS',
+    'ALLOW_LEGACY_UNSALTED_OTP_HASH',
+    'REVIEWER_OTP_ENABLED',
+    'OTP_TEST_MODE',
+  ]) {
+    const val = placeholderForKey(key);
+    assert.ok(!/^your-/i.test(val), `${key} must not use your-* (got ${val})`);
+  }
+  assert.equal(placeholderForKey('REDIS_TLS'), 'true');
+  assert.equal(placeholderForKey('ALLOW_LEGACY_UNSALTED_OTP_HASH'), 'false');
+});
+
 test('generated-style lines contain no forbidden patterns', () => {
   const sample = [
-    'STAGING_SUPABASE_SERVICE_ROLE_KEY=your-staging-service-role-key',
+    'STAGING_SUPABASE_SERVICE_ROLE_KEY=',
     'PROD_RDS_HOST=example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com',
-    'OTP_HMAC_SECRET=your_otp_hmac_secret_here',
-    'AWS_ACCESS_KEY_ID=your_aws_access_key_id_here',
+    'OTP_HMAC_SECRET=',
+    'AWS_ACCESS_KEY_ID=',
   ];
   for (const line of sample) {
     for (const pat of FORBIDDEN_OUTPUT_PATTERNS) {

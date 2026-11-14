@@ -119,7 +119,7 @@ Configuration files are maintained in JSON format for compile-time injection:
   "FIREBASE_API_KEY_ANDROID": "<PROD_ANDROID_KEY>",
   "FIREBASE_API_KEY_IOS": "<PROD_IOS_KEY>",
   "FIREBASE_API_KEY_WEB": "<PROD_WEB_KEY>",
-  "RAZORPAY_KEY_ID": "rzp_live_ProdLiveKey456"
+  "RAZORPAY_KEY_ID": "rzp_live_<LIVE_KEY_ID>"
 }
 ```
 
