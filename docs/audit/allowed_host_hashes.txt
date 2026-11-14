@@ -2,3 +2,5 @@
 40D01C23
 # Production RDS endpoint fingerprint
 C2F996DB
+# Local Docker replay (localhost)
+49960DE5
