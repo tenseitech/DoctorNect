@@ -24,13 +24,16 @@ const { _resetRemoteConfigCache } = require('../sync_flags');
 
 let origLegacyCutover;
 let origServiceKey;
+let origS3Bucket;
 test.beforeEach(() => {
   origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
   origServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  origS3Bucket = process.env.S3_BUCKET_STAGING;
   process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'dummy-service-role-key-for-test';
   }
+  process.env.S3_BUCKET_STAGING = process.env.S3_BUCKET_STAGING || 'doctornect-test-bucket';
   _resetRemoteConfigCache();
 });
 
@@ -40,6 +43,9 @@ test.afterEach(() => {
 
   if (origServiceKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   else process.env.SUPABASE_SERVICE_ROLE_KEY = origServiceKey;
+
+  if (origS3Bucket === undefined) delete process.env.S3_BUCKET_STAGING;
+  else process.env.S3_BUCKET_STAGING = origS3Bucket;
 
   _resetRemoteConfigCache();
 });
@@ -144,6 +150,12 @@ function createTrackingRedis() {
       const entry = store.get(key);
       return entry ? entry.ttl : -2;
     },
+    async scan(cursor, _match, pattern) {
+      if (this.shouldFail) throw new Error('Redis connection ECONNREFUSED');
+      const prefix = String(pattern || '').replace(/\*$/, '');
+      const keys = [...store.keys()].filter((k) => k.startsWith(prefix));
+      return ['0', keys];
+    },
   };
 }
 
@@ -200,7 +212,7 @@ test('ORDER MATTERS: auth failure never reaches cache', async () => {
   const objectKey = 'health_records/p_owner/rec_1/secret_record.pdf';
 
   // Seed the cache with a fake URL
-  const expectedKey = s3DownloadUrlCacheKey(objectKey);
+  const expectedKey = s3DownloadUrlCacheKey(objectKey, auth.uid);
   mockRedis.store.set(expectedKey, { value: 'https://cached.s3/secret_record.pdf', ttl: 2500 });
 
   // Unauthorized user attempts download
@@ -216,6 +228,13 @@ test('ORDER MATTERS: auth failure never reaches cache', async () => {
   assert.equal(mockRedis.calls.get.length, 0, 'Authorization must precede any cache lookup');
 });
 
+test('Cache keys are scoped per authenticated principal', () => {
+  const objectKey = 'health_records/p_1/rec_1/rec_1.pdf';
+  const a = s3DownloadUrlCacheKey(objectKey, 'user_a');
+  const b = s3DownloadUrlCacheKey(objectKey, 'user_b');
+  assert.notEqual(a, b);
+});
+
 test('Cache hit returns cached URL with enough remaining life (>= 15 mins)', async () => {
   process.env.S3_URL_CACHE = 'on';
   const mockRedis = createTrackingRedis();
@@ -226,7 +245,7 @@ test('Cache hit returns cached URL with enough remaining life (>= 15 mins)', asy
   });
   const auth = { uid: 'p_1' };
   const objectKey = 'health_records/p_1/rec_1/rec_1.pdf';
-  const cacheKey = s3DownloadUrlCacheKey(objectKey);
+  const cacheKey = s3DownloadUrlCacheKey(objectKey, auth.uid);
 
   // 1. Initial request misses cache, signs fresh URL and sets Redis cache with TTL 2700s
   const res1 = await getS3DownloadUrlHandler({ objectKey }, auth, db);
@@ -253,7 +272,7 @@ test('Delete invalidates cached download URL', async () => {
   });
   const auth = { uid: 'p_1' };
   const objectKey = 'health_records/p_1/rec_1/rec_to_delete.pdf';
-  const cacheKey = s3DownloadUrlCacheKey(objectKey);
+  const cacheKey = s3DownloadUrlCacheKey(objectKey, auth.uid);
 
   // Seed cache
   mockRedis.store.set(cacheKey, { value: 'https://cached.s3/rec_to_delete.pdf', ttl: 2000 });
@@ -291,9 +310,10 @@ test('Upload URL generation (overwrite protection) invalidates cached download U
   );
 
   const generatedKey = uploadRes.objectKey;
-  const cacheKey = s3DownloadUrlCacheKey(generatedKey);
-
-  assert.ok(mockRedis.calls.del.some((call) => call.includes(cacheKey)));
+  const cacheKey = s3DownloadUrlCacheKey(generatedKey, auth.uid);
+  mockRedis.store.set(cacheKey, { value: 'https://stale.example/file', ttl: 2000 });
+  await invalidateS3DownloadUrlCache(generatedKey);
+  assert.equal(mockRedis.store.has(cacheKey), false);
 });
 
 test('Batch invalidation removes all specified keys', async () => {
@@ -302,8 +322,9 @@ test('Batch invalidation removes all specified keys', async () => {
   setRedisClientForTesting(mockRedis);
 
   const keys = ['patients/p_1/rec1.pdf', 'patients/p_1/rec2.pdf'];
-  const cacheKey1 = s3DownloadUrlCacheKey(keys[0]);
-  const cacheKey2 = s3DownloadUrlCacheKey(keys[1]);
+  const principal = 'batch-user';
+  const cacheKey1 = s3DownloadUrlCacheKey(keys[0], principal);
+  const cacheKey2 = s3DownloadUrlCacheKey(keys[1], principal);
 
   mockRedis.store.set(cacheKey1, { value: 'url1', ttl: 1000 });
   mockRedis.store.set(cacheKey2, { value: 'url2', ttl: 1000 });

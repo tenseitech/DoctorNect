@@ -71,8 +71,118 @@ function assertStagingProductionResourceIsolation() {
   assertResources(process.env);
 }
 
+function isRedisTlsExplicitlyDisabled(env = process.env) {
+  const raw = String(env.REDIS_TLS || '').trim().toLowerCase();
+  return raw === 'false' || raw === '0' || raw === 'off' || raw === 'no';
+}
+
+function resolveProductionRedisHostString(env = process.env) {
+  return String(env.REDIS_HOST_PRODUCTION || env.REDIS_HOST || '').trim();
+}
+
+function collectProductionRedisEndpointCandidates(env = process.env) {
+  const out = [];
+  const push = (v) => {
+    const s = String(v || '').trim();
+    if (s) out.push(s);
+  };
+  push(env.REDIS_URL);
+  push(env.REDIS_URL_PRODUCTION);
+  push(resolveProductionRedisHostString(env));
+  if (env.REDIS_HOST && env.REDIS_PORT) {
+    push(`${env.REDIS_HOST}:${env.REDIS_PORT}`);
+  }
+  if (env.REDIS_HOST_PRODUCTION && env.REDIS_PORT) {
+    push(`${env.REDIS_HOST_PRODUCTION}:${env.REDIS_PORT}`);
+  }
+  return out;
+}
+
+function assertPlaintextRedisEndpointForbidden(endpoint, envLabel) {
+  const s = String(endpoint || '').trim();
+  if (!s) return;
+  if (/^redis:\/\//i.test(s) && !/^rediss:\/\//i.test(s)) {
+    const err = new Error(
+      `[AppEnv] APP_ENV=production requires TLS to Redis; plaintext redis:// in ${envLabel} is not allowed.`,
+    );
+    err.code = 'failed-precondition';
+    throw err;
+  }
+}
+
+function assertRedisClientTlsVerificationEnabled(env = process.env) {
+  const { buildRedisOptions } = require('../config/redis');
+  const options = buildRedisOptions();
+  if (options.tls && options.tls.rejectUnauthorized === false) {
+    const err = new Error(
+      '[AppEnv] APP_ENV=production Redis TLS must verify the server certificate (rejectUnauthorized must not be false).',
+    );
+    err.code = 'failed-precondition';
+    throw err;
+  }
+}
+
+/**
+ * Production Memorystore must not run with TLS disabled or a plaintext redis:// URL.
+ */
+function assertProductionRedisTls(env = process.env) {
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  if (appEnv !== 'production') return;
+
+  if (isRedisTlsExplicitlyDisabled(env)) {
+    const err = new Error(
+      '[AppEnv] APP_ENV=production requires TLS to Redis (REDIS_TLS must not be false).',
+    );
+    err.code = 'failed-precondition';
+    throw err;
+  }
+
+  const labels = [
+    ['REDIS_URL', env.REDIS_URL],
+    ['REDIS_URL_PRODUCTION', env.REDIS_URL_PRODUCTION],
+    ['REDIS_HOST / REDIS_HOST_PRODUCTION', resolveProductionRedisHostString(env)],
+  ];
+  for (const [label, value] of labels) {
+    assertPlaintextRedisEndpointForbidden(value, label);
+  }
+  for (const endpoint of collectProductionRedisEndpointCandidates(env)) {
+    assertPlaintextRedisEndpointForbidden(endpoint, 'Redis endpoint configuration');
+  }
+
+  assertRedisClientTlsVerificationEnabled(env);
+}
+
+function isLegacyUnsaltedOtpHashEnabled(env = process.env) {
+  const raw = String(env.ALLOW_LEGACY_UNSALTED_OTP_HASH || '').trim().toLowerCase();
+  return raw === 'true' || raw === '1' || raw === 'on' || raw === 'yes';
+}
+
+/**
+ * Production must not accept plain SHA-256 OTP challenges (HMAC-only).
+ */
+function assertProductionOtpHmacOnly(env = process.env) {
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  if (appEnv !== 'production') return;
+
+  if (isLegacyUnsaltedOtpHashEnabled(env)) {
+    const err = new Error(
+      '[AppEnv] APP_ENV=production must not set ALLOW_LEGACY_UNSALTED_OTP_HASH (OTP must use HMAC only).',
+    );
+    err.code = 'failed-precondition';
+    throw err;
+  }
+}
+
 module.exports = {
   assertAppEnvDatabaseRouting,
   assertStagingProductionResourceIsolation,
+  assertProductionRedisTls,
+  isRedisTlsExplicitlyDisabled,
+  resolveProductionRedisHostString,
+  collectProductionRedisEndpointCandidates,
+  assertPlaintextRedisEndpointForbidden,
+  assertRedisClientTlsVerificationEnabled,
+  assertProductionOtpHmacOnly,
+  isLegacyUnsaltedOtpHashEnabled,
   normalizeBaseUrl,
 };

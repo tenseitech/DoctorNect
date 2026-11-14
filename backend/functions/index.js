@@ -129,8 +129,14 @@ assertProductionOtpSafety();
     assertAppEnvDatabaseRouting({
       requireStagingDb: appEnvBoot === 'staging',
     });
-    const { assertStagingProductionResourceIsolation } = require('./src/db/assert_app_env');
+    const {
+      assertStagingProductionResourceIsolation,
+      assertProductionRedisTls,
+      assertProductionOtpHmacOnly,
+    } = require('./src/db/assert_app_env');
     assertStagingProductionResourceIsolation();
+    assertProductionRedisTls();
+    assertProductionOtpHmacOnly();
   }
 }
 

@@ -999,8 +999,15 @@ function hashKey(value) {
   return crypto.createHash('sha256').update(String(value || '')).digest('hex');
 }
 
-function s3DownloadUrlCacheKey(objectKey) {
-  return envRedisKey(`s3:dl:${hashKey(objectKey)}`);
+const S3_URL_CACHE_BUFFER_SEC = 900;
+
+function s3DownloadUrlCacheKeyPrefix(objectKey) {
+  return envRedisKey(`s3:dl:${hashKey(String(objectKey || ''))}:`);
+}
+
+function s3DownloadUrlCacheKey(objectKey, principalId) {
+  const principal = hashKey(String(principalId || ''));
+  return `${s3DownloadUrlCacheKeyPrefix(objectKey)}${principal}`;
 }
 
 function getS3UrlCacheConfig() {
@@ -1015,33 +1022,55 @@ function withRedisTimeout(promise, ms = 1500) {
   return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
 }
 
-async function getCachedDownloadUrl(objectKey) {
-  if (getS3UrlCacheConfig() !== 'on' || !objectKey) return null;
+async function redisDeleteKeysByPrefix(redis, prefix) {
+  if (!redis || !prefix) return;
+  const match = `${prefix}*`;
+  if (typeof redis.scan === 'function') {
+    let cursor = '0';
+    const keys = [];
+    do {
+      const res = await redis.scan(cursor, 'MATCH', match, 'COUNT', 64);
+      cursor = res[0];
+      if (Array.isArray(res[1]) && res[1].length) keys.push(...res[1]);
+    } while (cursor !== '0');
+    if (keys.length && typeof redis.del === 'function') {
+      await redis.del(...keys);
+    }
+    return;
+  }
+  if (typeof redis.del === 'function') {
+    await redis.del(prefix);
+  }
+}
+
+async function getCachedDownloadUrl(objectKey, principalId) {
+  if (getS3UrlCacheConfig() !== 'on' || !objectKey || !principalId) return null;
   try {
     const { redis } = require('./redis');
     if (!redis) return null;
-    const key = s3DownloadUrlCacheKey(objectKey);
+    const key = s3DownloadUrlCacheKey(objectKey, principalId);
     const raw = await withRedisTimeout(redis.get(key), 1500).catch(() => null);
     if (!raw) return null;
     const ttl = await withRedisTimeout(redis.ttl(key), 1500).catch(() => 0);
-    // Ignore if less than 15 minutes (900s) remaining
-    if (ttl <= 0) return null;
+    if (ttl <= 0 || ttl < S3_URL_CACHE_BUFFER_SEC) return null;
     return {
       url: String(raw),
-      remainingTtlSec: ttl + 900,
+      remainingTtlSec: ttl + S3_URL_CACHE_BUFFER_SEC,
     };
   } catch (_) {
     return null;
   }
 }
 
-async function setCachedDownloadUrl(objectKey, url, ttlSec) {
-  if (getS3UrlCacheConfig() !== 'on' || !objectKey || !url) return;
+async function setCachedDownloadUrl(objectKey, url, ttlSec, principalId) {
+  if (getS3UrlCacheConfig() !== 'on' || !objectKey || !url || !principalId) return;
+  const ttl = Number(ttlSec);
+  if (!Number.isFinite(ttl) || ttl <= 0) return;
   try {
     const { redis } = require('./redis');
     if (!redis) return;
-    const key = s3DownloadUrlCacheKey(objectKey);
-    await withRedisTimeout(redis.set(key, url, 'EX', ttlSec), 1500).catch(() => {});
+    const key = s3DownloadUrlCacheKey(objectKey, principalId);
+    await withRedisTimeout(redis.set(key, url, 'EX', ttl), 1500).catch(() => {});
   } catch (_) {}
 }
 
@@ -1050,8 +1079,10 @@ async function invalidateS3DownloadUrlCache(objectKey) {
   try {
     const { redis } = require('./redis');
     if (!redis) return;
-    const key = s3DownloadUrlCacheKey(objectKey);
-    await withRedisTimeout(redis.del(key), 1500).catch(() => {});
+    await withRedisTimeout(
+      redisDeleteKeysByPrefix(redis, s3DownloadUrlCacheKeyPrefix(objectKey)),
+      3000,
+    ).catch(() => {});
   } catch (_) {}
 }
 
@@ -1060,9 +1091,11 @@ async function invalidateS3DownloadUrlCacheBatch(objectKeys) {
   try {
     const { redis } = require('./redis');
     if (!redis) return;
-    const keys = objectKeys.filter(Boolean).map(s3DownloadUrlCacheKey);
-    if (keys.length > 0) {
-      await withRedisTimeout(redis.del(...keys), 1500).catch(() => {});
+    for (const objectKey of objectKeys.filter(Boolean)) {
+      await withRedisTimeout(
+        redisDeleteKeysByPrefix(redis, s3DownloadUrlCacheKeyPrefix(objectKey)),
+        3000,
+      ).catch(() => {});
     }
   } catch (_) {}
 }
@@ -1087,7 +1120,7 @@ async function getS3DownloadUrlHandler(data, auth, dbOrOptions) {
 
   // Only after authorization passes, check the download URL cache
   if (getS3UrlCacheConfig() === 'on') {
-    const cached = await getCachedDownloadUrl(objectKey);
+    const cached = await getCachedDownloadUrl(objectKey, auth.uid);
     if (cached) {
       return {
         url: cached.url,
@@ -1110,7 +1143,7 @@ async function getS3DownloadUrlHandler(data, auth, dbOrOptions) {
   if (isCacheOn) {
     // Cache for (expiresIn - 900) seconds = 2700s (45 minutes)
     const cacheTtlSec = Math.max(1, expiresIn - 900);
-    await setCachedDownloadUrl(objectKey, url, cacheTtlSec);
+    await setCachedDownloadUrl(objectKey, url, cacheTtlSec, auth.uid);
   }
 
   // Record download audit log
@@ -1175,7 +1208,7 @@ async function getS3DownloadUrlsHandler(data, auth, dbOrOptions) {
     if (!allowed) continue;
 
     if (isCacheOn) {
-      const cached = await getCachedDownloadUrl(key);
+      const cached = await getCachedDownloadUrl(key, auth.uid);
       if (cached) {
         urls[key] = cached.url;
         continue;
@@ -1191,7 +1224,7 @@ async function getS3DownloadUrlsHandler(data, auth, dbOrOptions) {
       urls[key] = signedUrl;
       if (isCacheOn) {
         const cacheTtlSec = Math.max(1, expiresIn - 900);
-        await setCachedDownloadUrl(key, signedUrl, cacheTtlSec);
+        await setCachedDownloadUrl(key, signedUrl, cacheTtlSec, auth.uid);
       }
     } catch (_) {
       // Omit failed keys from response map
@@ -1542,6 +1575,7 @@ exports.awsSecretAccessKey = awsSecretAccessKey;
 exports.supabaseServiceRoleKey = supabaseServiceRoleKey;
 
 exports.s3DownloadUrlCacheKey = s3DownloadUrlCacheKey;
+exports.s3DownloadUrlCacheKeyPrefix = s3DownloadUrlCacheKeyPrefix;
 exports.getCachedDownloadUrl = getCachedDownloadUrl;
 exports.setCachedDownloadUrl = setCachedDownloadUrl;
 exports.invalidateS3DownloadUrlCache = invalidateS3DownloadUrlCache;

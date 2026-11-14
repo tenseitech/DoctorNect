@@ -251,6 +251,12 @@ function legacyHashOtp(code) {
   return crypto.createHash('sha256').update(String(code || '')).digest('hex');
 }
 
+function resolveOtpHmacSecret() {
+  const dedicated = String(process.env.OTP_HMAC_SECRET || '').trim();
+  if (dedicated) return dedicated;
+  return readMsg91AuthKey({ required: false }) || null;
+}
+
 function hashOtp(code, roleOrOpts, maybeDigits, maybeOpts) {
   let role = '';
   let digits = '';
@@ -268,7 +274,10 @@ function hashOtp(code, roleOrOpts, maybeDigits, maybeOpts) {
       purpose = maybeOpts.purpose || '';
     }
   }
-  const secret = readMsg91AuthKey({ required: false });
+  const secret = resolveOtpHmacSecret();
+  const normRole = role ? normalizeRole(role) : '';
+  const normDigits = digits ? normalizeMobileDigits(digits) : '';
+  const codeStr = String(code || '').trim();
   if (!secret) {
     if (isProductionFirebaseProject() && !isFunctionsEmulator()) {
       console.error(JSON.stringify({
@@ -280,11 +289,15 @@ function hashOtp(code, roleOrOpts, maybeDigits, maybeOpts) {
       }));
       throw new HttpsError('internal', 'Could not send OTP. Please try again.');
     }
+    if (purpose === 'create' && !allowLegacyUnsaltedOtpHash()) {
+      throw new HttpsError(
+        'failed-precondition',
+        'OTP HMAC secret required (MSG91 auth key or OTP_HMAC_SECRET).',
+      );
+    }
     return legacyHashOtp(code);
   }
-  const normRole = role ? normalizeRole(role) : '';
-  const normDigits = digits ? normalizeMobileDigits(digits) : '';
-  const payload = `${normRole}:${normDigits}:${String(code || '').trim()}`;
+  const payload = `${normRole}:${normDigits}:${codeStr}`;
   return crypto.createHmac('sha256', secret).update(payload).digest('hex');
 }
 
