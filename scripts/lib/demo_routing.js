@@ -62,7 +62,11 @@ function isDemoFirebaseUid(uid, env = process.env) {
   if (!id) return false;
   const allow = parseFirebaseUidAllowlist(env);
   if (allow.has(id)) return true;
-  if (id.startsWith('demo_') || id.startsWith('demo_user_')) return true;
+  const prefixRouting =
+    String(env.DEMO_UID_PREFIX_ROUTING || '').trim() === '1';
+  if (prefixRouting && (id.startsWith('demo_') || id.startsWith('demo_user_'))) {
+    return true;
+  }
   return false;
 }
 

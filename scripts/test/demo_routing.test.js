@@ -52,7 +52,10 @@ test('redis namespace prefixes', () => {
   assert.equal(redisKeyNamespace({ appEnv: 'production', firebaseUid: 'real_x' }), 'real:');
 });
 
-test('demo_user prefix uid is demo', () => {
+test('demo_user prefix uid is demo only when DEMO_UID_PREFIX_ROUTING=1', () => {
+  delete process.env.DEMO_UID_PREFIX_ROUTING;
+  assert.equal(isDemoFirebaseUid('demo_user_9999900002'), false);
+  process.env.DEMO_UID_PREFIX_ROUTING = '1';
   assert.equal(isDemoFirebaseUid('demo_user_9999900002'), true);
   assert.equal(isDemoFirebaseUid('CTVzgkpdnjUs0uDDr5rWdVV3iWF2'), false);
 });
