@@ -41,7 +41,7 @@ test('migrate: applySingleMigration succeeds without supabase_migrations schema'
 
   // Verify sequence: BEGIN -> sqlContent -> INSERT ledger -> COMMIT -> SELECT verify
   assert.equal(executedQueries[0].sql, 'BEGIN');
-  assert.equal(executedQueries[1].sql, 'SELECT 1;');
+  assert.equal(executedQueries[1].sql, 'SELECT 1');
   assert.ok(executedQueries[2].sql.includes('INSERT INTO public._schema_migrations'));
   assert.equal(executedQueries[3].sql, 'COMMIT');
   assert.ok(executedQueries[4].sql.includes('SELECT version, checksum FROM public._schema_migrations'));

@@ -18,7 +18,7 @@ gateway_image  = "ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/doctornect-auth-ga
 postgrest_image = "postgrest/postgrest:v16.5"
 
 # --- Existing RDS (console-created; Terraform does NOT create the instance) ---
-rds_endpoint            = "doctornect-production.xxxxx.ap-south-1.rds.amazonaws.com"
+rds_endpoint            = "example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com"
 rds_port                = 5432
 rds_db_name             = "doctornect"
 rds_security_group_id   = "sg-xxxxxxxx"

@@ -80,7 +80,7 @@ function getDatabaseClient(options = {}) {
     global: {
       headers: {
         'x-app-env': appEnv,
-        'x-data-plane': plane,
+        // Server-side plane is resolved here; never send x-data-plane (gateway forbids client routing hints).
         'x-client-source': 'medibond-cloud-functions',
       },
     },

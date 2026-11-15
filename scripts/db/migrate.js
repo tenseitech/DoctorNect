@@ -70,6 +70,8 @@ const {
 } = require('../lib/migration_file_list');
 const { isSkippableTransactionControlStatement } = require('../lib/migration_txn_sql');
 const { normalizeRdsMigrationSql } = require('../lib/rds_migration_sql_normalize');
+const { countAppSchemaObjects, assertTripwireUnchanged } = require('../lib/migrate_prod_tripwire');
+const { withMigrateScratchDatabase } = require('../lib/migrate_scratch_db');
 
 const MIGRATION_ADVISORY_TARGETS = new Set(['production', 'rehearsal']);
 
@@ -291,6 +293,88 @@ function assertPendingMigrationsInOrder({ files, appliedMap, target, allowOutOfO
   }
 }
 
+async function executeDryRunAllOnClient({
+  client,
+  target,
+  appliedMap,
+  skipCronMigration,
+  files,
+}) {
+  const pendingFiles = files.filter((f) => !appliedMap.has(migrationVersionFromRel(f)));
+  console.log(`Found ${pendingFiles.length} pending migration files: ${pendingFiles.join(', ')}`);
+
+  await client.query('BEGIN');
+  let dryRunTxnOpen = true;
+  const allErrors = [];
+  let totalStatements = 0;
+
+  try {
+    for (const file of pendingFiles) {
+      if (shouldSkipMigrationFile(path.basename(file), skipCronMigration)) {
+        console.log(`\n[SKIPPED — --allow-no-cron] ${file}`);
+        continue;
+      }
+      const { sqlContent } = loadActiveMigrationSql(file, target);
+
+      console.log(`\nParsing & testing statements in ${file}...`);
+      const stmts = await splitSqlStatements(sqlContent);
+      totalStatements += stmts.length;
+      console.log(`  Extracted ${stmts.length} top-level AST statements.`);
+
+      for (const item of stmts) {
+        if (isSkippableTransactionControlStatement(item.sql)) {
+          continue;
+        }
+        await client.query('SAVEPOINT sp_stmt;');
+        try {
+          await client.query(item.sql);
+          await client.query('RELEASE SAVEPOINT sp_stmt;');
+        } catch (err) {
+          allErrors.push({
+            file,
+            line: item.line,
+            sqlstate: err.code || 'UNKNOWN',
+            message: err.message,
+            snippet: item.sql.trim().replace(/\s+/g, ' ').slice(0, 90),
+          });
+          await client.query('ROLLBACK TO SAVEPOINT sp_stmt;');
+        }
+      }
+    }
+
+    await client.query('ROLLBACK');
+    dryRunTxnOpen = false;
+    console.log(`\n✔ Transaction ROLLED BACK. Nothing applied to database.`);
+    console.log(`\n=== DRY-RUN-ALL SUMMARY ===`);
+    console.log(
+      `Files tested: ${pendingFiles.length} | Statements tested: ${totalStatements} | Errors found: ${allErrors.length}`,
+    );
+
+    if (allErrors.length > 0) {
+      console.log('\n--- STATEMENT ERRORS DETECTED ---');
+      console.table(
+        allErrors.map((e, idx) => ({
+          '#': idx + 1,
+          File: e.file,
+          Line: e.line,
+          SQLSTATE: e.sqlstate,
+          Message: e.message,
+          Statement: e.snippet,
+        })),
+      );
+      throw new Error(`dry-run-all failed with ${allErrors.length} statement error(s)`);
+    }
+    console.log('\n✔ ZERO ERRORS DETECTED across all pending migration statements.');
+    return { pendingCount: pendingFiles.length, totalStatements, errors: allErrors };
+  } catch (dryRunErr) {
+    if (dryRunTxnOpen) {
+      await client.query('ROLLBACK').catch(() => {});
+      console.error('\n✔ Transaction ROLLED BACK after dry-run-all error.');
+    }
+    throw dryRunErr;
+  }
+}
+
 async function runMigrations() {
   const args = process.argv.slice(2);
   const { isExecute, isDryRun, isDryRunAll, allowOutOfOrder } = parseMigrationCliArgs(args);
@@ -422,80 +506,49 @@ async function runMigrations() {
     if (isDryRunAll) {
       console.log(
         'Note: --dry-run-all wraps statements in a rollback transaction. ' +
-          'CREATE INDEX CONCURRENTLY and other non-transactional statements may show false errors.',
+          'Top-level BEGIN/COMMIT/ROLLBACK in migration files are skipped (migrate.js owns the txn). ' +
+          'CREATE INDEX CONCURRENTLY may show false errors.',
       );
-      console.log(`\n--- EXECUTING --dry-run-all (Statement-level testing inside single rollback transaction) ---`);
-      const pendingFiles = files.filter((f) => !appliedMap.has(migrationVersionFromRel(f)));
-      console.log(`Found ${pendingFiles.length} pending migration files: ${pendingFiles.join(', ')}`);
 
-      await client.query('BEGIN');
-      let dryRunTxnOpen = true;
-      const allErrors = [];
-      let totalStatements = 0;
+      if (target === 'production' || target === 'rehearsal') {
+        const prodBefore = await countAppSchemaObjects(client);
+        console.log(`\n[PROD SAFETY] Tripwire: production catalog objects=${prodBefore} (schemas public, auth, private).`);
+        console.log(
+          '[PROD SAFETY] dry-run-all on production NEVER mutates the production database; using migrate_scratch_* DB.',
+        );
+        console.log(`\n--- EXECUTING --dry-run-all on SCRATCH DATABASE (same RDS instance) ---`);
 
-      try {
-        for (const file of pendingFiles) {
-          if (shouldSkipMigrationFile(path.basename(file), skipCronMigration)) {
-            console.log(`\n[SKIPPED — --allow-no-cron] ${file}`);
-            continue;
+        let scratchResult;
+        await withMigrateScratchDatabase(poolConfig, async (scratchPool) => {
+          const scratchClient = await scratchPool.connect();
+          try {
+            const { appliedMap: scratchApplied } = await loadAppliedMigrationsMap(scratchClient, false);
+            scratchResult = await executeDryRunAllOnClient({
+              client: scratchClient,
+              target,
+              appliedMap: scratchApplied,
+              skipCronMigration,
+              files,
+            });
+          } finally {
+            scratchClient.release();
           }
-          const { sqlContent } = loadActiveMigrationSql(file, target);
+        });
 
-          console.log(`\nParsing & testing statements in ${file}...`);
-          const stmts = await splitSqlStatements(sqlContent);
-          totalStatements += stmts.length;
-          console.log(`  Extracted ${stmts.length} top-level AST statements.`);
-
-          for (const item of stmts) {
-            if (isSkippableTransactionControlStatement(item.sql)) {
-              continue;
-            }
-            await client.query('SAVEPOINT sp_stmt;');
-            try {
-              await client.query(item.sql);
-              await client.query('RELEASE SAVEPOINT sp_stmt;');
-            } catch (err) {
-              allErrors.push({
-                file,
-                line: item.line,
-                sqlstate: err.code || 'UNKNOWN',
-                message: err.message,
-                snippet: item.sql.trim().replace(/\s+/g, ' ').slice(0, 90),
-              });
-              await client.query('ROLLBACK TO SAVEPOINT sp_stmt;');
-            }
-          }
-        }
-
-        await client.query('ROLLBACK');
-        dryRunTxnOpen = false;
-        console.log(`\n✔ Transaction ROLLED BACK. Nothing applied to database.`);
-        console.log(`\n=== DRY-RUN-ALL SUMMARY ===`);
-        console.log(`Files tested: ${pendingFiles.length} | Statements tested: ${totalStatements} | Errors found: ${allErrors.length}`);
-
-        if (allErrors.length > 0) {
-          console.log('\n--- STATEMENT ERRORS DETECTED ---');
-          console.table(allErrors.map((e, idx) => ({
-            '#': idx + 1,
-            File: e.file,
-            Line: e.line,
-            SQLSTATE: e.sqlstate,
-            Message: e.message,
-            Statement: e.snippet,
-          })));
-          throw new Error(`dry-run-all failed with ${allErrors.length} statement error(s)`);
-        }
-        console.log('\n✔ ZERO ERRORS DETECTED across all pending migration statements.');
-
-        return { pendingCount: pendingFiles.length, totalStatements, errors: allErrors };
-      } catch (dryRunErr) {
-        if (dryRunTxnOpen) {
-          await client.query('ROLLBACK').catch(() => {});
-          dryRunTxnOpen = false;
-          console.error('\n✔ Transaction ROLLED BACK after dry-run-all error.');
-        }
-        throw dryRunErr;
+        const prodAfter = await countAppSchemaObjects(client);
+        assertTripwireUnchanged(prodBefore, prodAfter, 'production/rehearsal dry-run-all (scratch workflow)');
+        console.log(`[PROD SAFETY] Tripwire OK: production catalog objects unchanged (${prodAfter}).`);
+        return scratchResult;
       }
+
+      console.log(`\n--- EXECUTING --dry-run-all (Statement-level testing inside single rollback transaction) ---`);
+      return await executeDryRunAllOnClient({
+        client,
+        target,
+        appliedMap,
+        skipCronMigration,
+        files,
+      });
     }
 
     for (const file of files) {
@@ -633,6 +686,7 @@ if (require.main === module) {
 module.exports = {
   runMigrations,
   applySingleMigration,
+  executeDryRunAllOnClient,
   computeChecksum,
   parseMigrationCliArgs,
   assertPendingMigrationsInOrder,

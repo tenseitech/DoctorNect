@@ -37,12 +37,19 @@ function main() {
     missingInExample.forEach((k) => console.error(`  - ${k}`));
   }
   if (missingInEnv.length) {
-    fail = true;
-    console.error(`Keys in .env.example missing from .env (${missingInEnv.length}) — add placeholders or fill .env:`);
-    missingInEnv.forEach((k) => console.error(`  - ${k}`));
+    const strict = process.env.ENV_VERIFY_STRICT === '1' || process.env.CI === 'true';
+    const msg = `Keys in .env.example missing from .env (${missingInEnv.length}) — add placeholders or fill .env:`;
+    if (strict) {
+      fail = true;
+      console.error(msg);
+      missingInEnv.forEach((k) => console.error(`  - ${k}`));
+    } else {
+      console.warn(`⚠ ${msg}`);
+      missingInEnv.forEach((k) => console.warn(`  - ${k}`));
+    }
   }
   if (!fail) {
-    console.log(`✅ .env and .env.example key parity OK (${exampleKeys.size} keys)`);
+    console.log(`✅ .env / .env.example key parity OK for committed policy (${exampleKeys.size} example keys)`);
   }
   process.exit(fail ? 1 : 0);
 }

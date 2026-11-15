@@ -40,7 +40,7 @@ test('TLS servername uses PROD_RDS_HOST (not tunnel TCP host)', () => {
 });
 
 test('maskRdsTarget redacts password; TLS uses real servername in pool config', () => {
-  process.env.PROD_RDS_HOST = 'doctornect-prod.abc123.ap-south-1.rds.amazonaws.com';
+  process.env.PROD_RDS_HOST = 'example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com';
   process.env.PROD_RDS_CONNECT_HOST = '127.0.0.1';
   process.env.PROD_RDS_PORT = '5433';
   process.env.PROD_RDS_PASSWORD = 'secret';

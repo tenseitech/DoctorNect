@@ -3,7 +3,8 @@
 
 /**
  * Production RDS read-only preflight (all non-system schemas).
- * Delegates to prod_rds_readonly_diagnostic.js for full catalog facts.
+ * Uses database from buildRdsPoolConfig() (default **doctornect**), NOT postgres.
+ * Delegates to prod_rds_readonly_diagnostic.js — always check `current_database()` in output.
  */
 
 const path = require('path');
