@@ -3,60 +3,46 @@
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
-const { getEnv, maskConnectionString, printEnvSummary } = require('../lib/env_loader');
+const { loadRootEnv } = require('../lib/bootstrap_root_env');
+const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
 
 async function testRdsPreflight() {
-  const host = getEnv('PROD_RDS_HOST');
-  const port = parseInt(getEnv('PROD_RDS_PORT') || '5432', 10);
-  const database = getEnv('PROD_RDS_DB') || 'postgres';
-  const user = getEnv('PROD_RDS_USER') || 'postgres';
-  const password = getEnv('PROD_RDS_PASSWORD');
-  const certPath = getEnv('PROD_RDS_SSL_ROOT_CERT') || path.resolve(__dirname, '../../infra/aws/global-bundle.pem');
+  loadRootEnv({ startDir: path.join(__dirname, '..') });
 
-  if (!host || !password) {
-    console.log('\n[BLOCKED] RDS Preflight cannot connect: PROD_RDS_HOST or PROD_RDS_PASSWORD not set.');
-    console.log('Action needed: User must provision RDS PostgreSQL instance and populate credentials.');
-    return { blocked: true, reason: 'Credentials missing in environment' };
+  let poolConfig;
+  try {
+    poolConfig = buildRdsPoolConfig();
+  } catch (err) {
+    console.log(`\n[BLOCKED] RDS Preflight cannot connect: ${err.message}`);
+    console.log('Action needed: set PROD_RDS_HOST, PROD_RDS_PASSWORD, PROD_RDS_PORT, PROD_RDS_DB in root .env.');
+    return { blocked: true, reason: err.message };
   }
 
-  if (!fs.existsSync(certPath)) {
-    console.error(`\n[FATAL] AWS RDS CA Certificate not found at: ${certPath}`);
-    process.exit(1);
-  }
+  const database = poolConfig.database;
+  const user = poolConfig.user;
+  console.log(`\nConnecting (masked): ${maskRdsTarget(poolConfig)}`);
+  console.log(`Target database name: ${database}`);
+  console.log(`Target database user: ${user}`);
 
-  console.log(`\nConnecting to RDS PostgreSQL at ${host}:${port}/${database} as ${user} with strict TLS verification...`);
-  const ca = fs.readFileSync(certPath);
-
-  const pool = new Pool({
-    host,
-    port,
-    database,
-    user,
-    password,
-    ssl: {
-      rejectUnauthorized: true,
-      ca,
-    },
-  });
-
-  const report = {};
+  const pool = new Pool(poolConfig);
+  const report = { database, user };
 
   try {
     const verRes = await pool.query('SELECT version();');
     report.version = verRes.rows[0].version;
     console.log('RDS Engine Version:', report.version);
 
-    const sslRes = await pool.query("SHOW rds.force_ssl;");
+    const sslRes = await pool.query('SHOW rds.force_ssl;');
     report.forceSsl = sslRes.rows[0].rds_force_ssl;
     console.log('rds.force_ssl:', report.forceSsl);
 
-    const connRes = await pool.query("SHOW max_connections;");
+    const connRes = await pool.query('SHOW max_connections;');
     report.maxConnections = connRes.rows[0].max_connections;
     console.log('max_connections:', report.maxConnections);
 
-    const userRes = await pool.query("SELECT current_user, session_user;");
+    const userRes = await pool.query('SELECT current_user, session_user, current_database();');
     report.currentUser = userRes.rows[0];
-    console.log('Current User:', report.currentUser);
+    console.log('Session:', report.currentUser);
 
     const superuserRes = await pool.query(`
       SELECT pg_has_role(current_user, 'rds_superuser', 'MEMBER') as is_rds_superuser;
@@ -64,7 +50,6 @@ async function testRdsPreflight() {
     report.isRdsSuperuser = superuserRes.rows[0].is_rds_superuser;
     console.log('rds_superuser membership:', report.isRdsSuperuser);
 
-    // Test BYPASSRLS capability
     try {
       await pool.query(`
         DO $$
@@ -81,6 +66,14 @@ async function testRdsPreflight() {
       console.log('CREATE ROLE ... BYPASSRLS permitted: NO (' + err.message + ')');
     }
 
+    const tableCount = await pool.query(
+      `SELECT count(*)::int AS n FROM pg_class c
+       JOIN pg_namespace n ON n.oid = c.relnamespace
+       WHERE n.nspname IN ('public','auth','private') AND c.relkind = 'r'`,
+    );
+    report.app_schema_table_count = tableCount.rows[0].n;
+    console.log(`App-schema tables (public+auth+private) in "${database}": ${report.app_schema_table_count}`);
+
     const encRes = await pool.query(`
       SELECT datname, pg_encoding_to_char(encoding) as encoding, datcollate, datctype
       FROM pg_database WHERE datname = current_database();
@@ -88,25 +81,29 @@ async function testRdsPreflight() {
     report.encoding = encRes.rows[0];
     console.log('Database Encoding/Collation:', report.encoding);
 
-    const tzRes = await pool.query("SHOW timezone;");
+    const tzRes = await pool.query('SHOW timezone;');
     report.timezone = tzRes.rows[0].TimeZone;
     console.log('Timezone:', report.timezone);
 
-    const extRes = await pool.query("SELECT name, default_version, installed_version FROM pg_available_extensions ORDER BY name;");
+    const extRes = await pool.query(
+      'SELECT name, default_version, installed_version FROM pg_available_extensions ORDER BY name;',
+    );
     report.availableExtensions = extRes.rows;
     console.log(`Available Extensions in RDS: ${extRes.rows.length}`);
 
-    fs.writeFileSync('docs/ops/rds_preflight_report.json', JSON.stringify(report, null, 2));
+    fs.writeFileSync(
+      path.resolve(__dirname, '../../docs/ops/rds_preflight_report.json'),
+      JSON.stringify(report, null, 2),
+    );
     console.log('\nRDS Preflight passed! Saved to docs/ops/rds_preflight_report.json');
     return { blocked: false, report };
-
   } catch (err) {
     console.error('\nRDS Connection Failed:', err.message);
     let likelyCause = 'Unknown';
     if (err.message.includes('ETIMEDOUT') || err.message.includes('ENOTFOUND')) {
-      likelyCause = 'Network timeout / Security group not allowing inbound port 5432 from caller IP, or host not publicly accessible.';
-    } else if (err.message.includes('SELF_SIGNED_CERT_IN_CHAIN') || err.message.includes('unable to verify the first certificate')) {
-      likelyCause = 'CA Bundle mismatch or TLS handshake verification failure.';
+      likelyCause = 'Network timeout / Security group or tunnel.';
+    } else if (err.message.includes('SELF_SIGNED_CERT_IN_CHAIN') || err.message.includes('unable to verify')) {
+      likelyCause = 'CA Bundle mismatch or TLS handshake failure.';
     } else if (err.message.includes('password authentication failed')) {
       likelyCause = 'Incorrect username or password.';
     }
