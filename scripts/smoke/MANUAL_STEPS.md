@@ -226,6 +226,58 @@ ORDER BY name;
 
 ---
 
+## Supabase demo project keepalive (free tier anti-pause)
+
+**Repo visibility (GitHub Actions schedule):** `tenseitech/DoctorNect` is **public** (`"private": false` on GitHub API). On **public** repos, scheduled workflows **disable after 60 days with no default-branch activity** — treat **Firebase `supabaseKeepalive` as primary**; after long quiet periods, re-enable Actions under Settings → Actions → General, or make the repo private / use Supabase Pro. Confirm at GitHub → Settings → General → Danger Zone.
+
+### (a) Firebase Secret Manager (deploy; values not in git)
+
+```powershell
+cd backend/functions
+firebase functions:secrets:set DEMO_SUPABASE_URL
+firebase functions:secrets:set DEMO_SUPABASE_SERVICE_ROLE_KEY
+```
+
+Use the **same** Supabase project URL and key as demo data-plane routing (`docs/DEMO_REAL_ROUTING.md`). Deploy exports `supabaseKeepalive` (schedule **03:30 Asia/Kolkata** daily).
+
+### (b) GitHub repository secrets (backup workflow)
+
+Settings → Secrets and variables → Actions:
+
+| Secret | Value |
+|--------|--------|
+| `SUPABASE_KEEPALIVE_URL` | `https://<project-ref>.supabase.co` (no trailing slash) |
+| `SUPABASE_KEEPALIVE_KEY` | Prefer **anon** key if RLS allows `SELECT` on whitelisted `system_config` rows; otherwise a dedicated read-only key — **avoid** broad service role in CI if possible |
+
+Workflow: `.github/workflows/supabase-keepalive.yml` (every **2 days** + `workflow_dispatch`).
+
+### (c) Cloud Monitoring alert
+
+Log-based metric filter (Cloud Functions logs):
+
+```
+jsonPayload.event="supabase_keepalive_failed"
+OR textPayload=~"supabase_keepalive_failed"
+```
+
+Alert policy → email on **any** match in 24h.
+
+### (d) Supabase dashboard
+
+Project → **Settings** → confirm status **Active** (not **Paused**). If paused → **Restore project**, then run keepalive once (`workflow_dispatch` or wait for schedule).
+
+### (e) Verify keepalive is working
+
+1. Firebase Console → Functions → `supabaseKeepalive` → Logs: look for `supabase_keepalive_ok` (INFO).
+2. GitHub → Actions → **Supabase keepalive (backup)** → latest green run.
+3. Supabase dashboard → **Database** → last activity / connection metrics (UNVERIFIED until live).
+
+### (f) Paid plan decision
+
+Stay on **free** while demo-only data + dual keepalive (Firebase + GitHub) is acceptable risk. Move to **Supabase Pro** before Play review window if you want SLA, no auto-pause, and no dependency on GitHub schedule rules.
+
+---
+
 ## Demo → Supabase / Real → RDS (release gate)
 
 **Design:** `docs/DEMO_REAL_ROUTING.md`

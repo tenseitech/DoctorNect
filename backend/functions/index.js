@@ -1413,6 +1413,11 @@ const { adminConsoleRead } = require('./admin_console_read_api');
 
 const { processNotificationOutboxBatch } = require('./notification_outbox_worker');
 
+const { supabaseKeepalive } = require('./supabase_keepalive');
+
+/** Daily read-only ping so demo Supabase (free tier) does not pause. */
+exports.supabaseKeepalive = supabaseKeepalive;
+
 /** Poll notification_outbox → FCM (RDS + staging; same path as SQL triggers). */
 exports.processNotificationOutboxScheduled = onSchedule(
   {

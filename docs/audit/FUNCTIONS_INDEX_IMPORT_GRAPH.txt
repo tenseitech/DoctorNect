@@ -1,7 +1,7 @@
 DoctorNect Cloud Functions import graph (static require from index.js)
-Generated: 2026-11-15T14:39:05.467Z
+Generated: 2026-11-15T15:39:18.148Z
 Entry: backend/functions/index.js
-Reachable module files: 38
+Reachable module files: 39
 
 === REACHABILITY VERDICT ===
 src/db/pg_pool.js in graph: NO
@@ -47,6 +47,7 @@ Live prod data path: client + callables → Auth Gateway (getDatabaseClient); Po
   src/db/client.js
   src/db/production_pg_pool_boot.js
   supabase_database_webhook.js
+  supabase_keepalive.js
   sync_flags.js
   system_admin_auth_guard.js
   user_id_bridge.js
@@ -85,6 +86,7 @@ Live prod data path: client + callables → Auth Gateway (getDatabaseClient); Po
   index.js -> admin_platform_actions.js
   index.js -> admin_console_read_api.js
   index.js -> notification_outbox_worker.js
+  index.js -> supabase_keepalive.js
   index.js -> redis.js
   caller_identity.js -> sync_flags.js
   caller_identity.js -> src/db/client.js
