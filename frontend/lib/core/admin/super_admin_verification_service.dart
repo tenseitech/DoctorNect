@@ -150,16 +150,6 @@ class SuperAdminVerificationService {
     });
   }
 
-  String? _roleTable(UserType role) {
-    return switch (role) {
-      UserType.doctor => 'doctors',
-      UserType.medicalStore => 'medical_stores',
-      UserType.lab => 'labs',
-      UserType.ambulance => 'ambulances',
-      _ => null,
-    };
-  }
-
   String? _rolePk(UserType role) {
     return switch (role) {
       UserType.doctor => 'doctor_id',
@@ -175,12 +165,33 @@ class SuperAdminVerificationService {
     String profileId,
   ) async {
     if (profileId.isEmpty || !SupabaseBootstrap.isReady) return {};
-    final table = _roleTable(role);
     final pk = _rolePk(role);
-    if (table == null || pk == null) return {};
+    if (pk == null) return {};
 
     try {
-      final res = await _client.from(table).select().eq(pk, profileId).maybeSingle();
+      final Map<String, dynamic>? res = switch (role) {
+        UserType.doctor => await _client
+            .from('doctors')
+            .select()
+            .eq('doctor_id', profileId)
+            .maybeSingle(),
+        UserType.medicalStore => await _client
+            .from('medical_stores')
+            .select()
+            .eq('store_id', profileId)
+            .maybeSingle(),
+        UserType.lab => await _client
+            .from('labs')
+            .select()
+            .eq('lab_id', profileId)
+            .maybeSingle(),
+        UserType.ambulance => await _client
+            .from('ambulances')
+            .select()
+            .eq('ambulance_id', profileId)
+            .maybeSingle(),
+        _ => null,
+      };
       if (res == null) return {};
       return Map<String, dynamic>.from(res);
     } catch (e) {
@@ -204,13 +215,32 @@ class SuperAdminVerificationService {
         'updated_at': now,
       }).or('id.eq.$uid,firebase_uid.eq.$uid');
 
-      final table = _roleTable(role);
       final pk = _rolePk(role);
-      if (table != null && pk != null && profileId.isNotEmpty) {
-        await _client.from(table).update({
-          ...roleFields,
-          'updated_at': now,
-        }).eq(pk, profileId);
+      if (pk != null && profileId.isNotEmpty) {
+        switch (role) {
+          case UserType.doctor:
+            await _client.from('doctors').update({
+              ...roleFields,
+              'updated_at': now,
+            }).eq('doctor_id', profileId);
+          case UserType.medicalStore:
+            await _client.from('medical_stores').update({
+              ...roleFields,
+              'updated_at': now,
+            }).eq('store_id', profileId);
+          case UserType.lab:
+            await _client.from('labs').update({
+              ...roleFields,
+              'updated_at': now,
+            }).eq('lab_id', profileId);
+          case UserType.ambulance:
+            await _client.from('ambulances').update({
+              ...roleFields,
+              'updated_at': now,
+            }).eq('ambulance_id', profileId);
+          default:
+            break;
+        }
       }
       return true;
     } catch (e) {

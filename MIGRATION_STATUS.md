@@ -335,10 +335,11 @@ node scripts/audit/pre_push_history_scan.js
 |---|------|--------|-------|----------|
 | 1 | OTP Redis lockout + parallel brute cap | **PASS** | Cursor | `reserveOtpVerifyAttemptSlot` Lua (re-applied) — `otp_redis_integration_only_6390.txt`, `otp_lockout_root_cause.txt` |
 | 2 | Slot capacity rule documented | **PASS** (code=3) | main decides | `backend/functions/appointment_slots.js:6`, `db/migrations/20261026000001_rpc_null_safe_authz.sql` |
-| 3 | Production boot guards (`APP_ENV`, `FIRESTORE_FORBIDDEN`, DB/gateway/Redis/MSG91) | **PARTIAL** | Cursor + **main** | `runtime_firestore_blocked` + legacy entrypoint suite **PASS** — `production_legacy_firestore_guard_test.txt`; deploy env **UNVERIFIED** on live Firebase |
+| 3 | Production boot guards (`APP_ENV`, `FIRESTORE_FORBIDDEN`, DB/gateway/Redis/MSG91) | **PARTIAL** | Cursor + **main** | `DATABASE_URL` optional at boot (gateway-only); import graph **no pg_pool/cross_role_sync** — `FUNCTIONS_INDEX_IMPORT_GRAPH.txt`; deploy env **UNVERIFIED** on live Firebase |
+| 3a | Gateway allowlist completeness + deny-by-default (403) | **PASS** | Cursor | `services/api-gateway` **87 pass / 0 fail**; diff `GATEWAY_CLIENT_ALLOWLIST_DIFF.md`; `ambulance_invites` client-allowed + RLS |
 | 3b | Legacy `bookAppointment` / webhooks | **PASS** (path map) | Cursor | Client: Supabase RPC primary (`shared_appointments_store.dart:863-889`); callable fallback if cutover off. `razorpayWebhook` HTTP export `index.js:1304` — Razorpay → Postgres (`phase_e3_razorpay_ads.test.js`, `docs/audit/razorpay_webhook_pg_test.txt`) |
 | 4 | Production AAB (no `-AllowStaging`) | **FAIL** | **main** | `release_build_prod_skipinc.txt` — preflight blocked (`APP_ENV=staging` + supabase.co URL); set prod gateway defines per `MANUAL_STEPS.md` |
-| 5 | Gateway rate limit / CORS; RDS TLS/SG | **PARTIAL** | Cursor + **main** | Staging gateway reads OK (`db_connectivity_smoke_staging.txt`). AWS RDS CLI **AccessDenied** (`aws_rds_cli_access_denied.txt`); live SG/TLS **UNVERIFIED** |
+| 5 | Gateway rate limit / CORS; RDS TLS/SG / WAF | **PARTIAL** | Cursor + **main** | Gateway tests green; `infra/aws/waf.tf` added; `terraform validate` **PASS** (`terraform_validate_waf.txt`); **WAF not applied** — live AWS **UNVERIFIED** |
 | 6 | Client Firestore SDK grep = 0 | **PASS** | Cursor | `docs/audit/FIRESTORE_GREP_INDEPENDENT.txt` (0 matches); `pubspec.yaml` has no `cloud_firestore` |
 | 6b | Client `flutter analyze` / full test | **PASS** | Cursor | **0 warnings**; **677 pass / 0 fail** — `flutter_analyze_post_firestore_strip.txt`, `flutter_test_full_post_firestore_strip.txt` |
 | 6c | Release dry-run (prod profile) | **PASS** | Cursor | `FIRESTORE_FORBIDDEN` in defines; dry-run — `release_build_dryrun_post_firestore_strip.txt` |
@@ -356,14 +357,15 @@ node scripts/audit/pre_push_history_scan.js
 | Authoritative runtime grep `firestore` = 0 | **POST-RELEASE** | **141 lines** — `docs/audit/BACKEND_RUNTIME_FIRESTORE_GREP.txt`; prod **NOT-REACHABLE** with guard — `BACKEND_RECOVERY_STOP_STRIP.md` |
 | `backend/functions/src` grep (subset) | **PASS** | **0 lines** — `docs/audit/BACKEND_SRC_FIRESTORE_GREP.txt` |
 | Production imports `test/lib` | **PASS** | `docs/audit/VERIFY_NO_TEST_IMPORTS.txt` — functions runtime clean; backfill → `user_supabase_payload.js` |
-| `npm test` (Functions) | **PASS** | **551 pass / 0 fail / 568 tests** (17 skipped emulator, ~26s) — `docs/audit/npm_test_post_otp_guard.txt` |
+| `npm test` (Functions) | **PASS** | **558 pass / 0 fail / 575 tests** (17 skipped) — `docs/audit/npm_test_pg_pool_boot_guard_tail.txt` |
 | Production legacy Firestore guard | **PASS** | 5/5 — `docs/audit/production_legacy_firestore_guard_test.txt` (`APP_ENV=production`, `FIRESTORE_FORBIDDEN=1`) |
 | `backend/functions/test` firestore grep (separate) | **INFO** | see audit when re-run |
 | `backend/functions/scripts` firestore grep | **INFO** | see audit when re-run |
-| API Gateway unit tests | **PASS** | `services/api-gateway` → 68 pass (token verify, 401 anon, forged header rejected) |
+| API Gateway unit tests | **PASS** | `services/api-gateway` → **87 pass / 0 fail** (allowlist completeness, deny-by-default 403, per-role matrix) — `docs/audit/gateway_test_allowlist_green.txt` |
 | RLS inventory (migrations) | **PASS** | `node scripts/audit/rls_table_inventory.js` → 67 tables, **0** without `ENABLE RLS` in SQL |
 | RDS replay migrations (PG17 `:5440`) | **PASS** | **62 migrations / 1546 statements / 0 failures** — `docs/audit/rds_scratch_replay_5440_rerun.txt` (incl. `20261115000001`–`003` + RDS overrides) |
-| Gateway RLS + admin escalation matrix (PG `:5440`) | **PASS** | **60 PASS / 0 FAIL** — `docs/audit/gateway_rls_authorization_suite_5440.txt`, `docs/reports/gateway_rls_authorization_suite.json`; migration `20261115000001_harden_super_admin_no_jwt_email_bypass.sql` removes email-only admin bypass |
+| Gateway RLS + admin escalation matrix (PG `:5440`) | **PASS** | **74 PASS / 0 FAIL** — `docs/audit/gateway_rls_authorization_suite_5440_rerun.txt`, `docs/reports/gateway_rls_authorization_suite.json` |
+| Functions index import graph (no direct RDS in deploy) | **PASS** | `docs/audit/FUNCTIONS_INDEX_IMPORT_GRAPH.txt` — `pg_pool` / `cross_role_sync` not in `index.js` graph |
 | Staging admin bypass ledger | **PASS** | Operator: staging hardening applied; re-audit with `staging_migration_exposure_audit.js` if needed |
 | Staging write-flow smoke + tagged cleanup | **PASS** | Local `staging_e2e_write_flow_local_5440.txt`; staging `staging_e2e_write_flow_staging_run3.txt` (lab seed fix + per-step row asserts) |
 | Concurrent slot race (PG `:5440`) | **PASS** | **3 wins / 17 rejects** (RPC slot max=3) — `docs/audit/concurrent_slot_booking_race_5440.txt`; script `scripts/db/concurrent_slot_booking_race.js` |

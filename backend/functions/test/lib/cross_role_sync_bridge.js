@@ -682,7 +682,15 @@ async function readRemoteUpdatedAtMs({ url, key, pool, table, idColumn, id }) {
     throw new Error('Unsupported compare-and-skip target');
   }
   if (url && key) {
-    const endpoint = `${url.replace(/\/+$/, '')}/rest/v1/${table}?${idColumn}=eq.${encodeURIComponent(id)}&select=updated_at&limit=1`;
+    const base = url.replace(/\/+$/, '');
+    let endpoint;
+    if (table === 'appointments' && idColumn === 'appointment_id') {
+      endpoint = `${base}/rest/v1/appointments?appointment_id=eq.${encodeURIComponent(id)}&select=updated_at&limit=1`;
+    } else if (table === 'users' && idColumn === 'firebase_uid') {
+      endpoint = `${base}/rest/v1/users?firebase_uid=eq.${encodeURIComponent(id)}&select=updated_at&limit=1`;
+    } else {
+      throw new Error('Unsupported compare-and-skip REST target');
+    }
     const resp = await fetch(endpoint, {
       method: 'GET',
       headers: {

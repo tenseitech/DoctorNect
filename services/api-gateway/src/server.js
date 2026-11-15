@@ -372,17 +372,17 @@ function createGatewayServer(overrides = {}) {
     if (subPath.startsWith('/rpc/')) {
       const rpcName = subPath.slice('/rpc/'.length).replace(/^\/+/, '').split('/')[0].toLowerCase();
       if (!effectiveAllowedRpcs.has(rpcName)) {
-        return sendJson(404, {
-          error: 'Not Found',
-          message: `RPC function '${rpcName}' is not allowed or not found.`,
+        return sendJson(403, {
+          error: 'Forbidden',
+          message: `RPC function '${rpcName}' is not allowed.`,
         });
       }
     } else {
       const tableName = subPath.replace(/^\/+/, '').split('/')[0].toLowerCase();
       if (!effectiveDirectAllowedTables.has(tableName)) {
-        return sendJson(404, {
-          error: 'Not Found',
-          message: `Resource table '${tableName}' is not allowed or not found.`,
+        return sendJson(403, {
+          error: 'Forbidden',
+          message: `Resource table '${tableName}' is not allowed.`,
         });
       }
 
@@ -405,9 +405,9 @@ function createGatewayServer(overrides = {}) {
 
       for (const rel of embeddedRelations) {
         if (!effectiveAllowedTables.has(rel)) {
-          return sendJson(404, {
-            error: 'Not Found',
-            message: `Embedded resource '${rel}' is not allowed or not found.`,
+          return sendJson(403, {
+            error: 'Forbidden',
+            message: `Embedded resource '${rel}' is not allowed.`,
           });
         }
       }

@@ -630,7 +630,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
     assert.strictEqual(receivedPostgrestRequests.length, 0);
   });
 
-  it('rejects access to unallowlisted table with 404 Not Found', async () => {
+  it('rejects access to unallowlisted table with 403 Forbidden (deny-by-default)', async () => {
     const validToken = createTestFirebaseToken({ sub: 'user_table_1' });
     const res = await makeRequest({
       method: 'GET',
@@ -638,8 +638,8 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
       headers: { authorization: `Bearer ${validToken}` },
     });
 
-    assert.strictEqual(res.statusCode, 404);
-    assert.strictEqual(res.json.error, 'Not Found');
+    assert.strictEqual(res.statusCode, 403);
+    assert.strictEqual(res.json.error, 'Forbidden');
     assert.match(res.json.message, /Resource table 'unauthorized_table_xyz' is not allowed/i);
     assert.strictEqual(receivedPostgrestRequests.length, 0);
   });
@@ -657,7 +657,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
     assert.strictEqual(receivedPostgrestRequests[0].url, '/appointments');
   });
 
-  it('rejects access to unallowlisted RPC with 404 Not Found', async () => {
+  it('rejects access to unallowlisted RPC with 403 Forbidden (deny-by-default)', async () => {
     const validToken = createTestFirebaseToken({ sub: 'user_rpc_1' });
     const res = await makeRequest({
       method: 'POST',
@@ -669,8 +669,8 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
       body: JSON.stringify({}),
     });
 
-    assert.strictEqual(res.statusCode, 404);
-    assert.strictEqual(res.json.error, 'Not Found');
+    assert.strictEqual(res.statusCode, 403);
+    assert.strictEqual(res.json.error, 'Forbidden');
     assert.match(res.json.message, /RPC function 'drop_all_tables' is not allowed/i);
     assert.strictEqual(receivedPostgrestRequests.length, 0);
   });
@@ -778,8 +778,8 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         headers: { authorization: `Bearer ${validToken}` },
       });
 
-      assert.strictEqual(res.statusCode, 404);
-      assert.strictEqual(res.json.error, 'Not Found');
+      assert.strictEqual(res.statusCode, 403);
+      assert.strictEqual(res.json.error, 'Forbidden');
       assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
       assert.strictEqual(receivedPostgrestRequests.length, 0);
     });
@@ -804,7 +804,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         headers: { authorization: `Bearer ${validToken}` },
       });
 
-      assert.strictEqual(res.statusCode, 404);
+      assert.strictEqual(res.statusCode, 403);
       assert.match(res.json.message, /Embedded resource 'doctor_facilities' is not allowed/);
       assert.strictEqual(receivedPostgrestRequests.length, 0);
     });
@@ -830,7 +830,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         headers: { authorization: `Bearer ${validToken}` },
       });
 
-      assert.strictEqual(res.statusCode, 404);
+      assert.strictEqual(res.statusCode, 403);
       assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
       assert.strictEqual(receivedPostgrestRequests.length, 0);
     });
@@ -856,7 +856,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         headers: { authorization: `Bearer ${validToken}` },
       });
 
-      assert.strictEqual(res.statusCode, 404);
+      assert.strictEqual(res.statusCode, 403);
       assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
       assert.strictEqual(receivedPostgrestRequests.length, 0);
     });
@@ -869,7 +869,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         headers: { authorization: `Bearer ${validToken}` },
       });
 
-      assert.strictEqual(res.statusCode, 404);
+      assert.strictEqual(res.statusCode, 403);
       assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
       assert.strictEqual(receivedPostgrestRequests.length, 0);
     });
@@ -943,7 +943,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
           path: `/rest/v1/${table}`,
           headers: { authorization: `Bearer ${validToken}` },
         });
-        assert.strictEqual(res.statusCode, 404, `Client should receive 404 on service_role-only table ${table}`);
+        assert.strictEqual(res.statusCode, 403, `Client should receive 403 on service_role-only table ${table}`);
         assert.strictEqual(receivedPostgrestRequests.length, 0);
       }
     });
@@ -1056,7 +1056,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         headers: { authorization: `Bearer ${validToken}` },
       });
 
-      assert.strictEqual(res.statusCode, 404);
+      assert.strictEqual(res.statusCode, 403);
       assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
       assert.strictEqual(receivedPostgrestRequests.length, 0);
     });
@@ -1081,7 +1081,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         headers: { authorization: `Bearer ${validToken}` },
       });
 
-      assert.strictEqual(res.statusCode, 404);
+      assert.strictEqual(res.statusCode, 403);
       assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
       assert.strictEqual(receivedPostgrestRequests.length, 0);
     });
@@ -1106,7 +1106,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         headers: { authorization: `Bearer ${validToken}` },
       });
 
-      assert.strictEqual(res.statusCode, 404);
+      assert.strictEqual(res.statusCode, 403);
       assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
       assert.strictEqual(receivedPostgrestRequests.length, 0);
     });
@@ -1131,7 +1131,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         headers: { authorization: `Bearer ${validToken}` },
       });
 
-      assert.strictEqual(res.statusCode, 404);
+      assert.strictEqual(res.statusCode, 403);
       assert.match(res.json.message, /Embedded resource 'razorpay_orders' is not allowed/);
       assert.strictEqual(receivedPostgrestRequests.length, 0);
     });
@@ -1164,7 +1164,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
           headers: { authorization: `Bearer ${validToken}` },
         });
 
-        assert.strictEqual(res.statusCode, 404, `Expected 404 for direct access to ${table}`);
+        assert.strictEqual(res.statusCode, 403, `Expected 403 for direct access to ${table}`);
         assert.match(res.json.message, new RegExp(`Resource table '${table}' is not allowed`));
       }
       assert.strictEqual(receivedPostgrestRequests.length, 0);
@@ -1198,7 +1198,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
           body: JSON.stringify({ p_id: '123' }),
         });
 
-        assert.strictEqual(res.statusCode, 404, `Expected 404 for removed RPC ${rpc}`);
+        assert.strictEqual(res.statusCode, 403, `Expected 403 for removed RPC ${rpc}`);
         assert.match(res.json.message, new RegExp(`RPC function '${rpc}' is not allowed`));
       }
       assert.strictEqual(receivedPostgrestRequests.length, 0);
@@ -1212,7 +1212,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
         headers: { authorization: `Bearer ${validToken}` },
       });
 
-      assert.strictEqual(res.statusCode, 404);
+      assert.strictEqual(res.statusCode, 403);
       assert.match(res.json.message, /Resource table 'pharmacies' is not allowed/);
       assert.strictEqual(receivedPostgrestRequests.length, 0);
     });

@@ -52,6 +52,7 @@ module.exports = {
   // Tables directly accessible as top-level endpoints by authenticated clients and public anonymous endpoints
   clientDirectAllowedTables: [
     'ambulance_broadcasts',
+    'ambulance_invites',
     'ambulance_location_updates',
     'ambulance_requests',
     'ambulances',
@@ -102,7 +103,6 @@ module.exports = {
     'abuse_rate_limits',
     'admin_audit_logs',
     'admin_users',
-    'ambulance_invites',
     'ambulance_locations',
     'ambulance_private_settings',
     'ambulance_trip_contacts',

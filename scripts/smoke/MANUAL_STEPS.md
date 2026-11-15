@@ -101,12 +101,18 @@ Audit table: `docs/audit/PG_POOL_CALLER_AUDIT.md`.
 - ALB listener → gateway; ECS in **private subnets**, `assign_public_ip = false`.
 - Images: `var.gateway_image`, `var.postgrest_image` (ECR tags — not pinned in this snippet).
 
-**Gateway hardening (code):** service key auth uses constant-time compare (`services/api-gateway/src/security.js`). Negative tests: wrong apikey, JWT-as-apikey, anon on `admin_users` (`services/api-gateway/test/gateway.test.js`). **Gap:** no AWS WAF in `infra/aws/*.tf` — ALB + SG only.
+**Gateway hardening (code):** service key auth uses constant-time compare (`services/api-gateway/src/security.js`). Deny-by-default: unlisted tables/RPCs → **403 Forbidden** (`services/api-gateway/src/server.js`). Tests: `gateway.test.js`, `gateway_role_access.test.js`, `allowlist_completeness.test.js`.
+
+**WAF (Terraform — apply only after operator review):**
+
+- Template: `infra/aws/waf.tf` — `aws_wafv2_web_acl` (Common + KnownBadInputs + IP reputation + rate limits) + `aws_wafv2_web_acl_association` on `aws_lb.api`.
+- Local check (no AWS creds required): `cd infra/aws && terraform init -backend=false && terraform validate`
+- Apply (production): after `terraform plan` shows only intended WAF + association changes, `terraform apply` with production workspace/vars; verify WAF metrics in CloudWatch and spot-check `/healthz` + one authenticated `/rest/v1` call.
 
 **Deploy flow (operator):**
 
 1. Build/push gateway image (`services/api-gateway`) and pin PostgREST image to ECR.
-2. `terraform apply` in `infra/aws` with correct `var.environment`, subnets, certs.
+2. `terraform apply` in `infra/aws` with correct `var.environment`, subnets, certs (include WAF when ready).
 3. Confirm ALB DNS + ACM cert.
 
 **Whether production gateway is already live:** **UNVERIFIED** (no Terraform state / AWS API access from agent).

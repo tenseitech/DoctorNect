@@ -26,12 +26,7 @@ const PRODUCTION_PG_POOL_CALLERS = Object.freeze([
   },
 ]);
 
-/**
- * Cloud Functions production boot requires DATABASE_URL only when an exported handler uses pg_pool.
- */
-function isProductionBootRequiresDatabaseUrl() {
-  return false;
-}
+const { isProductionBootRequiresDatabaseUrl } = require('./production_pg_pool_boot');
 
 function isProductionAppEnv() {
   return String(process.env.APP_ENV || 'staging').trim().toLowerCase() === 'production';

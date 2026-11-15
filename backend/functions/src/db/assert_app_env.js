@@ -1,6 +1,6 @@
 'use strict';
 
-const { isProductionBootRequiresDatabaseUrl } = require('./pg_pool');
+const { isProductionBootRequiresDatabaseUrl } = require('./production_pg_pool_boot');
 
 /**
  * Fail-fast routing guard: APP_ENV must select the correct database access layer.

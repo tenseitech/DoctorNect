@@ -324,5 +324,78 @@ describe('Gateway Allowlist Completeness Scanner', () => {
       config.clientAllowedRpcs.includes('cancel_ambulance_broadcast'),
       'cancel_ambulance_broadcast must be in config.clientAllowedRpcs'
     );
+
+    const clientOnlyTables = new Set(clientTables);
+    const clientDirectSet = new Set(config.clientDirectAllowedTables);
+    const clientRpcSet = new Set(config.clientAllowedRpcs);
+    const clientAllowedTableSet = new Set(config.clientAllowedTables);
+    const serviceOnlySet = new Set(config.serviceRoleOnlyTables);
+
+    const missingFromAllowlist = [...clientOnlyTables]
+      .filter((t) => !clientAllowedTableSet.has(t))
+      .sort();
+    const extraClientDirect = [...clientDirectSet]
+      .filter((t) => !clientOnlyTables.has(t))
+      .sort();
+    const extraUnreferencedClientDirect = extraClientDirect.filter((t) => !serviceOnlySet.has(t));
+    const backendOnlyAllowlisted = extraClientDirect.filter((t) => serviceOnlySet.has(t));
+    const clientRpcMissing = [...clientRpcs].filter((r) => !clientRpcSet.has(r)).sort();
+    const clientRpcExtra = [...clientRpcSet].filter((r) => !clientRpcs.has(r)).sort();
+
+    const diffLines = [
+      '# Gateway client allowlist diff (auto-generated)',
+      '',
+      `Generated from allowlist completeness scanner.`,
+      '',
+      '## Client Dart tables missing from gateway (feature break risk)',
+      '',
+      missingFromAllowlist.length
+        ? missingFromAllowlist.map((t) => `- \`${t}\``).join('\n')
+        : '_None — all client-referenced tables are allowlisted._',
+      '',
+      '## Client RPCs missing from gateway',
+      '',
+      clientRpcMissing.length
+        ? clientRpcMissing.map((r) => `- \`${r}\``).join('\n')
+        : '_None._',
+      '',
+      '## clientDirectAllowedTables not referenced in Dart (defense-in-depth exposure)',
+      '',
+      extraUnreferencedClientDirect.length
+        ? extraUnreferencedClientDirect.map((t) => `- \`${t}\` (review if still needed for embeds/API)`).join('\n')
+        : '_None — every direct-allowed table appears in Dart or is embed-only._',
+      '',
+      '## Allowlisted RPCs unused in client/backend scan',
+      '',
+      clientRpcExtra.length
+        ? clientRpcExtra.map((r) => `- \`${r}\``).join('\n')
+        : '_None._',
+      '',
+      '## Summary counts',
+      '',
+      `| Metric | Count |`,
+      `|--------|------:|`,
+      `| Dart-discovered tables | ${clientOnlyTables.size} |`,
+      `| Dart-discovered RPCs | ${clientRpcs.size} |`,
+      `| clientDirectAllowedTables | ${clientDirectSet.size} |`,
+      `| Missing from allowlist (tables) | ${missingFromAllowlist.length} |`,
+      `| Extra direct allowlist (unreferenced) | ${extraUnreferencedClientDirect.length} |`,
+      `| serviceRoleOnlyTables (backend; not in Dart) | ${serviceOnlySet.size} |`,
+      '',
+      '## serviceRoleOnlyTables (expected extra vs Dart)',
+      '',
+      [...serviceOnlySet].sort().map((t) => `- \`${t}\``).join('\n'),
+    ];
+
+    const diffPath = path.join(repoRoot, 'docs/audit/GATEWAY_CLIENT_ALLOWLIST_DIFF.md');
+    fs.mkdirSync(path.dirname(diffPath), { recursive: true });
+    fs.writeFileSync(diffPath, `${diffLines.join('\n')}\n`, 'utf8');
+
+    assert.strictEqual(
+      missingFromAllowlist.length,
+      0,
+      `Client tables missing from gateway allowlist: ${missingFromAllowlist.join(', ')}`,
+    );
+    assert.strictEqual(clientRpcMissing.length, 0, `Client RPCs missing: ${clientRpcMissing.join(', ')}`);
   });
 });
