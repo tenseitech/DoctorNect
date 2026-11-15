@@ -226,6 +226,44 @@ ORDER BY name;
 
 ---
 
+## AWS RDS `pg_cron` (production parameter group)
+
+1. RDS console → **Parameter group** for the instance (or create `doctornect-pg18-custom`).
+2. Set `shared_preload_libraries` to include **`pg_cron`** (keep existing entries such as `pg_stat_statements`, `rdsutils` — comma-separated).
+3. Set `cron.database_name` = **`doctornect`** (must match `PROD_RDS_DB`).
+4. **Reboot** the RDS instance (pending-reboot parameters).
+5. As `doctornect_admin`: `CREATE EXTENSION IF NOT EXISTS pg_cron;` (migration `20260923000003_doctornect_cron.sql` does this when preload is enabled).
+6. Without preload, `migrate.js` **fails closed** with `PG_CRON_NOT_AVAILABLE` — emergency only: `--allow-no-cron` (skips cron migration; use an external scheduler).
+
+Read-only check:
+
+```powershell
+node scripts/db/prod_rds_readonly_diagnostic.js
+```
+
+## RDS-like local (Postgres 18, no `postgres` role)
+
+```powershell
+cd scripts/docker/rdslike-pg18
+docker compose up -d
+cd ../..
+node scripts/db/rdslike_apply_bootstrap.js
+$env:REPLAY_DB_URL='postgresql://doctornect_admin:test@localhost:5442/postgres'
+$env:REPLAY_RDS_LIKE='1'
+node scripts/db/migrate.js --target=replay --dry-run-all --allow-no-cron --confirm-live-data
+node scripts/db/migrate.js --target=replay --execute --allow-no-cron --confirm-live-data
+$env:LOCAL_FRESH_DB_URL='postgresql://doctornect_admin:test@localhost:5442/doctornect'
+node scripts/db/gateway_rls_authorization_suite.js
+```
+
+Evidence: `docs/audit/prod_dry_run_all_post_fix2.txt`, `docs/audit/gateway_rls_rdslike_5442.txt`.
+
+Production dry-run (rollback only, tunnel `127.0.0.1:5433`):
+
+```powershell
+node scripts/db/migrate.js --target=production --dry-run-all --allow-no-cron --confirm-live-data --confirm-db=doctornect --confirm=$env:PROD_RDS_HOST
+```
+
 ## Local replay (PG `:5440`)
 
 ```powershell

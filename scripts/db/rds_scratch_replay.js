@@ -33,6 +33,7 @@ const {
   resolveMigrationSqlPath,
 } = require('../lib/migration_file_list');
 const { isSkippableTransactionControlStatement } = require('../lib/migration_txn_sql');
+const { normalizeRdsMigrationSql } = require('../lib/rds_migration_sql_normalize');
 
 let parse;
 try {
@@ -288,6 +289,7 @@ async function runRdsScratchReplay() {
         const { sqlPath, useOverride } = resolveMigrationSqlPath({ relPath, target: 'replay' });
         process.stdout.write(`  -> Applying ${relPath}${useOverride ? ' [RDS override]' : ''}... `);
         let sql = fs.readFileSync(sqlPath, 'utf8');
+        sql = normalizeRdsMigrationSql(sql, process.env.REPLAY_RDS_LIKE === '1' ? 'production' : 'replay');
         if (lacksPgCron && file === '20260923000003_doctornect_cron.sql') {
           // If server lacks pg_cron, replace unguarded CREATE EXTENSION with no-op in replay
           sql = sql.replace(/CREATE EXTENSION IF NOT EXISTS pg_cron;/g, '-- [REPLAY TEST-ONLY] Skipped pg_cron extension creation');

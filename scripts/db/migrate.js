@@ -69,6 +69,7 @@ const {
   resolveMigrationSqlPath,
 } = require('../lib/migration_file_list');
 const { isSkippableTransactionControlStatement } = require('../lib/migration_txn_sql');
+const { normalizeRdsMigrationSql } = require('../lib/rds_migration_sql_normalize');
 
 const MIGRATION_ADVISORY_TARGETS = new Set(['production', 'rehearsal']);
 
@@ -90,7 +91,12 @@ function printConnectionFailureHint(target) {
 
 function loadActiveMigrationSql(relPath, target) {
   const { sqlPath, useOverride } = resolveMigrationSqlPath({ relPath, target });
-  const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+  let sqlContent = fs.readFileSync(sqlPath, 'utf8');
+  const normTarget =
+    process.env.REPLAY_RDS_LIKE === '1' && (target === 'replay' || target === 'replay_check')
+      ? 'production'
+      : target;
+  sqlContent = normalizeRdsMigrationSql(sqlContent, normTarget);
   return { sqlContent, useOverride };
 }
 
@@ -325,8 +331,12 @@ async function runMigrations() {
       process.exit(1);
     }
     const parsed = new URL(rawReplayUrl);
-    parsed.pathname = '/replay_check';
-    const replayUser = getEnv('REPLAY_USER') || 'rds_master';
+    const rdsLikeReplay = process.env.REPLAY_RDS_LIKE === '1';
+    parsed.pathname = rdsLikeReplay
+      ? `/${getEnv('REPLAY_RDS_DB') || 'doctornect'}`
+      : '/replay_check';
+    const defaultReplayUser = rdsLikeReplay ? 'doctornect_admin' : 'rds_master';
+    const replayUser = getEnv('REPLAY_USER') || defaultReplayUser;
     if (replayUser) {
       parsed.username = replayUser;
     }

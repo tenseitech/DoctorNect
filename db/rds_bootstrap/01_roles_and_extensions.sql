@@ -15,7 +15,9 @@ BEGIN
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
-    CREATE ROLE service_role NOLOGIN;
+    CREATE ROLE service_role NOLOGIN BYPASSRLS;
+  ELSE
+    ALTER ROLE service_role BYPASSRLS;
   END IF;
 
   -- PostgREST authenticator role (LOGIN, member of anon, authenticated, service_role)
@@ -37,6 +39,36 @@ BEGIN
     CREATE ROLE rds_master LOGIN CREATEROLE CREATEDB;
     GRANT rds_superuser TO rds_master;
   END IF;
+
+  -- AWS RDS master user (production migrator); harmless on local when run as superuser
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'doctornect_admin') THEN
+    CREATE ROLE doctornect_admin LOGIN CREATEROLE CREATEDB;
+    GRANT rds_superuser TO doctornect_admin;
+  END IF;
+END $$;
+
+-- PG16+: migrator must be able to SET ROLE to app roles for OWNER / policy DDL
+DO $$
+DECLARE
+  migrator text;
+BEGIN
+  SELECT rolname INTO migrator
+  FROM pg_roles
+  WHERE rolname IN ('doctornect_admin', 'rds_master', 'app_migrator')
+    AND rolcanlogin
+  ORDER BY CASE rolname
+    WHEN 'doctornect_admin' THEN 1
+    WHEN 'rds_master' THEN 2
+    ELSE 3
+  END
+  LIMIT 1;
+  IF migrator IS NULL THEN
+    migrator := current_user;
+  END IF;
+  EXECUTE format(
+    'GRANT anon, authenticated, service_role, authenticator TO %I WITH ADMIN OPTION, SET TRUE',
+    migrator
+  );
 END $$;
 
 -- Grant role memberships to authenticator so it can switch roles on requests
@@ -60,6 +92,26 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
     CREATE PUBLICATION supabase_realtime;
   END IF;
+END $$;
+
+-- Migrator (doctornect_admin) must own publication for ALTER PUBLICATION ADD TABLE in migrations
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'doctornect_admin')
+     AND EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    ALTER PUBLICATION supabase_realtime OWNER TO doctornect_admin;
+  END IF;
+EXCEPTION WHEN insufficient_privilege THEN
+  NULL;
+END $$;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'doctornect_admin') THEN
+    GRANT EXECUTE ON FUNCTION pg_stat_statements_reset() TO doctornect_admin;
+  END IF;
+EXCEPTION WHEN undefined_function OR insufficient_privilege THEN
+  NULL;
 END $$;
 
 

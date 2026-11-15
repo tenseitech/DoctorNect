@@ -1,0 +1,326 @@
+{
+  "at": "2026-11-15T15:11:10.141Z",
+  "session": {
+    "current_user": "doctornect_admin",
+    "current_database": "doctornect",
+    "search_path": "\"$user\", public",
+    "version": "PostgreSQL 18.3 on aarch64-unknown-linux-gnu, compiled by aarch64-unknown-linux-gnu-gcc (GCC) 12.4.0, 64-bit"
+  },
+  "schemas": [
+    {
+      "schema_name": "auth",
+      "owner": "doctornect_admin"
+    },
+    {
+      "schema_name": "private",
+      "owner": "doctornect_admin"
+    },
+    {
+      "schema_name": "public",
+      "owner": "pg_database_owner"
+    }
+  ],
+  "relkinds": [
+    {
+      "schema_name": "auth",
+      "relkind": "index",
+      "n": 2
+    },
+    {
+      "schema_name": "auth",
+      "relkind": "table",
+      "n": 1
+    },
+    {
+      "schema_name": "private",
+      "relkind": "index",
+      "n": 1
+    },
+    {
+      "schema_name": "private",
+      "relkind": "table",
+      "n": 1
+    },
+    {
+      "schema_name": "public",
+      "relkind": "index",
+      "n": 140
+    },
+    {
+      "schema_name": "public",
+      "relkind": "sequence",
+      "n": 6
+    },
+    {
+      "schema_name": "public",
+      "relkind": "table",
+      "n": 52
+    },
+    {
+      "schema_name": "public",
+      "relkind": "view",
+      "n": 2
+    }
+  ],
+  "role_exists": [
+    {
+      "rolname": "anon",
+      "rolsuper": false,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": false,
+      "has_rds_superuser": false
+    },
+    {
+      "rolname": "app_migrator",
+      "rolsuper": false,
+      "rolcreaterole": true,
+      "rolcreatedb": false,
+      "rolcanlogin": true,
+      "has_rds_superuser": false
+    },
+    {
+      "rolname": "authenticated",
+      "rolsuper": false,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": false,
+      "has_rds_superuser": false
+    },
+    {
+      "rolname": "authenticator",
+      "rolsuper": false,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": true,
+      "has_rds_superuser": false
+    },
+    {
+      "rolname": "doctornect_admin",
+      "rolsuper": false,
+      "rolcreaterole": true,
+      "rolcreatedb": true,
+      "rolcanlogin": true,
+      "has_rds_superuser": true
+    },
+    {
+      "rolname": "rds_master",
+      "rolsuper": false,
+      "rolcreaterole": true,
+      "rolcreatedb": true,
+      "rolcanlogin": true,
+      "has_rds_superuser": true
+    },
+    {
+      "rolname": "rds_superuser",
+      "rolsuper": false,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": false,
+      "has_rds_superuser": false
+    },
+    {
+      "rolname": "rdsadmin",
+      "rolsuper": true,
+      "rolcreaterole": true,
+      "rolcreatedb": true,
+      "rolcanlogin": true,
+      "has_rds_superuser": false
+    },
+    {
+      "rolname": "service_role",
+      "rolsuper": false,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolcanlogin": false,
+      "has_rds_superuser": false
+    }
+  ],
+  "all_app_roles": [
+    {
+      "rolname": "anon",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreaterole": false
+    },
+    {
+      "rolname": "app_migrator",
+      "rolcanlogin": true,
+      "rolsuper": false,
+      "rolcreaterole": true
+    },
+    {
+      "rolname": "authenticated",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreaterole": false
+    },
+    {
+      "rolname": "authenticator",
+      "rolcanlogin": true,
+      "rolsuper": false,
+      "rolcreaterole": false
+    },
+    {
+      "rolname": "doctornect_admin",
+      "rolcanlogin": true,
+      "rolsuper": false,
+      "rolcreaterole": true
+    },
+    {
+      "rolname": "rds_ad",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreaterole": false
+    },
+    {
+      "rolname": "rds_extension",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreaterole": false
+    },
+    {
+      "rolname": "rds_iam",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreaterole": false
+    },
+    {
+      "rolname": "rds_master",
+      "rolcanlogin": true,
+      "rolsuper": false,
+      "rolcreaterole": true
+    },
+    {
+      "rolname": "rds_password",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreaterole": false
+    },
+    {
+      "rolname": "rds_replication",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreaterole": false
+    },
+    {
+      "rolname": "rds_reserved",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreaterole": false
+    },
+    {
+      "rolname": "rds_superuser",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreaterole": false
+    },
+    {
+      "rolname": "service_role",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreaterole": false
+    },
+    {
+      "rolname": "supabase_admin",
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolcreaterole": false
+    }
+  ],
+  "role_settings": [
+    {
+      "rolname": "rdsadmin",
+      "setting": "search_path=pg_catalog"
+    },
+    {
+      "rolname": "rdsadmin",
+      "setting": "search_path=pg_catalog, public"
+    }
+  ],
+  "shared_preload_libraries": "rdsutils,pg_tle,pg_stat_statements,rds_casts",
+  "pg_cron": [
+    {
+      "name": "pg_cron",
+      "default_version": "1.6",
+      "installed_version": null
+    }
+  ],
+  "ledger": [
+    {
+      "ledger_exists": false
+    }
+  ],
+  "object_inventory": [
+    {
+      "schema_name": "public",
+      "owner": "doctornect_admin",
+      "kind": "index",
+      "n": 140
+    },
+    {
+      "schema_name": "public",
+      "owner": "doctornect_admin",
+      "kind": "table",
+      "n": 52
+    },
+    {
+      "schema_name": "public",
+      "owner": "doctornect_admin",
+      "kind": "S",
+      "n": 6
+    },
+    {
+      "schema_name": "auth",
+      "owner": "doctornect_admin",
+      "kind": "index",
+      "n": 2
+    },
+    {
+      "schema_name": "public",
+      "owner": "rdsadmin",
+      "kind": "view",
+      "n": 2
+    },
+    {
+      "schema_name": "auth",
+      "owner": "doctornect_admin",
+      "kind": "table",
+      "n": 1
+    },
+    {
+      "schema_name": "private",
+      "owner": "doctornect_admin",
+      "kind": "index",
+      "n": 1
+    },
+    {
+      "schema_name": "private",
+      "owner": "doctornect_admin",
+      "kind": "table",
+      "n": 1
+    }
+  ],
+  "extensions_installed": [
+    {
+      "extname": "pg_stat_statements",
+      "schema": "public",
+      "owner": "rdsadmin"
+    },
+    {
+      "extname": "pgcrypto",
+      "schema": "public",
+      "owner": "rdsadmin"
+    },
+    {
+      "extname": "plpgsql",
+      "schema": "pg_catalog",
+      "owner": "rdsadmin"
+    },
+    {
+      "extname": "uuid-ossp",
+      "schema": "public",
+      "owner": "rdsadmin"
+    }
+  ]
+}

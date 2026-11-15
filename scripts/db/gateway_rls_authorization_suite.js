@@ -213,6 +213,13 @@ async function expectDenied(client, role, claims, sql) {
 }
 
 async function seedFixtures(client) {
+  const who = await client.query(
+    `SELECT current_user AS u, COALESCE(rolsuper, false) AS super
+     FROM pg_roles WHERE rolname = current_user`,
+  );
+  if (!who.rows[0]?.super) {
+    await client.query('SET LOCAL ROLE service_role');
+  }
   const ids = {
     pA: 'authz_pat_a',
     pB: 'authz_pat_b',
