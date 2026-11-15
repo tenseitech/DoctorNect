@@ -337,13 +337,13 @@ node scripts/audit/pre_push_history_scan.js
 | 2 | Slot capacity rule documented | **PASS** (code=3) | main decides | `backend/functions/appointment_slots.js:6`, `db/migrations/20261026000001_rpc_null_safe_authz.sql` |
 | 3 | Production boot guards (`APP_ENV`, `FIRESTORE_FORBIDDEN`, DB/gateway/Redis/MSG91) | **PARTIAL** | Cursor + **main** | `runtime_firestore_blocked` + legacy entrypoint suite **PASS** — `production_legacy_firestore_guard_test.txt`; deploy env **UNVERIFIED** on live Firebase |
 | 3b | Legacy `bookAppointment` / webhooks | **PASS** (path map) | Cursor | Client: Supabase RPC primary (`shared_appointments_store.dart:863-889`); callable fallback if cutover off. `razorpayWebhook` HTTP export `index.js:1304` — Razorpay → Postgres (`phase_e3_razorpay_ads.test.js`, `docs/audit/razorpay_webhook_pg_test.txt`) |
-| 4 | Production AAB (no `-AllowStaging`) | **PARTIAL** | **main** | Preflight + strings check PASS (`release_build_prod_aab_supabase_strings.txt`); full Gradle log **interrupted** on agent host — re-run MANUAL_STEPS production block |
-| 5 | Gateway rate limit / CORS; RDS TLS/SG | **PARTIAL** | Cursor + **main** | Gateway: `gateway_security_smoke.txt` (66 pass). RDS gaps: `infra_rds_security_gaps.txt` — live AWS **UNVERIFIED** |
+| 4 | Production AAB (no `-AllowStaging`) | **FAIL** | **main** | `release_build_prod_skipinc.txt` — preflight blocked (`APP_ENV=staging` + supabase.co URL); set prod gateway defines per `MANUAL_STEPS.md` |
+| 5 | Gateway rate limit / CORS; RDS TLS/SG | **PARTIAL** | Cursor + **main** | Staging gateway reads OK (`db_connectivity_smoke_staging.txt`). AWS RDS CLI **AccessDenied** (`aws_rds_cli_access_denied.txt`); live SG/TLS **UNVERIFIED** |
 | 6 | Client Firestore SDK grep = 0 | **PASS** | Cursor | `docs/audit/FIRESTORE_GREP_INDEPENDENT.txt` (0 matches); `pubspec.yaml` has no `cloud_firestore` |
 | 6b | Client `flutter analyze` / full test | **PASS** | Cursor | **0 warnings**; **677 pass / 0 fail** — `flutter_analyze_post_firestore_strip.txt`, `flutter_test_full_post_firestore_strip.txt` |
 | 6c | Release dry-run (prod profile) | **PASS** | Cursor | `FIRESTORE_FORBIDDEN` in defines; dry-run — `release_build_dryrun_post_firestore_strip.txt` |
-| 7 | Staging migrations `20261115000001` + live write smoke | **UNVERIFIED** | **main** | `staging_migration_exposure_audit.txt` |
-| 8 | Live prod gateway / RDS wire | **UNVERIFIED** | **main** | No tunnel this session |
+| 7 | Staging migrations `20261115000001` + live write smoke | **PASS** | Cursor + **main** | Write smoke **staging** `staging_e2e_write_flow_staging_run3.txt` (all steps rows≥1 + tagged cleanup). Hardening applied per operator |
+| 8 | Live prod gateway / RDS wire | **UNVERIFIED** | **main** | Tunnel down (`prod_rds_preflight_readonly.txt`); `/healthz` **UNVERIFIED** (`db_connectivity_smoke_production.txt`) |
 
 **Release recommendation:** **NO-GO** until prod AAB full Gradle on operator machine, Firebase production env materialized (`APP_ENV`/`FIRESTORE_FORBIDDEN`), and staging hardening migration + live write smoke (**UNVERIFIED**). Backend Firestore grep **not** a blocker when guard + `FIRESTORE_FORBIDDEN=1` (strip deferred post-release).
 
@@ -364,8 +364,8 @@ node scripts/audit/pre_push_history_scan.js
 | RLS inventory (migrations) | **PASS** | `node scripts/audit/rls_table_inventory.js` → 67 tables, **0** without `ENABLE RLS` in SQL |
 | RDS replay migrations (PG17 `:5440`) | **PASS** | **62 migrations / 1546 statements / 0 failures** — `docs/audit/rds_scratch_replay_5440_rerun.txt` (incl. `20261115000001`–`003` + RDS overrides) |
 | Gateway RLS + admin escalation matrix (PG `:5440`) | **PASS** | **60 PASS / 0 FAIL** — `docs/audit/gateway_rls_authorization_suite_5440.txt`, `docs/reports/gateway_rls_authorization_suite.json`; migration `20261115000001_harden_super_admin_no_jwt_email_bypass.sql` removes email-only admin bypass |
-| Staging admin bypass ledger | **PARTIAL** | `20261112000003` **applied** on staging; `20261115000001` **not in ledger** — `docs/audit/staging_migration_exposure_audit.txt`; apply via `apply_super_admin_hardening_staging.js` |
-| Staging write-flow smoke + tagged cleanup | **PARTIAL** | **Local `:5440` PASS** (`20261115000002` pgcrypto) — `docs/audit/staging_e2e_write_flow_local_5440.txt`. Staging: apply `00001`/`00002` then re-run `--target staging` |
+| Staging admin bypass ledger | **PASS** | Operator: staging hardening applied; re-audit with `staging_migration_exposure_audit.js` if needed |
+| Staging write-flow smoke + tagged cleanup | **PASS** | Local `staging_e2e_write_flow_local_5440.txt`; staging `staging_e2e_write_flow_staging_run3.txt` (lab seed fix + per-step row asserts) |
 | Concurrent slot race (PG `:5440`) | **PASS** | **3 wins / 17 rejects** (RPC slot max=3) — `docs/audit/concurrent_slot_booking_race_5440.txt`; script `scripts/db/concurrent_slot_booking_race.js` |
 | OTP Redis integration (`:6390`) | **PASS** | **1 pass / 0 fail** (lockout + 20 parallel wrong guesses) — `docs/audit/otp_redis_integration_only_6390.txt`, `otp_lockout_root_cause.txt` |
 | Release AAB build | **PASS** | **~98MB** `app-release.aab` — `docs/audit/release_build_aab_proof.txt`, log `release_build_real_aab_log.txt`; **staging-permitted** (`-AllowStaging`) |
@@ -379,7 +379,10 @@ node scripts/audit/pre_push_history_scan.js
 | `flutter test` / `flutter analyze` | **PASS** | **677 pass / 0 fail**; **analyze 0 issues** — `docs/audit/flutter_*_post_firestore_strip.txt` |
 | Release dry-run (no `cloud_firestore`) | **PASS** | `docs/audit/release_build_dryrun_post_firestore_strip.txt` |
 | PROD gateway deploy / TLS / rate limit / RDS wire | **UNVERIFIED** | Code in `services/api-gateway` + `infra/aws/ecs.tf`; live AWS not probed this session |
-| `migrate.js --target production` | **UNVERIFIED** | Not run (no prod tunnel) |
+| `migrate.js --target production` | **UNVERIFIED** | Dry-run needs `--confirm-live-data` + tunnel; preflight `ECONNREFUSED 127.0.0.1:5433` — `prod_rds_preflight_readonly.txt` |
+| `assertProductionCutoverBoot` unit tests | **PASS** | `assert_production_cutover_boot_test.txt` (dummy prod env pass/fail) |
+| AWS RDS describe (CLI) | **FAIL** (access) | `aws_rds_cli_access_denied.txt` — operator IAM or console |
+| `db_connectivity_smoke` staging | **PASS** | `db_connectivity_smoke_staging.txt` |
 
 **Overall completion:** `Σ(weight×score)` → **~79%** (backend OTP path improved; client + full backend strip still open).
 
@@ -392,7 +395,7 @@ node scripts/audit/pre_push_history_scan.js
 - [x] `flutter analyze` 0 warnings + full `flutter test` (**677 pass**)
 - [ ] `migrate.js --target production` applied; `schema_diff` clean
 - [ ] `db_connectivity_smoke.js` + gateway `/healthz` OK
-- [ ] Staging **write** smoke (OTP → pharmacy) with SELECT proofs
+- [x] Staging **write** smoke (OTP → pharmacy) with SELECT proofs
 - [ ] Cloud Functions redeployed with Postgres-only runtime (`FIRESTORE_FORBIDDEN=1` on deploy env; legacy Admin SDK may remain in bundle until post-release strip)
 
 ## FIRESTORE REMAINING (release: reachable vs dead)

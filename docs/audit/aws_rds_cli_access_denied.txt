@@ -1,0 +1,12 @@
+AWS RDS read-only audit attempt (2026-11-15)
+============================================
+
+Caller: arn:aws:iam::672027759702:user/doctornect-admin (sts get-caller-identity OK)
+
+aws rds describe-db-instances
+→ AccessDenied: rds:DescribeDBInstances on arn:aws:rds:ap-south-1:672027759702:db:*
+
+Cannot verify from this host without IAM policy add:
+  Action: rds:DescribeDBInstances, rds:DescribeDBParameters, ec2:DescribeSecurityGroups
+
+Repo-only reference: docs/audit/infra_rds_security_gaps.txt, infra/aws/rds.tf (rds.force_ssl=1 pending-reboot)

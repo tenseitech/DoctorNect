@@ -54,13 +54,43 @@ function patientClaims(uid) {
   );
 }
 
+function assertStepProof(res, label) {
+  if (!res || res.rowCount < 1) {
+    console.error(`\nFAIL: step "${label}" proof rows=${res?.rowCount ?? 0} (expected >= 1)`);
+    process.exitCode = 1;
+    throw new Error(`smoke step failed: ${label}`);
+  }
+}
+
 async function proofSelect(client, label, sql, params) {
   const res = await client.query(sql, params);
   console.log(`\n=== PROOF: ${label} (rows=${res.rowCount}) ===`);
   for (const row of res.rows.slice(0, 3)) {
     console.log(JSON.stringify(row));
   }
+  assertStepProof(res, label);
   return res;
+}
+
+async function ensureSmokeLab(client, tag) {
+  const labs = await client.query(`SELECT lab_id FROM public.labs ORDER BY lab_id LIMIT 1`);
+  if (labs.rowCount > 0) {
+    return labs.rows[0].lab_id;
+  }
+  const labId = `${tag}_lab`;
+  await client.query(
+    `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified)
+     VALUES ($1::varchar, $1::varchar, 'lab', $1::varchar, 'Smoke Lab', 'lab@smoke', '+919999999005', true)
+     ON CONFLICT (id) DO NOTHING`,
+    [labId],
+  );
+  await client.query(
+    `INSERT INTO public.labs (lab_id, owner_uid, lab_name, license_number, phone, email, verified)
+     VALUES ($1::varchar, $1::varchar, 'Smoke Lab', 'LIC-SMOKE', '+919999999005', 'lab@smoke', true)
+     ON CONFLICT (lab_id) DO NOTHING`,
+    [labId],
+  );
+  return labId;
 }
 
 async function asServiceRole(client, fn) {
@@ -185,22 +215,7 @@ async function main() {
           [ids.storeId],
         );
       }
-      const labs = await client.query(`SELECT 1 FROM public.labs LIMIT 1`);
-      if (labs.rowCount === 0) {
-        const labId = `${tag}_lab`;
-        await client.query(
-          `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified)
-           VALUES ($1::varchar, $1::varchar, 'lab', $1::varchar, 'Smoke Lab', 'lab@smoke', '+919999999005', true)
-           ON CONFLICT (id) DO NOTHING`,
-          [labId],
-        );
-        await client.query(
-          `INSERT INTO public.labs (lab_id, owner_uid, lab_name, license_number, phone, email, verified)
-           VALUES ($1::varchar, $1::varchar, 'Smoke Lab', 'LIC-SMOKE', '+919999999005', 'lab@smoke', true)
-           ON CONFLICT (lab_id) DO NOTHING`,
-          [labId],
-        );
-      }
+      await ensureSmokeLab(client, tag);
     }
 
     // 1) OTP challenge (service_role-only RLS; postgres maintainer bypass for smoke)
@@ -281,17 +296,21 @@ async function main() {
       [ids.apptId],
     );
 
-    // 4) Lab order
-    await client.query(
+    // 4) Lab order (requires at least one lab row — seed on staging when empty)
+    const smokeLabId = await ensureSmokeLab(client, tag);
+    const labIns = await client.query(
       `INSERT INTO public.lab_orders (
          order_id, lab_id, doctor_id, patient_id, doctor_name, patient_name, patient_age, test_ids, test_names, status
-       )
-       SELECT $1, l.lab_id, $2, $3, 'Smoke Doc', 'Smoke Pat', 30, ARRAY['t1'], ARRAY['CBC'], 'ordered'
-       FROM public.labs l
-       ORDER BY l.lab_id
-       LIMIT 1`,
-      [ids.labOrderId, ids.doctorId, ids.patientId],
+       ) VALUES ($1::varchar, $2::varchar, $3::varchar, $4::varchar, 'Smoke Doc', 'Smoke Pat', 30, ARRAY['t1'], ARRAY['CBC'], 'ordered')
+       ON CONFLICT (order_id) DO NOTHING
+       RETURNING order_id`,
+      [ids.labOrderId, smokeLabId, ids.doctorId, ids.patientId],
     );
+    if (labIns.rowCount < 1) {
+      console.error(`\nFAIL: lab_orders INSERT affected ${labIns.rowCount} rows (lab_id=${smokeLabId})`);
+      process.exitCode = 1;
+      throw new Error('lab_orders insert failed');
+    }
     await proofSelect(
       client,
       'lab_order',
@@ -337,7 +356,11 @@ async function main() {
       [ids.deliveryId],
     );
 
-    console.log(`\nOK: write-flow complete smoke_run_id=${smokeRunId}`);
+    if (process.exitCode && process.exitCode !== 0) {
+      console.error(`\nABORT: write-flow incomplete smoke_run_id=${smokeRunId}`);
+    } else {
+      console.log(`\nOK: write-flow complete smoke_run_id=${smokeRunId}`);
+    }
   } finally {
     try {
       await cleanupTagged(client, tag);
@@ -352,5 +375,5 @@ async function main() {
 
 main().catch((err) => {
   console.error(err.message || err);
-  process.exit(1);
+  process.exit(process.exitCode && process.exitCode !== 0 ? process.exitCode : 1);
 });

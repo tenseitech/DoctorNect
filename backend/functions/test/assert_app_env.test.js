@@ -9,6 +9,7 @@ const {
   warnProductionOtpHmacFallback,
   assertProductionReviewOtpDisabled,
   assertProductionNoPlaceholderSecrets,
+  assertProductionCutoverBoot,
 } = require('../src/db/assert_app_env');
 
 describe('assertAppEnvDatabaseRouting', () => {
@@ -185,6 +186,45 @@ describe('assertProductionReviewOtpDisabled', () => {
     process.env.REVIEWER_OTP_ENABLED = 'true';
     process.env.REVIEW_FIXED_OTP = '123456';
     assert.doesNotThrow(() => assertProductionReviewOtpDisabled());
+  });
+});
+
+describe('assertProductionCutoverBoot', () => {
+  const original = { ...process.env };
+
+  beforeEach(() => {
+    process.env = { ...original };
+  });
+
+  afterEach(() => {
+    process.env = original;
+  });
+
+  it('production passes with dummy cutover env', () => {
+    process.env.APP_ENV = 'production';
+    process.env.FIRESTORE_FORBIDDEN = '1';
+    process.env.DATABASE_URL = 'postgresql://user:pass@127.0.0.1:5433/doctornect';
+    process.env.PROD_GATEWAY_URL = 'https://gateway.example.doctornect.in';
+    process.env.REDIS_HOST = 'tls-redis.example';
+    process.env.MSG91_AUTH_KEY = 'dummy-msg91-key-for-unit-test';
+    assert.doesNotThrow(() => assertProductionCutoverBoot());
+  });
+
+  it('production fails when FIRESTORE_FORBIDDEN missing', () => {
+    process.env.APP_ENV = 'production';
+    delete process.env.FIRESTORE_FORBIDDEN;
+    process.env.DATABASE_URL = 'postgresql://user:pass@127.0.0.1:5433/doctornect';
+    process.env.PROD_GATEWAY_URL = 'https://gateway.example.doctornect.in';
+    process.env.REDIS_HOST = 'tls-redis.example';
+    process.env.MSG91_AUTH_KEY = 'dummy-msg91-key-for-unit-test';
+    assert.throws(() => assertProductionCutoverBoot(), /FIRESTORE_FORBIDDEN/);
+  });
+
+  it('staging skips production boot guard', () => {
+    process.env.APP_ENV = 'staging';
+    delete process.env.FIRESTORE_FORBIDDEN;
+    delete process.env.DATABASE_URL;
+    assert.doesNotThrow(() => assertProductionCutoverBoot());
   });
 });
 
