@@ -11,8 +11,35 @@ function isFirestoreForbidden() {
   return String(process.env.FIRESTORE_FORBIDDEN || '').trim() === '1';
 }
 
+function isProductionLegacyFirestoreBlocked() {
+  if (!isFirestoreForbidden()) return false;
+  return String(process.env.APP_ENV || '').trim().toLowerCase() === 'production';
+}
+
+let _runtimeFirestoreBlockedTap = null;
+
+function logRuntimeFirestoreBlocked(caller) {
+  if (typeof _runtimeFirestoreBlockedTap === 'function') {
+    try {
+      _runtimeFirestoreBlockedTap(caller);
+    } catch (_) {}
+  }
+  const fields = {
+    caller: caller || 'unknown',
+    appEnv: process.env.APP_ENV || null,
+    firestoreForbidden: String(process.env.FIRESTORE_FORBIDDEN || '').trim() || null,
+  };
+  try {
+    const { logger } = require('firebase-functions/logger');
+    logger.warn('runtime_firestore_blocked', fields);
+  } catch (_) {
+    console.warn(JSON.stringify({ event: 'runtime_firestore_blocked', ...fields }));
+  }
+}
+
 function assertFirestoreNotForbidden(caller) {
   if (isFirestoreForbidden()) {
+    logRuntimeFirestoreBlocked(caller);
     const err = new Error(
       `FIRESTORE_FORBIDDEN: Firestore access is blocked under FIRESTORE_FORBIDDEN=1 (${caller || 'unknown'})`
     );
@@ -59,7 +86,14 @@ try {
   }
 } catch (_) {}
 
+function setRuntimeFirestoreBlockedTap(fn) {
+  _runtimeFirestoreBlockedTap = typeof fn === 'function' ? fn : null;
+}
+
 module.exports = {
   isFirestoreForbidden,
+  isProductionLegacyFirestoreBlocked,
   assertFirestoreNotForbidden,
+  logRuntimeFirestoreBlocked,
+  setRuntimeFirestoreBlockedTap,
 };

@@ -1,20 +1,19 @@
-import '../../../../core/firebase/firestore_service.dart';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/firebase/models/doctor_lab_order.dart';
+import '../../../../core/firebase/repositories/lab_order_repository.dart';
+import '../../../../core/firebase/repositories/patient_profile_repository.dart';
 import '../../../../core/session/doctor_session.dart';
 
-/// In-memory cache of doctor lab orders (backed by Firestore).
+/// In-memory cache of doctor lab orders (Postgres-backed repository).
 class LabOrderStore extends ChangeNotifier {
   LabOrderStore._();
 
   static final LabOrderStore instance = LabOrderStore._();
 
   final List<DoctorLabOrder> _orders = [];
-  DocumentSnapshot<Map<String, dynamic>>? _lastPage;
-  DocumentSnapshot<Map<String, dynamic>>? _lastPatientPage;
+  String? _lastPage;
+  String? _lastPatientPage;
   bool _hasMore = true;
   bool _hasMorePatient = true;
 
@@ -66,8 +65,7 @@ class LabOrderStore extends ChangeNotifier {
   }) async {
     if (!_isDoctorContext) return true;
     if (patientId.isEmpty) return true;
-    return FirestoreService.instance.patientProfile
-        .isPatientSharingClinicalDataWithDoctors(
+    return PatientProfileRepository.instance.isPatientSharingClinicalDataWithDoctors(
       patientId,
       preferCache: preferCache,
     );
@@ -113,9 +111,7 @@ class LabOrderStore extends ChangeNotifier {
 
   Future<void> add(DoctorLabOrder order) async {
     // FIXED: async + awaited so Firestore save failures surface
-    await FirestoreService.instance.labOrder.save(
-      order,
-    ); // FIXED: persist before updating local state; rethrows on failure
+    await LabOrderRepository.instance.save(order);
     _orders.removeWhere((o) => o.orderId == order.orderId);
     _orders.insert(0, order);
     notifyListeners();
@@ -153,7 +149,7 @@ class LabOrderStore extends ChangeNotifier {
 
   Future<void> loadMoreForDoctor({bool preferCache = true}) async {
     if (!_hasMore) return;
-    final page = await FirestoreService.instance.labOrder.fetchForDoctor(
+    final page = await LabOrderRepository.instance.fetchForDoctor(
       DoctorSession.loggedInDoctorId,
       startAfter: _lastPage,
       preferCache: preferCache,
@@ -200,12 +196,12 @@ class LabOrderStore extends ChangeNotifier {
     }
 
     final page = _isDoctorContext
-        ? await FirestoreService.instance.labOrder.fetchForPatientForDoctor(
+        ? await LabOrderRepository.instance.fetchForPatientForDoctor(
             patientId,
             startAfter: _lastPatientPage,
             preferCache: preferCache,
           )
-        : await FirestoreService.instance.labOrder.fetchForPatient(
+        : await LabOrderRepository.instance.fetchForPatient(
             patientId,
             startAfter: _lastPatientPage,
             preferCache: preferCache,

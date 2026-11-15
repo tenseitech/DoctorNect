@@ -12,7 +12,7 @@ import 'package:medibond/core/constants/app_icons.dart';
 import 'package:medibond/core/data/shared_appointments_store.dart';
 import 'package:medibond/core/enums/user_type.dart';
 import 'package:medibond/core/firebase/firebase_bootstrap.dart';
-import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/app_data_service.dart';
 import 'package:medibond/core/layout/responsive_layout.dart';
 import 'package:medibond/core/media/gallery_image_picker.dart';
 import 'package:medibond/core/notifications/app_toast.dart';
@@ -1487,7 +1487,7 @@ class _PatientPatientProfileScreenState
     if (patientId.isEmpty || !FirebaseBootstrap.isReady) return;
 
     try {
-      final data = await FirestoreService.instance.patientProfile
+      final data = await AppDataService.instance.patientProfile
           .fetchPatientDocument(patientId);
       final url =
           (data?['photoUrl'] as String?) ?? (data?['photoURL'] as String?);
@@ -2186,7 +2186,7 @@ class _PatientPatientProfileScreenState
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        await FirestoreService.instance.user.deleteAccount(user: user);
+        await AppDataService.instance.user.deleteAccount(user: user);
       }
       if (!context.mounted) return;
       Navigator.of(context).pop();

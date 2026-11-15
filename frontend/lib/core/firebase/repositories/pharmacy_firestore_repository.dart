@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../supabase/repositories/supabase_pharmacy_repository.dart';
 import '../../../features/pharmacy/models/pharmacy_models.dart';
 import '../firestore_query_limits.dart';
@@ -88,7 +86,7 @@ class PharmacyFirestoreRepository {
 
   Future<FirestorePage<PharmacyConnection>> fetchActiveConnectionsForDoctor(
     String doctorId, {
-    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    Object? startAfter,
     int limit = FirestoreQueryLimits.connectionsPage,
     bool preferCache = true,
   }) {
@@ -98,7 +96,7 @@ class PharmacyFirestoreRepository {
 
   Future<FirestorePage<PharmacyConnection>> fetchActiveConnectionsForStore(
     String storeId, {
-    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    Object? startAfter,
     int limit = FirestoreQueryLimits.connectionsPage,
     bool preferCache = true,
   }) {

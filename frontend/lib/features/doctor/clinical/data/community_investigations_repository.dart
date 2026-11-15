@@ -1,13 +1,6 @@
-import '../../../../core/config/doctor_patient_cutover_flag.dart';
-import '../../../../core/firebase/firestore_client.dart';
-import '../../../../core/config/firestore_forbidden_guard.dart';
 import '../../../../core/supabase/supabase_bootstrap.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
-import '../../../../core/firebase/firebase_bootstrap.dart';
-import '../../../../core/firebase/firestore_paths.dart';
-import '../../../../core/firebase/firestore_read_helper.dart';
 import 'medical_tests_catalog.dart';
 
 class CommunityLabTest {
@@ -50,7 +43,7 @@ class CommunityBodyPart {
   final String addedByDoctorId;
 }
 
-/// Doctor-contributed lab tests, radiology, and body parts in Firestore.
+/// Doctor-contributed lab tests, radiology, and body parts in Postgres.
 class CommunityInvestigationsRepository {
   CommunityInvestigationsRepository._();
 
@@ -70,119 +63,51 @@ class CommunityInvestigationsRepository {
       List.unmodifiable(_bodyPartCache);
 
   Future<void> fetchAll() async {
-    final bool useSupabase = DoctorPatientCutoverFlag.isEnabled ||
-        FirestoreForbiddenGuard.isForbidden;
-    if (useSupabase) {
-      if (SupabaseBootstrap.isReady) {
-        try {
-          final results = await Future.wait([
-            SupabaseBootstrap.client.from('community_lab_tests').select('id, name, group_name, added_by_doctor_id').order('name', ascending: true).limit(_fetchLimit),
-            SupabaseBootstrap.client.from('community_radiology').select('id, name, group_name, added_by_doctor_id').order('name', ascending: true).limit(_fetchLimit),
-            SupabaseBootstrap.client.from('community_body_parts').select('id, name, added_by_doctor_id').order('name', ascending: true).limit(_fetchLimit),
-          ]);
-          _labCache
-            ..clear()
-            ..addAll((results[0] as List).map((row) => CommunityLabTest(
-                  id: row['id']?.toString() ?? '',
-                  name: row['name']?.toString() ?? '',
-                  group: row['group_name']?.toString() ?? '',
-                  addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
-                )));
-          _radiologyCache
-            ..clear()
-            ..addAll((results[1] as List).map((row) => CommunityRadiologyTest(
-                  id: row['id']?.toString() ?? '',
-                  name: row['name']?.toString() ?? '',
-                  group: row['group_name']?.toString() ?? '',
-                  addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
-                )));
-          _bodyPartCache
-            ..clear()
-            ..addAll((results[2] as List).map((row) => CommunityBodyPart(
-                  id: row['id']?.toString() ?? '',
-                  name: row['name']?.toString() ?? '',
-                  addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
-                )));
-          return;
-        } catch (e, st) {
-          if (kDebugMode) {
-            debugPrint('CommunityInvestigationsRepository.fetchAll Supabase failed: $e\n$st');
-          }
-        }
-      }
-      return;
-    }
-
-    if (!FirebaseBootstrap.isReady) return;
-    await Future.wait([
-      _fetchLabTests(),
-      _fetchRadiologyTests(),
-      _fetchBodyParts(),
-    ]);
-  }
-
-  Future<void> _fetchLabTests() async {
+    if (!SupabaseBootstrap.isReady) return;
     try {
-      final query = FirestoreClient.instance
-          .collection(FirestorePaths.communityLabTests)
-          .orderBy('name')
-          .limit(_fetchLimit);
-      final snap = await FirestoreReadHelper.getQuery(
-        query: query,
-        preferCache: true,
-      );
+      final results = await Future.wait([
+        SupabaseBootstrap.client
+            .from('community_lab_tests')
+            .select('id, name, group_name, added_by_doctor_id')
+            .order('name', ascending: true)
+            .limit(_fetchLimit),
+        SupabaseBootstrap.client
+            .from('community_radiology')
+            .select('id, name, group_name, added_by_doctor_id')
+            .order('name', ascending: true)
+            .limit(_fetchLimit),
+        SupabaseBootstrap.client
+            .from('community_body_parts')
+            .select('id, name, added_by_doctor_id')
+            .order('name', ascending: true)
+            .limit(_fetchLimit),
+      ]);
       _labCache
         ..clear()
-        ..addAll(snap.docs.map(_labFromDoc));
-    } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint(
-          'CommunityInvestigationsRepository._fetchLabTests failed: $e\n$st',
-        );
-      }
-    }
-  }
-
-  Future<void> _fetchRadiologyTests() async {
-    try {
-      final query = FirestoreClient.instance
-          .collection(FirestorePaths.communityRadiology)
-          .orderBy('name')
-          .limit(_fetchLimit);
-      final snap = await FirestoreReadHelper.getQuery(
-        query: query,
-        preferCache: true,
-      );
+        ..addAll((results[0] as List).map((row) => CommunityLabTest(
+              id: row['id']?.toString() ?? '',
+              name: row['name']?.toString() ?? '',
+              group: row['group_name']?.toString() ?? '',
+              addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
+            )));
       _radiologyCache
         ..clear()
-        ..addAll(snap.docs.map(_radiologyFromDoc));
-    } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint(
-          'CommunityInvestigationsRepository._fetchRadiologyTests failed: $e\n$st',
-        );
-      }
-    }
-  }
-
-  Future<void> _fetchBodyParts() async {
-    try {
-      final query = FirestoreClient.instance
-          .collection(FirestorePaths.communityBodyParts)
-          .orderBy('name')
-          .limit(_fetchLimit);
-      final snap = await FirestoreReadHelper.getQuery(
-        query: query,
-        preferCache: true,
-      );
+        ..addAll((results[1] as List).map((row) => CommunityRadiologyTest(
+              id: row['id']?.toString() ?? '',
+              name: row['name']?.toString() ?? '',
+              group: row['group_name']?.toString() ?? '',
+              addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
+            )));
       _bodyPartCache
         ..clear()
-        ..addAll(snap.docs.map(_bodyPartFromDoc));
+        ..addAll((results[2] as List).map((row) => CommunityBodyPart(
+              id: row['id']?.toString() ?? '',
+              name: row['name']?.toString() ?? '',
+              addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
+            )));
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint(
-          'CommunityInvestigationsRepository._fetchBodyParts failed: $e\n$st',
-        );
+        debugPrint('CommunityInvestigationsRepository.fetchAll failed: $e\n$st');
       }
     }
   }
@@ -249,25 +174,27 @@ class CommunityInvestigationsRepository {
     final existing = _findLabByName(trimmed);
     if (existing != null) return existing;
 
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError('Internet is required to add a community lab test.');
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError('Database not ready — cannot add community lab test.');
     }
 
-    final docRef = await FirestoreClient.instance
-        .collection(FirestorePaths.communityLabTests)
-        .add({
+    final id =
+        'clt_${DateTime.now().microsecondsSinceEpoch}_${doctorId.hashCode.abs()}';
+    final groupName = group.trim().isEmpty ? 'Custom' : group.trim();
+    await SupabaseBootstrap.client.from('community_lab_tests').insert({
+      'id': id,
       'name': trimmed,
-      'nameLower': trimmed.toLowerCase(),
-      'group': group.trim().isEmpty ? 'Custom' : group.trim(),
-      'addedByDoctorId': doctorId,
-      'addedAt': FieldValue.serverTimestamp(),
+      'name_lower': trimmed.toLowerCase(),
+      'group_name': groupName,
+      'added_by_doctor_id': doctorId,
     });
 
-    final snapshot = await FirestoreReadHelper.getDocument(
-      reference: docRef,
-      preferCache: true,
+    final item = CommunityLabTest(
+      id: id,
+      name: trimmed,
+      group: groupName,
+      addedByDoctorId: doctorId,
     );
-    final item = _labFromDoc(snapshot);
     _labCache.add(item);
     _labCache.sort(
       (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
@@ -286,27 +213,27 @@ class CommunityInvestigationsRepository {
     final existing = _findRadiologyByName(trimmed);
     if (existing != null) return existing;
 
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError(
-        'Internet is required to add a community radiology test.',
-      );
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError('Database not ready — cannot add community radiology test.');
     }
 
-    final docRef = await FirestoreClient.instance
-        .collection(FirestorePaths.communityRadiology)
-        .add({
+    final id =
+        'crd_${DateTime.now().microsecondsSinceEpoch}_${doctorId.hashCode.abs()}';
+    final groupName = group.trim().isEmpty ? 'Custom' : group.trim();
+    await SupabaseBootstrap.client.from('community_radiology').insert({
+      'id': id,
       'name': trimmed,
-      'nameLower': trimmed.toLowerCase(),
-      'group': group.trim().isEmpty ? 'Custom' : group.trim(),
-      'addedByDoctorId': doctorId,
-      'addedAt': FieldValue.serverTimestamp(),
+      'name_lower': trimmed.toLowerCase(),
+      'group_name': groupName,
+      'added_by_doctor_id': doctorId,
     });
 
-    final snapshot = await FirestoreReadHelper.getDocument(
-      reference: docRef,
-      preferCache: true,
+    final item = CommunityRadiologyTest(
+      id: id,
+      name: trimmed,
+      group: groupName,
+      addedByDoctorId: doctorId,
     );
-    final item = _radiologyFromDoc(snapshot);
     _radiologyCache.add(item);
     _radiologyCache.sort(
       (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
@@ -324,21 +251,21 @@ class CommunityInvestigationsRepository {
     final existing = _findBodyPartByName(trimmed);
     if (existing != null) return existing;
 
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError('Internet is required to add a community body part.');
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError('Database not ready — cannot add community body part.');
     }
 
-    final doc = await FirestoreClient.instance
-        .collection(FirestorePaths.communityBodyParts)
-        .add({
+    final id =
+        'cbp_${DateTime.now().microsecondsSinceEpoch}_${doctorId.hashCode.abs()}';
+    await SupabaseBootstrap.client.from('community_body_parts').insert({
+      'id': id,
       'name': trimmed,
-      'nameLower': trimmed.toLowerCase(),
-      'addedByDoctorId': doctorId,
-      'addedAt': FieldValue.serverTimestamp(),
+      'name_lower': trimmed.toLowerCase(),
+      'added_by_doctor_id': doctorId,
     });
 
     final part = CommunityBodyPart(
-      id: doc.id,
+      id: id,
       name: trimmed,
       addedByDoctorId: doctorId,
     );
@@ -389,40 +316,5 @@ class CommunityInvestigationsRepository {
       if (t.name.toLowerCase() == key) return t;
     }
     return null;
-  }
-
-  static CommunityLabTest _labFromDoc(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
-    final data = doc.data() ?? {};
-    return CommunityLabTest(
-      id: doc.id,
-      name: data['name'] as String? ?? '',
-      group: data['group'] as String? ?? 'Custom',
-      addedByDoctorId: data['addedByDoctorId'] as String? ?? '',
-    );
-  }
-
-  static CommunityRadiologyTest _radiologyFromDoc(
-    DocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
-    final data = doc.data() ?? {};
-    return CommunityRadiologyTest(
-      id: doc.id,
-      name: data['name'] as String? ?? '',
-      group: data['group'] as String? ?? 'Custom',
-      addedByDoctorId: data['addedByDoctorId'] as String? ?? '',
-    );
-  }
-
-  static CommunityBodyPart _bodyPartFromDoc(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
-    final data = doc.data();
-    return CommunityBodyPart(
-      id: doc.id,
-      name: data['name'] as String? ?? '',
-      addedByDoctorId: data['addedByDoctorId'] as String? ?? '',
-    );
   }
 }

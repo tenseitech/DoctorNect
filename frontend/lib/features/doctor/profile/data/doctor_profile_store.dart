@@ -1,21 +1,14 @@
-import '../../../../core/firebase/firestore_service.dart';
-import '../../../../core/firebase/firestore_client.dart';
-
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
-import '../../../../core/config/doctor_patient_cutover_flag.dart';
 import '../../../../core/constants/countries.dart';
 import '../../../../core/auth/demo_auth_config.dart';
 import '../../../../core/auth/profile_completion_service.dart';
 import '../../../../core/enums/user_type.dart';
-import '../../../../core/firebase/firebase_bootstrap.dart';
-import '../../../../core/firebase/firestore_paths.dart';
+import '../../../../core/firebase/repositories/review_repository.dart';
 import '../../../../core/location/location_match.dart';
-import '../../../../core/firebase/firestore_read_helper.dart';
 // FIXED: load reviews on login/prefetch
 import '../../../../core/session/doctor_session.dart';
 import '../../../../core/supabase/repositories/supabase_doctor_repository.dart';
@@ -48,10 +41,8 @@ class DoctorProfileStore extends ChangeNotifier {
     if (doctorId.isEmpty) return;
     _doctorSub?.cancel();
 
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      _doctorSub = SupabaseDoctorRepository.instance
-          .watchDoctor(doctorId)
-          .listen((data) {
+    _doctorSub = SupabaseDoctorRepository.instance.watchDoctor(doctorId).listen(
+      (data) {
         if (data == null) return;
         final url =
             (data['photo_url'] as String?) ?? (data['photoUrl'] as String?);
@@ -75,39 +66,8 @@ class DoctorProfileStore extends ChangeNotifier {
         if (changed) {
           notifyListeners();
         }
-      });
-      return;
-    }
-
-    if (!FirebaseBootstrap.isReady) return;
-    _doctorSub = FirestoreClient.instance
-        .collection(FirestorePaths.doctors)
-        .doc(doctorId)
-        .snapshots()
-        .listen((snap) {
-      if (!snap.exists || snap.data() == null) return;
-      final data = snap.data()!;
-      final url =
-          (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
-      final key = data['photoKey'] as String?;
-      final storage = data['photoStorage'] as String?;
-      bool changed = false;
-      if (url != null && url.isNotEmpty && url != profile.photoUrl) {
-        profile.photoUrl = url;
-        changed = true;
-      }
-      if (key != null && key != profile.photoKey) {
-        profile.photoKey = key;
-        changed = true;
-      }
-      if (storage != null && storage != profile.photoStorage) {
-        profile.photoStorage = storage;
-        changed = true;
-      }
-      if (changed) {
-        notifyListeners();
-      }
-    });
+      },
+    );
   }
 
   static void resetNotificationPrefsSession() {
@@ -125,19 +85,77 @@ class DoctorProfileStore extends ChangeNotifier {
 
   Future<void> _loadNotificationPrefs(String doctorId) async {
     try {
-      final ref = FirestoreClient.instance
-          .collection(FirestorePaths.doctors)
-          .doc(doctorId);
-      final snap = await FirestoreReadHelper.getDocument(
-        reference: ref,
-        preferCache: false,
-      );
-      final data = snap.data();
-      if (data != null) _applyNotificationPrefsFromMap(data);
+      final data = await SupabaseDoctorRepository.instance.fetchDoctor(doctorId);
+      if (data != null) {
+        _applyNotificationPrefsFromMap(_doctorRowAsClientMap(data));
+      }
       _notificationPrefsLoadedForDoctorId = doctorId;
     } finally {
       _notificationPrefsLoadFuture = null;
     }
+  }
+
+  /// Maps Postgres `doctors` columns to legacy Firestore-shaped keys for UI loaders.
+  static Map<String, dynamic> _doctorRowAsClientMap(Map<String, dynamic> row) {
+    return {
+      'name': row['name'],
+      'photoUrl': row['photo_url'] ?? row['photoUrl'],
+      'photoURL': row['photo_url'] ?? row['photoUrl'],
+      'photoKey': row['photo_key'] ?? row['photoKey'],
+      'photoStorage': row['photo_storage'] ?? row['photoStorage'],
+      'specialization': row['specialization'],
+      'specializations': row['specializations'],
+      'experienceYears': row['experience_years'] ?? row['experienceYears'],
+      'registrationYear': row['registration_year'] ?? row['registrationYear'],
+      'mobile': row['mobile'],
+      'email': row['email'],
+      'councilNumber': row['council_number'] ?? row['councilNumber'],
+      'stateCouncil': row['state_council'] ?? row['stateCouncil'],
+      'clinicName': row['clinic_name'] ?? row['clinicName'],
+      'city': row['city'],
+      'rating': row['rating'],
+      'reviewCount': row['review_count'] ?? row['reviewCount'],
+      'verified': row['verified'],
+      'languages': row['languages'],
+      'degrees': row['degrees'],
+      'qualifications': row['qualifications'],
+      'qualification': row['qualification'],
+      'degree': row['degree'],
+      'gender': row['gender'],
+      'dateOfBirth': row['date_of_birth'] ?? row['dateOfBirth'],
+      'superSpecialization':
+          row['super_specialization'] ?? row['superSpecialization'],
+      'certifications': row['certifications'],
+      'awards': row['awards'],
+      'publications': row['publications'],
+      'clinicType': row['clinic_type'] ?? row['clinicType'],
+      'addressLine1': row['address_line1'] ?? row['addressLine1'],
+      'addressLine2': row['address_line2'] ?? row['addressLine2'],
+      'address': row['address'],
+      'country': row['country'],
+      'state': row['state'],
+      'pincode': row['pincode'],
+      'mapsLink': row['maps_link'] ?? row['mapsLink'],
+      'landmark': row['landmark'],
+      'avgDurationMins': row['avg_duration_mins'] ?? row['avgDurationMins'],
+      'maxPatientsPerDay':
+          row['max_patients_per_day'] ?? row['maxPatientsPerDay'],
+      'advanceBookingDays':
+          row['advance_booking_days'] ?? row['advanceBookingDays'],
+      'autoAcceptAppointments':
+          row['auto_accept_appointments'] ?? row['autoAcceptAppointments'],
+      'appointmentReminders':
+          row['appointment_reminders'] ?? row['appointmentReminders'],
+      'remindHoursBefore':
+          row['remind_hours_before'] ?? row['remindHoursBefore'],
+      'notificationChannels':
+          row['notification_channels'] ?? row['notificationChannels'],
+      'twoFactorEnabled': row['two_factor_enabled'] ?? row['twoFactorEnabled'],
+      'recoveryEmail': row['recovery_email'] ?? row['recoveryEmail'],
+      'registrationCertificate':
+          row['registration_certificate'] ?? row['registrationCertificate'],
+      'idProof': row['id_proof'] ?? row['idProof'],
+    };
   }
 
   void _applyNotificationPrefsFromMap(Map<String, dynamic> data) {
@@ -372,7 +390,7 @@ class DoctorProfileStore extends ChangeNotifier {
       'email': p.email,
       'gender': p.gender,
       if (p.dateOfBirth != null)
-        'dateOfBirth': Timestamp.fromDate(p.dateOfBirth!),
+        'dateOfBirth': p.dateOfBirth!.toUtc().toIso8601String(),
       'languages': p.languages,
       'qualification': p.qualification,
       'degrees': p.degrees,
@@ -408,31 +426,17 @@ class DoctorProfileStore extends ChangeNotifier {
       if (p.idProof.trim().isNotEmpty) 'idProof': p.idProof.trim(),
     };
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      await SupabaseDoctorRepository.instance.saveDoctorProfileFields(
-        doctorId,
-        data,
-      );
-      unawaited(
-        ProfileCompletionService.instance.evaluateAndMarkFromRoleDoc(
-          role: UserType.doctor,
-          uid: uid,
-          profileId: doctorId,
-        ),
-      );
-    } else if (FirebaseBootstrap.isReady) {
-      await FirestoreClient.instance
-          .collection(FirestorePaths.doctors)
-          .doc(doctorId)
-          .set(data, SetOptions(merge: true));
-      unawaited(
-        ProfileCompletionService.instance.evaluateAndMarkFromRoleDoc(
-          role: UserType.doctor,
-          uid: uid,
-          profileId: doctorId,
-        ),
-      );
-    }
+    await SupabaseDoctorRepository.instance.saveDoctorProfileFields(
+      doctorId,
+      data,
+    );
+    unawaited(
+      ProfileCompletionService.instance.evaluateAndMarkFromRoleDoc(
+        role: UserType.doctor,
+        uid: uid,
+        profileId: doctorId,
+      ),
+    );
     notifyListeners();
   }
 
@@ -440,9 +444,7 @@ class DoctorProfileStore extends ChangeNotifier {
   // FIXED: reviews were never fetched, so the Reviews screen was always empty.
   Future<void> loadReviews(String doctorId) async {
     if (doctorId.isEmpty) return;
-    final fetched = await FirestoreService.instance.review.fetchForDoctor(
-      doctorId,
-    );
+    final fetched = await ReviewRepository.instance.fetchForDoctor(doctorId);
     profile.reviews = fetched
         .map(
           (r) => PatientReview(
@@ -458,15 +460,9 @@ class DoctorProfileStore extends ChangeNotifier {
         .toList();
 
     try {
-      final ref = FirestoreClient.instance
-          .collection(FirestorePaths.doctors)
-          .doc(doctorId);
-      final snap = await FirestoreReadHelper.getDocument(
-        reference: ref,
-        preferCache: true,
-      );
-      final data = snap.data();
-      if (data != null) {
+      final row = await SupabaseDoctorRepository.instance.fetchDoctor(doctorId);
+      if (row != null) {
+        final data = _doctorRowAsClientMap(row);
         profile.rating = (data['rating'] as num?)?.toDouble() ?? profile.rating;
         profile.reviewCount =
             (data['reviewCount'] as num?)?.toInt() ?? profile.reviewCount;
@@ -493,10 +489,10 @@ class DoctorProfileStore extends ChangeNotifier {
     if (reviewId.isEmpty) {
       throw StateError('Missing review id — reply cannot be saved.');
     }
-    await FirestoreClient.instance
-        .collection(FirestorePaths.reviews)
-        .doc(reviewId)
-        .update({'doctorReply': reply});
+    await ReviewRepository.instance.saveDoctorReply(
+      reviewId: reviewId,
+      reply: reply,
+    );
   }
 
   Future<void> loadFromFirestore(String doctorId) async {
@@ -519,15 +515,9 @@ class DoctorProfileStore extends ChangeNotifier {
         }
       }
 
-      final ref = FirestoreClient.instance
-          .collection(FirestorePaths.doctors)
-          .doc(doctorId);
-      final snap = await FirestoreReadHelper.getDocument(
-        reference: ref,
-        preferCache: true,
-      );
-      final data = snap.data();
-      if (data == null) return;
+      final row = await SupabaseDoctorRepository.instance.fetchDoctor(doctorId);
+      if (row == null) return;
+      final data = _doctorRowAsClientMap(row);
 
       profile.fullName = data['name'] as String? ?? profile.fullName;
       final specializationsList = data['specializations'] as List<dynamic>?;
@@ -606,7 +596,12 @@ class DoctorProfileStore extends ChangeNotifier {
       // FIXED: map the remaining editable fields so saved edits survive reload.
       profile.gender = data['gender'] as String? ?? profile.gender;
       final dob = data['dateOfBirth'];
-      if (dob is Timestamp) profile.dateOfBirth = dob.toDate();
+      if (dob is DateTime) {
+        profile.dateOfBirth = dob;
+      } else if (dob != null) {
+        profile.dateOfBirth =
+            DateTime.tryParse(dob.toString()) ?? profile.dateOfBirth;
+      }
       profile.superSpecialization =
           data['superSpecialization'] as String? ?? profile.superSpecialization;
       final certs = data['certifications'] as List<dynamic>?;

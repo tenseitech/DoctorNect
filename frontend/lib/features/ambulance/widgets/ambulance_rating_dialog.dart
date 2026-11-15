@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
@@ -175,7 +175,7 @@ Future<bool> showAmbulanceRatingDialog({
                     child: FilledButton(
                       onPressed: selectedStars > 0
                           ? () async {
-                              final ok = await FirestoreService
+                              final ok = await AppDataService
                                   .instance.ambulance
                                   .rateBroadcast(
                                 broadcastId: bookingId,

@@ -1,0 +1,9 @@
+Backend functions npm test — 3 consecutive runs (post partial runtime Firestore strip)
+2026-11-15
+
+run1 total=564 pass=503 fail=43 skip=18
+run2 total=564 pass=503 fail=43 skip=18
+run3 total=564 pass=503 fail=43 skip=18
+
+Stable across runs (no flaky delta on this slice).
+Remaining failures: mostly legacy document-DB expectations in registration_otp, delete_my_account, s3_storage, promoted_ads webhook rejection persistence, expire_promoted_ads handler tests.

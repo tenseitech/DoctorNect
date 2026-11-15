@@ -507,6 +507,14 @@ const RESCHEDULE_ALLOWED_STATUSES = new Set(['pendingRequest', 'confirmed', 'wai
  * Handler for the callable bookAppointment.
  */
 async function bookAppointmentHandler(data, auth, db = require('./legacy_db').getLegacyFirestoreDb()) {
+  if (!db) {
+    const { assertFirestoreNotForbidden, isProductionLegacyFirestoreBlocked } = require('./firestore_forbidden_guard');
+    if (isProductionLegacyFirestoreBlocked()) {
+      assertFirestoreNotForbidden('bookAppointmentHandler');
+    }
+    throw new HttpsError('failed-precondition', 'Document database unavailable.');
+  }
+
   if (!auth?.uid) {
     throw new HttpsError('unauthenticated', 'User must be authenticated to book an appointment.');
   }

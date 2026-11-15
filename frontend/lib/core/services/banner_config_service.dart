@@ -1,71 +1,66 @@
 import 'dart:async';
-import '../firebase/firestore_client.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
-import '../firebase/firebase_bootstrap.dart';
 import '../models/banner_config_model.dart';
-import '../config/doctor_patient_cutover_flag.dart';
-import '../config/firestore_forbidden_guard.dart';
 import '../supabase/supabase_bootstrap.dart';
+import '../supabase/supabase_stream_table.dart';
 
 /// Read-only promoted-ads banner config (written by Super Admin console).
 abstract final class BannerConfigService {
-  static const String _configCollection = 'system_config';
-  static const String _configDoc = 'promoted_ads';
-
-  static FirebaseFirestore get _db => FirestoreClient.instance;
-
   static Stream<BannerConfigModel> streamConfig() {
-    final bool useSupabase = DoctorPatientCutoverFlag.isEnabled ||
-        FirestoreForbiddenGuard.isForbidden;
-    if (useSupabase) {
-      return Stream.fromFuture(fetchConfig());
-    }
-
-    if (!FirebaseBootstrap.isReady)
+    if (!SupabaseBootstrap.isReady) {
       return Stream.value(const BannerConfigModel());
-
-    return _db
-        .collection(_configCollection)
-        .doc(_configDoc)
-        .snapshots()
-        .map(BannerConfigModel.fromFirestore);
+    }
+    if (SupabaseBootstrap.isProduction) {
+      return streamTable(
+        table: 'system_config',
+        primaryKey: ['config_key'],
+        filterColumn: 'config_key',
+        filterValue: 'promoted_ads',
+      ).asyncMap((rows) async {
+        if (rows.isEmpty) return fetchConfig();
+        final raw = rows.first['config_value'];
+        if (raw is Map) {
+          return BannerConfigModel.fromMap(
+            Map<String, dynamic>.from(raw),
+          );
+        }
+        return fetchConfig();
+      });
+    }
+    return SupabaseBootstrap.client
+        .from('system_config')
+        .stream(primaryKey: ['config_key'])
+        .eq('config_key', 'promoted_ads')
+        .map((rows) {
+          if (rows.isEmpty) return const BannerConfigModel();
+          final raw = rows.first['config_value'];
+          if (raw is Map) {
+            return BannerConfigModel.fromMap(
+              Map<String, dynamic>.from(raw),
+            );
+          }
+          return const BannerConfigModel();
+        });
   }
 
   static Future<BannerConfigModel> fetchConfig() async {
-    final bool useSupabase = DoctorPatientCutoverFlag.isEnabled ||
-        FirestoreForbiddenGuard.isForbidden;
-    if (useSupabase) {
-      if (SupabaseBootstrap.isReady) {
-        try {
-          final res = await SupabaseBootstrap.client
-              .from('system_config')
-              .select('config_value')
-              .eq('config_key', 'promoted_ads')
-              .maybeSingle();
-          if (res != null && res['config_value'] is Map) {
-            return BannerConfigModel.fromMap(
-              Map<String, dynamic>.from(res['config_value'] as Map),
-            );
-          }
-        } catch (e) {
-          if (kDebugMode) debugPrint('[BannerConfigService] Supabase fetchConfig error: $e');
-        }
-      }
-      return const BannerConfigModel();
-    }
-
-    if (!FirebaseBootstrap.isReady) return const BannerConfigModel();
-
+    if (!SupabaseBootstrap.isReady) return const BannerConfigModel();
     try {
-      final snap =
-          await _db.collection(_configCollection).doc(_configDoc).get();
-      return BannerConfigModel.fromFirestore(snap);
+      final res = await SupabaseBootstrap.client
+          .from('system_config')
+          .select('config_value')
+          .eq('config_key', 'promoted_ads')
+          .maybeSingle();
+      if (res != null && res['config_value'] is Map) {
+        return BannerConfigModel.fromMap(
+          Map<String, dynamic>.from(res['config_value'] as Map),
+        );
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('[BannerConfigService] fetchConfig error: $e');
-      return const BannerConfigModel();
     }
+    return const BannerConfigModel();
   }
 }

@@ -81,6 +81,16 @@ class ReviewRepository {
           .fetchForDoctor(doctorId, limit: limit);
   }
 
+  Future<void> saveDoctorReply({
+    required String reviewId,
+    required String reply,
+  }) async {
+    return SupabaseReviewRepository.instance.saveDoctorReply(
+      reviewId: reviewId,
+      reply: reply,
+    );
+  }
+
   /// Returns `true` when liked, `false` when unliked, `null` on failure.
   Future<bool?> toggleHelpfulVote({
     required String reviewId,

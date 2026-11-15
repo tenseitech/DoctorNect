@@ -145,7 +145,15 @@ async function runRdsScratchReplay() {
   console.log('DoctorNect: AWS RDS Scratch Replay & Security Parity Verification');
   console.log('================================================================\n');
 
+  const keepDb = process.argv.includes('--keep-db');
+  const diffStagingCatalog = process.argv.includes('--diff-staging-catalog');
   const allowNonstandardReplayPort = process.argv.includes('--allow-nonstandard-replay-port');
+  if (diffStagingCatalog) {
+    console.log('[OPTION] --diff-staging-catalog: read-only staging catalog compare via schema_diff.');
+  }
+  if (keepDb) {
+    console.log('[OPTION] --keep-db: skip DROP DATABASE at end (replay_check retained for inspection).');
+  }
   const rdsAdminUrl = getEnv('REPLAY_DB_URL') || getEnv('RDS_ADMIN_DB_URL') || getEnv('RDS_MASTER_URL');
   const replayGuard = assertReplayDatabaseUrlSafe({
     replayUrl: rdsAdminUrl,
@@ -369,7 +377,7 @@ async function runRdsScratchReplay() {
       console.log('================================================================\n');
 
       const stagingUri = getEnv('STAGING_SUPABASE_DB_URL');
-      if (stagingUri) {
+      if (diffStagingCatalog && stagingUri) {
         console.log('Fetching live staging catalog for parity diff...');
         const stagingClient = new Client({ connectionString: stagingUri, ssl: { rejectUnauthorized: false } });
         await stagingClient.connect();
@@ -408,8 +416,8 @@ async function runRdsScratchReplay() {
         } finally {
           await stagingClient.end().catch(() => {});
         }
-      } else {
-        console.warn('[WARNING] STAGING_SUPABASE_DB_URL not set; skipping live staging diff comparison.');
+      } else if (diffStagingCatalog) {
+        console.warn('[WARNING] --diff-staging-catalog set but STAGING_SUPABASE_DB_URL missing; skipping.');
       }
 
       // 5. Cron Job Scheduling Parity Check
@@ -475,18 +483,21 @@ async function runRdsScratchReplay() {
     }
 
   } finally {
-    // Teardown: strictly drop replay_check
-    console.log(`Teardown: Dropping scratch database "${TARGET_DB_NAME}"...`);
-    try {
-      await adminClient.query(`
-        SELECT pg_terminate_backend(pid)
-        FROM pg_stat_activity
-        WHERE datname = $1 AND pid <> pg_backend_pid();
-      `, [TARGET_DB_NAME]);
-      await adminClient.query(`DROP DATABASE IF EXISTS ${TARGET_DB_NAME};`);
-      console.log(`✔ Scratch database "${TARGET_DB_NAME}" successfully dropped.`);
-    } catch (dropErr) {
-      console.error(`[WARNING] Failed to drop scratch database "${TARGET_DB_NAME}":`, dropErr.message);
+    if (keepDb) {
+      console.log(`Teardown: --keep-db set; leaving scratch database "${TARGET_DB_NAME}" in place.`);
+    } else {
+      console.log(`Teardown: Dropping scratch database "${TARGET_DB_NAME}"...`);
+      try {
+        await adminClient.query(`
+          SELECT pg_terminate_backend(pid)
+          FROM pg_stat_activity
+          WHERE datname = $1 AND pid <> pg_backend_pid();
+        `, [TARGET_DB_NAME]);
+        await adminClient.query(`DROP DATABASE IF EXISTS ${TARGET_DB_NAME};`);
+        console.log(`✔ Scratch database "${TARGET_DB_NAME}" successfully dropped.`);
+      } catch (dropErr) {
+        console.error(`[WARNING] Failed to drop scratch database "${TARGET_DB_NAME}":`, dropErr.message);
+      }
     }
     await adminClient.end();
   }

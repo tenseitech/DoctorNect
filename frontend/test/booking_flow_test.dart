@@ -1,7 +1,6 @@
 import 'package:medibond/core/firebase/repositories/doctor_availability_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:medibond/core/data/shared_appointments_store.dart';
 import 'package:medibond/core/firebase/firebase_bootstrap.dart';
 import 'package:medibond/core/firebase/models/doctor_availability.dart';
@@ -397,12 +396,7 @@ void main() {
       expect(BookingFlowHelpers.resolvePatientGender('Non-binary'), isNull);
     });
 
-    test('newAppointmentId uses Firestore auto-ids, not legacy APT prefix', () {
-      final firestore = FakeFirebaseFirestore();
-      BookingFlowHelpers.debugAppointmentsCollection = firestore.collection(
-        'appointments',
-      );
-
+    test('newAppointmentId uses unique ids, not legacy APT prefix', () {
       final ids = List.generate(
         25,
         (_) => BookingFlowHelpers.newAppointmentId(),
@@ -412,6 +406,7 @@ void main() {
       for (final id in ids) {
         expect(BookingFlowHelpers.isLegacyAppointmentId(id), isFalse);
         expect(id.length, greaterThan(10));
+        expect(id.startsWith('apt_'), isTrue);
       }
       expect(BookingFlowHelpers.isLegacyAppointmentId('APT12345'), isTrue);
     });

@@ -1,10 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../core/firebase/firestore_client.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 
-import '../../core/firebase/firebase_bootstrap.dart';
 import '../../core/models/promoted_ad_model.dart';
+import '../../core/supabase/supabase_bootstrap.dart';
+import '../../core/supabase/supabase_stream_table.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 
@@ -20,12 +19,21 @@ class PromotedAdReviewScreen extends StatefulWidget {
 class _PromotedAdReviewScreenState extends State<PromotedAdReviewScreen> {
   String? _busyAdId;
 
-  Stream<QuerySnapshot<Map<String, dynamic>>>? get _pending {
-    if (!FirebaseBootstrap.isReady) return null;
-    return FirestoreClient.instance
-        .collection('promotedAds')
-        .where('status', isEqualTo: 'pending_approval')
-        .snapshots();
+  Stream<List<PromotedAdModel>>? get _pending {
+    if (!SupabaseBootstrap.isReady) return null;
+    if (SupabaseBootstrap.isProduction) {
+      return streamTable(
+        table: 'promoted_ads',
+        primaryKey: ['ad_id'],
+        filterColumn: 'status',
+        filterValue: 'pending_approval',
+      ).map((rows) => rows.map(PromotedAdModel.fromRow).toList());
+    }
+    return SupabaseBootstrap.client
+        .from('promoted_ads')
+        .stream(primaryKey: ['ad_id'])
+        .eq('status', 'pending_approval')
+        .map((rows) => rows.map(PromotedAdModel.fromRow).toList());
   }
 
   Future<void> _review(String adId, String decision) async {
@@ -71,8 +79,8 @@ class _PromotedAdReviewScreenState extends State<PromotedAdReviewScreen> {
         ),
       ),
       body: pending == null
-          ? const Center(child: Text('Firebase is not available.'))
-          : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+          ? const Center(child: Text('Database connection is not ready.'))
+          : StreamBuilder<List<PromotedAdModel>>(
               stream: pending,
               builder: (context, snap) {
                 if (snap.hasError) {
@@ -83,18 +91,18 @@ class _PromotedAdReviewScreenState extends State<PromotedAdReviewScreen> {
                 if (!snap.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                final docs = snap.data!.docs;
-                if (docs.isEmpty) {
+                final ads = snap.data!;
+                if (ads.isEmpty) {
                   return const Center(
                     child: Text('No ads are waiting for approval.'),
                   );
                 }
                 return ListView.separated(
                   padding: const EdgeInsets.all(16),
-                  itemCount: docs.length,
+                  itemCount: ads.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
-                    final ad = PromotedAdModel.fromFirestore(docs[index]);
+                    final ad = ads[index];
                     final busy = _busyAdId == ad.adId;
                     return Card(
                       child: Padding(

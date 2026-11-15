@@ -1,4 +1,4 @@
-import '../../../../core/firebase/firestore_service.dart';
+import '../../../../core/firebase/app_data_service.dart';
 import '../../../../core/notifications/app_toast.dart';
 
 import 'dart:async';
@@ -115,7 +115,7 @@ class _RescheduleModalState extends State<RescheduleModal> {
   Future<void> _loadSlots() async {
     setState(() => _loadingSlots = true);
     final slots =
-        await FirestoreService.instance.doctorAvailability.slotsForDate(
+        await AppDataService.instance.doctorAvailability.slotsForDate(
       doctorId: DoctorSession.loggedInDoctorId,
       date: _selectedDate,
     );

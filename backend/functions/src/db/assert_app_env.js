@@ -250,6 +250,46 @@ function assertProductionNoPlaceholderSecrets(env = process.env) {
   }
 }
 
+function isTruthyOne(value) {
+  const v = String(value || '').trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
+
+/**
+ * Production boot: cutover env must be complete before serving traffic.
+ */
+function assertProductionCutoverBoot(env = process.env) {
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  if (appEnv !== 'production') return;
+
+  const missing = [];
+  if (!isTruthyOne(env.FIRESTORE_FORBIDDEN)) {
+    missing.push('FIRESTORE_FORBIDDEN=1');
+  }
+  const dbUrl = String(env.DATABASE_URL || env.PROD_RDS_DATABASE_URL || '').trim();
+  if (!dbUrl) {
+    missing.push('DATABASE_URL (or PROD_RDS_DATABASE_URL)');
+  }
+  if (!normalizeBaseUrl(env.PROD_GATEWAY_URL || '')) {
+    missing.push('PROD_GATEWAY_URL');
+  }
+  const redisEndpoints = collectProductionRedisEndpointCandidates(env);
+  if (!redisEndpoints.length) {
+    missing.push('REDIS_URL / REDIS_URL_PRODUCTION / REDIS_HOST');
+  }
+  const msg91 = String(env.MSG91_AUTH_KEY || '').trim();
+  if (!msg91) {
+    missing.push('MSG91_AUTH_KEY');
+  }
+  if (missing.length) {
+    const err = new Error(
+      `[AppEnv] APP_ENV=production boot blocked — missing or invalid: ${missing.join(', ')}`,
+    );
+    err.code = 'failed-precondition';
+    throw err;
+  }
+}
+
 function assertProductionReviewOtpDisabled(env = process.env) {
   const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
   if (appEnv !== 'production') return;
@@ -282,6 +322,7 @@ module.exports = {
   assertProductionOtpHmacOnly,
   warnProductionOtpHmacFallback,
   assertProductionReviewOtpDisabled,
+  assertProductionCutoverBoot,
   assertProductionNoPlaceholderSecrets,
   isProductionSecretEnvKey,
   isPlaceholderSecretValue,

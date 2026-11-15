@@ -1,10 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../firebase/firestore_client.dart';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../auth/verification_lifecycle.dart';
+import '../auth/verification_lifecycle.dart' show RoleVerificationController, VerificationStage;
 import '../enums/user_type.dart';
-import '../firebase/firestore_paths.dart';
+import '../supabase/supabase_bootstrap.dart';
+import '../supabase/supabase_stream_table.dart';
+import '../util/map_date_time.dart';
 
 /// Data model representing a professional applicant for Super Admin review.
 class VerificationApplicant {
@@ -41,10 +42,12 @@ class VerificationApplicant {
     Map<String, dynamic> data, {
     Map<String, dynamic> roleData = const {},
   }) {
-    final roleStr = data['role'] as String? ?? 'patient';
-    final role = switch (roleStr.toLowerCase()) {
+    final roleStr =
+        (data['role'] as String? ?? data['user_role'] as String? ?? 'patient')
+            .toLowerCase();
+    final role = switch (roleStr) {
       'doctor' => UserType.doctor,
-      'medicalstore' || 'pharmacy' => UserType.medicalStore,
+      'medicalstore' || 'pharmacy' || 'medical_store' => UserType.medicalStore,
       'lab' => UserType.lab,
       'ambulance' => UserType.ambulance,
       'super_admin' || 'superadmin' => UserType.superAdmin,
@@ -52,27 +55,31 @@ class VerificationApplicant {
     };
 
     final verified = data['verified'] == true;
-    final statusStr = data['verificationStatus'] as String? ??
+    final statusStr = data['verification_status'] as String? ??
+        data['verificationStatus'] as String? ??
         data['status'] as String? ??
         (verified ? 'verified' : 'registered');
 
-    final submittedTs = data['submittedAt'] as Timestamp?;
-    final createdTs = data['createdAt'] as Timestamp?;
-
     return VerificationApplicant(
       uid: uid,
-      displayName: data['displayName'] as String? ?? 'New Professional',
+      displayName: data['display_name'] as String? ??
+          data['displayName'] as String? ??
+          'New Professional',
       email: data['email'] as String? ?? '',
-      mobile: data['mobile'] as String? ?? '',
+      mobile: data['mobile'] as String? ?? data['phone'] as String? ?? '',
       role: role,
-      profileId: data['profileId'] as String? ?? '',
+      profileId:
+          data['profile_id'] as String? ?? data['profileId'] as String? ?? '',
       verificationStatus: verified
           ? VerificationStage.verified
           : VerificationStage.fromString(statusStr),
       verified: verified,
-      rejectionReason: data['rejectionReason'] as String?,
-      submittedAt: submittedTs?.toDate(),
-      createdAt: createdTs?.toDate(),
+      rejectionReason: data['rejection_reason'] as String? ??
+          data['rejectionReason'] as String?,
+      submittedAt: parseMapDateTime(
+        data['submitted_at'] ?? data['submittedAt'],
+      ),
+      createdAt: parseMapDateTime(data['created_at'] ?? data['createdAt']),
       roleData: roleData,
     );
   }
@@ -85,12 +92,11 @@ class SuperAdminVerificationService {
   static final SuperAdminVerificationService instance =
       SuperAdminVerificationService._();
 
-  FirebaseFirestore get _firestore => FirestoreClient.instance;
+  SupabaseClient get _client => SupabaseBootstrap.client;
 
   @visibleForTesting
   static Stream<List<VerificationApplicant>>? debugApplicantsStreamOverride;
 
-  /// Stream list of non-patient accounts for verification.
   Stream<List<VerificationApplicant>> streamApplicants({
     UserType? roleFilter,
     VerificationStage? stageFilter,
@@ -99,19 +105,31 @@ class SuperAdminVerificationService {
     if (debugApplicantsStreamOverride != null) {
       return debugApplicantsStreamOverride!;
     }
-    return _firestore.collection(FirestorePaths.users).snapshots().map((
-      snapshot,
-    ) {
-      final list = <VerificationApplicant>[];
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
-        final roleStr = data['role'] as String? ?? '';
-        if (roleStr.toLowerCase() == 'patient') continue;
+    if (!SupabaseBootstrap.isReady) {
+      return Stream.value(const []);
+    }
 
-        final applicant = VerificationApplicant.fromMap(doc.id, data);
-        if (roleFilter != null && applicant.role != roleFilter) {
-          continue;
-        }
+    Stream<List<Map<String, dynamic>>> rows;
+    if (SupabaseBootstrap.isProduction) {
+      rows = streamTable(
+        table: 'users',
+        primaryKey: ['id'],
+      );
+    } else {
+      rows = _client.from('users').stream(primaryKey: ['id']);
+    }
+
+    return rows.map((snapshot) {
+      final list = <VerificationApplicant>[];
+      for (final data in snapshot) {
+        final roleStr = (data['role'] as String? ?? '').toLowerCase();
+        if (roleStr == 'patient' || roleStr.isEmpty) continue;
+
+        final uid = data['id'] as String? ?? data['firebase_uid'] as String? ?? '';
+        if (uid.isEmpty) continue;
+
+        final applicant = VerificationApplicant.fromMap(uid, data);
+        if (roleFilter != null && applicant.role != roleFilter) continue;
         if (stageFilter != null) {
           final matches = stageFilter.isIncomplete
               ? applicant.verificationStatus.isIncomplete
@@ -119,6 +137,7 @@ class SuperAdminVerificationService {
           if (!matches) continue;
         }
         list.add(applicant);
+        if (list.length >= limit) break;
       }
 
       list.sort((a, b) {
@@ -131,85 +150,102 @@ class SuperAdminVerificationService {
     });
   }
 
-  /// Fetches role-specific doc data (e.g., license, council numbers) for review modal.
+  String? _roleTable(UserType role) {
+    return switch (role) {
+      UserType.doctor => 'doctors',
+      UserType.medicalStore => 'medical_stores',
+      UserType.lab => 'labs',
+      UserType.ambulance => 'ambulances',
+      _ => null,
+    };
+  }
+
+  String? _rolePk(UserType role) {
+    return switch (role) {
+      UserType.doctor => 'doctor_id',
+      UserType.medicalStore => 'store_id',
+      UserType.lab => 'lab_id',
+      UserType.ambulance => 'ambulance_id',
+      _ => null,
+    };
+  }
+
   Future<Map<String, dynamic>> fetchRoleDetails(
     UserType role,
     String profileId,
   ) async {
-    if (profileId.isEmpty) return {};
-    final collection = switch (role) {
-      UserType.doctor => FirestorePaths.doctors,
-      UserType.medicalStore => FirestorePaths.medicalStores,
-      UserType.lab => FirestorePaths.labs,
-      UserType.ambulance => FirestorePaths.ambulances,
-      _ => null,
-    };
-    if (collection == null) return {};
+    if (profileId.isEmpty || !SupabaseBootstrap.isReady) return {};
+    final table = _roleTable(role);
+    final pk = _rolePk(role);
+    if (table == null || pk == null) return {};
 
     try {
-      final snap = await _firestore.collection(collection).doc(profileId).get();
-      return snap.data() ?? {};
+      final res = await _client.from(table).select().eq(pk, profileId).maybeSingle();
+      if (res == null) return {};
+      return Map<String, dynamic>.from(res);
     } catch (e) {
       if (kDebugMode) debugPrint('fetchRoleDetails error: $e');
       return {};
     }
   }
 
-  /// Approve applicant and unlock operational features.
+  Future<bool> _updateVerification({
+    required String uid,
+    required UserType role,
+    required String profileId,
+    required Map<String, dynamic> userFields,
+    required Map<String, dynamic> roleFields,
+  }) async {
+    if (!SupabaseBootstrap.isReady) return false;
+    try {
+      final now = DateTime.now().toUtc().toIso8601String();
+      await _client.from('users').update({
+        ...userFields,
+        'updated_at': now,
+      }).or('id.eq.$uid,firebase_uid.eq.$uid');
+
+      final table = _roleTable(role);
+      final pk = _rolePk(role);
+      if (table != null && pk != null && profileId.isNotEmpty) {
+        await _client.from(table).update({
+          ...roleFields,
+          'updated_at': now,
+        }).eq(pk, profileId);
+      }
+      return true;
+    } catch (e) {
+      if (kDebugMode) debugPrint('verification update error: $e');
+      return true;
+    }
+  }
+
   Future<bool> approveProfile({
     required String uid,
     required UserType role,
     required String profileId,
   }) async {
     RoleVerificationController.instance.markVerified(role);
-    try {
-      final batch = _firestore.batch();
-      final userRef = _firestore.collection(FirestorePaths.users).doc(uid);
-
-      batch.set(
-          userRef,
-          {
-            'verified': true,
-            'verificationStatus': 'verified',
-            'status': 'approved',
-            'rejectionReason': FieldValue.delete(),
-            'verifiedAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
-
-      final roleCol = switch (role) {
-        UserType.doctor => FirestorePaths.doctors,
-        UserType.medicalStore => FirestorePaths.medicalStores,
-        UserType.lab => FirestorePaths.labs,
-        UserType.ambulance => FirestorePaths.ambulances,
-        _ => null,
-      };
-
-      if (roleCol != null && profileId.isNotEmpty) {
-        final roleRef = _firestore.collection(roleCol).doc(profileId);
-        batch.set(
-            roleRef,
-            {
-              'verified': true,
-              'verificationStatus': 'verified',
-              'status': 'approved',
-              'rejectionReason': FieldValue.delete(),
-              'verifiedAt': FieldValue.serverTimestamp(),
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
-            SetOptions(merge: true));
-      }
-
-      await batch.commit();
-      return true;
-    } catch (e) {
-      if (kDebugMode) debugPrint('approveProfile error: $e');
-      return true;
-    }
+    return _updateVerification(
+      uid: uid,
+      role: role,
+      profileId: profileId,
+      userFields: {
+        'verified': true,
+        'verification_status': 'verified',
+        'status': 'approved',
+        'rejection_reason': null,
+        'verified_at': DateTime.now().toUtc().toIso8601String(),
+      },
+      roleFields: {
+        'verified': true,
+        'verification_status': 'verified',
+        'status': 'approved',
+        'rejection_reason': null,
+        'verified_at': DateTime.now().toUtc().toIso8601String(),
+      },
+    );
   }
 
-  /// Request corrections/revisions with a reason.
   Future<bool> requestRevision({
     required String uid,
     required UserType role,
@@ -221,52 +257,25 @@ class SuperAdminVerificationService {
       reason,
       stage: VerificationStage.revisionRequested,
     );
-    try {
-      final batch = _firestore.batch();
-      final userRef = _firestore.collection(FirestorePaths.users).doc(uid);
-
-      batch.set(
-          userRef,
-          {
-            'verified': false,
-            'verificationStatus': 'revision_requested',
-            'status': 'revision_requested',
-            'rejectionReason': reason.trim(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
-
-      final roleCol = switch (role) {
-        UserType.doctor => FirestorePaths.doctors,
-        UserType.medicalStore => FirestorePaths.medicalStores,
-        UserType.lab => FirestorePaths.labs,
-        UserType.ambulance => FirestorePaths.ambulances,
-        _ => null,
-      };
-
-      if (roleCol != null && profileId.isNotEmpty) {
-        final roleRef = _firestore.collection(roleCol).doc(profileId);
-        batch.set(
-            roleRef,
-            {
-              'verified': false,
-              'verificationStatus': 'revision_requested',
-              'status': 'revision_requested',
-              'rejectionReason': reason.trim(),
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
-            SetOptions(merge: true));
-      }
-
-      await batch.commit();
-      return true;
-    } catch (e) {
-      if (kDebugMode) debugPrint('requestRevision error: $e');
-      return true;
-    }
+    return _updateVerification(
+      uid: uid,
+      role: role,
+      profileId: profileId,
+      userFields: {
+        'verified': false,
+        'verification_status': 'revision_requested',
+        'status': 'revision_requested',
+        'rejection_reason': reason.trim(),
+      },
+      roleFields: {
+        'verified': false,
+        'verification_status': 'revision_requested',
+        'status': 'revision_requested',
+        'rejection_reason': reason.trim(),
+      },
+    );
   }
 
-  /// Reject application with reason — sends the user back to `profile_incomplete` with a reason shown.
   Future<bool> rejectProfile({
     required String uid,
     required UserType role,
@@ -278,48 +287,22 @@ class SuperAdminVerificationService {
       reason,
       stage: VerificationStage.profileIncomplete,
     );
-    try {
-      final batch = _firestore.batch();
-      final userRef = _firestore.collection(FirestorePaths.users).doc(uid);
-
-      batch.set(
-          userRef,
-          {
-            'verified': false,
-            'verificationStatus': 'profile_incomplete',
-            'status': 'rejected',
-            'rejectionReason': reason.trim(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
-
-      final roleCol = switch (role) {
-        UserType.doctor => FirestorePaths.doctors,
-        UserType.medicalStore => FirestorePaths.medicalStores,
-        UserType.lab => FirestorePaths.labs,
-        UserType.ambulance => FirestorePaths.ambulances,
-        _ => null,
-      };
-
-      if (roleCol != null && profileId.isNotEmpty) {
-        final roleRef = _firestore.collection(roleCol).doc(profileId);
-        batch.set(
-            roleRef,
-            {
-              'verified': false,
-              'verificationStatus': 'profile_incomplete',
-              'status': 'rejected',
-              'rejectionReason': reason.trim(),
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
-            SetOptions(merge: true));
-      }
-
-      await batch.commit();
-      return true;
-    } catch (e) {
-      if (kDebugMode) debugPrint('rejectProfile error: $e');
-      return true;
-    }
+    return _updateVerification(
+      uid: uid,
+      role: role,
+      profileId: profileId,
+      userFields: {
+        'verified': false,
+        'verification_status': 'profile_incomplete',
+        'status': 'rejected',
+        'rejection_reason': reason.trim(),
+      },
+      roleFields: {
+        'verified': false,
+        'verification_status': 'profile_incomplete',
+        'status': 'rejected',
+        'rejection_reason': reason.trim(),
+      },
+    );
   }
 }

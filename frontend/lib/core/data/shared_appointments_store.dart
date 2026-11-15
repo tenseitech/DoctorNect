@@ -1,5 +1,5 @@
 import '../../core/config/doctor_patient_cutover_flag.dart';
-import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/app_data_service.dart';
 
 import 'dart:async';
 
@@ -366,7 +366,7 @@ class SharedAppointmentsStore extends ChangeNotifier {
           'Appointments require Supabase. Check configuration.',
         );
       } else {
-        remote = await FirestoreService.instance.appointment.fetchForDoctor(
+        remote = await AppDataService.instance.appointment.fetchForDoctor(
           doctorId,
           preferCache: preferCache,
         );
@@ -487,7 +487,7 @@ class SharedAppointmentsStore extends ChangeNotifier {
       return;
     }
     try {
-      await FirestoreService.instance.appointment.save(
+      await AppDataService.instance.appointment.save(
         record,
         patientId: resolvedPatientId.isNotEmpty ? resolvedPatientId : null,
       );

@@ -14,6 +14,7 @@ const { Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { buildPostgrestPayload } = require('../../services/api-gateway/src/jwt_minter');
 const { createGatewayServer } = require('../../services/api-gateway/src/server');
+const { JwksClient } = require('../../services/api-gateway/src/jwks');
 const { base64UrlEncode } = require('../../services/api-gateway/src/jwt_minter');
 
 const DB_NAME = process.env.FRESH_LOCAL_DB_NAME || 'doctornect_fresh_zero';
@@ -40,6 +41,49 @@ function claimsJson(appRole, uid, verified = true, phone = null) {
       phoneNumber: phone,
     }),
   );
+}
+
+function claimsJsonWithEmail(appRole, uid, { email, emailVerified = 'true', verified = true } = {}) {
+  const base = JSON.parse(claimsJson(appRole, uid, verified));
+  if (email != null) base.email = email;
+  base.email_verified = emailVerified;
+  return JSON.stringify(base);
+}
+
+function assertPostgrestPrivateSchemaNotExposed() {
+  const repoRoot = path.resolve(__dirname, '../..');
+  const confPath = path.join(repoRoot, 'db/postgrest/postgrest.conf');
+  const ecsPath = path.join(repoRoot, 'infra/aws/ecs.tf');
+  let pass = true;
+  let note = '';
+  if (fs.existsSync(confPath)) {
+    const conf = fs.readFileSync(confPath, 'utf8');
+    const m = conf.match(/db-schemas\s*=\s*"([^"]+)"/);
+    const schemas = m ? m[1] : '';
+    if (schemas.split(',').map((s) => s.trim()).includes('private')) {
+      pass = false;
+      note = 'postgrest.conf exposes private';
+    } else if (!schemas.includes('public')) {
+      pass = false;
+      note = 'postgrest.conf missing public';
+    } else {
+      note = `postgrest.conf db-schemas=${schemas}`;
+    }
+  } else {
+    pass = false;
+    note = 'postgrest.conf missing';
+  }
+  if (pass && fs.existsSync(ecsPath)) {
+    const ecs = fs.readFileSync(ecsPath, 'utf8');
+    if (/PGRST_DB_SCHEMAS.*private/i.test(ecs)) {
+      pass = false;
+      note = 'ecs.tf PGRST_DB_SCHEMAS includes private';
+    } else if (!/PGRST_DB_SCHEMAS.*public/i.test(ecs)) {
+      pass = false;
+      note = 'ecs.tf missing public schema env';
+    }
+  }
+  pushRow('admin', '(1) PostgREST schema exposure', 'private not in db-schemas', pass ? 'PASS' : 'FAIL', note);
 }
 
 const MODULES = [
@@ -417,22 +461,342 @@ async function runSqlMatrix(client, ids) {
     const cross = await expectDenied(client, 'authenticated', c, `SELECT * FROM public.${m.table} WHERE ${m.pk} = '${m.otherId}';`);
     pushRow('medical', '(2) cross-user deny', m.table, cross ? 'PASS' : 'FAIL');
   }
+
+  await runClientCutoverRlsChecks(client, ids);
+}
+
+async function runClientCutoverRlsChecks(client, ids) {
+  await client.query(`
+    INSERT INTO public.promoted_ads (ad_id, provider_type, provider_id, title, description, image_url, cta_label, duration_hours, amount_paid, payment_status, status)
+    VALUES
+      ('authz_ad_a_draft', 'doctor', '${ids.docA}', 'Ad A', 'Desc A', 'https://cdn.example/a.jpg', 'Book', 24, 300, 'pending', 'draft'),
+      ('authz_ad_b_draft', 'doctor', '${ids.docB}', 'Ad B', 'Desc B', 'https://cdn.example/b.jpg', 'Book', 24, 300, 'pending', 'draft'),
+      ('authz_ad_b_unpaid_active', 'doctor', '${ids.docB}', 'Ad B active unpaid', 'Desc', 'https://cdn.example/b2.jpg', 'Book', 24, 300, 'pending', 'active')
+    ON CONFLICT (ad_id) DO NOTHING;
+    INSERT INTO public.system_config (config_key, config_value) VALUES
+      ('promoted_ads', '{"enabled":true,"pricingTiers":{"24":300}}'::jsonb)
+    ON CONFLICT (config_key) DO NOTHING;
+    INSERT INTO public.ambulance_invites (invite_id, token, doctor_id, ambulance_id, status, service_name, driver_name, phone)
+    VALUES ('authz_amb_inv_a', 'tok-authz-a', '${ids.docA}', '${ids.ambA}', 'pending', 'Svc Invite', 'Driver', '+910000000099')
+    ON CONFLICT (invite_id) DO NOTHING;
+    INSERT INTO public.ambulance_broadcasts (broadcast_id, patient_id, patient_name, contact_phone, pickup_location, drop_location, status)
+    VALUES ('authz_bc_hist_b', '${ids.pB}', 'Pat B', '+910000000002', 'H Pickup', 'H Drop', 'completed')
+    ON CONFLICT (broadcast_id) DO NOTHING;
+  `);
+
+  const docA = claimsJson('doctor', ids.docA);
+  const docB = claimsJson('doctor', ids.docB);
+  const patA = claimsJson('patient', ids.pA);
+  const ambA = claimsJson('ambulance', ids.ambA);
+
+  const crossAdUpdate = await expectDenied(
+    client,
+    'authenticated',
+    docA,
+    `UPDATE public.promoted_ads SET title = 'hijack' WHERE ad_id = 'authz_ad_b_draft';`,
+  );
+  pushRow('promoted_ads', '(C1) cross-provider', 'UPDATE B draft', crossAdUpdate ? 'PASS' : 'FAIL');
+
+  const crossAdDelete = await expectDenied(
+    client,
+    'authenticated',
+    docA,
+    `DELETE FROM public.promoted_ads WHERE ad_id = 'authz_ad_b_draft';`,
+  );
+  pushRow('promoted_ads', '(C1) cross-provider', 'DELETE B draft', crossAdDelete ? 'PASS' : 'FAIL');
+
+  const peekBdraft = await expectDenied(
+    client,
+    'authenticated',
+    docA,
+    `SELECT * FROM public.promoted_ads WHERE ad_id = 'authz_ad_b_draft';`,
+  );
+  pushRow('promoted_ads', '(C2) draft isolation', 'docA SELECT B draft', peekBdraft ? 'PASS' : 'FAIL');
+
+  const carouselUnpaid = await expectDenied(
+    client,
+    'authenticated',
+    patA,
+    `SELECT * FROM public.promoted_ads WHERE ad_id = 'authz_ad_b_unpaid_active';`,
+  );
+  pushRow(
+    'promoted_ads',
+    '(C3) carousel',
+    'non-owner SELECT active+payment pending',
+    carouselUnpaid ? 'PASS' : 'FAIL',
+  );
+
+  const cfgWrite = await expectDenied(
+    client,
+    'authenticated',
+    docA,
+    `UPDATE public.system_config SET config_value = '{"enabled":false}'::jsonb WHERE config_key = 'promoted_ads';`,
+  );
+  pushRow('system_config', '(C4) non-admin', 'UPDATE promoted_ads config', cfgWrite ? 'PASS' : 'FAIL');
+
+  const histCross = await expectDenied(
+    client,
+    'authenticated',
+    patA,
+    `SELECT * FROM public.ambulance_broadcasts WHERE broadcast_id = 'authz_bc_hist_b';`,
+  );
+  pushRow('ambulance', '(C5) patient history', 'patA SELECT patB broadcast', histCross ? 'PASS' : 'FAIL');
+
+  const reqCrossUpdate = await expectDenied(
+    client,
+    'authenticated',
+    ambA,
+    `UPDATE public.ambulance_requests SET status = 'accepted' WHERE request_id = 'authz_ambreq_b';`,
+  );
+  pushRow('ambulance', '(C6) driver accept', 'ambA UPDATE ambB request', reqCrossUpdate ? 'PASS' : 'FAIL');
+
+  const invitePeek = await expectDenied(
+    client,
+    'authenticated',
+    docB,
+    `SELECT * FROM public.ambulance_invites WHERE invite_id = 'authz_amb_inv_a';`,
+  );
+  pushRow('ambulance_invites', '(C7) cross-doctor', 'docB SELECT docA invite', invitePeek ? 'PASS' : 'FAIL');
+
+  const storeInvite = await expectDenied(
+    client,
+    'authenticated',
+    claimsJson('medicalStore', ids.storeA),
+    `UPDATE public.medical_stores SET store_name = 'x' WHERE store_id = '${ids.storeB}';`,
+  );
+  pushRow('medical_stores', '(C8) invite columns', 'storeA UPDATE storeB profile', storeInvite ? 'PASS' : 'FAIL');
+
+  const photoCross = await expectDenied(
+    client,
+    'authenticated',
+    patA,
+    `UPDATE public.patients SET photo_url = 'https://evil.example/x.jpg' WHERE patient_id = '${ids.pB}';`,
+  );
+  pushRow('profile_photo', '(C9) owner only', 'patA UPDATE patB photo_url', photoCross ? 'PASS' : 'FAIL');
+
+  const docPhotoCross = await expectDenied(
+    client,
+    'authenticated',
+    docA,
+    `UPDATE public.doctors SET photo_url = 'https://evil.example/x.jpg' WHERE doctor_id = '${ids.docB}';`,
+  );
+  pushRow('profile_photo', '(C9) owner only', 'docA UPDATE docB photo_url', docPhotoCross ? 'PASS' : 'FAIL');
+
+  const verifyQueue = await expectDenied(
+    client,
+    'authenticated',
+    docA,
+    `SELECT id, verified FROM public.users WHERE id = '${ids.labB}' AND role = 'lab';`,
+  );
+  pushRow('super_admin_queue', '(C10) non-admin list', 'doctor SELECT lab user row', verifyQueue ? 'PASS' : 'FAIL');
+
+  const forgeApprove = await expectDenied(
+    client,
+    'authenticated',
+    docA,
+    `UPDATE public.users SET verified = true WHERE id = '${ids.labB}';`,
+  );
+  pushRow('super_admin_queue', '(C11) non-admin approve', 'doctor UPDATE lab verified', forgeApprove ? 'PASS' : 'FAIL');
+
+  const legitAdminUid = 'authz_cutover_admin';
+  await client.query(`
+    INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified)
+     VALUES ('${legitAdminUid}', '${legitAdminUid}', 'admin', '${legitAdminUid}', 'Cutover Admin', 'cutover-admin@authz.test', '+910000009997', true)
+     ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;
+    INSERT INTO private.admin_users (user_id) VALUES ('${legitAdminUid}') ON CONFLICT (user_id) DO NOTHING;
+  `);
+  const adminClaims = claimsJsonWithEmail('admin', legitAdminUid, {
+    email: 'cutover-admin@authz.test',
+    emailVerified: 'true',
+  });
+  const adminList = await expectSuccess(
+    client,
+    'authenticated',
+    adminClaims,
+    `SELECT 1 FROM public.users WHERE role = 'lab' AND id = '${ids.labB}' LIMIT 1;`,
+  );
+  pushRow(
+    'super_admin_queue',
+    '(C12) admin list',
+    'is_super_admin SELECT lab user',
+    adminList ? 'PASS' : 'FAIL',
+  );
+}
+
+async function runAdminEscalationChecks(client, ids) {
+  assertPostgrestPrivateSchemaNotExposed();
+
+  const priv = await client.query(`
+    SELECT
+      has_table_privilege('anon', 'private.admin_users', 'SELECT') AS anon_sel,
+      has_table_privilege('anon', 'private.admin_users', 'INSERT') AS anon_ins,
+      has_table_privilege('authenticated', 'private.admin_users', 'SELECT') AS auth_sel,
+      has_table_privilege('authenticated', 'private.admin_users', 'INSERT') AS auth_ins,
+      has_table_privilege('authenticated', 'private.admin_users', 'UPDATE') AS auth_upd
+  `);
+  const p = priv.rows[0];
+  const grantsOk =
+    !p.anon_sel && !p.anon_ins && !p.auth_sel && !p.auth_ins && !p.auth_upd;
+  pushRow(
+    'admin',
+    '(1) private.admin_users grants',
+    'anon/authenticated no read/write',
+    grantsOk ? 'PASS' : 'FAIL',
+    JSON.stringify(p),
+  );
+
+  const deniedAnon = await expectDenied(
+    client,
+    'anon',
+    null,
+    'SELECT 1 FROM private.admin_users LIMIT 1;',
+  );
+  pushRow('admin', '(1) private.admin_users RLS', 'anon SELECT denied', deniedAnon ? 'PASS' : 'FAIL');
+
+  const deniedAuth = await expectDenied(
+    client,
+    'authenticated',
+    claimsJson('patient', ids.pA),
+    'SELECT 1 FROM private.admin_users LIMIT 1;',
+  );
+  pushRow(
+    'admin',
+    '(1) private.admin_users RLS',
+    'authenticated SELECT denied',
+    deniedAuth ? 'PASS' : 'FAIL',
+  );
+
+  const adminUid = 'authz_admin_gate';
+  await client.query(
+    `INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified)
+     VALUES ($1::varchar, $1::varchar, 'admin', $1::varchar, 'Gate Admin', 'admin@doctornect.com', '+910000009999', true)
+     ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, verified = EXCLUDED.verified`,
+    [adminUid],
+  );
+  await client.query(
+    `INSERT INTO private.admin_users (user_id) VALUES ($1::text) ON CONFLICT (user_id) DO NOTHING`,
+    [adminUid],
+  );
+
+  const forgePatientAdminEmail = claimsJsonWithEmail('patient', ids.pA, {
+    email: 'admin@doctornect.com',
+    emailVerified: 'true',
+  });
+  const forgedAdmin = await asRole(client, 'authenticated', forgePatientAdminEmail, async () => {
+    const r = await client.query(`SELECT private.is_super_admin() AS ok`);
+    return r.rows[0].ok === true;
+  });
+  pushRow(
+    'admin',
+    '(2) JWT email escalation',
+    'patient token + email=admin@doctornect.com',
+    forgedAdmin ? 'FAIL' : 'PASS',
+  );
+
+  const forgeDoctorAdminEmail = claimsJsonWithEmail('doctor', ids.docA, {
+    email: 'admin@doctornect.com',
+    emailVerified: 'true',
+  });
+  const forgedDocAdmin = await asRole(client, 'authenticated', forgeDoctorAdminEmail, async () => {
+    const r = await client.query(`SELECT private.is_super_admin() AS ok`);
+    return r.rows[0].ok === true;
+  });
+  pushRow(
+    'admin',
+    '(2) JWT email escalation',
+    'doctor token + email=admin@doctornect.com',
+    forgedDocAdmin ? 'FAIL' : 'PASS',
+  );
+
+  const unverifiedAdminClaims = claimsJsonWithEmail('admin', adminUid, {
+    email: 'admin@doctornect.com',
+    emailVerified: 'false',
+  });
+  const unverified = await asRole(client, 'authenticated', unverifiedAdminClaims, async () => {
+    const r = await client.query(`SELECT private.is_super_admin() AS ok`);
+    return r.rows[0].ok === true;
+  });
+  pushRow(
+    'admin',
+    '(2) email_verified=false',
+    'admin row present but unverified JWT',
+    unverified ? 'FAIL' : 'PASS',
+  );
+
+  const legitAdminClaims = claimsJsonWithEmail('admin', adminUid, {
+    email: 'admin@doctornect.com',
+    emailVerified: 'true',
+  });
+  const legit = await asRole(client, 'authenticated', legitAdminClaims, async () => {
+    const r = await client.query(`SELECT private.is_super_admin() AS ok`);
+    return r.rows[0].ok === true;
+  });
+  pushRow(
+    'admin',
+    '(2) legitimate super_admin',
+    'admin_users + matching verified email',
+    legit ? 'PASS' : 'FAIL',
+  );
+
+  const fnMeta = await client.query(`
+    SELECT p.prosecdef,
+           COALESCE(array_to_string(p.proconfig, ','), '') AS proconfig
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'private' AND p.proname = 'is_super_admin'
+    LIMIT 1
+  `);
+  const meta = fnMeta.rows[0] || {};
+  const cfg = meta.proconfig || '';
+  const definerOk =
+    meta.prosecdef === true &&
+    (/search_path=public/i.test(cfg) ||
+      /search_path\s*=\s*''/i.test(cfg) ||
+      cfg.includes('search_path=""'));
+  pushRow(
+    'admin',
+    '(3) is_super_admin',
+    'SECURITY DEFINER + fixed search_path',
+    definerOk ? 'PASS' : 'FAIL',
+    meta.proconfig || '',
+  );
+
+  const grants = await client.query(`
+    SELECT grantee, privilege_type
+    FROM information_schema.routine_privileges
+    WHERE specific_schema = 'private' AND routine_name = 'is_super_admin'
+    ORDER BY grantee, privilege_type
+  `);
+  const grantees = [...new Set(grants.rows.map((r) => r.grantee))];
+  const execOk =
+    grantees.includes('authenticated') &&
+    grantees.includes('service_role') &&
+    !grantees.includes('anon') &&
+    !grantees.includes('PUBLIC');
+  pushRow(
+    'admin',
+    '(3) is_super_admin EXECUTE',
+    'authenticated + service_role only',
+    execOk ? 'PASS' : 'FAIL',
+    grantees.join(','),
+  );
 }
 
 async function runGatewayAuthChecks() {
   const keyPair = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
   const testKid = 'authz-suite-kid';
   const projectId = 'authz-test-project';
+  const receivedPostgrestRequests = [];
 
-  function mintFirebaseToken({ expOffsetSec = 3600, tamper = false } = {}) {
+  function mintFirebaseToken({ expOffsetSec = 3600, tamper = false, sub = 'authz_firebase_user', appRole = 'patient' } = {}) {
     const now = Math.floor(Date.now() / 1000);
     const header = { alg: 'RS256', kid: testKid, typ: 'JWT' };
     const payload = {
       iss: `https://securetoken.google.com/${projectId}`,
       aud: projectId,
-      sub: 'authz_firebase_user',
-      app_role: 'patient',
-      user_role: 'patient',
+      sub,
+      app_role: appRole,
+      user_role: appRole,
       verified: true,
       exp: now + expOffsetSec,
       iat: now - 10,
@@ -440,25 +804,32 @@ async function runGatewayAuthChecks() {
     const h = base64UrlEncode(JSON.stringify(header));
     const p = base64UrlEncode(JSON.stringify(payload));
     const input = `${h}.${p}`;
-    let sig = base64UrlEncode(crypto.sign('RSA-SHA256', Buffer.from(input), keyPair.privateKey));
+    const signer = crypto.createSign('RSA-SHA256');
+    signer.update(input);
+    signer.end();
+    let sig = base64UrlEncode(signer.sign(keyPair.privateKey));
     if (tamper) sig = (sig[0] === 'A' ? 'B' : 'A') + sig.slice(1);
     return `${input}.${sig}`;
   }
 
   let mockPort;
   const mockSrv = http.createServer((req, res) => {
-    res.writeHead(200, { 'content-type': 'application/json' });
-    res.end('[]');
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => {
+      receivedPostgrestRequests.push({
+        headers: { ...req.headers },
+        path: req.url,
+      });
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end('[]');
+    });
   });
   await new Promise((r) => mockSrv.listen(0, '127.0.0.1', r));
   mockPort = mockSrv.address().port;
 
-  const mockJwks = {
-    async getPublicKey(kid) {
-      if (kid !== testKid) throw new Error('unknown kid');
-      return keyPair.publicKey;
-    },
-  };
+  const mockJwks = new JwksClient();
+  mockJwks.setMockKeys(new Map([[testKid, keyPair.publicKey]]));
 
   const { server: gateway } = createGatewayServer({
     firebaseProjectId: projectId,
@@ -467,7 +838,7 @@ async function runGatewayAuthChecks() {
     postgrestJwtSecret: 'authz-suite-postgrest-secret-32charsxx',
     postgrestJwtAud: 'postgrest',
     serviceRoleKey: 'authz-suite-service-role-key-32chars',
-    enforceFirebaseRevocationCheck: false,
+    firebaseRevocationCheck: false,
     clientAllowedTables: ['patients'],
     allowedMethods: ['GET'],
   });
@@ -509,6 +880,40 @@ async function runGatewayAuthChecks() {
   });
   pushRow('gateway', '(4) invalid/revoked-like token', 'GET /rest/v1/patients', badSig.status === 401 ? 'PASS' : 'FAIL', `HTTP ${badSig.status}`);
 
+  const patientToken = mintFirebaseToken({ sub: 'authz_pat_header', appRole: 'patient' });
+  const forgedHeaders = await req('/rest/v1/patients?select=patient_id&limit=1', {
+    authorization: `Bearer ${patientToken}`,
+    'x-user-role': 'super_admin',
+    'x-app-role': 'admin',
+    'x-user-email': 'admin@doctornect.com',
+    role: 'service_role',
+    app_role: 'admin',
+  });
+  let headerForgePass = forgedHeaders.status === 200 && receivedPostgrestRequests.length >= 1;
+  if (headerForgePass) {
+    const proxied = receivedPostgrestRequests[receivedPostgrestRequests.length - 1];
+    const authHeader = proxied.headers.authorization || '';
+    const jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    const parts = jwt.split('.');
+    if (parts.length === 3) {
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+      headerForgePass =
+        payload.sub === 'authz_pat_header' &&
+        payload.app_role === 'patient' &&
+        payload.role === 'authenticated' &&
+        payload.email !== 'admin@doctornect.com';
+    } else {
+      headerForgePass = false;
+    }
+  }
+  pushRow(
+    'admin',
+    '(4) gateway header forgery',
+    'x-user-email/role headers ignored',
+    headerForgePass ? 'PASS' : 'FAIL',
+    `HTTP ${forgedHeaders.status}`,
+  );
+
   await new Promise((r) => gateway.close(r));
   await new Promise((r) => mockSrv.close(r));
 }
@@ -526,6 +931,7 @@ async function main() {
     await client.query('BEGIN');
     const ids = await seedFixtures(client);
     await runSqlMatrix(client, ids);
+    await runAdminEscalationChecks(client, ids);
     await client.query('ROLLBACK');
     const after = (await client.query(`SELECT count(*)::int AS n FROM public.users`)).rows[0].n;
     if (after !== before) {

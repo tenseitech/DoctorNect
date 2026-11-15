@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../../features/lab/models/lab_connection_models.dart';
 import '../../supabase/repositories/supabase_lab_repository.dart';
 import '../firestore_query_limits.dart';
@@ -27,7 +25,7 @@ class LabConnectionRepository {
 
   Future<FirestorePage<LabConnection>> fetchActiveConnectionsForDoctor(
     String doctorId, {
-    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    Object? startAfter,
     int limit = FirestoreQueryLimits.connectionsPage,
     bool preferCache = true,
   }) {
@@ -39,7 +37,7 @@ class LabConnectionRepository {
 
   Future<FirestorePage<LabConnection>> fetchActiveConnectionsForLab(
     String labId, {
-    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    Object? startAfter,
     int limit = FirestoreQueryLimits.connectionsPage,
     bool preferCache = true,
   }) {

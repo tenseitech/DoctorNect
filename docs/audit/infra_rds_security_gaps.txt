@@ -1,0 +1,16 @@
+RDS / network Terraform review (repo-only, 2026-11-15)
+========================================================
+
+Evidence in repo:
+- infra/aws/rds.tf:52-54 — rds.force_ssl = 1 (pending-reboot)
+- infra/aws/rds.tf:57-60 — password_encryption = scram-sha-256
+- infra/aws/security_groups.tf:50-56 — ECS egress 5432 only to var.rds_security_group_id
+- No aws_db_instance resource in repo (data source only) → publicly_accessible not codified here
+
+GAPS (operator must verify in AWS console / live TF state):
+1. RDS publicly_accessible — not set in-repo; confirm false on live instance.
+2. RDS security group ingress — only gateway/ECS/bastion SGs; confirm no 0.0.0.0/5432.
+3. Parameter group rds.force_ssl — confirm attached + instance rebooted after pending-reboot params.
+4. SSL from clients — use sslmode=verify-full + global-bundle.pem (documented in MIGRATION_STATUS).
+
+Owner: operator (main), not Cursor.

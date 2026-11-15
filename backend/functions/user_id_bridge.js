@@ -111,7 +111,7 @@ function hashUid(uid) {
 
 /**
  * Shared helper to execute user sync/upsert with email collision fallback logic.
- * Used identically by backfill_users_to_supabase.js and cross_role_sync.js (syncFirestoreUserToSupabase).
+ * Used by backfill_users_to_supabase.js and user_supabase_payload.js (legacy sync tests use test/lib bridge only).
  *
  * Guarantees:
  * - Insert path: tries real email; on 409/23505 users_email_key, retries once with synthetic email,

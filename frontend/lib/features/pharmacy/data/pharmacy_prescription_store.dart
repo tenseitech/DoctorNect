@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -56,7 +56,7 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
     bool preferCache = true,
   }) async {
     if (patientId.isEmpty) return;
-    final remote = await FirestoreService.instance.pharmacyFirestore
+    final remote = await AppDataService.instance.pharmacyFirestore
         .fetchDeliveriesForPatient(patientId, preferCache: preferCache);
     mergeFromFirestore(remote);
   }
@@ -68,7 +68,7 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
     if (doctorId.isEmpty) return;
     if (preferCache && forDoctor(doctorId).isNotEmpty) return;
 
-    final remote = await FirestoreService.instance.pharmacyFirestore
+    final remote = await AppDataService.instance.pharmacyFirestore
         .fetchDeliveriesForDoctor(doctorId, preferCache: preferCache);
     mergeFromFirestore(remote);
   }
@@ -140,7 +140,7 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
         sentAt: DateTime.now(),
         medicineLines: PharmacyPrescriptionDelivery.linesFromDraft(draft),
       );
-      await FirestoreService.instance.pharmacyFirestore.saveDelivery(
+      await AppDataService.instance.pharmacyFirestore.saveDelivery(
         delivery,
       ); // FIXED: await; rethrows on failure
       _deliveries.insert(0, delivery);
@@ -172,7 +172,7 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
     d.status = PharmacyDeliveryStatus.viewed;
     d.viewedAt = DateTime.now();
 
-    await FirestoreService.instance.pharmacyFirestore.updateDelivery(
+    await AppDataService.instance.pharmacyFirestore.updateDelivery(
       d,
     ); // FIXED: await; rethrows on failure
     notifyListeners();
@@ -194,7 +194,7 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
         break;
       }
     }
-    await FirestoreService.instance.pharmacyFirestore.updateDelivery(
+    await AppDataService.instance.pharmacyFirestore.updateDelivery(
       d,
     ); // FIXED: persist medicineLines availability/substitute to Firestore
     notifyListeners();
@@ -216,7 +216,7 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
     d.dispensedAt = DateTime.now();
     d.dispensingNotes = notes;
 
-    await FirestoreService.instance.pharmacyFirestore.updateDelivery(
+    await AppDataService.instance.pharmacyFirestore.updateDelivery(
       d,
     ); // FIXED: await; rethrows on failure
 

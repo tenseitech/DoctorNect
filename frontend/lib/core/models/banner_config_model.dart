@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../util/map_date_time.dart';
 
 class BannerConfigModel {
   const BannerConfigModel({
@@ -16,12 +16,6 @@ class BannerConfigModel {
   final DateTime? updatedAt;
 
   factory BannerConfigModel.fromMap(Map<String, dynamic> data) {
-    DateTime? parseDate(dynamic val) {
-      if (val is Timestamp) return val.toDate();
-      if (val is String) return DateTime.tryParse(val);
-      return null;
-    }
-
     final rawTiers = data['pricingTiers'] ?? data['pricing_tiers'];
     final Map<int, int> tiers = {};
     if (rawTiers is Map) {
@@ -39,17 +33,14 @@ class BannerConfigModel {
       pricingTiers: tiers.isNotEmpty
           ? tiers
           : const {24: 300, 72: 750, 168: 1500, 720: 5000},
-      maxActiveBanners: (data['maxActiveBanners'] ?? data['max_active_banners'] as num?)?.toInt() ?? 10,
-      bannerNotice: (data['bannerNotice'] ?? data['banner_notice']) as String? ?? '',
-      updatedAt: parseDate(data['updatedAt'] ?? data['updated_at']),
+      maxActiveBanners:
+          (data['maxActiveBanners'] ?? data['max_active_banners'] as num?)
+                  ?.toInt() ??
+              10,
+      bannerNotice:
+          (data['bannerNotice'] ?? data['banner_notice']) as String? ?? '',
+      updatedAt: parseMapDateTime(data['updatedAt'] ?? data['updated_at']),
     );
-  }
-
-  factory BannerConfigModel.fromFirestore(DocumentSnapshot doc) {
-    if (!doc.exists || doc.data() == null) {
-      return const BannerConfigModel();
-    }
-    return BannerConfigModel.fromMap(doc.data() as Map<String, dynamic>);
   }
 
   Map<String, dynamic> toMap() {
@@ -63,7 +54,7 @@ class BannerConfigModel {
       'pricingTiers': rawTiers,
       'maxActiveBanners': maxActiveBanners,
       'bannerNotice': bannerNotice,
-      'updatedAt': FieldValue.serverTimestamp(),
+      'updatedAt': DateTime.now().toUtc().toIso8601String(),
     };
   }
 }

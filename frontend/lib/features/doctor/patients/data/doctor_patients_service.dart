@@ -1,4 +1,4 @@
-import '../../../../core/firebase/firestore_service.dart';
+import '../../../../core/firebase/repositories/patient_profile_repository.dart';
 
 import 'package:intl/intl.dart';
 
@@ -169,7 +169,7 @@ abstract final class DoctorPatientsService {
   static Future<bool> canViewClinicalHistoryForKey(String patientKey) async {
     final registeredId = _registeredIdFromKey(patientKey);
     if (registeredId == null) return true;
-    return FirestoreService.instance.patientProfile
+    return PatientProfileRepository.instance
         .isPatientSharingClinicalDataWithDoctors(registeredId);
   }
 
@@ -365,13 +365,12 @@ abstract final class DoctorPatientsService {
     if (patientDocId != null) {
       final doctorId = DoctorSession.loggedInDoctorId;
       if (doctorId.isNotEmpty) {
-        await FirestoreService.instance.patientProfile
-            .grantDoctorCareTeamAccess(
+        await PatientProfileRepository.instance.grantDoctorCareTeamAccess(
           patientId: patientDocId,
           doctorId: doctorId,
         );
       }
-      final data = await FirestoreService.instance.patientProfile
+      final data = await PatientProfileRepository.instance
           .fetchPatientDocumentForDoctor(patientDocId);
       if (data != null) {
         final bg = (data['bloodGroup'] as String?)?.trim();

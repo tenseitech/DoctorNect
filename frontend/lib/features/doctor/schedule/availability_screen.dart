@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'dart:async';
@@ -161,7 +161,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
   }
 
   Future<void> _loadSchedule() async {
-    final saved = await FirestoreService.instance.doctorAvailability.fetch(
+    final saved = await AppDataService.instance.doctorAvailability.fetch(
       DoctorSession.loggedInDoctorId,
       preferCache: false,
     );
@@ -315,7 +315,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
 
     setState(() => _saving = true);
     try {
-      await FirestoreService.instance.doctorAvailability.save(
+      await AppDataService.instance.doctorAvailability.save(
         DoctorSession.loggedInDoctorId,
         _buildSchedule(),
       );

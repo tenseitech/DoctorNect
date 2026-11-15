@@ -1,4 +1,4 @@
-import '../../../../core/firebase/firestore_service.dart';
+import '../../../../core/firebase/app_data_service.dart';
 import '../../../../core/data/shared_appointments_store.dart';
 import '../../../../core/firebase/models/doctor_availability.dart';
 import '../../../patient/data/registered_doctors_store.dart';
@@ -122,7 +122,7 @@ abstract final class PrescriptionHeaderHelper {
   static Future<String> loadConsultationTimings(String doctorId) async {
     DoctorScheduleAvailability? schedule;
     try {
-      schedule = await FirestoreService.instance.doctorAvailability.fetch(
+      schedule = await AppDataService.instance.doctorAvailability.fetch(
         doctorId,
         preferCache: true,
       );

@@ -1,4 +1,4 @@
-import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/app_data_service.dart';
 
 import './app_toast.dart';
 
@@ -308,7 +308,7 @@ abstract final class AppNotificationNavigator {
     BuildContext context, {
     required String referralId,
   }) async {
-    final referral = await FirestoreService.instance.referral.fetchById(
+    final referral = await AppDataService.instance.referral.fetchById(
       referralId,
       preferCache: false,
     );

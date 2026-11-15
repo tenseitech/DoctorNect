@@ -1,0 +1,5 @@
+# Independent client Firestore SDK grep (frontend, exclude build/)
+# Pattern: cloud_firestore|FirebaseFirestore|FirestoreClient|FirestorePaths|FirestoreReadHelper|fake_cloud_firestore
+# Generated: 2026-11-15
+
+MATCHES: 0 (rg exit code 1 — no matches)

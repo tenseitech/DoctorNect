@@ -1,11 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../../core/firebase/firestore_client.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
-import '../../../../core/config/doctor_patient_cutover_flag.dart';
 import '../../../../core/session/patient_session.dart';
-import '../../../../core/supabase/supabase_bootstrap.dart';
 import '../../../../core/supabase/support_ticket_supabase_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../widgets/patient_profile_form_styles.dart';
@@ -41,9 +36,7 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
         'Ticket History',
         context: context,
       ),
-      body: (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady)
-          ? _buildSupabaseTickets(context)
-          : _buildFirestoreTickets(context),
+      body: _buildSupabaseTickets(context),
     );
   }
 
@@ -83,63 +76,6 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                   createdAt: t.createdAt,
                 ))
             .toList();
-
-        return _buildTicketsList(context, items);
-      },
-    );
-  }
-
-  Widget _buildFirestoreTickets(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirestoreClient.instance
-          .collection('support_tickets')
-          .where('patientId', isEqualTo: PatientSession.loggedInPatientId)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.patientTeal),
-          );
-        }
-        if (snapshot.hasError) {
-          return Center(
-            child: Text(
-              'Error: ${snapshot.error}',
-              style: const TextStyle(fontFamily: 'Inter', color: Colors.red),
-            ),
-          );
-        }
-
-        final docs = snapshot.data?.docs ?? [];
-        if (docs.isEmpty) {
-          return _buildEmptyState(context);
-        }
-
-        // Sort in memory by createdAt descending
-        final sortedDocs = List<QueryDocumentSnapshot>.from(docs);
-        sortedDocs.sort((a, b) {
-          final aData = a.data() as Map<String, dynamic>;
-          final bData = b.data() as Map<String, dynamic>;
-          final aTime = aData['createdAt'] as Timestamp?;
-          final bTime = bData['createdAt'] as Timestamp?;
-          if (aTime == null && bTime == null) return 0;
-          if (aTime == null) return 1;
-          if (bTime == null) return -1;
-          return bTime.compareTo(aTime);
-        });
-
-        final items = sortedDocs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          final timestamp = data['createdAt'] as Timestamp?;
-          return _TicketItemData(
-            ticketId: doc.id,
-            issueType: data['issueType'] as String? ?? 'General',
-            message: data['message'] as String? ?? '',
-            status: data['status'] as String? ?? 'open',
-            screenshot: data['screenshotName'] as String?,
-            createdAt: timestamp?.toDate(),
-          );
-        }).toList();
 
         return _buildTicketsList(context, items);
       },

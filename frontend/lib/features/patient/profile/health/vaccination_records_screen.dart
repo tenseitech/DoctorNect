@@ -1,4 +1,4 @@
-import '../../../../core/firebase/firestore_service.dart';
+import '../../../../core/firebase/app_data_service.dart';
 import '../../../../core/notifications/app_toast.dart';
 
 import 'dart:convert';
@@ -182,7 +182,7 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
     }
 
     try {
-      final records = await FirestoreService.instance.patientProfile
+      final records = await AppDataService.instance.patientProfile
           .fetchHealthRecords(patientId);
       final vaccinations = records
           .where((r) => r.type == HealthRecordType.vaccination)
@@ -244,7 +244,7 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
     if (patientId.isNotEmpty) {
       try {
         // Vaccinations stay on Firestore with the rest of the patient chart.
-        await FirestoreService.instance.patientProfile.saveHealthRecord(
+        await AppDataService.instance.patientProfile.saveHealthRecord(
           patientId,
           _healthRecordFromEntry(entry),
         );
@@ -349,7 +349,7 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isNotEmpty && !entry.id.startsWith('mock_')) {
       try {
-        await FirestoreService.instance.patientProfile.deleteHealthRecord(
+        await AppDataService.instance.patientProfile.deleteHealthRecord(
           entry.id,
         );
       } catch (_) {

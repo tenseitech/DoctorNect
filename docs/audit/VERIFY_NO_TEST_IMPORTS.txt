@@ -1,0 +1,11 @@
+=== git grep -n "test/lib" backend/functions/src backend/functions/*.js ===
+(no matches — exit 1)
+
+=== rg -n "require(.*test/" backend/functions --glob !test --glob !node_modules ===
+(no matches — exit 1)
+
+=== backend/scripts (fixed) ===
+backfill_users_to_supabase.js now requires ../functions/user_supabase_payload.js (not test/lib).
+
+=== test-only bridge ===
+backend/functions/test/lib/cross_role_sync_bridge.js — unit tests only; not imported from index.js or deploy bundle.

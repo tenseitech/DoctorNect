@@ -114,6 +114,7 @@ EOF
   fi
 
   DART_DEFINES+=(--dart-define=FIREBASE_API_KEY_ANDROID="$FIREBASE_API_KEY_ANDROID")
+  DART_DEFINES+=(--dart-define=FIRESTORE_FORBIDDEN=true)
 
   if [[ -n "${GOOGLE_MAPS_API_KEY:-}" ]]; then
     DART_DEFINES+=(--dart-define=GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_API_KEY")
@@ -158,7 +159,7 @@ EOF
   done
 
   # Strict allowlist: confirm only intended keys reach dart-defines
-  local allowed_keys=("FIREBASE_API_KEY_ANDROID" "GOOGLE_MAPS_API_KEY" "RECAPTCHA_SITE_KEY" "SUPABASE_URL" "SUPABASE_ANON_KEY" "USE_SUPABASE_DB_DOCTOR_PATIENT")
+  local allowed_keys=("FIREBASE_API_KEY_ANDROID" "FIRESTORE_FORBIDDEN" "GOOGLE_MAPS_API_KEY" "RECAPTCHA_SITE_KEY" "SUPABASE_URL" "SUPABASE_ANON_KEY" "USE_SUPABASE_DB_DOCTOR_PATIENT")
   for define in "${all_defines[@]}"; do
     local key="${define#--dart-define=}"
     key="${key%%=*}"
@@ -182,6 +183,21 @@ EOF
     intended_keys+=("$key")
   done
   echo "Configured Dart define keys: ${intended_keys[*]}"
+}
+
+assert_release_firestore_forbidden_define() {
+  local found=0
+  for define in "${DART_DEFINES[@]}"; do
+  if [[ "$define" == --dart-define=FIRESTORE_FORBIDDEN=true ]] || [[ "$define" == --dart-define=FIRESTORE_FORBIDDEN=1 ]]; then
+      found=1
+      break
+    fi
+  done
+  if [[ $found -eq 0 ]]; then
+    echo "FAIL-FAST SECURITY GATE: Release builds require --dart-define=FIRESTORE_FORBIDDEN=true (compile-time guard)." >&2
+    exit 1
+  fi
+  echo "Release gate: FIRESTORE_FORBIDDEN dart-define present."
 }
 
 is_supabase_cloud_url() {
@@ -309,6 +325,7 @@ fi
 
 release_api_endpoint_isolation
 build_dart_defines
+assert_release_firestore_forbidden_define
 validate_production_build_config
 read_version
 

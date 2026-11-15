@@ -139,6 +139,16 @@ function Test-ReleaseApiEndpointIsolation {
     }
 }
 
+function Assert-ReleaseFirestoreForbiddenDefine {
+    param([string[]]$Defines)
+
+    $hit = @($Defines | Where-Object { $_ -match '^--dart-define=FIRESTORE_FORBIDDEN=(true|1)$' })
+    if ($hit.Count -lt 1) {
+        throw 'FAIL-FAST SECURITY GATE: Release builds require --dart-define=FIRESTORE_FORBIDDEN=true (compile-time guard).'
+    }
+    Write-Host 'Release gate: FIRESTORE_FORBIDDEN dart-define present.' -ForegroundColor Green
+}
+
 function Get-FlutterDartDefines {
     param(
         [string[]]$ExtraArgs = @()
@@ -170,6 +180,7 @@ Optional: node scripts/env/generate_flutter_dart_defines.js (client-safe keys on
         throw "Missing FIREBASE_API_KEY_ANDROID.$hint`n`nRe-run: .\scripts\release_build.ps1"
     }
     $defines.Add("--dart-define=FIREBASE_API_KEY_ANDROID=$androidKey")
+    $defines.Add('--dart-define=FIRESTORE_FORBIDDEN=true')
 
     foreach ($name in @('GOOGLE_MAPS_API_KEY', 'RECAPTCHA_SITE_KEY')) {
         $item = Get-Item -Path "Env:$name" -ErrorAction SilentlyContinue
@@ -215,7 +226,7 @@ Optional: node scripts/env/generate_flutter_dart_defines.js (client-safe keys on
     }
 
     # Strict allowlist: confirm only intended keys reach dart-defines
-    $allowedDefineKeys = @('FIREBASE_API_KEY_ANDROID', 'GOOGLE_MAPS_API_KEY', 'RECAPTCHA_SITE_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'USE_SUPABASE_DB_DOCTOR_PATIENT')
+    $allowedDefineKeys = @('FIREBASE_API_KEY_ANDROID', 'FIRESTORE_FORBIDDEN', 'GOOGLE_MAPS_API_KEY', 'RECAPTCHA_SITE_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'USE_SUPABASE_DB_DOCTOR_PATIENT')
     foreach ($def in $allDefines) {
         $key = (($def -replace '^--dart-define=', '') -split '=')[0]
         if ($allowedDefineKeys -notcontains $key) {
@@ -341,6 +352,7 @@ try {
     Test-ReleaseApiEndpointIsolation -AllowStaging:$AllowStaging -Launch:$Launch
     Test-ProductionBuildConfig -AllowStaging:$AllowStaging
     $dartDefines = Get-FlutterDartDefines -ExtraArgs $ExtraArgs
+    Assert-ReleaseFirestoreForbiddenDefine -Defines $dartDefines
     $pubspecPath = Join-Path $projectRoot 'pubspec.yaml'
 
     Write-Host '==========================================' -ForegroundColor Cyan

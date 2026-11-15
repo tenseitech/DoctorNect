@@ -1,6 +1,3 @@
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../../features/doctor/clinical/models/clinical_models.dart';
 import '../firestore_query_limits.dart';
 import '../models/firestore_page.dart';
@@ -22,7 +19,7 @@ class PrescriptionRepository {
 
   Future<FirestorePage<PrescriptionDraft>> fetchForDoctor(
     String doctorId, {
-    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    String? startAfter,
     int limit = FirestoreQueryLimits.prescriptionsPage,
     bool preferCache = true,
   }) {
@@ -36,7 +33,7 @@ class PrescriptionRepository {
 
   Future<FirestorePage<PrescriptionDraft>> fetchForPatient(
     String patientId, {
-    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    String? startAfter,
     int limit = FirestoreQueryLimits.prescriptionsPage,
     bool preferCache = true,
   }) {
@@ -50,7 +47,7 @@ class PrescriptionRepository {
 
   Future<FirestorePage<PrescriptionDraft>> fetchForPatientForDoctor(
     String patientId, {
-    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    String? startAfter,
     int limit = FirestoreQueryLimits.prescriptionsPage,
     bool preferCache = true,
   }) async {

@@ -1,4 +1,4 @@
-import '../../../../core/firebase/firestore_service.dart';
+import '../../../../core/firebase/app_data_service.dart';
 
 import 'package:flutter/material.dart';
 import '../../../../core/firebase/models/doctor_referral.dart';
@@ -52,11 +52,11 @@ class _DoctorReferredPatientsScreenState
     try {
       final doctorId = DoctorSession.loggedInDoctorId;
       final results = await Future.wait([
-        FirestoreService.instance.referral.fetchSentByDoctor(
+        AppDataService.instance.referral.fetchSentByDoctor(
           doctorId,
           preferCache: false,
         ),
-        FirestoreService.instance.referral.fetchReceivedByDoctor(
+        AppDataService.instance.referral.fetchReceivedByDoctor(
           doctorId,
           preferCache: false,
         ),

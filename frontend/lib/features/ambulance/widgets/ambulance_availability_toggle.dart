@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
@@ -47,7 +47,7 @@ class _AmbulanceAvailabilityToggleState
       return;
     }
 
-    final ok = await FirestoreService.instance.ambulance.updateAvailability(
+    final ok = await AppDataService.instance.ambulance.updateAvailability(
       widget.ambulanceId,
       value,
     );

@@ -1,0 +1,21 @@
+Production-profile release build attempt (2026-11-15)
+=====================================================
+
+Command (no -AllowStaging):
+  APP_ENV=production
+  PROD_GATEWAY_URL=https://api.doctornect.com  (example host from .env.example — not a live probe)
+  SUPABASE_URL same as PROD_GATEWAY_URL (avoids *.supabase.co dotenv bleed)
+  ENABLE_SUPABASE=0
+
+Preflight: verify_production_build_config.js --client-only PASSED (Auth Gateway aligned).
+Dart defines: FIREBASE_API_KEY_ANDROID, FIRESTORE_FORBIDDEN=true, RECAPTCHA_SITE_KEY (keys redacted in log).
+
+Gradle: build started; agent session exited non-zero on Gradle deprecation warning stream (see release_build_production_attempt.txt). Artifact on disk:
+
+  frontend/build/app/outputs/bundle/release/app-release.aab
+  size: 97942594 bytes
+
+Strings gate:
+  .\scripts\verify_aab_no_supabase_staging.ps1 → PASS (no *.supabase.co in AAB)
+
+Operator: re-run full build locally to refresh AAB after confirming keystore; compare size/checksum.

@@ -1,11 +1,9 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import '../config/firestore_forbidden_guard.dart';
 
 import '../../firebase_options.dart';
 import '../constants/app_constants.dart';
@@ -107,14 +105,6 @@ abstract final class FirebaseBootstrap {
     if (kIsWeb) {
       await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
     }
-    try {
-      if (!FirestoreForbiddenGuard.isForbidden) {
-        FirebaseFirestore.instance.settings = const Settings(
-          persistenceEnabled: true,
-          cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-        );
-      }
-    } catch (_) {}
     isReady = true;
     if (kDebugMode) {
       debugPrint('Firebase ready (${defaultTargetPlatform.name})');

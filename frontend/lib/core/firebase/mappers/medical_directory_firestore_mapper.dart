@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../util/map_date_time.dart';
 
 import '../models/doctor_medical_directory_entry.dart';
 
@@ -30,9 +30,5 @@ abstract final class MedicalDirectoryFirestoreMapper {
     }
   }
 
-  static DateTime _parseDate(dynamic value) {
-    if (value is Timestamp) return value.toDate();
-    if (value is DateTime) return value;
-    return DateTime.now();
-  }
+  static DateTime _parseDate(dynamic value) => parseMapDateTime(value) ?? DateTime.now();
 }

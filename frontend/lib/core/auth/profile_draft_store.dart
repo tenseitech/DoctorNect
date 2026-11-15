@@ -1,19 +1,13 @@
-import '../config/doctor_patient_cutover_flag.dart';
-import '../firebase/firestore_client.dart';
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../enums/user_type.dart';
-import '../firebase/firebase_bootstrap.dart';
-import '../firebase/firestore_paths.dart';
+import '../supabase/supabase_bootstrap.dart';
 
 /// Persists partial profile drafts across modal closes, page refreshes, and app restarts.
-///
-/// Saves to both [SharedPreferences] (local instant availability) and
-/// Cloud Firestore `users/{uid}.profileDraft` (database durability).
 class ProfileDraftStore {
   ProfileDraftStore._();
 
@@ -22,7 +16,6 @@ class ProfileDraftStore {
   static String _key(UserType role, String id) =>
       'profile_draft_${role.name}_${id.trim().toLowerCase()}';
 
-  /// Saves a draft map to both local storage and Firestore.
   Future<void> saveDraft({
     required UserType role,
     required String userIdOrPhone,
@@ -32,21 +25,18 @@ class ProfileDraftStore {
     if (cleanId.isEmpty) return;
 
     try {
-      // 1. Local persistent storage
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_key(role, cleanId), jsonEncode(data));
 
-      // 2. Firestore cloud draft persistence (only if cutover flag is OFF)
-      if (FirebaseBootstrap.isReady && !DoctorPatientCutoverFlag.isEnabled) {
+      if (SupabaseBootstrap.isReady) {
         final uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null && uid.isNotEmpty) {
-          await FirestoreClient.instance
-              .collection(FirestorePaths.users)
-              .doc(uid)
-              .set({
-            'profileDraft': data,
-            'profileDraftUpdatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+          await SupabaseBootstrap.client.from('users').update({
+            'profile_draft': data,
+            'profile_draft_updated_at':
+                DateTime.now().toUtc().toIso8601String(),
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          }).or('id.eq.$uid,firebase_uid.eq.$uid');
         }
       }
     } catch (e) {
@@ -56,7 +46,6 @@ class ProfileDraftStore {
     }
   }
 
-  /// Retrieves any saved draft for the given user/role.
   Future<Map<String, dynamic>?> getDraft({
     required UserType role,
     required String userIdOrPhone,
@@ -65,7 +54,6 @@ class ProfileDraftStore {
     if (cleanId.isEmpty) return null;
 
     try {
-      // 1. Try local storage first
       final prefs = await SharedPreferences.getInstance();
       final localJson = prefs.getString(_key(role, cleanId));
       if (localJson != null && localJson.isNotEmpty) {
@@ -75,17 +63,17 @@ class ProfileDraftStore {
         }
       }
 
-      // 2. Try Firestore cloud backup
-      if (FirebaseBootstrap.isReady) {
+      if (SupabaseBootstrap.isReady) {
         final uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null && uid.isNotEmpty) {
-          final doc = await FirestoreClient.instance
-              .collection(FirestorePaths.users)
-              .doc(uid)
-              .get();
-          final data = doc.data();
-          if (data != null && data['profileDraft'] is Map) {
-            return Map<String, dynamic>.from(data['profileDraft'] as Map);
+          final row = await SupabaseBootstrap.client
+              .from('users')
+              .select('profile_draft')
+              .or('id.eq.$uid,firebase_uid.eq.$uid')
+              .maybeSingle();
+          final draft = row?['profile_draft'];
+          if (draft is Map) {
+            return Map<String, dynamic>.from(draft);
           }
         }
       }
@@ -97,7 +85,6 @@ class ProfileDraftStore {
     return null;
   }
 
-  /// Clears the draft after a successful profile save.
   Future<void> clearDraft({
     required UserType role,
     required String userIdOrPhone,
@@ -109,15 +96,14 @@ class ProfileDraftStore {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_key(role, cleanId));
 
-      if (FirebaseBootstrap.isReady) {
+      if (SupabaseBootstrap.isReady) {
         final uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null && uid.isNotEmpty) {
-          await FirestoreClient.instance
-              .collection(FirestorePaths.users)
-              .doc(uid)
-              .update({
-            'profileDraft': FieldValue.delete(),
-          });
+          await SupabaseBootstrap.client.from('users').update({
+            'profile_draft': null,
+            'profile_draft_updated_at': null,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          }).or('id.eq.$uid,firebase_uid.eq.$uid');
         }
       }
     } catch (e) {

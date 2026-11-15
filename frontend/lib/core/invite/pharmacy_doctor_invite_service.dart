@@ -1,9 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../firebase/firestore_client.dart';
-
 import '../firebase/firebase_bootstrap.dart';
-import '../firebase/firestore_paths.dart';
 import '../session/medical_store_session.dart';
+import '../supabase/supabase_bootstrap.dart';
 import '../../features/pharmacy/data/medical_store_registry.dart';
 
 /// Pharmacy → doctor invite links for non-registered doctors.
@@ -28,14 +25,13 @@ abstract final class PharmacyDoctorInviteService {
 
   static Future<void> ensureInviteMetadata(String storeId) async {
     if (!FirebaseBootstrap.isReady || storeId.isEmpty) return;
+    if (!SupabaseBootstrap.isReady) return;
 
-    await FirestoreClient.instance
-        .collection(FirestorePaths.medicalStores)
-        .doc(storeId)
-        .set({
-      'doctorInviteLink': buildInviteLink(storeId),
-      'doctorInviteUpdatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    await SupabaseBootstrap.client.from('medical_stores').update({
+      'doctor_invite_link': buildInviteLink(storeId),
+      'doctor_invite_updated_at': DateTime.now().toUtc().toIso8601String(),
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('store_id', storeId);
   }
 
   static Future<String> linkForCurrentStore() async {

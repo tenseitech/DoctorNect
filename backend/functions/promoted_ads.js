@@ -871,6 +871,14 @@ async function razorpayWebhookHandler(req, res, db) {
   }
 
   const firestore = db || require('./legacy_db').getLegacyFirestoreDb();
+  if (!firestore || typeof firestore.collection !== 'function') {
+    const { assertFirestoreNotForbidden, isProductionLegacyFirestoreBlocked } = require('./firestore_forbidden_guard');
+    if (isProductionLegacyFirestoreBlocked()) {
+      assertFirestoreNotForbidden('razorpayWebhookHandler');
+    }
+    res.status(503).json({ error: { message: 'Database service unavailable' } });
+    return;
+  }
 
   if (!adId || !providerUid || !durationHours) {
     return recordWebhookRejection(firestore, {

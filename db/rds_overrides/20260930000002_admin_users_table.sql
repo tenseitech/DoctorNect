@@ -1,2 +1,14 @@
--- RDS replay override for 20260930000002_admin_users_table.sql
-SELECT 1 AS rds_replay_skip_admin_users;
+-- RDS replay: create TEXT-keyed admin_users (Firebase UID / public.users.id), no Supabase auth.users FK.
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS private.admin_users (
+  user_id TEXT PRIMARY KEY,
+  granted_by TEXT,
+  granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE private.admin_users ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE private.admin_users FROM PUBLIC, anon, authenticated;
+GRANT ALL ON TABLE private.admin_users TO service_role;
+
+COMMIT;

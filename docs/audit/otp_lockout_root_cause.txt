@@ -1,0 +1,20 @@
+OTP lockout integration failure — root cause (2026-11-15)
+==========================================================
+
+Verdict: TEST BUG (primary) + CODE RACE (secondary, fixed).
+
+1) Test bug
+   - Production counter lives in Redis key otp:attempts:{digits} (otpAttemptsRedisKey), not challenge JSON field "attempts".
+   - Test seeded attempts:5 on challenge blob then verified with the CORRECT OTP → success path required delCount===0 → got failed-precondition "Send OTP first" instead of resource-exhausted.
+   - Fix: seed otpAttemptsRedisKey to 5; use Redis counter for lockout assertions.
+
+2) Code race (real)
+   - Prior flow: GET attempts, compare, later INCR on wrong OTP → parallel verify could exceed 5 effective guesses.
+   - Fix: reserveOtpVerifyAttemptSlot() Lua script — atomic INCR with cap; pre-lock when cur>=5; clamp counter at MAX after overrun.
+
+Proof:
+  FORCE_REDIS_INTEGRATION=1 REDIS_INTEGRATION_URL=redis://127.0.0.1:6390
+  node --require ./test/setup_env.js --test test/otp_redis_integration.test.js
+  → 1 pass / 0 fail — docs/audit/otp_redis_integration_only_6390.txt
+
+Includes 20 parallel wrong-guess subtest (counter must stay <= 5).

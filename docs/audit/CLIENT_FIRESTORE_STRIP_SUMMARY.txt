@@ -1,0 +1,34 @@
+Client Firestore strip — verification bundle (2026-11-15)
+============================================================
+
+Migrated (Supabase/gateway-only):
+- ambulance_repository.dart
+- promoted_ads_service.dart, banner_config_service.dart
+- super_admin_verification_service.dart, profile_completion_service.dart
+- promoted_ad_review_screen, ambulance_invite_service, profile_photo_uploader, profile_draft_store, others
+
+Deleted:
+- lib/core/firebase/firestore_client.dart
+- lib/core/firebase/firestore_paths.dart
+- lib/core/firebase/firestore_read_helper.dart
+
+pubspec.yaml: cloud_firestore + fake_cloud_firestore REMOVED
+
+Grep (frontend, !build, *.dart):
+  Pattern: cloud_firestore|FirebaseFirestore|FirestoreClient|FirestorePaths|FirestoreReadHelper|fake_cloud_firestore
+  Result: 0 matches — docs/audit/FIRESTORE_GREP_INDEPENDENT.txt
+
+flutter analyze: 0 issues — flutter_analyze_post_firestore_strip.txt
+flutter test: 677 pass, 0 fail — flutter_test_full_post_firestore_strip.txt (~225s)
+
+Release dry-run (APP_ENV=production, -DryRun):
+  FIRESTORE_FORBIDDEN in dart-defines — release_build_dryrun_post_firestore_strip.txt
+
+Flows degraded without Supabase session:
+- Promoted ads create/list/carousel (requires SupabaseBootstrap)
+- Banner pricing config stream (Supabase system_config)
+- Super-admin verification queue (Supabase users + role tables)
+- Ambulance multi-driver dispatch / history (Supabase RPC); local AmbulanceStore only when offline
+- Profile completion/draft persistence (Supabase users.profile_completed / profile_draft)
+- Ambulance doctor invite CRUD (table ambulance_invites + callable)
+- Legacy client Firestore debug tests removed; S3 ad-banner ordering test reduced when no test Supabase client

@@ -1,13 +1,6 @@
-import '../../../../core/config/doctor_patient_cutover_flag.dart';
-import '../../../../core/firebase/firestore_client.dart';
-import '../../../../core/config/firestore_forbidden_guard.dart';
 import '../../../../core/supabase/supabase_bootstrap.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
-import '../../../../core/firebase/firebase_bootstrap.dart';
-import '../../../../core/firebase/firestore_paths.dart';
-import '../../../../core/firebase/firestore_read_helper.dart';
 import 'icd10_diagnoses_database.dart';
 
 class CommunityDiagnosis {
@@ -22,7 +15,7 @@ class CommunityDiagnosis {
   final String addedByDoctorId;
 }
 
-/// Doctor-contributed diagnoses stored in Firestore `community_diagnoses`.
+/// Doctor-contributed diagnoses in Postgres (`community_diagnoses`).
 class CommunityDiagnosisRepository {
   CommunityDiagnosisRepository._();
 
@@ -36,47 +29,20 @@ class CommunityDiagnosisRepository {
   List<CommunityDiagnosis> get cached => List.unmodifiable(_cache);
 
   Future<void> fetchAll() async {
-    final bool useSupabase = DoctorPatientCutoverFlag.isEnabled ||
-        FirestoreForbiddenGuard.isForbidden;
-    if (useSupabase) {
-      if (SupabaseBootstrap.isReady) {
-        try {
-          final res = await SupabaseBootstrap.client
-              .from('community_diagnoses')
-              .select('id, text, added_by_doctor_id')
-              .order('text', ascending: true)
-              .limit(_fetchLimit);
-          _cache
-            ..clear()
-            ..addAll((res as List).map((row) => CommunityDiagnosis(
-                  id: row['id']?.toString() ?? '',
-                  text: row['text']?.toString() ?? '',
-                  addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
-                )));
-          return;
-        } catch (e, st) {
-          if (kDebugMode) {
-            debugPrint('CommunityDiagnosisRepository.fetchAll Supabase failed: $e\n$st');
-          }
-        }
-      }
-      return;
-    }
-
-    if (!FirebaseBootstrap.isReady) return;
+    if (!SupabaseBootstrap.isReady) return;
     try {
-      final query = FirestoreClient.instance
-          .collection(FirestorePaths.communityDiagnoses)
-          .orderBy('text')
+      final res = await SupabaseBootstrap.client
+          .from('community_diagnoses')
+          .select('id, text, added_by_doctor_id')
+          .order('text', ascending: true)
           .limit(_fetchLimit);
-      final snap = await FirestoreReadHelper.getQuery(
-        query: query,
-        preferCache: true,
-      );
-
       _cache
         ..clear()
-        ..addAll(snap.docs.map(_fromDoc));
+        ..addAll((res as List).map((row) => CommunityDiagnosis(
+              id: row['id']?.toString() ?? '',
+              text: row['text']?.toString() ?? '',
+              addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
+            )));
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('CommunityDiagnosisRepository.fetchAll failed: $e\n$st');
@@ -115,7 +81,6 @@ class CommunityDiagnosisRepository {
     return results;
   }
 
-  /// ICD-10 bundled list first, then community cache; dedupe by text.
   List<String> searchMerged(String query, {int limit = 8}) {
     final seen = <String>{};
     final results = <String>[];
@@ -152,42 +117,19 @@ class CommunityDiagnosisRepository {
     final existing = findByText(trimmed);
     if (existing != null) return existing;
 
-    final bool useSupabase = DoctorPatientCutoverFlag.isEnabled ||
-        FirestoreForbiddenGuard.isForbidden;
-    if (useSupabase) {
-      if (SupabaseBootstrap.isReady) {
-        final res = await SupabaseBootstrap.client.from('community_diagnoses').insert({
-          'text': trimmed,
-          'text_lower': trimmed.toLowerCase(),
-          'added_by_doctor_id': doctorId,
-        }).select('id').maybeSingle();
-        final diagnosis = CommunityDiagnosis(
-          id: res?['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
-          text: trimmed,
-          addedByDoctorId: doctorId,
-        );
-        _cache.add(diagnosis);
-        _cache.sort((a, b) => a.text.toLowerCase().compareTo(b.text.toLowerCase()));
-        return diagnosis;
-      }
-      return null;
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError('Database not ready — cannot save a custom diagnosis.');
     }
 
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError('Internet is required to save a custom diagnosis.');
-    }
-
-    final doc = await FirestoreClient.instance
-        .collection(FirestorePaths.communityDiagnoses)
-        .add({
+    final res = await SupabaseBootstrap.client.from('community_diagnoses').insert({
       'text': trimmed,
-      'textLower': trimmed.toLowerCase(),
-      'addedByDoctorId': doctorId,
-      'addedAt': FieldValue.serverTimestamp(),
-    });
+      'text_lower': trimmed.toLowerCase(),
+      'added_by_doctor_id': doctorId,
+    }).select('id').maybeSingle();
 
     final diagnosis = CommunityDiagnosis(
-      id: doc.id,
+      id: res?['id']?.toString() ??
+          DateTime.now().millisecondsSinceEpoch.toString(),
       text: trimmed,
       addedByDoctorId: doctorId,
     );
@@ -211,16 +153,5 @@ class CommunityDiagnosisRepository {
         );
       }
     }
-  }
-
-  static CommunityDiagnosis _fromDoc(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
-    final data = doc.data();
-    return CommunityDiagnosis(
-      id: doc.id,
-      text: data['text'] as String? ?? '',
-      addedByDoctorId: data['addedByDoctorId'] as String? ?? '',
-    );
   }
 }

@@ -21,7 +21,11 @@ const {
   ledgerChecksumMatches,
 } = require('../lib/migration_checksum');
 const { GHOST_STAGING_LEDGER_VERSION } = require('../lib/live_data_guard');
-const { listMigrationsForTarget, migrationRelPathToAbs } = require('../lib/migration_file_list');
+const {
+  listMigrationsForTarget,
+  migrationRelPathToAbs,
+  resolveMigrationSqlPath,
+} = require('../lib/migration_file_list');
 
 const STAGING_GHOST_VERSIONS = new Set([GHOST_STAGING_LEDGER_VERSION]);
 
@@ -34,7 +38,20 @@ function listRepoMigrationsForVerifyTarget(target) {
   if (target === 'staging') {
     return listMigrationsForTarget('staging');
   }
+  if (target === 'rehearsal') {
+    return listMigrationsForTarget('rehearsal');
+  }
   return listMigrationsForTarget('production');
+}
+
+/** Staging uses raw SQL; RDS targets use db/rds_overrides when present. */
+function readMigrationSqlForChecksum(rel, cliTarget) {
+  const checksumTarget = cliTarget === 'staging' ? 'staging' : 'production';
+  const { sqlPath, useOverride } = resolveMigrationSqlPath({
+    relPath: rel,
+    target: checksumTarget,
+  });
+  return { sqlContent: fs.readFileSync(sqlPath, 'utf8'), useOverride, sqlPath };
 }
 
 async function connectForTarget(target) {
@@ -93,8 +110,7 @@ async function main() {
   const report = [];
   for (const rel of files) {
     const version = path.basename(rel).split('_')[0];
-    const full = migrationRelPathToAbs(rel);
-    const sqlContent = fs.readFileSync(full, 'utf8');
+    const { sqlContent, useOverride } = readMigrationSqlForChecksum(rel, target);
     const checksum = computeChecksum(sqlContent);
     const row = ledger.get(version);
     const legacyRaw = computeLegacyRawChecksum(sqlContent);
@@ -118,6 +134,7 @@ async function main() {
       checksumMatchKind: matchKind,
       ledgerChecksum: row ? row.checksum : null,
       repoChecksumPrefix: checksum.slice(0, 8),
+      rdsOverride: useOverride,
     });
   }
 
@@ -162,7 +179,14 @@ async function main() {
   console.log(`\n✅ All repo migration files for --target=${target} match ledger checksums`);
 }
 
-main().catch((e) => {
-  console.error(e.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((e) => {
+    console.error(e.message);
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  readMigrationSqlForChecksum,
+  listRepoMigrationsForVerifyTarget,
+};

@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/notifications/app_toast.dart';
 
@@ -330,7 +330,7 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        await FirestoreService.instance.user.deleteAccount(user: user);
+        await AppDataService.instance.user.deleteAccount(user: user);
       }
       if (!context.mounted) return;
       Navigator.of(context).pop();

@@ -25,5 +25,8 @@ test('isRdsReplayTargetHost resolves PROD_RDS_HOST via getHostFingerprint', () =
     ),
     true,
   );
-  assert.equal(isRdsReplayTargetHost('scratch.rds.amazonaws.com', ''), true);
+  assert.equal(
+    isRdsReplayTargetHost('example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com', ''),
+    true,
+  );
 });

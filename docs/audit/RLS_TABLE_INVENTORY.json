@@ -1,0 +1,1060 @@
+{
+  "generated": "2026-11-15T10:51:07.613Z",
+  "tables": [
+    {
+      "table": "abuse_rate_limits",
+      "rls_enabled": true,
+      "policies": [
+        "abuse_rate_limits_deny_all",
+        "deny_all_abuse_rate_limits"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261001000002_harden_auth_provisioning.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261025000001_least_privilege_grants_and_rls.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "admin_audit_logs",
+      "rls_enabled": true,
+      "policies": [
+        "admin_audit_logs_deny_delete",
+        "admin_audit_logs_deny_update",
+        "admin_audit_logs_insert",
+        "admin_audit_logs_select",
+        "audit_logs_deny_delete",
+        "audit_logs_deny_update",
+        "audit_logs_insert",
+        "audit_logs_select"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261112000002_protect_system_admin_delete_and_audit_grants.sql",
+        "20261112000004_admin_audit_logs_rls_fixup.sql"
+      ],
+      "policy_count": 8
+    },
+    {
+      "table": "ambulance_broadcasts",
+      "rls_enabled": true,
+      "policies": [
+        "amb_broadcast_insert",
+        "amb_broadcast_select",
+        "amb_broadcast_update",
+        "amb_broadcasts_insert",
+        "amb_broadcasts_select",
+        "amb_broadcasts_update"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 6
+    },
+    {
+      "table": "ambulance_invites",
+      "rls_enabled": true,
+      "policies": [
+        "amb_invites_policy",
+        "amb_invites_select",
+        "amb_invites_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 3
+    },
+    {
+      "table": "ambulance_location_updates",
+      "rls_enabled": true,
+      "policies": [
+        "ambulance_location_updates_select"
+      ],
+      "files": [
+        "20261021000002_phase_d_pharmacy_lab_ambulance.sql"
+      ],
+      "policy_count": 1
+    },
+    {
+      "table": "ambulance_locations",
+      "rls_enabled": true,
+      "policies": [
+        "deny_all_ambulance_locations"
+      ],
+      "files": [
+        "20261021000002_phase_d_pharmacy_lab_ambulance.sql",
+        "20261025000001_least_privilege_grants_and_rls.sql"
+      ],
+      "policy_count": 1
+    },
+    {
+      "table": "ambulance_private_settings",
+      "rls_enabled": true,
+      "policies": [
+        "ambulance_private_settings_access",
+        "ambulance_private_settings_policy"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "ambulance_requests",
+      "rls_enabled": true,
+      "policies": [
+        "amb_requests_insert",
+        "amb_requests_select",
+        "amb_requests_update"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 3
+    },
+    {
+      "table": "ambulance_trip_contacts",
+      "rls_enabled": true,
+      "policies": [
+        "deny_all_ambulance_trip_contacts"
+      ],
+      "files": [
+        "20261021000002_phase_d_pharmacy_lab_ambulance.sql",
+        "20261025000001_least_privilege_grants_and_rls.sql"
+      ],
+      "policy_count": 1
+    },
+    {
+      "table": "ambulances",
+      "rls_enabled": true,
+      "policies": [
+        "ambulances_delete",
+        "ambulances_insert",
+        "ambulances_select",
+        "ambulances_update"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20260930000004_access_gap_fixes.sql",
+        "20260930000006_column_locks.sql",
+        "20261008000001_firebase_uid_identity.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261025000001_least_privilege_grants_and_rls.sql",
+        "20261102000001_round6_guards_and_kyc.sql",
+        "20261112000006_provider_select_requires_gateway_jwt.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "appointments",
+      "rls_enabled": true,
+      "policies": [
+        "appointments_delete",
+        "appointments_delete_admin",
+        "appointments_insert",
+        "appointments_select",
+        "appointments_update"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20260925000001_sync_bridge_infra.sql",
+        "20260930000004_access_gap_fixes.sql",
+        "20260930000006_column_locks.sql",
+        "20261008000001_firebase_uid_identity.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261026000001_rpc_null_safe_authz.sql",
+        "20261102000001_round6_guards_and_kyc.sql"
+      ],
+      "policy_count": 5
+    },
+    {
+      "table": "community_body_parts",
+      "rls_enabled": true,
+      "policies": [
+        "comm_body_insert",
+        "comm_body_select"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "community_diagnoses",
+      "rls_enabled": true,
+      "policies": [
+        "comm_diag_insert",
+        "comm_diag_select"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "community_lab_tests",
+      "rls_enabled": true,
+      "policies": [
+        "comm_lab_insert",
+        "comm_lab_select",
+        "comm_tests_insert",
+        "comm_tests_select"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "community_medicines",
+      "rls_enabled": true,
+      "policies": [
+        "comm_med_insert",
+        "comm_med_select",
+        "comm_meds_insert",
+        "comm_meds_select"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "community_radiology",
+      "rls_enabled": true,
+      "policies": [
+        "comm_rad_insert",
+        "comm_rad_select"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "doctor_availability",
+      "rls_enabled": true,
+      "policies": [
+        "doc_avail_select",
+        "doc_avail_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "doctor_blocked_dates",
+      "rls_enabled": true,
+      "policies": [
+        "doc_blocked_select",
+        "doc_blocked_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "doctor_directory_updates",
+      "rls_enabled": true,
+      "policies": [
+        "doctor_directory_updates_admin_write",
+        "doctor_directory_updates_select"
+      ],
+      "files": [
+        "20261020000002_phase_c_doctor_patient_cutover.sql",
+        "20261103000004_fix_claim_ambulance_driver_and_users_verified_guard.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "doctor_education",
+      "rls_enabled": true,
+      "policies": [
+        "doc_education_select",
+        "doc_education_write",
+        "doctor_edu_modify",
+        "doctor_edu_select"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "doctor_facilities",
+      "rls_enabled": true,
+      "policies": [
+        "doc_facilities_select",
+        "doc_facilities_write",
+        "doctor_fac_modify",
+        "doctor_fac_select"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "doctor_invites",
+      "rls_enabled": true,
+      "policies": [
+        "doctor_invites_doctor_read"
+      ],
+      "files": [
+        "20261022000001_phase_f_complete_cutover.sql"
+      ],
+      "policy_count": 1
+    },
+    {
+      "table": "doctor_private",
+      "rls_enabled": true,
+      "policies": [
+        "doctor_private_owner_read",
+        "doctor_private_owner_update"
+      ],
+      "files": [
+        "20261021000001_sensitive_data_isolation.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "doctors",
+      "rls_enabled": true,
+      "policies": [
+        "doctors_delete",
+        "doctors_delete_admin",
+        "doctors_insert",
+        "doctors_select",
+        "doctors_update"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20260930000004_access_gap_fixes.sql",
+        "20260930000006_column_locks.sql",
+        "20261008000001_firebase_uid_identity.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261020000002_phase_c_doctor_patient_cutover.sql",
+        "20261021000001_sensitive_data_isolation.sql",
+        "20261025000001_least_privilege_grants_and_rls.sql",
+        "20261102000001_round6_guards_and_kyc.sql",
+        "20261103000011_doctors_select_least_privilege.sql"
+      ],
+      "policy_count": 5
+    },
+    {
+      "table": "facilities",
+      "rls_enabled": true,
+      "policies": [
+        "facilities_select_auth",
+        "facilities_write_admin"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "family_members",
+      "rls_enabled": true,
+      "policies": [
+        "family_members_owner",
+        "family_members_owner_only"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261008000001_firebase_uid_identity.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "health_records",
+      "rls_enabled": true,
+      "policies": [
+        "health_records_delete",
+        "health_records_insert",
+        "health_records_select",
+        "health_records_update",
+        "health_records_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 5
+    },
+    {
+      "table": "in_app_notifications",
+      "rls_enabled": true,
+      "policies": [
+        "notifications_deny_client_delete",
+        "notifications_deny_client_insert",
+        "notifications_select",
+        "notifications_update"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261008000001_firebase_uid_identity.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261021000004_phase_e2_support_and_notifications.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "lab_bookings",
+      "rls_enabled": true,
+      "policies": [
+        "lab_bookings_delete",
+        "lab_bookings_insert",
+        "lab_bookings_select",
+        "lab_bookings_update"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20260930000004_access_gap_fixes.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "lab_catalog_tests",
+      "rls_enabled": true,
+      "policies": [
+        "lab_catalog_select",
+        "lab_catalog_tests_select",
+        "lab_catalog_tests_write",
+        "lab_catalog_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261029000001_guard_and_drift_fixes.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "lab_connections",
+      "rls_enabled": true,
+      "policies": [
+        "lab_conn_policy",
+        "lab_connections_select",
+        "lab_connections_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 3
+    },
+    {
+      "table": "lab_orders",
+      "rls_enabled": true,
+      "policies": [
+        "lab_orders_delete",
+        "lab_orders_insert",
+        "lab_orders_select",
+        "lab_orders_update"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "labs",
+      "rls_enabled": true,
+      "policies": [
+        "labs_delete",
+        "labs_delete_admin",
+        "labs_insert",
+        "labs_select",
+        "labs_update"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20260930000004_access_gap_fixes.sql",
+        "20260930000006_column_locks.sql",
+        "20261008000001_firebase_uid_identity.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261025000001_least_privilege_grants_and_rls.sql",
+        "20261102000001_round6_guards_and_kyc.sql",
+        "20261112000006_provider_select_requires_gateway_jwt.sql"
+      ],
+      "policy_count": 5
+    },
+    {
+      "table": "mail_queue",
+      "rls_enabled": true,
+      "policies": [
+        "mail_queue_deny_client_delete",
+        "mail_queue_deny_client_update",
+        "mail_queue_insert",
+        "mail_queue_select"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261021000004_phase_e2_support_and_notifications.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "medical_directory",
+      "rls_enabled": true,
+      "policies": [
+        "med_directory_select",
+        "med_directory_write",
+        "medical_directory_policy",
+        "medical_directory_select"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261030000001_domain_security_and_client_guards.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "medical_stores",
+      "rls_enabled": true,
+      "policies": [
+        "medical_stores_delete",
+        "medical_stores_delete_admin",
+        "medical_stores_insert",
+        "medical_stores_select",
+        "medical_stores_update"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20260930000004_access_gap_fixes.sql",
+        "20260930000006_column_locks.sql",
+        "20261008000001_firebase_uid_identity.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261025000001_least_privilege_grants_and_rls.sql",
+        "20261102000001_round6_guards_and_kyc.sql",
+        "20261112000006_provider_select_requires_gateway_jwt.sql"
+      ],
+      "policy_count": 5
+    },
+    {
+      "table": "notification_outbox",
+      "rls_enabled": true,
+      "policies": [],
+      "files": [
+        "20261103000010_notification_outbox.sql"
+      ],
+      "policy_count": 0
+    },
+    {
+      "table": "otp_challenges",
+      "rls_enabled": true,
+      "policies": [
+        "deny_all_otp_challenges",
+        "otp_challenges_deny_all"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261001000002_harden_auth_provisioning.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261025000001_least_privilege_grants_and_rls.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "otp_verification_sessions",
+      "rls_enabled": true,
+      "policies": [
+        "otp_sessions_deny_all"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 1
+    },
+    {
+      "table": "patient_care_team",
+      "rls_enabled": true,
+      "policies": [
+        "care_team_modify",
+        "care_team_select",
+        "patient_care_team_select",
+        "patient_care_team_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "patient_doctor_links",
+      "rls_enabled": true,
+      "policies": [
+        "doc_links_delete",
+        "doc_links_insert",
+        "doc_links_select",
+        "doc_links_update",
+        "pdl_select"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20260930000004_access_gap_fixes.sql",
+        "20261008000001_firebase_uid_identity.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 5
+    },
+    {
+      "table": "patients",
+      "rls_enabled": true,
+      "policies": [
+        "patients_delete",
+        "patients_delete_admin",
+        "patients_insert",
+        "patients_select",
+        "patients_update"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20260925000001_sync_bridge_infra.sql",
+        "20260930000004_access_gap_fixes.sql",
+        "20260930000006_column_locks.sql",
+        "20261008000001_firebase_uid_identity.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261021000001_sensitive_data_isolation.sql",
+        "20261102000001_round6_guards_and_kyc.sql"
+      ],
+      "policy_count": 5
+    },
+    {
+      "table": "pharmacy_connections",
+      "rls_enabled": true,
+      "policies": [
+        "pharmacy_conn_policy",
+        "pharmacy_connections_select",
+        "pharmacy_connections_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 3
+    },
+    {
+      "table": "pharmacy_deliveries",
+      "rls_enabled": true,
+      "policies": [
+        "pharmacy_deliv_insert",
+        "pharmacy_deliv_select",
+        "pharmacy_deliv_update",
+        "pharmacy_deliveries_insert",
+        "pharmacy_deliveries_select",
+        "pharmacy_deliveries_update"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 6
+    },
+    {
+      "table": "pharmacy_delivery_medicines",
+      "rls_enabled": true,
+      "policies": [
+        "pharmacy_deliv_meds_policy",
+        "pharmacy_delivery_meds_select",
+        "pharmacy_delivery_meds_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 3
+    },
+    {
+      "table": "pharmacy_doctor_invites",
+      "rls_enabled": true,
+      "policies": [
+        "pharmacy_invites_store_read"
+      ],
+      "files": [
+        "20261022000001_phase_f_complete_cutover.sql"
+      ],
+      "policy_count": 1
+    },
+    {
+      "table": "prescription_investigations",
+      "rls_enabled": true,
+      "policies": [
+        "presc_inv_select",
+        "presc_inv_write",
+        "presc_investigations_policy"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 3
+    },
+    {
+      "table": "prescription_medicines",
+      "rls_enabled": true,
+      "policies": [
+        "presc_meds_policy",
+        "presc_meds_select",
+        "presc_meds_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261021000002_phase_d_pharmacy_lab_ambulance.sql"
+      ],
+      "policy_count": 3
+    },
+    {
+      "table": "prescription_referrals",
+      "rls_enabled": true,
+      "policies": [
+        "presc_ref_select",
+        "presc_ref_write",
+        "presc_referrals_policy"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 3
+    },
+    {
+      "table": "prescriptions",
+      "rls_enabled": true,
+      "policies": [
+        "prescriptions_delete_admin",
+        "prescriptions_insert",
+        "prescriptions_select",
+        "prescriptions_update",
+        "prescriptions_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20260930000004_access_gap_fixes.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261021000002_phase_d_pharmacy_lab_ambulance.sql"
+      ],
+      "policy_count": 5
+    },
+    {
+      "table": "promoted_ads",
+      "rls_enabled": true,
+      "policies": [
+        "promoted_ads_delete",
+        "promoted_ads_insert",
+        "promoted_ads_select",
+        "promoted_ads_update",
+        "promoted_ads_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261008000001_firebase_uid_identity.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261021000005_phase_e3_razorpay_and_promoted_ads.sql"
+      ],
+      "policy_count": 5
+    },
+    {
+      "table": "razorpay_orders",
+      "rls_enabled": true,
+      "policies": [
+        "razorpay_orders_insert",
+        "razorpay_orders_select",
+        "razorpay_orders_update"
+      ],
+      "files": [
+        "20261021000005_phase_e3_razorpay_and_promoted_ads.sql"
+      ],
+      "policy_count": 3
+    },
+    {
+      "table": "razorpay_payments",
+      "rls_enabled": true,
+      "policies": [
+        "razorpay_payments_select"
+      ],
+      "files": [
+        "20261021000005_phase_e3_razorpay_and_promoted_ads.sql"
+      ],
+      "policy_count": 1
+    },
+    {
+      "table": "razorpay_webhook_events",
+      "rls_enabled": true,
+      "policies": [
+        "razorpay_webhook_events_admin_select"
+      ],
+      "files": [
+        "20261021000005_phase_e3_razorpay_and_promoted_ads.sql"
+      ],
+      "policy_count": 1
+    },
+    {
+      "table": "referrals",
+      "rls_enabled": true,
+      "policies": [
+        "referrals_insert",
+        "referrals_select",
+        "referrals_update",
+        "referrals_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20260930000004_access_gap_fixes.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "review_public",
+      "rls_enabled": true,
+      "policies": [
+        "review_public_deny_client_write",
+        "review_public_select"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "review_votes",
+      "rls_enabled": true,
+      "policies": [
+        "review_votes_modify",
+        "review_votes_select",
+        "review_votes_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql"
+      ],
+      "policy_count": 3
+    },
+    {
+      "table": "reviews",
+      "rls_enabled": true,
+      "policies": [
+        "reviews_insert",
+        "reviews_select",
+        "reviews_update"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261101000001_domain_allowlist_and_reviews_guard.sql",
+        "20261102000001_round6_guards_and_kyc.sql"
+      ],
+      "policy_count": 3
+    },
+    {
+      "table": "security_events",
+      "rls_enabled": true,
+      "policies": [
+        "security_events_admin",
+        "security_events_deny_all"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261021000004_phase_e2_support_and_notifications.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "storage_audit_logs",
+      "rls_enabled": true,
+      "policies": [
+        "storage_audit_logs_admin_read"
+      ],
+      "files": [
+        "20261020000002_phase_c_doctor_patient_cutover.sql"
+      ],
+      "policy_count": 1
+    },
+    {
+      "table": "super_admins",
+      "rls_enabled": true,
+      "policies": [
+        "super_admins_modify",
+        "super_admins_select"
+      ],
+      "files": [
+        "20261021000003_phase_e1_auth_and_super_admins.sql"
+      ],
+      "policy_count": 2
+    },
+    {
+      "table": "support_ticket_messages",
+      "rls_enabled": true,
+      "policies": [
+        "support_messages_insert",
+        "support_messages_policy",
+        "support_messages_select"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261021000004_phase_e2_support_and_notifications.sql"
+      ],
+      "policy_count": 3
+    },
+    {
+      "table": "support_tickets",
+      "rls_enabled": true,
+      "policies": [
+        "support_tickets_insert",
+        "support_tickets_select",
+        "support_tickets_update",
+        "support_tickets_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261021000004_phase_e2_support_and_notifications.sql",
+        "20261113000003_support_tickets_rls_super_admin_fixup.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "sync_dead_letter_queue",
+      "rls_enabled": true,
+      "policies": [],
+      "files": [
+        "20260925000001_sync_bridge_infra.sql"
+      ],
+      "policy_count": 0
+    },
+    {
+      "table": "system_config",
+      "rls_enabled": true,
+      "policies": [
+        "system_config_public_read",
+        "system_config_select",
+        "system_config_write"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261022000001_phase_f_complete_cutover.sql",
+        "20261026000001_rpc_null_safe_authz.sql"
+      ],
+      "policy_count": 3
+    },
+    {
+      "table": "user_devices",
+      "rls_enabled": true,
+      "policies": [
+        "user_devices_owner_delete",
+        "user_devices_owner_insert",
+        "user_devices_owner_read",
+        "user_devices_owner_update"
+      ],
+      "files": [
+        "20261021000001_sensitive_data_isolation.sql",
+        "20261022000001_phase_f_complete_cutover.sql"
+      ],
+      "policy_count": 4
+    },
+    {
+      "table": "users",
+      "rls_enabled": true,
+      "policies": [
+        "users_delete_admin",
+        "users_insert_admin_only",
+        "users_insert_self_or_admin",
+        "users_select_owner_or_admin",
+        "users_update_owner_or_admin"
+      ],
+      "files": [
+        "20260923000001_doctornect_schema.sql",
+        "20260923000002_doctornect_rls.sql",
+        "20260930000003_users_integrity.sql",
+        "20261008000001_firebase_uid_identity.sql",
+        "20261020000001_consolidated_firebase_schema_and_rls.sql",
+        "20261112000002_protect_system_admin_delete_and_audit_grants.sql"
+      ],
+      "policy_count": 5
+    }
+  ],
+  "without_rls": []
+}

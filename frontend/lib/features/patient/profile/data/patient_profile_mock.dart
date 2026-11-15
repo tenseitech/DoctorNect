@@ -1,14 +1,10 @@
-import '../../../../core/firebase/firestore_service.dart';
-import '../../../../core/firebase/firestore_client.dart';
-
+import '../../../../core/firebase/app_data_service.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../../../../core/config/doctor_patient_cutover_flag.dart';
 import '../../../../core/config/firestore_forbidden_guard.dart';
 import '../../../../core/firebase/firebase_bootstrap.dart';
-import '../../../../core/firebase/firestore_paths.dart';
 import '../../../../core/supabase/repositories/supabase_patient_profile_repository.dart';
 import '../../../../core/supabase/supabase_bootstrap.dart';
 import '../../../../core/supabase/supabase_patient_repository.dart';
@@ -120,7 +116,7 @@ class PatientProfileMock {
   static Future<void> _loadNotificationPrefs(String patientId) async {
     if (FirestoreForbiddenGuard.isForbidden) return;
     try {
-      final data = await FirestoreService.instance.patientProfile
+      final data = await AppDataService.instance.patientProfile
           .fetchPatientDocument(patientId, preferCache: false);
       final prefs = data?['notificationPrefs'] as Map<String, dynamic>?;
       if (prefs != null) {
@@ -142,10 +138,9 @@ class PatientProfileMock {
     if (patientId.isEmpty) return;
     _patientSub?.cancel();
 
-    if (DoctorPatientCutoverFlag.isEnabled) {
-      _patientSub = SupabasePatientProfileRepository.instance
-          .watchPatientDocument(patientId)
-          .listen((data) {
+    _patientSub = SupabasePatientProfileRepository.instance
+        .watchPatientDocument(patientId)
+        .listen((data) {
         if (data == null) return;
         _applyFromSupabase(data);
         final url =
@@ -171,38 +166,6 @@ class PatientProfileMock {
           notifyProfileUpdated();
         }
       });
-      return;
-    }
-
-    if (!FirebaseBootstrap.isReady) return;
-    _patientSub = FirestoreClient.instance
-        .collection(FirestorePaths.patients)
-        .doc(patientId)
-        .snapshots()
-        .listen((snap) {
-      if (!snap.exists || snap.data() == null) return;
-      final data = snap.data()!;
-      final url =
-          (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
-      final key = data['photoKey'] as String?;
-      final storage = data['photoStorage'] as String?;
-      bool changed = false;
-      if (url != profile.photoUrl) {
-        profile.photoUrl = url;
-        changed = true;
-      }
-      if (key != profile.photoKey) {
-        profile.photoKey = key;
-        changed = true;
-      }
-      if (storage != profile.photoStorage) {
-        profile.photoStorage = storage;
-        changed = true;
-      }
-      if (changed) {
-        notifyProfileUpdated();
-      }
-    });
   }
 
   static void _applyFromSupabase(Map<String, dynamic> data) {
@@ -265,7 +228,7 @@ class PatientProfileMock {
       }
     }
 
-    final data = await FirestoreService.instance.patientProfile
+    final data = await AppDataService.instance.patientProfile
         .fetchPatientDocument(patientId);
     if (data == null) return;
 
@@ -312,7 +275,7 @@ class PatientProfileMock {
     privacyPrefs.twoFactorEnabled = data['twoFactorEnabled'] as bool? ?? false;
 
     familyMembers =
-        await FirestoreService.instance.familyMember.fetchForPatient(patientId);
+        await AppDataService.instance.familyMember.fetchForPatient(patientId);
     PatientFavoritesStore.instance.applyFromPatientData(data);
     notifyProfileUpdated();
   }
@@ -396,14 +359,14 @@ class PatientProfileMock {
   static Future<void> addFamilyMember(FamilyProfileMember member) async {
     final id = PatientSession.loggedInPatientId;
     if (id.isEmpty) return;
-    await FirestoreService.instance.familyMember.saveMember(id, member);
+    await AppDataService.instance.familyMember.saveMember(id, member);
     familyMembers = [...familyMembers, member];
   }
 
   static Future<void> updateFamilyMember(FamilyProfileMember member) async {
     final id = PatientSession.loggedInPatientId;
     if (id.isEmpty) return;
-    await FirestoreService.instance.familyMember.saveMember(id, member);
+    await AppDataService.instance.familyMember.saveMember(id, member);
     final index = familyMembers.indexWhere((m) => m.id == member.id);
     if (index >= 0) {
       familyMembers[index] = member;
@@ -413,7 +376,7 @@ class PatientProfileMock {
   static Future<void> removeFamilyMember(String memberId) async {
     final id = PatientSession.loggedInPatientId;
     if (id.isNotEmpty) {
-      await FirestoreService.instance.familyMember.deleteMember(memberId);
+      await AppDataService.instance.familyMember.deleteMember(memberId);
     }
     familyMembers = familyMembers.where((m) => m.id != memberId).toList();
     notifyProfileUpdated();
@@ -457,7 +420,7 @@ class PatientProfileMock {
     }
 
     if (FirebaseBootstrap.isReady) {
-      await FirestoreService.instance.patientProfile.savePatientDocument(
+      await AppDataService.instance.patientProfile.savePatientDocument(
         patientId,
         {
           'name': profile.name,

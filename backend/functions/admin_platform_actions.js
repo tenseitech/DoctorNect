@@ -7,8 +7,6 @@ const { resolveCallerIdentity } = require('./caller_identity');
 const { assertFirebaseAuthUserMutable } = require('./system_admin_auth_guard');
 const { invalidatePromotedAdsCache } = require('./banner_cache_invalidation');
 const { assertAppCheck } = require('./abuse_rate_limit');
-const { getFirestore } = require('firebase-admin/firestore');
-
 const SYSTEM_ADMIN_EMAIL = 'admin@doctornect.com';
 const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');
 

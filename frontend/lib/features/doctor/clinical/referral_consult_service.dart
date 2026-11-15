@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 
 import 'package:flutter/material.dart';
 
@@ -22,14 +22,14 @@ abstract final class ReferralConsultService {
       return false;
     }
 
-    final granted = await FirestoreService.instance.patientProfile
+    final granted = await AppDataService.instance.patientProfile
         .grantDoctorCareTeamAccess(
       patientId: referral.patientId,
       doctorId: doctorId,
     );
     if (!granted) return false;
 
-    final profile = await FirestoreService.instance.patientProfile
+    final profile = await AppDataService.instance.patientProfile
         .fetchPatientDocumentForDoctor(referral.patientId, preferCache: false);
     if (profile == null) return false;
     return true;

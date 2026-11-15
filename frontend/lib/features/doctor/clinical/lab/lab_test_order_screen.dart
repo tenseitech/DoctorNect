@@ -1,4 +1,4 @@
-import '../../../../core/firebase/firestore_service.dart';
+import '../../../../core/firebase/app_data_service.dart';
 import '../../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
@@ -70,7 +70,7 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
   }
 
   Future<void> _loadCatalog() async {
-    final catalog = await FirestoreService.instance.labCatalog.fetchCatalog();
+    final catalog = await AppDataService.instance.labCatalog.fetchCatalog();
     final doctorId = DoctorSession.loggedInDoctorId;
     await LabConnectionStore.instance.refreshActiveConnections(
       role: UserType.doctor,
