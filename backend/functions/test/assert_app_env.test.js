@@ -226,6 +226,16 @@ describe('assertProductionCutoverBoot', () => {
     delete process.env.DATABASE_URL;
     assert.doesNotThrow(() => assertProductionCutoverBoot());
   });
+
+  it('production passes without DATABASE_URL (gateway-only deploy)', () => {
+    process.env.APP_ENV = 'production';
+    process.env.FIRESTORE_FORBIDDEN = '1';
+    delete process.env.DATABASE_URL;
+    process.env.PROD_GATEWAY_URL = 'https://gateway.example.doctornect.in';
+    process.env.REDIS_HOST = 'tls-redis.example';
+    process.env.MSG91_AUTH_KEY = 'dummy-msg91-key-for-unit-test';
+    assert.doesNotThrow(() => assertProductionCutoverBoot());
+  });
 });
 
 describe('assertProductionNoPlaceholderSecrets', () => {

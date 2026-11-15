@@ -15,6 +15,8 @@ require('./firestore_forbidden_guard');
  *    is allowed. Stale snapshots are skipped, not applied.
  * 3. Dead-Letter Queue (DLQ) logging on unrecoverable failures and when the
  *    writer origin cannot be determined (those rows are not guessed).
+ *
+ * **needs pg_pool** — batch/DLQ direct SQL; not exported from `index.js`. Hot paths use Auth Gateway.
  */
 
 const { FieldValue } = require('firebase-admin/firestore');
@@ -35,23 +37,7 @@ function getSupabaseConfig() {
   return { url, key };
 }
 
-let _pgPool = null;
-function getPgPool() {
-  const dbUrl = process.env.STAGING_SUPABASE_DB_URL || process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
-  if (!dbUrl) return null;
-  if (!_pgPool) {
-    try {
-      const { Pool } = require('pg');
-      _pgPool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
-    } catch (_) {
-      try {
-        const { Pool } = require('../scripts/node_modules/pg');
-        _pgPool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
-      } catch (__) {}
-    }
-  }
-  return _pgPool;
-}
+const { getPgPool } = require('./src/db/pg_pool');
 
 /**
  * Execute an async operation with exponential backoff retry

@@ -5,6 +5,7 @@ const assert = require('node:assert');
 
 const {
   isProductionAppEnv,
+  isProductionBootRequiresDatabaseUrl,
   resolveStagingDatabaseUrl,
   getPgPool,
   assertProductionPgPoolConfigOrThrow,
@@ -58,6 +59,10 @@ test('pg_pool: staging resolves STAGING_SUPABASE_DB_URL before generic DATABASE_
   } finally {
     restoreEnv(snap);
   }
+});
+
+test('pg_pool: production boot does not require DATABASE_URL (gateway-only deploy)', () => {
+  assert.equal(isProductionBootRequiresDatabaseUrl(), false);
 });
 
 test('pg_pool: production APP_ENV detected', () => {

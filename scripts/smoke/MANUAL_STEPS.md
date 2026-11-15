@@ -80,6 +80,17 @@ WHERE name IN ('pgcrypto','plpgsql','uuid-ossp') ORDER BY 1;
 
 **Recommendation:** **A** for all app reads/writes through Auth Gateway; use **B** only for functions that **must** call `pg_pool` / raw SQL (DLQ, maintenance). Until VPC connector is provisioned, set production `DATABASE_URL` only for those jobs or run SQL via gateway RPC where possible.
 
+**Production paths that still ask for direct RDS (`DATABASE_URL` / `PROD_RDS_*`) at runtime:**
+
+| Count | Module | Notes |
+|-------|--------|-------|
+| **0** | Cloud Functions **exports** (`index.js`) | OTP, payments, delete account, workers → `getDatabaseClient()` only |
+| **1** | `cross_role_sync.js` (batch; **not** exported) | DLQ + Firestore→PG sync; `needs pg_pool` — run only with RDS reachability or leave disabled (`ENABLE_SUPABASE_SYNC=0`) |
+
+`assertProductionCutoverBoot` does **not** require `DATABASE_URL` for the default Functions deploy. First `getPgPool()` call in production still fails fast with `[pg_pool] APP_ENV=production requires …` if RDS env is missing.
+
+Audit table: `docs/audit/PG_POOL_CALLER_AUDIT.md`.
+
 ---
 
 ## Gateway deploy status
@@ -89,6 +100,8 @@ WHERE name IN ('pgcrypto','plpgsql','uuid-ossp') ORDER BY 1;
 - Fargate task: **auth-gateway** (:3000) + **PostgREST** (:3001) in one task; PostgREST uses `PGRST_DB_URI` from Secrets Manager.
 - ALB listener → gateway; ECS in **private subnets**, `assign_public_ip = false`.
 - Images: `var.gateway_image`, `var.postgrest_image` (ECR tags — not pinned in this snippet).
+
+**Gateway hardening (code):** service key auth uses constant-time compare (`services/api-gateway/src/security.js`). Negative tests: wrong apikey, JWT-as-apikey, anon on `admin_users` (`services/api-gateway/test/gateway.test.js`). **Gap:** no AWS WAF in `infra/aws/*.tf` — ALB + SG only.
 
 **Deploy flow (operator):**
 
@@ -121,8 +134,8 @@ Prerequisites: `firebase login --reauth`, `firebase use <prod-project>`.
 
 - `APP_ENV` = `production`
 - `FIRESTORE_FORBIDDEN` = `1`
-- `DATABASE_URL` — RDS TLS URL for `pg_pool` / direct SQL (not Supabase host)
 - `PROD_GATEWAY_URL`, `PROD_GATEWAY_SERVICE_KEY` — PostgREST admin client (`backend/functions/src/db/client.js`)
+- `DATABASE_URL` — **optional** for default Functions deploy; required only if you run `cross_role_sync` / direct `getPgPool()` jobs (RDS TLS URL; must not be Supabase host)
 - `REDIS_*` (+ TLS for prod)
 - `MSG91_AUTH_KEY`, template IDs, `OTP_HMAC_SECRET`, `RAZORPAY_*`, `S3_*`, `ENABLE_SUPABASE_SYNC=0`
 

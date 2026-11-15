@@ -231,6 +231,43 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
     assert.strictEqual(receivedPostgrestRequests.length, 0);
   });
 
+  it('rejects wrong non-JWT string as service key via apikey header', async () => {
+    const res = await makeRequest({
+      method: 'GET',
+      path: '/rest/v1/security_events',
+      headers: { apikey: 'definitely-not-the-service-role-key-value' },
+    });
+
+    assert.strictEqual(res.statusCode, 401);
+    assert.strictEqual(res.json.error, 'Unauthorized');
+    assert.match(res.json.message, /Invalid service key/i);
+    assert.strictEqual(receivedPostgrestRequests.length, 0);
+  });
+
+  it('does not treat Firebase ID token as service role key (JWT uses Bearer path only)', async () => {
+    const userToken = createTestFirebaseToken({ sub: 'user_not_service_role' });
+    const res = await makeRequest({
+      method: 'GET',
+      path: '/rest/v1/security_events',
+      headers: { apikey: userToken },
+    });
+
+    assert.strictEqual(res.statusCode, 401);
+    assert.notStrictEqual(res.json?.role, 'service_role');
+    assert.strictEqual(receivedPostgrestRequests.length, 0);
+  });
+
+  it('rejects default anon apikey on service_role-only admin_users route', async () => {
+    const res = await makeRequest({
+      method: 'GET',
+      path: '/rest/v1/admin_users',
+      headers: { apikey: 'doctornect-anon-public-key' },
+    });
+
+    assert.strictEqual(res.statusCode, 401);
+    assert.strictEqual(receivedPostgrestRequests.length, 0);
+  });
+
   it('authenticates with service role key via apikey header', async () => {
     const res = await makeRequest({
       method: 'POST',

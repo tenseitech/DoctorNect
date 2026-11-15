@@ -1,5 +1,7 @@
 'use strict';
 
+const { isProductionBootRequiresDatabaseUrl } = require('./pg_pool');
+
 /**
  * Fail-fast routing guard: APP_ENV must select the correct database access layer.
  * Staging → Supabase (PostgREST). Production → Auth Gateway (PostgREST over RDS).
@@ -266,9 +268,11 @@ function assertProductionCutoverBoot(env = process.env) {
   if (!isTruthyOne(env.FIRESTORE_FORBIDDEN)) {
     missing.push('FIRESTORE_FORBIDDEN=1');
   }
-  const dbUrl = String(env.DATABASE_URL || env.PROD_RDS_DATABASE_URL || '').trim();
-  if (!dbUrl) {
-    missing.push('DATABASE_URL (or PROD_RDS_DATABASE_URL)');
+  if (isProductionBootRequiresDatabaseUrl()) {
+    const dbUrl = String(env.DATABASE_URL || env.PROD_RDS_DATABASE_URL || '').trim();
+    if (!dbUrl) {
+      missing.push('DATABASE_URL (or PROD_RDS_DATABASE_URL)');
+    }
   }
   if (!normalizeBaseUrl(env.PROD_GATEWAY_URL || '')) {
     missing.push('PROD_GATEWAY_URL');

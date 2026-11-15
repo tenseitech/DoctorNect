@@ -13,6 +13,26 @@ let _pgPool = null;
 
 const PRODUCTION_PG_CONFIG_ERROR = 'PRODUCTION_PG_CONFIG_MISSING';
 
+/**
+ * Direct-SQL modules when APP_ENV=production. Not wired through index.js exports today.
+ * @type {ReadonlyArray<{ file: string, functions: string, pathKind: 'pg_pool', traffic: string }>}
+ */
+const PRODUCTION_PG_POOL_CALLERS = Object.freeze([
+  {
+    file: 'cross_role_sync.js',
+    functions: 'DLQ insert, Firestore→Postgres sync handlers (syncAppointment*, syncDoctor*, …)',
+    pathKind: 'pg_pool',
+    traffic: 'batch/maintenance (needs pg_pool); not exported from index.js',
+  },
+]);
+
+/**
+ * Cloud Functions production boot requires DATABASE_URL only when an exported handler uses pg_pool.
+ */
+function isProductionBootRequiresDatabaseUrl() {
+  return false;
+}
+
 function isProductionAppEnv() {
   return String(process.env.APP_ENV || 'staging').trim().toLowerCase() === 'production';
 }
@@ -153,13 +173,27 @@ function assertProductionPgPoolConfigOrThrow() {
 function defaultPoolOptions(base) {
   const max = parseInt(process.env.PG_POOL_MAX || '10', 10);
   const idleTimeoutMillis = parseInt(process.env.PG_POOL_IDLE_MS || '30000', 10);
-  const connectionTimeoutMillis = parseInt(process.env.PG_POOL_CONNECT_MS || '10000', 10);
+  const defaultConnectMs = isProductionAppEnv() ? '5000' : '10000';
+  const connectionTimeoutMillis = parseInt(
+    process.env.PG_POOL_CONNECT_MS || defaultConnectMs,
+    10,
+  );
   return {
     ...base,
     max: Number.isFinite(max) ? max : 10,
     idleTimeoutMillis: Number.isFinite(idleTimeoutMillis) ? idleTimeoutMillis : 30000,
-    connectionTimeoutMillis: Number.isFinite(connectionTimeoutMillis) ? connectionTimeoutMillis : 10000,
+    connectionTimeoutMillis: Number.isFinite(connectionTimeoutMillis)
+      ? connectionTimeoutMillis
+      : parseInt(defaultConnectMs, 10),
   };
+}
+
+function attachPgPoolErrorLogging(pool) {
+  if (!pool || pool.__doctornectPgPoolErrorHook) return;
+  pool.__doctornectPgPoolErrorHook = true;
+  pool.on('error', (err) => {
+    console.error(`[pg_pool] pool error (idle client): ${err?.message || err}`);
+  });
 }
 
 function getPgPool() {
@@ -214,6 +248,7 @@ function getPgPool() {
     );
   }
 
+  attachPgPoolErrorLogging(_pgPool);
   return _pgPool;
 }
 
@@ -228,6 +263,8 @@ function _resetPgPoolForTests() {
 module.exports = {
   getPgPool,
   isProductionAppEnv,
+  isProductionBootRequiresDatabaseUrl,
+  PRODUCTION_PG_POOL_CALLERS,
   resolveStagingDatabaseUrl,
   assertProductionPgPoolConfigOrThrow,
   resolveProductionPoolConfig,
