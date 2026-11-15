@@ -26,7 +26,7 @@ describe('DatabaseClient Abstraction (Cloud Functions)', () => {
 
     assert.throws(
       () => getDatabaseClient(),
-      /Missing required credentials for APP_ENV="staging": STAGING_SUPABASE_URL, STAGING_SUPABASE_SERVICE_ROLE_KEY/
+      /Missing credentials for APP_ENV="staging" plane="staging"/
     );
   });
 
@@ -37,7 +37,7 @@ describe('DatabaseClient Abstraction (Cloud Functions)', () => {
 
     assert.throws(
       () => getDatabaseClient(),
-      /Missing required credentials for APP_ENV="production": PROD_GATEWAY_URL, PROD_GATEWAY_SERVICE_KEY/
+      /Missing credentials for APP_ENV="production" plane="rds"/
     );
   });
 

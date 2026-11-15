@@ -385,6 +385,7 @@ node scripts/audit/pre_push_history_scan.js
 | `assertProductionCutoverBoot` unit tests | **PASS** | `assert_production_cutover_boot_test.txt` (dummy prod env pass/fail) |
 | AWS RDS describe (CLI) | **FAIL** (access) | `aws_rds_cli_access_denied.txt` — operator IAM or console |
 | `db_connectivity_smoke` staging | **PASS** | `db_connectivity_smoke_staging.txt` |
+| **DEMO→SUPABASE / REAL→RDS ISOLATION** | **UNVERIFIED** | Code: `scripts/lib/demo_routing.js`, gateway `server.js`, `getDatabaseClient({ firebaseUid })`; unit **6+9 pass** (`demo_routing.test.js`, `demo_real_isolation.test.js`); live dual-upstream + store review **UNVERIFIED** — `docs/DEMO_REAL_ROUTING.md`, `staging_non_demo_user_counts.json` |
 
 **Overall completion:** `Σ(weight×score)` → **~79%** (backend OTP path improved; client + full backend strip still open).
 

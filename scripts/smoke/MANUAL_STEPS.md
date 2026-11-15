@@ -226,6 +226,29 @@ ORDER BY name;
 
 ---
 
+## Demo → Supabase / Real → RDS (release gate)
+
+**Design:** `docs/DEMO_REAL_ROUTING.md`
+
+1. **Supabase (demo plane)** — keep staging project on a paid plan or scheduled keepalive (`node scripts/db/staging_health_ping.js` if configured). Store **only** demo/reviewer data.
+2. **Secrets (gateway ECS / Functions)** — set server-side only (never Flutter):
+   - `DEMO_REAL_ROUTING_ENABLED=1`
+   - `DEMO_FIREBASE_UID_ALLOWLIST` — comma Firebase UIDs for App Store / Play demo logins
+   - `DEMO_PGRST_URL` + `DEMO_PGRST_JWT_SECRET` — Supabase PostgREST base + JWT secret (same as Supabase project JWT secret)
+   - `DEMO_SUPABASE_URL` + `DEMO_SUPABASE_SERVICE_ROLE_KEY` — Functions demo plane
+   - Keep `PROD_GATEWAY_URL` as the **only** URL in the release app.
+3. **Reviewer OTP** — `REVIEWER_OTP_ENABLED=true`, `REVIEW_*_PHONES`, `REVIEW_FIXED_OTP`, `REVIEW_ACCESS_UNTIL`; dedicated **99999xxxxx** numbers only; rotate before store review ends.
+4. **Allowlist maintenance** — after creating demo Firebase users, append UID to `DEMO_FIREBASE_UID_ALLOWLIST`; never use real customer phone numbers in `REVIEW_*_PHONES`.
+5. **Audit** — `node scripts/audit/staging_non_demo_user_counts.js` (read-only) before cutover.
+
+Tests:
+
+```powershell
+node --test scripts/test/demo_routing.test.js
+cd backend/functions; node --test test/demo_real_isolation.test.js test/db_client.test.js
+cd services/api-gateway; npm test
+```
+
 ## AWS RDS `pg_cron` (production parameter group)
 
 1. RDS console → **Parameter group** for the instance (or create `doctornect-pg18-custom`).

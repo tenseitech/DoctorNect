@@ -11,6 +11,7 @@ const { mintPostgrestJwt } = require('./jwt_minter');
 const { secureCompare, hashUid, RateLimiter, emitAuditLog } = require('./security');
 const { proxyToPostgrest } = require('./proxy');
 const { defaultJwksClient } = require('./jwks');
+const { resolveDataPlane, assertClientRoutingHintIgnored } = require('../../../scripts/lib/demo_routing');
 
 function extractEmbeddedRelations(queryString) {
   if (!queryString) return [];
@@ -229,6 +230,14 @@ function createGatewayServer(overrides = {}) {
       return sendJson(400, { error: 'Bad Request', message: `Error reading request body: ${err.message}` });
     }
 
+    const hintCheck = assertClientRoutingHintIgnored(req.headers);
+    if (!hintCheck.ok) {
+      return sendJson(400, {
+        error: 'Bad Request',
+        message: 'Client routing hints are not permitted.',
+      });
+    }
+
     // Validate that route belongs to /rest/v1/*
     if (!cleanPath.startsWith('/rest/v1')) {
       return sendJson(404, { error: 'Not Found', message: 'Endpoint not found.' });
@@ -413,13 +422,35 @@ function createGatewayServer(overrides = {}) {
       }
     }
 
+    const appEnv = String(process.env.APP_ENV || '').toLowerCase();
+    let targetBaseUrl = cfg.postgrestUrl;
+    let jwtSecret = cfg.postgrestJwtSecret;
+    let jwtAud = cfg.postgrestJwtAud;
+    if (appEnv === 'production' && cfg.demoRealRoutingEnabled && clientRole !== 'service_role') {
+      const plane = resolveDataPlane({
+        appEnv,
+        firebaseUid: authenticatedPayload?.uid || null,
+      });
+      if (plane === 'supabase') {
+        if (!cfg.demoPostgrestUrl || !cfg.demoPostgrestJwtSecret) {
+          return sendJson(503, {
+            error: 'Service Unavailable',
+            message: 'Demo data plane is not configured.',
+          });
+        }
+        targetBaseUrl = cfg.demoPostgrestUrl;
+        jwtSecret = cfg.demoPostgrestJwtSecret;
+        jwtAud = cfg.demoPostgrestJwtAud;
+      }
+    }
+
     // Mint appropriate PostgREST JWT and proxy
     let postgrestJwt;
     if (clientRole === 'service_role') {
       postgrestJwt = mintPostgrestJwt({
         role: 'service_role',
-        jwtSecret: cfg.postgrestJwtSecret,
-        jwtAud: cfg.postgrestJwtAud,
+        jwtSecret,
+        jwtAud,
       });
     } else if (clientRole === 'authenticated') {
       postgrestJwt = mintPostgrestJwt({
@@ -428,14 +459,14 @@ function createGatewayServer(overrides = {}) {
         appRole: authenticatedPayload.appRole,
         verified: authenticatedPayload.verified,
         phoneNumber: authenticatedPayload.phoneNumber,
-        jwtSecret: cfg.postgrestJwtSecret,
-        jwtAud: cfg.postgrestJwtAud,
+        jwtSecret,
+        jwtAud,
       });
     } else {
       postgrestJwt = mintPostgrestJwt({
         role: 'anon',
-        jwtSecret: cfg.postgrestJwtSecret,
-        jwtAud: cfg.postgrestJwtAud,
+        jwtSecret,
+        jwtAud,
       });
     }
 
@@ -450,7 +481,7 @@ function createGatewayServer(overrides = {}) {
     }
 
     return proxyToPostgrest(req, res, {
-      targetBaseUrl: cfg.postgrestUrl,
+      targetBaseUrl,
       postgrestJwt,
       body: bodyBuf,
     });

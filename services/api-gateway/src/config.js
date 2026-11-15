@@ -4,6 +4,11 @@ module.exports = {
   port: parseInt(process.env.PORT || '3000', 10),
   host: process.env.HOST || '0.0.0.0',
   postgrestUrl: process.env.PGRST_URL || 'http://127.0.0.1:3001',
+  /** Supabase PostgREST base for demo users only (server-side; never exposed to client). */
+  demoPostgrestUrl: process.env.DEMO_PGRST_URL || '',
+  demoPostgrestJwtSecret: process.env.DEMO_PGRST_JWT_SECRET || '',
+  demoPostgrestJwtAud: process.env.DEMO_PGRST_JWT_AUD || 'authenticated',
+  demoRealRoutingEnabled: String(process.env.DEMO_REAL_ROUTING_ENABLED || '').trim() === '1',
   firebaseProjectId: process.env.FIREBASE_PROJECT_ID || 'medibond-45fad',
   // After JWKS crypto verify, call Firebase Admin verifyIdToken(..., checkRevoked=true).
   // Set FIREBASE_REVOCATION_CHECK=false only for local gateway dev without ADC.
