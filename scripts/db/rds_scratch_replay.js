@@ -32,6 +32,7 @@ const {
   listMigrationsForTarget,
   resolveMigrationSqlPath,
 } = require('../lib/migration_file_list');
+const { isSkippableTransactionControlStatement } = require('../lib/migration_txn_sql');
 
 let parse;
 try {
@@ -300,8 +301,7 @@ async function runRdsScratchReplay() {
         let fileFailedStmts = 0;
         for (let sIdx = 0; sIdx < stmts.length; sIdx++) {
           const stmt = stmts[sIdx];
-          const trimmedClean = stmt.sql.trim().toUpperCase().replace(/;$/, '');
-          if (trimmedClean === 'BEGIN' || trimmedClean === 'COMMIT' || trimmedClean === 'END' || trimmedClean === 'BEGIN TRANSACTION' || trimmedClean === 'COMMIT TRANSACTION') {
+          if (isSkippableTransactionControlStatement(stmt.sql)) {
             continue;
           }
           const spName = `sp_${sIdx}`;

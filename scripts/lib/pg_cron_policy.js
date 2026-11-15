@@ -39,12 +39,17 @@ function printAllowNoCronBanner(target) {
  */
 function assertProductionPgCronOrThrow(ctx) {
   const { target, available, installed, allowNoCron = false } = ctx;
-  if (!isRdsProductionTarget(target)) return { skipCronMigration: false };
 
   if (allowNoCron) {
-    printAllowNoCronBanner(target);
+    if (isRdsProductionTarget(target)) {
+      printAllowNoCronBanner(target);
+    } else {
+      console.log('ℹ --allow-no-cron: skipping pg_cron migration file for local/replay dry-run.');
+    }
     return { skipCronMigration: true };
   }
+
+  if (!isRdsProductionTarget(target)) return { skipCronMigration: false };
 
   if (!available) {
     const err = new Error(

@@ -35,6 +35,16 @@ test('assertProductionPgCronOrThrow allows staging without pg_cron check', () =>
   assert.strictEqual(r.skipCronMigration, false);
 });
 
+test('assertProductionPgCronOrThrow --allow-no-cron skips migration file on replay', () => {
+  const r = assertProductionPgCronOrThrow({
+    target: 'replay',
+    available: false,
+    installed: false,
+    allowNoCron: true,
+  });
+  assert.strictEqual(r.skipCronMigration, true);
+});
+
 test('assertProductionPgCronOrThrow --allow-no-cron skips migration file', () => {
   const r = assertProductionPgCronOrThrow({
     target: 'production',

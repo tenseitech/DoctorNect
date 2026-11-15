@@ -68,6 +68,7 @@ const {
   MIGRATION_ADVISORY_LOCK_KEYS,
   resolveMigrationSqlPath,
 } = require('../lib/migration_file_list');
+const { isSkippableTransactionControlStatement } = require('../lib/migration_txn_sql');
 
 const MIGRATION_ADVISORY_TARGETS = new Set(['production', 'rehearsal']);
 
@@ -436,6 +437,9 @@ async function runMigrations() {
           console.log(`  Extracted ${stmts.length} top-level AST statements.`);
 
           for (const item of stmts) {
+            if (isSkippableTransactionControlStatement(item.sql)) {
+              continue;
+            }
             await client.query('SAVEPOINT sp_stmt;');
             try {
               await client.query(item.sql);
@@ -551,7 +555,13 @@ async function runMigrations() {
 async function applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists = false }) {
   await client.query('BEGIN');
   try {
-    await client.query(sqlContent);
+    const stmts = await splitSqlStatements(sqlContent);
+    for (const item of stmts) {
+      if (isSkippableTransactionControlStatement(item.sql)) {
+        continue;
+      }
+      await client.query(item.sql);
+    }
     await client.query(
       `INSERT INTO public._schema_migrations (version, name, checksum) VALUES ($1, $2, $3);`,
       [version, file, checksum]
