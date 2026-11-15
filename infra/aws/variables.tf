@@ -49,7 +49,7 @@ variable "gateway_image" {
 
 variable "postgrest_image" {
   type        = string
-  description = "PostgREST official container image (pinned to 12.2.3 matching local binary)"
+  description = "PostgREST official container image (pinned; default v16.5 for PG18 RDS)"
   default     = "postgrest/postgrest:v16.5"
 }
 

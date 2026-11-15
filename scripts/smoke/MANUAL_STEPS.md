@@ -14,6 +14,31 @@
 
 ---
 
+## ECS GATEWAY + DEPLOY RUNBOOK (ordered — no agent apply)
+
+Reference: `docs/audit/TERRAFORM_RESOURCE_AUDIT.md`, `infra/aws/terraform.tfvars.example`, `scripts/deploy/ecr_push_gateway.ps1`, `scripts/deploy/set_secrets.ps1`.
+
+| Step | Action | Pass criterion |
+|------|--------|----------------|
+| 1 | **ECR** — `.\scripts\deploy\ecr_push_gateway.ps1 -AwsAccountId <ACCOUNT>` | Image URI matches `gateway_image` in tfvars |
+| 2 | **PostgREST pin** — ECS uses `postgrest/postgrest:v16.5` (`variables.tf` default) | Task definition env: `PGRST_DB_SCHEMAS=public`, `PGRST_DB_ANON_ROLE=anon` |
+| 3 | **Terraform tfvars** — copy `terraform.tfvars.example` → `terraform.tfvars` (gitignore) | Existing VPC/subnets/RDS SG IDs only — no new RDS |
+| 4 | **terraform validate / plan** — `cd infra/aws && terraform init && terraform plan` | **0** `aws_db_instance` create/destroy; RDS changes only optional **parameter group attach** (manual CLI in `rds.tf` comments) |
+| 5 | **terraform apply** | ALB DNS output; WAF associated (`waf.tf`); ECS tasks **UNVERIFIED** until you confirm |
+| 6 | **Secrets Manager values** (after apply creates empty secrets) | JSON for `connection_string`, `jwt_secret`, `service_key` — see audit doc (`openssl rand -hex 32`) |
+| 7 | **RDS bootstrap** | Roles `authenticator` / `anon` / `authenticated` / `service_role` via `db/rds_bootstrap/01_roles_and_extensions.sql` (+ grants `04_rds_runtime_grants.sql`); migrate production |
+| 8 | **Health** — `curl -fsS https://<api-host>/healthz` | 200 + PostgREST upstream healthy |
+| 9 | **`node scripts/db/db_connectivity_smoke.js --env=production`** | Gateway reads OK (**UNVERIFIED** until live) |
+| 10 | **Firebase** — `firebase login --reauth`; `firebase use <prod>` | `firebase projects:list` succeeds |
+| 11 | **Root `.env` production keys** (not committed) — `APP_ENV=production`, `FIRESTORE_FORBIDDEN=1`, `PROD_GATEWAY_URL=https://<api-host>`, `ENABLE_SUPABASE_SYNC=0`, plus MSG91/Redis/Razorpay per `.env.example` | `node scripts/env/build_env_example_from_templates.js` parity optional |
+| 12 | **`.\scripts\deploy\set_secrets.ps1`** | Prompted secrets only; no values in repo |
+| 13 | **`firebase deploy --only functions`** (your GO) | Predeploy runs `materialize_functions_env.js` from root `.env` |
+| 14 | **AAB** — `frontend\scripts\release_build.ps1` (production defines) | Pre-release scripts pass |
+
+**Firebase auth (2026-11-15):** `firebase login:list` shows account; **`firebase projects:list` failed** — run **`firebase login --reauth`** before step 10.
+
+---
+
 ## MANUAL STEPS FOR ME (agent cannot complete)
 
 | # | Task | Why manual |

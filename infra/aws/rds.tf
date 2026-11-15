@@ -1,4 +1,6 @@
 # AWS RDS Parameter Group for DoctorNect PostgreSQL 18+
+# IMPORTANT: This stack does NOT create aws_db_instance, VPC, or subnets.
+# Existing console-created RDS is referenced via variables + optional data.aws_db_instance.
 # Enables native pg_cron background worker and performance monitoring.
 #
 # Attachment to Existing RDS Instance:
