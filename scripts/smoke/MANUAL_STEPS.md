@@ -282,6 +282,43 @@ Stay on **free** while demo-only data + dual keepalive (Firebase + GitHub) is ac
 
 **Design:** `docs/DEMO_REAL_ROUTING.md`
 
+### Demo UID discovery (no UID/phone values in chat or logs)
+
+1. **Firebase Console** → Authentication → Users → filter demo/test accounts → copy **UID** into password manager (do not paste into tickets).
+2. **Or** after one successful reviewer login: Cloud Logging → filter callable `verifyUserRegistrationOtp` / `completeMobileOtpLogin` → field `uid_hash` / structured `firebaseUid` only in restricted logs; prefer Console UID export.
+3. **Staging only:** `node scripts/audit/staging_non_demo_user_counts.js` counts non-allowlist phones (read-only); it does **not** read `system_config.demo_accounts`.
+
+**Code does not use `system_config.demo_accounts` for routing** — `resolveDataPlane()` reads env only (`scripts/lib/demo_routing.js`). OTP demo/reviewer paths use `REVIEW_*_PHONES` (`registration_otp.js`). DB key `demo_accounts` is legacy schema seed + audit probe (`anon_surface_audit.js`); purge on RDS via `20261117000002` / `20261026000001`.
+
+### Secrets (no literal values in repo)
+
+**Firebase Functions (per secret):**
+
+```powershell
+firebase functions:secrets:set DEMO_FIREBASE_UID_ALLOWLIST --project <FIREBASE_PROJECT_ID>
+firebase functions:secrets:set DEMO_SUPABASE_URL --project <FIREBASE_PROJECT_ID>
+firebase functions:secrets:set DEMO_SUPABASE_SERVICE_ROLE_KEY --project <FIREBASE_PROJECT_ID>
+firebase functions:secrets:set REVIEWER_OTP_ENABLED --project <FIREBASE_PROJECT_ID>
+firebase functions:secrets:set REVIEW_FIXED_OTP --project <FIREBASE_PROJECT_ID>
+firebase functions:secrets:set REVIEW_ACCESS_UNTIL --project <FIREBASE_PROJECT_ID>
+# Per role: REVIEW_PATIENT_PHONES, REVIEW_DOCTOR_PHONES, ...
+```
+
+Bind in function definitions / `firebase.json` secret refs; redeploy affected functions.
+
+**ECS API gateway (AWS Secrets Manager)** — store JSON or separate keys, then map in task definition env:
+
+```powershell
+aws secretsmanager create-secret --name doctornect/demo-routing --secret-string file://-( <<< '{"DEMO_REAL_ROUTING_ENABLED":"1","DEMO_PGRST_URL":"...","DEMO_PGRST_JWT_SECRET":"..."}')
+```
+
+Rotate `DEMO_PGRST_JWT_SECRET` to match demo Supabase JWT secret; never commit `.env`.
+
+### Before applying `20261117000002` on staging
+
+1. Grep confirmed: no app reads `demo_accounts` from Postgres (routing/OTP use env). Staging Supabase may still rely on `promoted_ads` / `patient_module_status` keys — migration **deletes only** `demo_accounts` and inserts public keys idempotently.
+2. Run `node scripts/db/anon_surface_audit.js --target=staging --confirm-live-data` (expect `demo_accounts` absent after apply).
+
 1. **Supabase (demo plane)** — keep staging project on a paid plan or scheduled keepalive (`node scripts/db/staging_health_ping.js` if configured). Store **only** demo/reviewer data.
 2. **Secrets (gateway ECS / Functions)** — set server-side only (never Flutter):
    - `DEMO_REAL_ROUTING_ENABLED=1`
@@ -290,7 +327,7 @@ Stay on **free** while demo-only data + dual keepalive (Firebase + GitHub) is ac
    - `DEMO_SUPABASE_URL` + `DEMO_SUPABASE_SERVICE_ROLE_KEY` — Functions demo plane
    - Keep `PROD_GATEWAY_URL` as the **only** URL in the release app.
 3. **Reviewer OTP** — `REVIEWER_OTP_ENABLED=true`, `REVIEW_*_PHONES`, `REVIEW_FIXED_OTP`, `REVIEW_ACCESS_UNTIL`; dedicated **99999xxxxx** numbers only; rotate before store review ends.
-4. **Allowlist maintenance** — after creating demo Firebase users, append UID to `DEMO_FIREBASE_UID_ALLOWLIST`; never use real customer phone numbers in `REVIEW_*_PHONES`.
+4. **Allowlist maintenance** — after creating demo Firebase users, append UID to `DEMO_FIREBASE_UID_ALLOWLIST`; optional legacy prefix routing only if `DEMO_UID_PREFIX_ROUTING=1` (default off).
 5. **Audit** — `node scripts/audit/staging_non_demo_user_counts.js` (read-only) before cutover.
 
 Tests:
@@ -322,14 +359,16 @@ node scripts/db/prod_rds_readonly_diagnostic.js
 cd scripts/docker/rdslike-pg18
 docker compose up -d
 cd ../..
-node scripts/db/rdslike_apply_bootstrap.js
-$env:REPLAY_DB_URL='postgresql://doctornect_admin:test@localhost:5442/postgres'
+$env:REPLAY_DB_URL='postgresql://rdsadmin:test@127.0.0.1:5442/doctornect'
+$env:LOCAL_REPLAY_PG_PORT='5442'
 $env:REPLAY_RDS_LIKE='1'
-node scripts/db/migrate.js --target=replay --dry-run-all --allow-no-cron --confirm-live-data
-node scripts/db/migrate.js --target=replay --execute --allow-no-cron --confirm-live-data
-$env:LOCAL_FRESH_DB_URL='postgresql://doctornect_admin:test@localhost:5442/doctornect'
+node scripts/db/rds_scratch_replay.js --target=replay --confirm-live-data --keep-db
+$env:LOCAL_FRESH_DB_URL='postgresql://rdsadmin:test@127.0.0.1:5442/replay_check'
 node scripts/db/gateway_rls_authorization_suite.js
+node scripts/db/rds_role_grants_matrix.js --target=replay_check --confirm-live-data
 ```
+
+`docs/audit/allowed_host_hashes.txt` must include **12CA17B4** (`127.0.0.1`) and/or use hostname `localhost` (**49960DE5**).
 
 Evidence: `docs/audit/prod_dry_run_all_post_fix2.txt`, `docs/audit/gateway_rls_rdslike_5442.txt`.
 
