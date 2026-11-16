@@ -9,6 +9,7 @@ const { assertDatabaseGuard } = require('../lib/env_guard');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 const { assertSessionCapableConnection, SESSION_CONNECTION_DOC } = require('../lib/db_connection_guard');
 const { buildPostgrestPayload } = require('../../services/api-gateway/src/jwt_minter');
+const { resolveHarnessSeedRole, withHarnessSeedDml } = require('../lib/harness_seed_role');
 
 // Emits real claims matching backend registration and gateway logic
 function getTestJwtClaims(appRole, uid, verified = true, phoneNumber = null, email = null) {
@@ -86,6 +87,10 @@ async function runRlsSqlHarness(options = {}) {
 
     await client.query('BEGIN');
 
+    const seedWho = await resolveHarnessSeedRole(client);
+    console.log(
+      `Harness seed role: login=${seedWho.login} super=${seedWho.super} service_role_member=${seedWho.memberServiceRole}`,
+    );
     // 1. Seed isolated test users and fixtures inside transaction
     const pA = 'test_usr_pat_a';
     const pB = 'test_usr_pat_b';
@@ -97,7 +102,18 @@ async function runRlsSqlHarness(options = {}) {
     const labB = 'test_usr_lab_b';
     const ambA = 'test_usr_amb_a';
     const ambB = 'test_usr_amb_b';
+    const apptId = 'test_appt_alpha';
+    const hrId = 'test_hr_alpha';
+    const bcId = 'test_ambbc_alpha';
+    const bcPendingId = 'test_ambbc_pending';
+    const bcCancelledId = 'test_ambbc_cancelled';
+    const reqId = 'test_ambreq_alpha';
+    const reqPendingId = 'test_ambreq_pending';
+    const delId = 'test_del_alpha';
+    const labBkId = 'test_lbbk_alpha';
+    const labOrdId = 'test_lbord_alpha';
 
+    await withHarnessSeedDml(client, async () => {
     await client.query(`
       INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified) VALUES
         ('${pA}', '${pA}', 'patient', '${pA}', 'Patient A', 'pa@test.local', '+919999900001', true),
@@ -158,16 +174,9 @@ async function runRlsSqlHarness(options = {}) {
       ON CONFLICT (review_id) DO NOTHING;
     `);
 
-    const apptId = 'test_appt_alpha';
-    const hrId = 'test_hr_alpha';
-    const bcId = 'test_ambbc_alpha';
-    const bcPendingId = 'test_ambbc_pending';
-    const bcCancelledId = 'test_ambbc_cancelled';
-    const reqId = 'test_ambreq_alpha';
-    const reqPendingId = 'test_ambreq_pending';
-    const delId = 'test_del_alpha';
-    const labBkId = 'test_lbbk_alpha';
-    const labOrdId = 'test_lbord_alpha';
+    // Re-pin seed role: review aggregate trigger path can leave session role as table owner on some RDS-like builds.
+    await client.query('SET LOCAL ROLE service_role');
+
     await client.query(`
       INSERT INTO public.appointments (appointment_id, doctor_id, patient_id, doctor_name, specialization, patient_name, patient_age, patient_gender, date_time, slot_label, visit_type, patient_status, doctor_status) VALUES
         ('${apptId}', '${docA}', '${pA}', 'Dr. A', 'General', 'Patient A', 30, 'Male', now(), '10:00 AM', 'newVisit', 'confirmed', 'confirmed'),
@@ -202,6 +211,7 @@ async function runRlsSqlHarness(options = {}) {
       INSERT INTO public.lab_orders (order_id, lab_id, doctor_id, patient_id, doctor_name, patient_name, patient_age, test_ids, test_names, status) VALUES
         ('${labOrdId}', '${labA}', '${docA}', '${pA}', 'Dr. A', 'Patient A', 30, ARRAY['t1'], ARRAY['Lipid Profile'], 'ordered');
     `);
+    });
 
     async function testCase({ name, table, role, claims, sql, expectedRows, expectedSqlState = '00000', allowZeroRows = false, assertResult = null }) {
       try {
