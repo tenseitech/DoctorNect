@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
+const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
 const { assertDatabaseGuard } = require('../lib/env_guard');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 const { assertSessionCapableConnection, SESSION_CONNECTION_DOC } = require('../lib/db_connection_guard');
@@ -55,22 +56,10 @@ async function runRlsSqlHarness(options = {}) {
     poolConfig = { connectionString: dbUrl };
   } else if (target === 'rehearsal' || target === 'production') {
     assertDatabaseGuard({ targetKind: 'production', operationName: `RLS SQL Harness on ${target}`, allowDestructive: false });
-    const host = getEnv('PROD_RDS_HOST');
-    const port = parseInt(getEnv('PROD_RDS_PORT') || '5432', 10);
-    const database = target === 'rehearsal' ? 'doctornect_rehearsal' : (getEnv('PROD_RDS_DB') || 'postgres');
-    const user = getEnv('PROD_RDS_USER') || 'postgres';
-    const password = getEnv('PROD_RDS_PASSWORD');
-    const certPath = getEnv('PROD_RDS_SSL_ROOT_CERT') || path.resolve(__dirname, '../../infra/aws/global-bundle.pem');
-
-    poolConfig = {
-      host,
-      port,
-      database,
-      user,
-      password,
-      ssl: { rejectUnauthorized: true, ca: fs.readFileSync(certPath) },
-    };
-    dbUrl = `postgresql://${user}:****@${host}:${port}/${database}`;
+    const database =
+      target === 'rehearsal' ? 'doctornect_rehearsal' : (getEnv('PROD_RDS_DB') || 'doctornect');
+    poolConfig = buildRdsPoolConfig({ database });
+    dbUrl = maskRdsTarget(poolConfig);
   } else {
     console.error(`Unknown target: ${target}`);
     process.exit(1);

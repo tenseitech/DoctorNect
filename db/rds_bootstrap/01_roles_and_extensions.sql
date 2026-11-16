@@ -17,7 +17,12 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
     CREATE ROLE service_role NOLOGIN BYPASSRLS;
   ELSE
-    ALTER ROLE service_role BYPASSRLS;
+    BEGIN
+      ALTER ROLE service_role BYPASSRLS;
+    EXCEPTION
+      WHEN insufficient_privilege THEN
+        NULL;
+    END;
   END IF;
 
   -- PostgREST authenticator role (LOGIN, member of anon, authenticated, service_role)
@@ -65,16 +70,35 @@ BEGIN
   IF migrator IS NULL THEN
     migrator := current_user;
   END IF;
-  EXECUTE format(
-    'GRANT anon, authenticated, service_role, authenticator TO %I WITH ADMIN OPTION, SET TRUE',
-    migrator
-  );
+  BEGIN
+    EXECUTE format(
+      'GRANT anon, authenticated, service_role, authenticator TO %I WITH ADMIN OPTION, SET TRUE',
+      migrator
+    );
+  EXCEPTION
+    WHEN OTHERS THEN
+      BEGIN
+        EXECUTE format(
+          'GRANT anon, authenticated, service_role, authenticator TO %I',
+          migrator
+        );
+      EXCEPTION
+        WHEN OTHERS THEN
+          NULL;
+      END;
+  END;
 END $$;
 
 -- Grant role memberships to authenticator so it can switch roles on requests
-GRANT anon TO authenticator;
-GRANT authenticated TO authenticator;
-GRANT service_role TO authenticator;
+DO $$
+BEGIN
+  GRANT anon TO authenticator;
+  GRANT authenticated TO authenticator;
+  GRANT service_role TO authenticator;
+EXCEPTION
+  WHEN OTHERS THEN
+    NULL;
+END $$;
 
 -- Create extensions in public schema
 CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA public;

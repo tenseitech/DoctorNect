@@ -55,9 +55,21 @@ function buildRdsPoolConfig(options = {}) {
     throw new Error('PROD_RDS_HOST / PROD_RDS_CONNECT_HOST and PROD_RDS_PASSWORD are required');
   }
 
-  const ca = readCaBundle();
   const sslMode = (getEnv('PROD_RDS_SSLMODE') || 'verify-full').toLowerCase();
 
+  if (sslMode === 'disable' || sslMode === 'off') {
+    return {
+      host,
+      port,
+      database,
+      user,
+      password,
+      ssl: false,
+      logicalHost: getEnv('PROD_RDS_HOST') || host,
+    };
+  }
+
+  const ca = readCaBundle();
   const ssl = {
     ca,
     rejectUnauthorized: sslMode !== 'require',
