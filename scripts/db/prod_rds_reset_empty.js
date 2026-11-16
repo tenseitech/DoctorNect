@@ -16,6 +16,7 @@ const path = require('path');
 const { Pool } = require('pg');
 const { loadRootEnv } = require('../lib/bootstrap_root_env');
 const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
+const { getEnv } = require('../lib/env_loader');
 const { APP_SCHEMAS } = require('../lib/migrate_prod_tripwire');
 
 /** Keys from schema seed migrations only (names); values never compared. */
@@ -32,10 +33,24 @@ const RESET_SQL = [
   `GRANT USAGE ON SCHEMA private TO service_role;`,
 ];
 
+/** Alternate: drop+recreate entire DB (maintenance DB connection; leaves extensions in other DBs). */
+function buildDatabaseResetSql(dbName) {
+  const safe = String(dbName || '').replace(/[^a-zA-Z0-9_]/g, '');
+  if (!safe) throw new Error('Database name required');
+  return [
+    `-- Drop/create application database "${safe}" (connect as maintainer to postgres/maintenance DB, not ${safe})`,
+    `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${safe}' AND pid <> pg_backend_pid();`,
+    `DROP DATABASE IF EXISTS ${safe};`,
+    `CREATE DATABASE ${safe} ENCODING 'UTF8' TEMPLATE template0 OWNER doctornect_admin;`,
+    `-- Re-run bootstrap (01_roles, 02_auth) + migrate.js --execute from empty ledger`,
+  ];
+}
+
 function parseArgs(argv) {
   const args = argv || process.argv.slice(2);
   return {
     dryPrint: !args.includes('--execute'),
+    dryPrintDatabaseReset: args.includes('--dry-print-database-reset'),
     allowSeedSystemConfig: args.includes('--allow-seed-system-config'),
     confirmHost: (args.find((a) => a.startsWith('--confirm-host=')) || '').split('=').slice(1).join('='),
     confirmDb: (args.find((a) => a.startsWith('--confirm-db=')) || '').split('=')[1] || '',
@@ -104,13 +119,22 @@ async function main() {
   loadRootEnv({ startDir: path.join(__dirname, '..') });
   const opts = parseArgs();
 
-  if (opts.dryPrint) {
+  const dbName = getEnv('PROD_RDS_DB') || 'doctornect';
+
+  if (opts.dryPrint || opts.dryPrintDatabaseReset) {
     console.log('# prod_rds_reset_empty — DRY PRINT (no connection)');
     console.log(`Target mask: ${maskRdsTarget(buildRdsPoolConfig())}`);
-    console.log('\n-- SQL that would run after empty-table verification:');
-    for (const line of RESET_SQL) console.log(line);
+    if (opts.dryPrintDatabaseReset) {
+      console.log('\n-- DATABASE reset variant (after same empty-table / seed gates):');
+      for (const line of buildDatabaseResetSql(dbName)) console.log(line);
+      console.log('\nSchema-drop variant leaves: extensions in DB, cron jobs, default_privileges, non-app schemas.');
+    }
+    if (opts.dryPrint || !opts.dryPrintDatabaseReset) {
+      console.log('\n-- SQL that would run after empty-table verification (schema-drop variant):');
+      for (const line of RESET_SQL) console.log(line);
+    }
     console.log('\nOptional: --allow-seed-system-config (only when system_config keys are schema seed keys and all other tables empty)');
-    console.log('\nRequired for --execute: --confirm-host= --confirm-db=doctornect --i-took-snapshot=<id>');
+    console.log('\nRequired for --execute: --confirm-host= --confirm-db=<PROD_RDS_DB> --i-took-snapshot=<id>');
     return;
   }
 
@@ -171,6 +195,7 @@ if (require.main === module) {
 
 module.exports = {
   RESET_SQL,
+  buildDatabaseResetSql,
   assertAllAppTablesEmpty,
   parseArgs,
   MIGRATION_SEED_SYSTEM_CONFIG_KEYS,
