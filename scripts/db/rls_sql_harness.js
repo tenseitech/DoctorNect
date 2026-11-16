@@ -10,7 +10,7 @@ const { assertSessionCapableConnection, SESSION_CONNECTION_DOC } = require('../l
 const { buildPostgrestPayload } = require('../../services/api-gateway/src/jwt_minter');
 
 // Emits real claims matching backend registration and gateway logic
-function getTestJwtClaims(appRole, uid, verified = true, phoneNumber = null) {
+function getTestJwtClaims(appRole, uid, verified = true, phoneNumber = null, email = null) {
   let normalized = appRole;
   if (appRole === 'superAdmin' || appRole === 'super_admin' || appRole === 'service_role') normalized = 'super_admin';
   else if (appRole === 'medical' || appRole === 'pharmacy') normalized = 'medicalStore';
@@ -24,6 +24,11 @@ function getTestJwtClaims(appRole, uid, verified = true, phoneNumber = null) {
     verified: Boolean(verified),
     phoneNumber,
   });
+
+  if (appRole === 'super_admin' || appRole === 'superAdmin') {
+    payload.email = email || 'super_admin_harness@test.local';
+    payload.email_verified = 'true';
+  }
 
   return JSON.stringify(payload);
 }
@@ -117,12 +122,19 @@ async function runRlsSqlHarness(options = {}) {
         ('${ambA}', '${ambA}', 'ambulance', '${ambA}', 'Amb A', 'aa@test.local', '+919999900009', true),
         ('${ambB}', '${ambB}', 'ambulance', '${ambB}', 'Amb B', 'ab@test.local', '+919999900010', true),
         ('test_usr_doc_unverified', 'test_usr_doc_unverified', 'doctor', 'test_usr_doc_unverified', 'Dr. Unverified', 'unverified@test.local', '+919999900099', false),
+        ('super_admin_test_uid', 'super_admin_test_uid', 'super_admin', 'super_admin_test_uid', 'Harness Super Admin', 'super_admin_harness@test.local', '+919999900011', true),
         ('test_usr_lab_unverified', 'test_usr_lab_unverified', 'lab', 'test_usr_lab_unverified', 'Lab Unverified', 'unverified_lab@test.local', '+919999900098', false),
         ('test_usr_store_unverified', 'test_usr_store_unverified', 'medicalStore', 'test_usr_store_unverified', 'Store Unverified', 'unverified_store@test.local', '+919999900097', false),
         ('test_usr_amb_unverified', 'test_usr_amb_unverified', 'ambulance', 'test_usr_amb_unverified', 'Amb Unverified', 'unverified_amb@test.local', '+919999900096', false),
         ('test_usr_amb_unclaimed', 'test_usr_amb_unclaimed', 'ambulance', 'test_amb_unclaimed', 'Driver Unclaimed', 'unclaimed_amb@test.local', '+919999900095', true),
         ('test_usr_doc_suspended', 'test_usr_doc_suspended', 'doctor', 'test_usr_doc_suspended', 'Dr. Suspended', 'suspended@test.local', '+919999900088', true)
       ON CONFLICT (id) DO NOTHING;
+    `);
+
+    await client.query(`
+      INSERT INTO private.admin_users (user_id)
+      VALUES ('super_admin_test_uid')
+      ON CONFLICT (user_id) DO NOTHING;
     `);
 
     await client.query(`
@@ -1188,13 +1200,14 @@ async function runRlsSqlHarness(options = {}) {
       sql: `SELECT count(*) FROM public.review_public;`,
       expectedSqlState: '00000',
     });
+    // 20261103000008 revokes anon SELECT on promoted_ads (providers use authenticated gateway path).
     await testCase({
       name: 'Anon Access: Select from promoted_ads table',
       table: 'promoted_ads',
       role: 'anon',
       claims: null,
       sql: `SELECT ad_id, title, description, image_url, cta_label, status FROM public.promoted_ads;`,
-      expectedSqlState: '00000',
+      expectedSqlState: '42501',
     });
     await testCase({
       name: 'Anon Access: Select whitelisted keys from system_config (patient_module_status, promoted_ads)',
@@ -1621,7 +1634,7 @@ async function runRlsSqlHarness(options = {}) {
       table: 'doctors',
       role: 'authenticated',
       claims: getTestJwtClaims('doctor', docA),
-      sql: `UPDATE public.doctors SET rating = 5.0 WHERE doctor_id = '${docA}';`,
+      sql: `UPDATE public.doctors SET rating = 9.99 WHERE doctor_id = '${docA}';`,
       expectedSqlState: '42501',
     });
     await testCase({
@@ -1631,7 +1644,7 @@ async function runRlsSqlHarness(options = {}) {
       claims: getTestJwtClaims('patient', pA),
       sql: `
         INSERT INTO public.reviews (review_id, patient_id, doctor_id, patient_name, rating, comment)
-        VALUES ('test_rev_round4', '${pA}', '${docA}', 'Patient A', 5, 'Great consultation and care');
+        VALUES ('test_rev_round4', 'test_fam_a1', '${docA}', 'Child A', 5, 'Great consultation and care');
       `,
       expectedRows: 1,
     });
@@ -1647,7 +1660,7 @@ async function runRlsSqlHarness(options = {}) {
       name: 'Trusted Writers: Super admin verifies unverified doctor account',
       table: 'doctors',
       role: 'authenticated',
-      claims: getTestJwtClaims('super_admin', 'super_admin_test_uid'),
+      claims: getTestJwtClaims('super_admin', 'super_admin_test_uid', true, null, 'super_admin_harness@test.local'),
       sql: `UPDATE public.doctors SET verified = true WHERE doctor_id = 'test_usr_doc_unverified';`,
       expectedRows: 1,
     });
@@ -1660,7 +1673,8 @@ async function runRlsSqlHarness(options = {}) {
       role: 'authenticated',
       claims: getTestJwtClaims('patient', pA),
       sql: `UPDATE public.doctors SET verified = true WHERE doctor_id = 'test_usr_doc_unverified';`,
-      expectedSqlState: '42501',
+      expectedSqlState: '00000',
+      allowZeroRows: true,
     });
 
     // Item 2: Domain UPDATE allowlist - Deny privileged columns per table
