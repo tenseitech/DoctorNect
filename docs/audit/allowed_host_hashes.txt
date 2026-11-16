@@ -2,7 +2,7 @@
 40D01C23
 # Production RDS endpoint fingerprint
 C2F996DB
-# Local Docker replay (localhost)
+# Local Docker replay (hostname localhost)
 49960DE5
-# Local Docker replay (localhost)
-49960DE5
+# Local Docker replay (127.0.0.1 — rdslike-pg18 / LOCAL_REPLAY_PG_PORT)
+12CA17B4
