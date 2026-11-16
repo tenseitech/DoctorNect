@@ -10,6 +10,7 @@ const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
 const { assertDatabaseGuard, getHostFingerprint } = require('../lib/env_guard');
 const { assertSessionCapableConnection, SESSION_CONNECTION_DOC } = require('../lib/db_connection_guard');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
+const { assertRdsPreMigrateBootstrap } = require('../lib/rds_bootstrap_preflight');
 
 let parse;
 try {
@@ -499,6 +500,17 @@ async function runMigrations() {
 
     verifyAllAppliedChecksums({ files, appliedMap, target });
     assertPendingMigrationsInOrder({ files, appliedMap, target, allowOutOfOrder });
+
+    if (isExecute && !isDryRun && !isDryRunAll) {
+      const needsBootstrap =
+        target === 'production' ||
+        target === 'rehearsal' ||
+        (target === 'replay' && process.env.REPLAY_RDS_LIKE === '1');
+      if (needsBootstrap) {
+        await assertRdsPreMigrateBootstrap(client);
+        console.log('✔ RDS pre-migrate bootstrap present (auth.users stub + auth.uid shim).');
+      }
+    }
 
     let pendingCount = 0;
     let appliedThisRun = 0;
