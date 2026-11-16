@@ -23,6 +23,7 @@ const { APP_SCHEMAS } = require('../lib/migrate_prod_tripwire');
 const MIGRATION_SEED_SYSTEM_CONFIG_KEYS = new Set(['demo_accounts', 'promoted_ads']);
 
 const RESET_SQL = [
+  '-- Drops public._schema_migrations with public CASCADE (migration ledger cleared)',
   '-- Reset application schemas only (roles/extensions untouched)',
   ...APP_SCHEMAS.map(
     (s) => `DROP SCHEMA IF EXISTS ${s} CASCADE;`,

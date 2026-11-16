@@ -435,6 +435,61 @@ Keystore: `android/key.properties` + `upload-keystore.jks`; `FIREBASE_API_KEY_AN
 
 ---
 
+## Production RDS — full greenfield sequence (reset → bootstrap → migrate)
+
+Use when catalog is empty or after failed migrate + operator reset. **`DROP SCHEMA public CASCADE` removes `public._schema_migrations`** (ledger cleared).
+
+### Failed migrate recovery
+
+1. Fix root error (e.g. missing bootstrap → run pre-migrate 01–03 before migrate).
+2. New RDS snapshot / note snapshot id.
+3. If non-empty residue blocks reset: `prod_rds_reset_empty.js` with `--allow-seed-system-config` only when `system_config` holds schema seed keys only (`demo_accounts`, `promoted_ads`).
+4. Re-run **PROD SEQUENCE** below from step 2 (bootstrap pre). Do not `--execute` migrate until bootstrap OK.
+
+### PROD SEQUENCE (PowerShell)
+
+```powershell
+$h = ((Select-String -Path .env -Pattern '^PROD_RDS_HOST=').Line -split '=', 2)[1].Trim()
+$db = ((Select-String -Path .env -Pattern '^PROD_RDS_DB=').Line -split '=', 2)[1].Trim()
+if (-not $db) { $db = 'doctornect' }
+
+# 1 Reset (after empty-table / seed-only gate)
+$resetArgs = @(
+  'scripts/db/prod_rds_reset_empty.js', '--execute',
+  "--confirm-host=$h", "--confirm-db=$db", '--i-took-snapshot=<SNAPSHOT_ID>',
+  '--allow-seed-system-config'
+)
+node @resetArgs
+
+# 2 Bootstrap pre-migrate (01–03: roles, auth shim, auth.users stub)
+$bootPreArgs = @(
+  'scripts/db/rds_bootstrap_apply.js', '--target=production', '--execute', '--pre-migrate-only',
+  '--confirm-live-data', "--confirm=$h", "--confirm-db=$db"
+)
+node @bootPreArgs
+
+# 3 Migrate (71 files)
+$migArgs = @(
+  'scripts/db/migrate.js', '--target=production', '--execute',
+  '--confirm-live-data', "--confirm=$h", "--confirm-db=$db"
+)
+node @migArgs
+
+# 4 Bootstrap post-migrate (04 runtime grants)
+$bootPostArgs = @(
+  'scripts/db/rds_bootstrap_apply.js', '--target=production', '--execute',
+  '--confirm-live-data', "--confirm=$h", "--confirm-db=$db"
+)
+node @bootPostArgs
+
+# 5 Read-only verify (no DDL/DML)
+node scripts/db/prod_rds_readonly_diagnostic.js
+```
+
+**Local rdslike rehearsal (same scripts/role, not rdsadmin):** set `PROD_RDS_CONNECT_HOST=127.0.0.1`, `PROD_RDS_PORT=5442`, `PROD_RDS_USER=doctornect_admin`, `PROD_RDS_SSLMODE=require`, `PROD_RDS_HOST=127.0.0.1`, `PROD_RDS_DB=doctornect_rehearsal`; use `--target=rehearsal` and `--confirm-db=doctornect_rehearsal` in bootstrap/migrate args (same `$h` pattern). Add `--allow-no-cron` on migrate **only** if local engine lacks `pg_cron` (production RDS must **not** use that flag).
+
+---
+
 ## Production RDS cutover (YOU run — no agent writes)
 
 ### 1. Backup (via tunnel host `127.0.0.1:5433`)

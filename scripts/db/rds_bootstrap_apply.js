@@ -43,6 +43,10 @@ async function main() {
   const targetArg = args.find((a) => a.startsWith('--target='));
   const target = targetArg ? targetArg.split('=')[1] : 'production';
 
+  if (!targetArg && execute) {
+    console.error('ABORT: --execute requires --target=production or --target=rehearsal');
+    process.exit(1);
+  }
   assertDatabaseGuard({
     targetKind: 'production',
     operationName: 'RDS bootstrap apply',
