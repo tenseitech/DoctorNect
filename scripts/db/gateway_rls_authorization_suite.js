@@ -16,6 +16,12 @@ const { buildPostgrestPayload } = require('../../services/api-gateway/src/jwt_mi
 const { createGatewayServer } = require('../../services/api-gateway/src/server');
 const { JwksClient } = require('../../services/api-gateway/src/jwks');
 const { base64UrlEncode } = require('../../services/api-gateway/src/jwt_minter');
+const {
+  resolveHarnessSeedRole,
+  beginHarnessSeedDml,
+  endHarnessSeedDml,
+  withHarnessSeedDml,
+} = require('../lib/harness_seed_role');
 
 const DB_NAME = process.env.FRESH_LOCAL_DB_NAME || 'doctornect_fresh_zero';
 
@@ -213,13 +219,11 @@ async function expectDenied(client, role, claims, sql) {
 }
 
 async function seedFixtures(client) {
-  const who = await client.query(
-    `SELECT current_user AS u, COALESCE(rolsuper, false) AS super
-     FROM pg_roles WHERE rolname = current_user`,
+  const seedWho = await resolveHarnessSeedRole(client);
+  console.log(
+    `Gateway seed role: login=${seedWho.login} super=${seedWho.super} service_role_member=${seedWho.memberServiceRole}`,
   );
-  if (!who.rows[0]?.super) {
-    await client.query('SET LOCAL ROLE service_role');
-  }
+  const seedRoleCtx = await beginHarnessSeedDml(client);
   const ids = {
     pA: 'authz_pat_a',
     pB: 'authz_pat_b',
@@ -274,8 +278,14 @@ async function seedFixtures(client) {
     INSERT INTO public.pharmacy_deliveries (delivery_id, prescription_id, doctor_id, store_id, patient_id, doctor_name, store_name, patient_name, status) VALUES
       ('authz_del_a', 'authz_rx_a', '${ids.docA}', '${ids.storeA}', '${ids.pA}', 'Doc A', 'Store A', 'Pat A', 'sent')
     ON CONFLICT (delivery_id) DO NOTHING;
+    INSERT INTO public.appointments (appointment_id, doctor_id, patient_id, doctor_name, specialization, patient_name, patient_age, patient_gender, date_time, slot_label, visit_type, patient_status, doctor_status) VALUES
+      ('authz_appt_b_del', '${ids.docB}', '${ids.pB}', 'Doc B', 'Gen', 'Pat B', 30, 'F', now(), '10:00', 'newVisit', 'confirmed', 'confirmed')
+    ON CONFLICT (appointment_id) DO NOTHING;
+    INSERT INTO public.prescriptions (prescription_id, doctor_id, patient_id, appointment_id, patient_name, patient_age) VALUES
+      ('authz_rx_b_del', '${ids.docB}', '${ids.pB}', 'authz_appt_b_del', 'Pat B', 30)
+    ON CONFLICT (prescription_id) DO NOTHING;
     INSERT INTO public.pharmacy_deliveries (delivery_id, prescription_id, doctor_id, store_id, patient_id, doctor_name, store_name, patient_name, status) VALUES
-      ('authz_del_b', 'authz_rx_a', '${ids.docA}', '${ids.storeB}', '${ids.pB}', 'Doc A', 'Store B', 'Pat B', 'sent')
+      ('authz_del_b', 'authz_rx_b_del', '${ids.docB}', '${ids.storeB}', '${ids.pB}', 'Doc B', 'Store B', 'Pat B', 'sent')
     ON CONFLICT (delivery_id) DO NOTHING;
     INSERT INTO public.lab_bookings (booking_id, lab_id, patient_id, patient_name, patient_age, test_id, test_name, test_names, collection_type, date_time, slot_label, status) VALUES
       ('authz_lb_a', '${ids.labA}', '${ids.pA}', 'Pat A', 30, 't1', 'CBC', ARRAY['CBC'], 'labVisit', now(), '09:00', 'confirmed'),
@@ -290,6 +300,7 @@ async function seedFixtures(client) {
       ('authz_ambreq_b', 'authz_bc_b', '${ids.ambB}', '${ids.pB}', 'Pat B', 'B Pickup', 'B Drop', '+910000000002', 'accepted')
     ON CONFLICT (request_id) DO NOTHING;
   `);
+  await endHarnessSeedDml(client, seedRoleCtx);
   return ids;
 }
 
@@ -441,6 +452,7 @@ async function runSqlMatrix(client, ids) {
 
   await client.query('SAVEPOINT authz_medical_seed');
   try {
+    await withHarnessSeedDml(client, async () => {
     await client.query(`
       INSERT INTO public.appointments (appointment_id, doctor_id, patient_id, doctor_name, specialization, patient_name, patient_age, patient_gender, date_time, slot_label, visit_type, patient_status, doctor_status)
       VALUES ('authz_appt_b_other', '${ids.docB}', '${ids.pB}', 'Doc B', 'Gen', 'Pat B', 25, 'F', now(), '09:00', 'newVisit', 'confirmed', 'confirmed')
@@ -457,6 +469,7 @@ async function runSqlMatrix(client, ids) {
              ('authz_st_b_other', '${ids.pB}', 'Technical', 'Help B', 'open')
       ON CONFLICT (ticket_id) DO NOTHING;
     `);
+    });
   } catch {
     await client.query('ROLLBACK TO SAVEPOINT authz_medical_seed');
   }
@@ -473,6 +486,7 @@ async function runSqlMatrix(client, ids) {
 }
 
 async function runClientCutoverRlsChecks(client, ids) {
+  await withHarnessSeedDml(client, async () => {
   await client.query(`
     INSERT INTO public.promoted_ads (ad_id, provider_type, provider_id, title, description, image_url, cta_label, duration_hours, amount_paid, payment_status, status)
     VALUES
@@ -490,6 +504,7 @@ async function runClientCutoverRlsChecks(client, ids) {
     VALUES ('authz_bc_hist_b', '${ids.pB}', 'Pat B', '+910000000002', 'H Pickup', 'H Drop', 'completed')
     ON CONFLICT (broadcast_id) DO NOTHING;
   `);
+  });
 
   const docA = claimsJson('doctor', ids.docA);
   const docB = claimsJson('doctor', ids.docB);
@@ -972,4 +987,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { main, MODULES, seedFixtures };
+module.exports = { main, MODULES, seedFixtures, expectDenied };

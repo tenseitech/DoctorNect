@@ -154,6 +154,49 @@ async function main() {
     `SELECT name, default_version, installed_version FROM pg_available_extensions WHERE name = 'pg_cron'`,
   );
 
+  report.pg_cron_installed = await q(
+    client,
+    `SELECT extname, n.nspname AS schema, extversion
+     FROM pg_extension e
+     JOIN pg_namespace n ON n.oid = e.extnamespace
+     WHERE extname = 'pg_cron'`,
+  );
+
+  let pgCronSchedulePrivilege = { error: null };
+  try {
+    const cronScheduleCheck = await q(client, `
+      SELECT EXISTS (
+        SELECT 1 FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'cron' AND p.proname = 'schedule'
+      ) AS cron_schedule_exists,
+      has_schema_privilege(current_user, 'cron', 'USAGE') AS has_cron_schema_usage,
+      CASE
+        WHEN EXISTS (
+          SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+          WHERE n.nspname = 'cron' AND p.proname = 'schedule'
+        ) THEN has_function_privilege(
+          current_user::regrole,
+          'cron.schedule(text,text,text)'::regprocedure,
+          'EXECUTE'
+        )
+        ELSE NULL
+      END AS can_execute_cron_schedule
+    `);
+    pgCronSchedulePrivilege = cronScheduleCheck[0] || {};
+  } catch (e) {
+    pgCronSchedulePrivilege = { error: e.message };
+  }
+  report.pg_cron_schedule_privilege = pgCronSchedulePrivilege;
+  log('\n=== PG_CRON (read-only) ===');
+  log(JSON.stringify({
+    cron_database_name: report.cron_database_name,
+    cron_database_name_error: report.cron_database_name_error,
+    available: report.pg_cron,
+    installed: report.pg_cron_installed,
+    schedule_privilege: report.pg_cron_schedule_privilege,
+  }, null, 2));
+
   report.ledger = await q(
     client,
     `SELECT EXISTS (
