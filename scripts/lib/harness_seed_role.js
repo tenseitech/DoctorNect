@@ -41,12 +41,49 @@ async function endHarnessSeedDml(client, { resetAfter } = {}) {
   }
 }
 
+async function logHarnessSeedSession(client, label) {
+  const res = await client.query(`
+    SELECT
+      $1::text AS step_label,
+      session_user,
+      current_user,
+      current_setting('role', true) AS current_role_setting,
+      COALESCE((SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user), false) AS current_user_bypassrls,
+      COALESCE((SELECT rolsuper FROM pg_roles WHERE rolname = current_user), false) AS current_user_super
+  `, [label]);
+  return res.rows[0];
+}
+
+/**
+ * Run labeled seed SQL batches inside an active withHarnessSeedDml callback.
+ */
+async function runHarnessSeedSteps(client, steps, { log = true } = {}) {
+  for (const step of steps) {
+    if (log) {
+      const row = await logHarnessSeedSession(client, step.label);
+      console.log(
+        `[harness-seed] step=${row.step_label} session_user=${row.session_user} current_user=${row.current_user} ` +
+          `role_setting=${row.current_role_setting || '(default)'} bypassrls=${row.current_user_bypassrls} super=${row.current_user_super}`,
+      );
+    }
+    await client.query(step.sql);
+  }
+}
+
 async function withHarnessSeedDml(client, fn) {
   const ctx = await beginHarnessSeedDml(client);
   try {
     await fn();
   } catch (err) {
-    err.message = `[harness-seed] ${err.message}`;
+    try {
+      const row = await logHarnessSeedSession(client, 'on-error');
+      err.harnessSeedSession = row;
+      err.message =
+        `[harness-seed] ${err.message} ` +
+        `(at failure: session_user=${row.session_user} current_user=${row.current_user} bypassrls=${row.current_user_bypassrls})`;
+    } catch (_) {
+      err.message = `[harness-seed] ${err.message}`;
+    }
     throw err;
   } finally {
     try {
@@ -65,4 +102,6 @@ module.exports = {
   beginHarnessSeedDml,
   endHarnessSeedDml,
   withHarnessSeedDml,
+  logHarnessSeedSession,
+  runHarnessSeedSteps,
 };
