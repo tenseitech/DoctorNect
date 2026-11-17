@@ -27,6 +27,23 @@ const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard } = require('../lib/env_guard');
 
 /** Extensions present on Supabase-managed Postgres but not required on RDS parity checks. */
+/** Replay/rehearsal skew from optional pg_stat_statements install (not a prod cutover gap). */
+function isPgStatStatementsParityNoise(diff) {
+  const key = String(diff.key || '').toLowerCase();
+  if (key.startsWith('pg_stat_statements')) return true;
+  if (diff.category === 'EXTENSION_MISSING' && key === 'pg_stat_statements') return true;
+  if (diff.category === 'EXTENSION_EXTRA' && key === 'pg_stat_statements') return true;
+  if (diff.category === 'FUNCTION_MISSING' && key.includes('pg_stat_statements')) return true;
+  if (diff.category === 'FUNCTION_EXTRA' && key.includes('pg_stat_statements')) return true;
+  return false;
+}
+
+function filterPgStatStatementsDiffs(diffs) {
+  const dropped = diffs.filter(isPgStatStatementsParityNoise);
+  const kept = diffs.filter((d) => !isPgStatStatementsParityNoise(d));
+  return { kept, droppedCount: dropped.length };
+}
+
 const SUPABASE_ONLY_EXTENSIONS = new Set([
   'pg_graphql',
   'supabase_vault',
@@ -432,8 +449,75 @@ function mergeCatalogDiffs(stagingCat, targetCat, stagingInfra, targetInfra, tar
   ];
 }
 
+async function runLocalPairDiff() {
+  const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
+  const baseUrl =
+    getEnv('REPLAY_DB_URL') ||
+    getEnv('LOCAL_REPLAY_DB_URL') ||
+    'postgresql://rdsadmin:test@127.0.0.1:5442/doctornect';
+  const parsed = new URL(baseUrl.replace(/^postgres:\/\//i, 'postgresql://'));
+  parsed.pathname = '/replay_check';
+  const replayUri = parsed.toString();
+  let rehearsalCfg;
+  try {
+    rehearsalCfg = buildRdsPoolConfig({ database: 'doctornect_rehearsal' });
+  } catch (e) {
+    console.error(`[FATAL] rehearsal PROD_RDS_* not configured: ${e.message}`);
+    process.exit(1);
+  }
+
+  console.log('====================================================');
+  console.log('LOCAL PAIR: replay_check vs doctornect_rehearsal');
+  console.log('====================================================');
+  console.log(`Baseline: ${maskConnectionString(replayUri)}`);
+  console.log(`Target:   ${maskRdsTarget(rehearsalCfg)}`);
+
+  const bClient = new Client({ connectionString: replayUri, ssl: false });
+  const rClient = new Client({ ...rehearsalCfg, ssl: rehearsalCfg.ssl === false ? false : rehearsalCfg.ssl });
+  await bClient.connect();
+  await rClient.connect();
+  try {
+    const [baseCat, reheCat, baseInfra, reheInfra] = await Promise.all([
+      fetchCatalog(bClient),
+      fetchCatalog(rClient),
+      fetchInfraCatalog(bClient),
+      fetchInfraCatalog(rClient),
+    ]);
+    const catalogDiffs = compareCatalogs(baseCat, reheCat, 'rehearsal');
+    const infraDiffs = compareInfraCatalogs(baseInfra, reheInfra, 'rehearsal');
+    const diffs = [...catalogDiffs, ...infraDiffs];
+    const { kept, droppedCount } = filterPgStatStatementsDiffs(diffs);
+    const counts = {};
+    for (const d of kept) {
+      counts[d.category] = (counts[d.category] || 0) + 1;
+    }
+    console.log(
+      `\nCatalog: replay_check ${baseCat.policies.length} policies, ${baseCat.functions.length} funcs; rehearsal ${reheCat.policies.length} policies, ${reheCat.functions.length} funcs`,
+    );
+    console.log(`Total diffs: ${diffs.length} (pg_stat_statements noise dropped: ${droppedCount}; remaining: ${kept.length})`);
+    console.log('--- by category (filtered) ---');
+    for (const [cat, n] of Object.entries(counts).sort((a, b) => b[1] - a[1])) {
+      console.log(`  ${cat}: ${n}`);
+    }
+    if (kept.length) {
+      console.log('--- all filtered diffs ---');
+      for (const d of kept) {
+        console.log(`[${d.category}] ${d.key}: ${d.diff}`);
+      }
+    }
+    process.exit(kept.length ? 2 : 0);
+  } finally {
+    await bClient.end().catch(() => {});
+    await rClient.end().catch(() => {});
+  }
+}
+
 async function run() {
   const args = process.argv.slice(2);
+  if (args.includes('--pair=replay_check-vs-rehearsal')) {
+    await runLocalPairDiff();
+    return;
+  }
   const target = (args.find((a) => a.startsWith('--target=')) || '').split('=')[1] || 'rehearsal';
 
   console.log('====================================================');
