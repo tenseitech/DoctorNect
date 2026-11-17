@@ -1,0 +1,16 @@
+services:
+  pg-rdslike:
+    image: postgres:18
+    container_name: pg-rdslike-18
+    environment:
+      POSTGRES_USER: rdsadmin
+      POSTGRES_PASSWORD: ${RDSLIKE_PG_PASSWORD:-test}
+    ports:
+      - '${RDSLIKE_PG_PORT:-5442}:5432'
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U rdsadmin']
+      interval: 3s
+      timeout: 5s
+      retries: 20

@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../util/map_date_time.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../data/shared_appointments_store.dart';
@@ -56,7 +56,7 @@ abstract final class AppointmentFirestoreMapper {
       'patientName': record.patientName,
       'patientAge': record.patientAge,
       'patientGender': record.patientGender,
-      'dateTime': Timestamp.fromDate(record.dateTime),
+      'dateTime': record.dateTime.toUtc().toIso8601String(),
       'slotLabel': record.slotLabel,
       'tokenNumber': record.tokenNumber,
       'visitType': record.visitType.name,
@@ -75,7 +75,7 @@ abstract final class AppointmentFirestoreMapper {
       if (record.reviewId != null && record.reviewId!.isNotEmpty)
         'reviewId': record.reviewId,
       if (record.reviewCreatedAt != null)
-        'reviewCreatedAt': Timestamp.fromDate(record.reviewCreatedAt!),
+        'reviewCreatedAt': record.reviewCreatedAt!.toUtc().toIso8601String(),
       'labReports': record.labReports,
       if (record.clinicalNotes != null) 'clinicalNotes': record.clinicalNotes,
       if (record.contactNumber != null) 'contactNumber': record.contactNumber,
@@ -90,7 +90,7 @@ abstract final class AppointmentFirestoreMapper {
       if (record.slotShareReason != null)
         'slotShareReason': record.slotShareReason,
       'wasRescheduled': record.wasRescheduled,
-      'updatedAt': FieldValue.serverTimestamp(),
+      'updatedAt': DateTime.now().toUtc().toIso8601String(),
     };
   }
 
@@ -111,7 +111,7 @@ abstract final class AppointmentFirestoreMapper {
           data['patientGender'] as String?,
           fallback: 'Male',
         ),
-        dateTime: (data['dateTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        dateTime: parseMapDateTime(data['dateTime']) ?? DateTime.now(),
         slotLabel: data['slotLabel'] as String? ?? '',
         tokenNumber: (data['tokenNumber'] as num?)?.toInt() ?? 0,
         visitType: AppointmentType.values.byName(
@@ -133,7 +133,7 @@ abstract final class AppointmentFirestoreMapper {
         hasReview: data['hasReview'] as bool? ?? false,
         reviewRating: (data['reviewRating'] as num?)?.toInt(),
         reviewId: data['reviewId'] as String?,
-        reviewCreatedAt: (data['reviewCreatedAt'] as Timestamp?)?.toDate(),
+        reviewCreatedAt: parseMapDateTime(data['reviewCreatedAt']),
         labReports:
             (data['labReports'] as List<dynamic>? ?? const []).cast<String>(),
         clinicalNotes: data['clinicalNotes'] as String?,

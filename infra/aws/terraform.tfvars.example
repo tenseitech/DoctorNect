@@ -1,0 +1,28 @@
+# Copy to terraform.tfvars (gitignored). No secret values in this file.
+
+aws_region  = "ap-south-1"
+environment = "production"
+project_name = "doctornect"
+
+# --- Existing VPC / networking (console-created) ---
+vpc_id = "vpc-xxxxxxxx"
+public_subnet_ids  = ["subnet-public-a", "subnet-public-b"]
+private_subnet_ids = ["subnet-private-a", "subnet-private-b"]
+
+# --- DNS / TLS (manual ACM + optional Route53) ---
+domain_name           = "api.doctornect.com"
+acm_certificate_arn   = "arn:aws:acm:ap-south-1:ACCOUNT_ID:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# --- Container images (after ECR push) ---
+gateway_image  = "ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/doctornect-auth-gateway:latest"
+postgrest_image = "postgrest/postgrest:v16.5"
+
+# --- Existing RDS (console-created; Terraform does NOT create the instance) ---
+rds_endpoint            = "example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com"
+rds_port                = 5432
+rds_db_name             = "doctornect"
+rds_security_group_id   = "sg-xxxxxxxx"
+rds_instance_identifier = "doctornect-production-rds"
+
+# --- Firebase (JWKS verify only; no Firebase secrets in Terraform) ---
+firebase_project_id = "medibond-45fad"

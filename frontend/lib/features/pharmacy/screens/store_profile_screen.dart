@@ -7,7 +7,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../core/auth/app_logout.dart';
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 import '../../../core/session/ambulance_session.dart';
 import '../../../core/session/app_session.dart';
 import '../../../core/utils/external_launcher.dart';
@@ -406,7 +406,7 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        await FirestoreService.instance.user.deleteAccount(user: user);
+        await AppDataService.instance.user.deleteAccount(user: user);
       }
       if (!context.mounted) return;
       Navigator.of(context).pop();

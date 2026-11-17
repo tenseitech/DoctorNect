@@ -3,7 +3,7 @@
  * scripts/check_reviewer_config.js
  *
  * Pre-deployment verification for Google Play reviewer test accounts.
- * Reads backend/functions/.env and checks:
+ * Reads repo root `.env` (or materialized functions .env) and checks:
  * 1. Whether REVIEW_ACCESS_UNTIL exists, whether it is in the future, and days remaining.
  * 2. Whether REVIEW_TEST_NUMBERS has exactly 5 entries.
  * 3. Whether REVIEW_FIXED_OTP is configured (without printing the value).
@@ -120,7 +120,11 @@ function checkReviewerConfig(envPath) {
 
 if (require.main === module) {
   const args = process.argv.slice(2);
-  let targetFile = path.resolve(__dirname, '../backend/functions/.env');
+  let targetFile = path.resolve(__dirname, '../.env');
+  const generated = path.resolve(__dirname, '../backend/functions/.env');
+  if (fs.existsSync(generated)) {
+    targetFile = generated;
+  }
   for (const arg of args) {
     if (arg.startsWith('--env-file=')) {
       targetFile = path.resolve(arg.split('=')[1]);

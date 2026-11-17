@@ -1,4 +1,4 @@
-import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/app_data_service.dart';
 
 import 'dart:async';
 
@@ -84,7 +84,7 @@ abstract final class DoctorPushService {
 
     final token = await messaging.getToken();
     if (token != null && token.isNotEmpty) {
-      await FirestoreService.instance.doctorProfile.saveDoctorFcmToken(
+      await AppDataService.instance.doctorProfile.saveDoctorFcmToken(
         doctorId,
         token,
       );
@@ -93,7 +93,7 @@ abstract final class DoctorPushService {
     await _tokenRefreshSub?.cancel();
     _tokenRefreshSub = messaging.onTokenRefresh.listen((newToken) async {
       if (_activeDoctorId == null || newToken.isEmpty) return;
-      await FirestoreService.instance.doctorProfile.saveDoctorFcmToken(
+      await AppDataService.instance.doctorProfile.saveDoctorFcmToken(
         _activeDoctorId!,
         newToken,
       );
@@ -109,7 +109,7 @@ abstract final class DoctorPushService {
     _tokenRefreshSub = null;
 
     if (doctorId == null || doctorId.isEmpty) return;
-    await FirestoreService.instance.doctorProfile.clearDoctorFcmToken(doctorId);
+    await AppDataService.instance.doctorProfile.clearDoctorFcmToken(doctorId);
     if (!kIsWeb) {
       await FirebaseMessaging.instance.deleteToken();
     }

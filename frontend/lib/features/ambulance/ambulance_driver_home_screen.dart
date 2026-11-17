@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import '../../core/firebase/firestore_service.dart';
+import '../../core/firebase/app_data_service.dart';
 
 // ignore_for_file: unused_element_parameter
 import 'package:flutter/material.dart';
@@ -297,7 +297,7 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
       ProfileActionGuard.showPopup(context, UserType.ambulance);
       return;
     }
-    final ok = await FirestoreService.instance.ambulance.completeBroadcast(
+    final ok = await AppDataService.instance.ambulance.completeBroadcast(
       broadcastId: bookingId,
       driverId: AmbulanceSession.loggedInAmbulanceId,
     );
@@ -316,16 +316,16 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
     if (ambulanceId.isEmpty) return;
 
     await AmbulanceAuthHelper.ensureSignedIn();
-    await FirestoreService.instance.ambulance.linkDriverAuth(ambulanceId);
+    await AppDataService.instance.ambulance.linkDriverAuth(ambulanceId);
 
-    final ok = await FirestoreService.instance.ambulance
+    final ok = await AppDataService.instance.ambulance
         .cancelAcceptedBroadcast(broadcastId: bookingId, driverId: ambulanceId);
     if (!context.mounted) return;
     if (ok) {
       setState(() => _selectedTab = AmbulanceDriverTab.cancelled);
     } else {
       final message =
-          FirestoreService.instance.ambulance.lastCancelFailureUserMessage ??
+          AppDataService.instance.ambulance.lastCancelFailureUserMessage ??
               'Could not cancel this trip. Please try again.';
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
@@ -338,7 +338,7 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
       return;
     }
     final ambulanceId = AmbulanceSession.loggedInAmbulanceId;
-    await FirestoreService.instance.ambulance.rejectBroadcast(
+    await AppDataService.instance.ambulance.rejectBroadcast(
       broadcastId: bookingId,
       driverId: ambulanceId,
     );
@@ -355,11 +355,11 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
     await AmbulanceAuthHelper.ensureSignedIn();
 
     final ambulance = AmbulanceStore.instance.findAmbulance(ambulanceId) ??
-        await FirestoreService.instance.ambulance.fetchAmbulanceById(
+        await AppDataService.instance.ambulance.fetchAmbulanceById(
           ambulanceId,
         );
 
-    final ok = await FirestoreService.instance.ambulance.acceptBroadcast(
+    final ok = await AppDataService.instance.ambulance.acceptBroadcast(
       broadcastId: bookingId,
       driverId: ambulanceId,
       ambulanceName:
@@ -370,7 +370,7 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
       setState(() => _selectedTab = AmbulanceDriverTab.accepted);
     } else {
       final message =
-          FirestoreService.instance.ambulance.lastAcceptFailureUserMessage ??
+          AppDataService.instance.ambulance.lastAcceptFailureUserMessage ??
               'Could not accept this trip. Please try again.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), duration: const Duration(seconds: 5)),

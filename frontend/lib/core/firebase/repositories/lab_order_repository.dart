@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../../storage/storage_service.dart';
@@ -26,7 +25,7 @@ class LabOrderRepository {
 
   Future<FirestorePage<DoctorLabOrder>> fetchForDoctor(
     String doctorId, {
-    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    String? startAfter,
     int limit = FirestoreQueryLimits.labOrdersPage,
     bool preferCache = true,
   }) async {
@@ -36,7 +35,7 @@ class LabOrderRepository {
 
   Future<FirestorePage<DoctorLabOrder>> fetchForPatient(
     String patientId, {
-    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    String? startAfter,
     int limit = FirestoreQueryLimits.labOrdersPage,
     bool preferCache = true,
   }) async {
@@ -46,7 +45,7 @@ class LabOrderRepository {
 
   Future<FirestorePage<DoctorLabOrder>> fetchForPatientForDoctor(
     String patientId, {
-    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    String? startAfter,
     int limit = FirestoreQueryLimits.labOrdersPage,
     bool preferCache = true,
   }) async {
@@ -56,7 +55,7 @@ class LabOrderRepository {
 
   Future<FirestorePage<DoctorLabOrder>> fetchForLab(
     String labId, {
-    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    String? startAfter,
     int limit = FirestoreQueryLimits.labOrdersPage,
     bool preferCache = true,
   }) async {

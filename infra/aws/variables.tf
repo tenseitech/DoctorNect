@@ -49,8 +49,18 @@ variable "gateway_image" {
 
 variable "postgrest_image" {
   type        = string
-  description = "PostgREST official container image (pinned to 12.2.3 matching local binary)"
-  default     = "postgrest/postgrest:v12.2.3"
+  description = "PostgREST official container image (pinned; default v16.5 for PG18 RDS)"
+  default     = "postgrest/postgrest:v16.5"
+}
+
+variable "ecs_cpu_architecture" {
+  type        = string
+  description = "Fargate task CPU architecture; must match gateway ECR image build platform (default X86_64)."
+  default     = "X86_64"
+  validation {
+    condition     = contains(["X86_64", "ARM64"], upper(var.ecs_cpu_architecture))
+    error_message = "ecs_cpu_architecture must be X86_64 or ARM64."
+  }
 }
 
 variable "rds_endpoint" {

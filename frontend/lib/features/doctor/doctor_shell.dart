@@ -1,7 +1,4 @@
 import 'dart:async';
-import '../../core/firebase/firestore_client.dart';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -12,7 +9,8 @@ import '../../core/auth/role_session_guard.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/firebase/firebase_auth_service.dart';
 import '../../core/firebase/firebase_bootstrap.dart';
-import '../../core/firebase/firestore_paths.dart';
+import '../../core/supabase/repositories/supabase_doctor_repository.dart';
+import '../../core/supabase/supabase_bootstrap.dart';
 import '../../core/firebase/firestore_screen_sync.dart';
 import '../../core/session/app_session.dart';
 import '../../core/session/doctor_session.dart';
@@ -129,34 +127,22 @@ class _DoctorShellState extends State<DoctorShell> {
   }
 
   void _ensureDemoDoctorVerified() {
-    if (!FirebaseBootstrap.isReady || !_isDemoDoctor) return;
+    if (!_isDemoDoctor || !SupabaseBootstrap.isReady) return;
     try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null && uid.isNotEmpty) {
-        FirestoreClient.instance
-            .collection(FirestorePaths.users)
-            .doc(uid)
-            .set({
-          'verified': true,
-          'verificationStatus': 'verified',
-          'status': 'approved',
-          'profileCompleted': true,
-        }, SetOptions(merge: true));
-      }
       final doctorId = DoctorSession.loggedInDoctorId.isNotEmpty
           ? DoctorSession.loggedInDoctorId
           : AppSession.doctorId;
-      if (doctorId.isNotEmpty) {
-        FirestoreClient.instance
-            .collection(FirestorePaths.doctors)
-            .doc(doctorId)
-            .set({
-          'verified': true,
-          'verificationStatus': 'verified',
-          'status': 'approved',
-          'profileCompleted': true,
-        }, SetOptions(merge: true));
-      }
+      if (doctorId.isEmpty) return;
+      unawaited(
+        SupabaseDoctorRepository.instance.saveDoctorProfileFields(
+          doctorId,
+          const {
+            'verified': true,
+            'profileCompleted': true,
+            'status': 'approved',
+          },
+        ),
+      );
     } catch (_) {}
   }
 

@@ -234,7 +234,7 @@ test('with APP_ENV=production, delete_my_account and getDatabaseClient route to 
   resetDatabaseClientForTesting();
   assert.throws(
     () => getDatabaseClient({ forceNew: true }),
-    /Missing required credentials for APP_ENV="production": PROD_GATEWAY_URL/
+    /\[DatabaseClient\] Missing credentials for APP_ENV="production".*PROD_GATEWAY_URL/,
   );
 
   // Clean up

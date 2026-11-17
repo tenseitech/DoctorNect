@@ -82,9 +82,10 @@ function assertDatabaseGuard({ targetKind, operationName = 'Database Operation',
     const requestedTarget = targetArg ? targetArg.split('=')[1] : null;
     const confirmedHost = confirmArg ? confirmArg.split('=')[1] : null;
 
-    if (requestedTarget !== 'production') {
-      console.error(`\n[GUARD BLOCKED] ${operationName} targets PRODUCTION.`);
-      console.error(`Must explicitly provide CLI argument: --target=production\n`);
+    const allowedTargets = new Set(['production', 'rehearsal']);
+    if (!allowedTargets.has(requestedTarget)) {
+      console.error(`\n[GUARD BLOCKED] ${operationName} targets PRODUCTION RDS.`);
+      console.error(`Must explicitly provide --target=production or --target=rehearsal\n`);
       process.exit(1);
     }
 

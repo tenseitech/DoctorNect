@@ -19,7 +19,8 @@ const path = require('path');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
 const FUNCTIONS_DIR = path.resolve(ROOT_DIR, 'backend/functions');
-const ENV_PATH = path.resolve(FUNCTIONS_DIR, '.env');
+const FUNCTIONS_ENV_PATH = path.resolve(FUNCTIONS_DIR, '.env');
+const ROOT_ENV_PATH = path.resolve(ROOT_DIR, '.env');
 
 /** Present on disk for local deploy/emulator; excluded from upload via firebase.json ignore. */
 function isLocalDeployExcluded(relPosix) {
@@ -76,8 +77,11 @@ function listFunctionsSourceFiles(dir, base = '') {
   }
   return out;
 }
-const STAGING_REF = 'irpkyedfmdsuvapfnrim';
-const PROD_REF = 'rnltknemwnjrjxthtull';
+const {
+  isSupabaseCloudUrl,
+  resolveStagingProjectRefFromEnv,
+  urlContainsStagingProjectRef,
+} = require('./lib/infra_url_policy');
 
 function parseDotEnv(content) {
   const env = {};
@@ -100,6 +104,37 @@ function getVarStatus(env, key) {
   if (!(key in env)) return 'MISSING';
   const val = String(env[key] || '').trim();
   return val.length > 0 ? 'PRESENT' : 'EMPTY';
+}
+
+/** @returns {{ errors: string[], warnings: string[] }} */
+function validateSupabaseDeployEnv(env) {
+  const errors = [];
+  const warnings = [];
+  const supabaseUrlStatus = getVarStatus(env, 'SUPABASE_URL');
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  const stagingRef = resolveStagingProjectRefFromEnv({
+    STAGING_SUPABASE_URL: env.STAGING_SUPABASE_URL,
+    STAGING_SUPABASE_DB_URL: env.STAGING_SUPABASE_DB_URL,
+  });
+
+  if (supabaseUrlStatus !== 'PRESENT') {
+    errors.push('SUPABASE_URL is missing or empty in .env.');
+  } else if (appEnv === 'production') {
+    if (isSupabaseCloudUrl(env.SUPABASE_URL)) {
+      errors.push(
+        'SUPABASE_URL must not use *.supabase.co for APP_ENV=production. Set PROD_GATEWAY_URL and point SUPABASE_URL at the Auth Gateway.',
+      );
+    } else if (stagingRef && urlContainsStagingProjectRef(env.SUPABASE_URL, stagingRef)) {
+      errors.push(
+        `SUPABASE_URL matches staging project ref '${stagingRef}' from STAGING_SUPABASE_URL. Production deploy must use PROD_GATEWAY_URL.`,
+      );
+    } else if (!String(env.PROD_GATEWAY_URL || '').trim()) {
+      warnings.push('PROD_GATEWAY_URL is not set for production deploy.');
+    }
+  } else if (isSupabaseCloudUrl(env.SUPABASE_URL)) {
+    warnings.push('SUPABASE_URL uses *.supabase.co (acceptable for staging APP_ENV only).');
+  }
+  return { errors, warnings };
 }
 
 /**
@@ -148,12 +183,18 @@ function runCheck(options = {}) {
   console.log('STRICT POLICY: Zero secret values are ever displayed');
   console.log('================================================================');
 
-  if (!fs.existsSync(ENV_PATH)) {
-    console.error(`❌ FATAL: Env file not found at ${ENV_PATH}`);
-    process.exit(1);
+  let envFile = FUNCTIONS_ENV_PATH;
+  if (!fs.existsSync(envFile)) {
+    if (fs.existsSync(ROOT_ENV_PATH)) {
+      envFile = ROOT_ENV_PATH;
+      console.log('ℹ Using repo root .env (run materialize_functions_env.js before deploy to mirror upload bundle).');
+    } else {
+      console.error(`❌ FATAL: No env at ${FUNCTIONS_ENV_PATH} or repo root .env`);
+      process.exit(1);
+    }
   }
 
-  const envContent = fs.readFileSync(ENV_PATH, 'utf8');
+  const envContent = fs.readFileSync(envFile, 'utf8');
   const env = parseDotEnv(envContent);
   const errors = [];
   const warnings = [];
@@ -172,8 +213,8 @@ function runCheck(options = {}) {
       // Overlap detected: variable is defined in .env AND mounted as secret
       errors.push(
         `Secret environment variable overlaps non-secret environment variable: '${secName}'. ` +
-        `Bound as Secret Manager secret on [${fns.join(', ')}] in code, but ALSO defined non-empty in backend/functions/.env. ` +
-        `Cloud Functions deploy will abort with an overlap error. Remove '${secName}' from backend/functions/.env to source strictly from Secret Manager.`
+        `Bound as Secret Manager secret on [${fns.join(', ')}] in code, but ALSO defined non-empty in the deploy env file. ` +
+        `Cloud Functions deploy will abort with an overlap error. Remove '${secName}' from materialized functions .env / root .env to source strictly from Secret Manager.`
       );
     }
   }
@@ -184,13 +225,17 @@ function runCheck(options = {}) {
   console.log('\n--- 1. Supabase PostgreSQL Configuration ---');
   const supabaseUrlStatus = getVarStatus(env, 'SUPABASE_URL');
   console.log(`  SUPABASE_URL: ${supabaseUrlStatus}`);
-  if (supabaseUrlStatus !== 'PRESENT') {
-    errors.push('SUPABASE_URL is missing or empty in .env.');
-  } else if (env.SUPABASE_URL.includes(STAGING_REF)) {
-    errors.push(`SUPABASE_URL contains stale staging reference '${STAGING_REF}'. Must point to '${PROD_REF}'.`);
-  } else if (!env.SUPABASE_URL.includes(PROD_REF)) {
-    warnings.push(`SUPABASE_URL does not contain expected production project ref '${PROD_REF}'.`);
+  const stagingRef = resolveStagingProjectRefFromEnv({
+    STAGING_SUPABASE_URL: env.STAGING_SUPABASE_URL,
+    STAGING_SUPABASE_DB_URL: env.STAGING_SUPABASE_DB_URL,
+  });
+  if (stagingRef) {
+    console.log(`  STAGING anchor ref (from env): ${stagingRef.slice(0, 4)}****`);
   }
+
+  const supabasePolicy = validateSupabaseDeployEnv(env);
+  errors.push(...supabasePolicy.errors);
+  warnings.push(...supabasePolicy.warnings);
 
   const anonKeyStatus = getVarStatus(env, 'SUPABASE_ANON_KEY');
   console.log(`  SUPABASE_ANON_KEY: ${anonKeyStatus}`);
@@ -200,7 +245,7 @@ function runCheck(options = {}) {
   const serviceRoleInEnv = getVarStatus(env, 'SUPABASE_SERVICE_ROLE_KEY');
   if (serviceRoleInEnv === 'PRESENT') {
     errors.push(
-      'SUPABASE_SERVICE_ROLE_KEY is present in backend/functions/.env! ' +
+      'SUPABASE_SERVICE_ROLE_KEY is present in the deploy env file! ' +
       'It must NOT be in .env (to prevent baking the master secret into plain Cloud Run env vars). ' +
       'It must strictly be provided via Secret Manager.'
     );
@@ -340,4 +385,13 @@ for (let i = 0; i < args.length; i++) {
   }
 }
 
-runCheck({ batch });
+if (require.main === module) {
+  runCheck({ batch });
+}
+
+module.exports = {
+  runCheck,
+  validateSupabaseDeployEnv,
+  parseDotEnv,
+  getVarStatus,
+};

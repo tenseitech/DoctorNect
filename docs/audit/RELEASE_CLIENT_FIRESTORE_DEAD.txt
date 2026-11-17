@@ -1,0 +1,22 @@
+# Client Firestore DEAD proof (release path) — generated session evidence
+
+## Compile-time guard
+- `frontend/lib/core/config/firestore_forbidden_guard.dart`: `bool.fromEnvironment('FIRESTORE_FORBIDDEN', defaultValue: true)`
+- Release scripts inject `--dart-define=FIRESTORE_FORBIDDEN=true` (`frontend/scripts/release_build.ps1`, `release_build.sh`) with fail-fast `Assert-ReleaseFirestoreForbiddenDefine`.
+
+## Runtime throw site
+- `FirestoreService.instance` calls `FirestoreForbiddenGuard.assertNotForbidden` → `StateError` with message `FIRESTORE_FORBIDDEN: Client Firestore is disabled`.
+- Test: `frontend/test/release_firestore_forbidden_smoke_test.dart` (run: `flutter test test/release_firestore_forbidden_smoke_test.dart`).
+
+## User-flow routing (no Firestore in happy path when forbidden)
+- Doctor/patient data paths use Supabase/gateway clients when `USE_SUPABASE_DB_DOCTOR_PATIENT` / cutover flags set.
+- `frontend/lib/core/firebase/firestore_ui.dart` catches `FIRESTORE_FORBIDDEN` and does not surface Firestore UI.
+
+## Scan (non-exhaustive)
+- Remaining `cloud_firestore` imports in lib are behind guards or dead UI shells — full client grep still FAIL in RELEASE GATE until strip complete (`docs/audit/FIRESTORE_GREP_INDEPENDENT.txt`).
+- **Release behavior:** with mandatory dart-define, Firestore singleton access throws before network I/O.
+
+Run proof locally:
+  cd frontend
+  flutter test test/release_firestore_forbidden_smoke_test.dart
+  .\scripts\release_build.ps1 -DryRun -SkipIncrement  # must list FIRESTORE_FORBIDDEN in build command

@@ -1065,6 +1065,19 @@ async function deleteMyAccountHandler(uid) {
     throw new HttpsError('unauthenticated', 'Authentication required.');
   }
 
+  const { isSystemAdminAuthUser } = require('./system_admin_auth_guard');
+  try {
+    const authUser = await getAuth().getUser(normalizedUid);
+    if (isSystemAdminAuthUser(authUser)) {
+      throw new HttpsError(
+        'permission-denied',
+        'SYSTEM_ADMIN_PROTECTED: Platform admin account cannot be deleted.',
+      );
+    }
+  } catch (e) {
+    if (e instanceof HttpsError) throw e;
+  }
+
   const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
   const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
 
@@ -1158,7 +1171,8 @@ async function deleteMyAccountHandler(uid) {
     };
   }
 
-  const db = getFirestore();
+  const { getLegacyFirestoreDb } = require('./legacy_db');
+  const db = getLegacyFirestoreDb();
   const bucket = getStorage().bucket();
   const userRef = db.collection('users').doc(normalizedUid);
   const userSnap = await userRef.get();

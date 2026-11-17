@@ -1,5 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../../../core/util/map_date_time.dart';
 import 'ambulance_models.dart';
 
 enum AmbulanceInviteStatus { pending, completed, expired }
@@ -155,11 +154,5 @@ class AmbulanceInvite {
         if (ratePerKm != null) 'ratePerKm': ratePerKm,
       };
 
-  static DateTime? _parseDate(dynamic value) {
-    if (value == null) return null;
-    if (value is DateTime) return value;
-    if (value is Timestamp) return value.toDate();
-    if (value is String) return DateTime.tryParse(value);
-    return null;
-  }
+  static DateTime? _parseDate(dynamic value) => parseMapDateTime(value);
 }

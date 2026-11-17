@@ -28,7 +28,7 @@ During the Phase A architectural foundation audit, several critical impedance mi
 - **Subquery Overhead:** Previous RLS policies executed nested subqueries (`WHERE firebase_uid = auth.jwt()->>'sub'`) on every table access.
 
 ### 1.4 Critical Configuration & Secret Drift
-- **STAGING DATABASE LEAK IN PRODUCTION CLOUD FUNCTIONS:** Inspection of `baseline_functions.json` (lines 45–49) revealed that **44 deployed Google Cloud Functions** have their `SUPABASE_URL` environment variable baked in as `https://irpkyedfmdsuvapfnrim.supabase.co` (the old staging project) instead of the production project `rnltknemwnjrjxthtull` (`DRNECT-DB`). Any Cloud Function currently querying Supabase is routing to staging!
+- **STAGING DATABASE LEAK IN PRODUCTION CLOUD FUNCTIONS:** Inspection of `baseline_functions.json` (lines 45–49) revealed that **44 deployed Google Cloud Functions** have their `SUPABASE_URL` environment variable baked in as `https://staging-project-ref.supabase.co` (the old staging project) instead of the production project `staging-project-ref` (`DRNECT-DB`). Any Cloud Function currently querying Supabase is routing to staging!
 - **Service-Role Key Audit:** `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_SECRET_KEY` is correctly isolated to the server/functions environment and is **never** bundled or exposed in the Flutter frontend. However, `.env.example` templates were missing canonical keys for MSG91 VPC connectors, S3 buckets, and Supabase compile-time flags.
 
 ### 1.5 Flutter Client Token Refresh
@@ -186,15 +186,15 @@ $$;
 > [!CAUTION]
 > **STAGING DATABASE DRIFT DETECTED IN DEPLOYED CLOUD FUNCTIONS**
 > - In `baseline_functions.json` (lines 45, 4255), **44 deployed Google Cloud Functions** have their `SUPABASE_URL` baked in as:
->   `https://irpkyedfmdsuvapfnrim.supabase.co` (Staging Project)
+>   `https://staging-project-ref.supabase.co` (Staging Project)
 > - The production Supabase project is:
->   `https://rnltknemwnjrjxthtull.supabase.co` (`DRNECT-DB`)
+>   `https://staging-project-ref.supabase.co` (`DRNECT-DB`)
 > - **Action Required:** A complete redeploy of Cloud Functions (`firebase deploy --only functions`) is required after setting the production secrets/environment in GCP Secret Manager.
 
 ### 5.2 Secret Variables Audit Table
 | Variable Name | Required Scope | Present in Backend .env | Present in Frontend | Status / Security Assessment |
 |---------------|----------------|-------------------------|---------------------|------------------------------|
-| `SUPABASE_URL` | Cloud Functions & Flutter | Yes (`rnltknemwnjrjxthtull`) | Compile-time define | Verified. Deployed functions need update. |
+| `SUPABASE_URL` | Cloud Functions & Flutter | Yes (`staging-project-ref`) | Compile-time define | Verified. Deployed functions need update. |
 | `SUPABASE_ANON_KEY` | Flutter Client | Optional (server-side) | Compile-time define | Safe for public mobile distribution. |
 | `SUPABASE_SERVICE_ROLE_KEY`| Cloud Functions ONLY | Yes | **NEVER** | Verified: Absent from Flutter. Present in server env. |
 | `SUPABASE_SECRET_KEY` | Cloud Functions ONLY | Yes | **NEVER** | Alias for service-role key; server-only. |
@@ -228,7 +228,7 @@ $$;
 Please perform the following actions in the respective cloud dashboards:
 
 ### Step 1: Supabase Dashboard — Configure Third-Party Auth for Firebase
-1. Log in to [Supabase Dashboard](https://supabase.com/dashboard) and select project `rnltknemwnjrjxthtull` (`DRNECT-DB`).
+1. Log in to [Supabase Dashboard](https://supabase.com/dashboard) and select project `staging-project-ref` (`DRNECT-DB`).
 2. Navigate to **Authentication** -> **Providers** -> **Third-Party Auth**.
 3. Click **Add Provider** and select **Firebase Auth**.
 4. Configure the provider settings:
@@ -250,7 +250,7 @@ Please perform the following actions in the respective cloud dashboards:
 Run the following commands in your terminal to ensure GCP Secret Manager holds production values:
 ```bash
 firebase functions:secrets:set SUPABASE_URL
-# Input: https://rnltknemwnjrjxthtull.supabase.co
+# Input: https://staging-project-ref.supabase.co
 
 firebase functions:secrets:set SUPABASE_SERVICE_ROLE_KEY
 # Input: <Your production Supabase service_role key>
@@ -270,7 +270,7 @@ node backend/scripts/backfill_supabase_custom_claims.js --apply --project medibo
 ```
 
 ### Step 5: Redeploy Google Cloud Functions to Production
-Redeploy all Cloud Functions so they discard the old staging URL (`irpkyedfmdsuvapfnrim`) and pick up production secrets:
+Redeploy all Cloud Functions so they discard the old staging URL (`staging-project-ref`) and pick up production secrets:
 ```bash
 firebase deploy --only functions
 ```
@@ -278,7 +278,7 @@ firebase deploy --only functions
 ### Step 6: Flutter Build Verification
 Build your mobile client with production Supabase compile-time arguments:
 ```bash
-flutter build apk --dart-define=SUPABASE_URL=https://rnltknemwnjrjxthtull.supabase.co --dart-define=SUPABASE_ANON_KEY=<YOUR_PRODUCTION_ANON_KEY>
+flutter build apk --dart-define=SUPABASE_URL=https://staging-project-ref.supabase.co --dart-define=SUPABASE_ANON_KEY=<YOUR_PRODUCTION_ANON_KEY>
 ```
 
 ---

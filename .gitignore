@@ -57,22 +57,16 @@ app.*.map.json
 **/android/app/release
 *.hprof
 
-# Secrets
+# Secrets — only root .env.example is committed
 .env
 **/.env
 .env.*
 **/.env.*
-.env.migration
-**/.env.migration
-!.env.example
-!**/.env.example
-!.env.migration.example
-!**/.env.migration.example
-frontend/lib/firebase_options.secrets.dart
-**/firebase_options.secrets.dart
+*.env
+!/.env.example
 backend/functions/.env
 backend/functions/.env.*
-!backend/functions/.env.example
+frontend/build/dart_defines.local.json
 backend/functions/.secret.local
 **/.secret.local
 !backend/functions/.secret.local.example
@@ -173,3 +167,23 @@ infra/aws/.terraform/
 /_rpc_diff_b.sql
 /rpc_diff_*.txt
 /smoke_out.txt
+
+frontend/lib/firebase_options.secrets.dart
+docs/reports/rls_coverage_audit.json
+
+# Local prod/staging audit runs — do not commit (schema/role/version snapshots)
+docs/audit/PROD_RDS_FORENSICS.json
+docs/audit/PROD_RDS_FORENSICS.md
+docs/audit/PROD_RDS_MIGRATION_DIAGNOSIS.md
+docs/audit/prod_rds_preflight_readonly.txt
+docs/audit-local/
+docs/audit/prod_rds_readonly_diagnostic_20*.json
+docs/audit/prod_rds_readonly_diagnostic_latest.txt
+docs/audit/prod_rds_readonly_diagnostic_latest_run.txt
+docs/audit/migration_audit_*.txt
+docs/audit/prod_dry_run_*.txt
+docs/audit/gateway_prep_*.txt
+docs/audit/rdslike_dry_run_*.txt
+docs/reports/rls_harness_replay_*.md
+docs/reports/rls_harness_staging_*.md
+docs/reports/gateway_rls_authorization_suite.json

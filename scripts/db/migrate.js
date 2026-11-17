@@ -1,13 +1,16 @@
 'use strict';
 
+/** Shared-instance warning: docs/runbooks/RDS_SHARED_INSTANCE_SCRIPTS.md */
+
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 const { Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
+const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
 const { assertDatabaseGuard, getHostFingerprint } = require('../lib/env_guard');
 const { assertSessionCapableConnection, SESSION_CONNECTION_DOC } = require('../lib/db_connection_guard');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
+const { assertRdsPreMigrateBootstrap } = require('../lib/rds_bootstrap_preflight');
 
 let parse;
 try {
@@ -50,34 +53,362 @@ async function splitSqlStatements(sqlText) {
   return statements;
 }
 
-function computeChecksum(content) {
-  const normalized = typeof content === 'string' ? content.replace(/\r\n/g, '\n') : content;
-  return crypto.createHash('sha256').update(normalized, 'utf8').digest('hex');
+const {
+  computeChecksum,
+  ledgerChecksumMatches,
+} = require('../lib/migration_checksum');
+const {
+  assertProductionPgCronOrThrow,
+  shouldSkipMigrationFile,
+  queryPgCronCatalog,
+  allowNoCronFromArgv,
+} = require('../lib/pg_cron_policy');
+const {
+  listMigrationsForTarget,
+  migrationVersionFromRel,
+  MIGRATION_ADVISORY_LOCK_KEYS,
+  resolveMigrationSqlPath,
+} = require('../lib/migration_file_list');
+const { isSkippableTransactionControlStatement } = require('../lib/migration_txn_sql');
+const { normalizeRdsMigrationSql } = require('../lib/rds_migration_sql_normalize');
+const { countAppSchemaObjects, assertTripwireUnchanged } = require('../lib/migrate_prod_tripwire');
+const { withMigrateScratchDatabase } = require('../lib/migrate_scratch_db');
+
+const MIGRATION_ADVISORY_TARGETS = new Set(['production', 'rehearsal']);
+
+// Staging-only ghost in supabase_migrations.schema_migrations: same body as repo 20261103000008_staging_anon_security_cleanup.sql
+// (no db/migrations/20261104000001_*.sql). Omit from backfill into public._schema_migrations (commit 2d5332e, 2026-11-12).
+const GHOST_SUPABASE_LEDGER_VERSION = '20261104000001';
+
+function printConnectionFailureHint(target) {
+  if (target === 'staging') {
+    console.error(
+      'Hint: STAGING_SUPABASE_DB_URL must use the session pooler on port 5432 (not transaction pooler 6543).',
+    );
+  } else if (target === 'production' || target === 'rehearsal') {
+    console.error('Hint: use SSM/SSH tunnel — PROD_RDS_CONNECT_HOST=127.0.0.1 and PROD_RDS_PORT (e.g. 5433).');
+    console.error('  docs/runbooks/RDS_PROD_TUNNEL_WINDOWS.md');
+    console.error('  Ensure PROD_RDS_SSL_ROOT_CERT / infra/aws/global-bundle.pem (infra/aws/README_CA_BUNDLE.md).');
+  }
+}
+
+function loadActiveMigrationSql(relPath, target) {
+  const { sqlPath, useOverride } = resolveMigrationSqlPath({ relPath, target });
+  let sqlContent = fs.readFileSync(sqlPath, 'utf8');
+  const normTarget =
+    process.env.REPLAY_RDS_LIKE === '1' && (target === 'replay' || target === 'replay_check')
+      ? 'production'
+      : target;
+  sqlContent = normalizeRdsMigrationSql(sqlContent, normTarget);
+  return { sqlContent, useOverride };
+}
+
+function verifyAllAppliedChecksums({ files, appliedMap, target }) {
+  for (const relPath of files) {
+    const version = migrationVersionFromRel(relPath);
+    if (!appliedMap.has(version)) {
+      continue;
+    }
+    const recordedChecksum = appliedMap.get(version);
+    const { sqlContent } = loadActiveMigrationSql(relPath, target);
+    const checksum = computeChecksum(sqlContent);
+    if (!ledgerChecksumMatches(sqlContent, recordedChecksum)) {
+      console.error(
+        `\n[FATAL CHECKSUM MISMATCH] Applied migration ${relPath} (version ${version}) no longer matches ledger.`,
+      );
+      console.error(`Recorded checksum: ${recordedChecksum}`);
+      console.error(`Current checksum:  ${checksum}`);
+      console.error('Altering already applied migrations violates database integrity.');
+      console.error('Aborting before applying any pending migration.');
+      process.exit(1);
+    }
+  }
+}
+
+async function loadAppliedMigrationsMap(client, isExecute) {
+  const appliedMap = new Map();
+  let supabaseMigExists = false;
+
+  if (isExecute) {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public._schema_migrations (
+        version text PRIMARY KEY,
+        name text NOT NULL,
+        checksum text NOT NULL,
+        applied_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
+    const hasSupabaseMig = await client.query(`
+      SELECT 1 FROM information_schema.tables 
+      WHERE table_schema = 'supabase_migrations' AND table_name = 'schema_migrations';
+    `);
+    if (hasSupabaseMig.rows && hasSupabaseMig.rows.length > 0) {
+      supabaseMigExists = true;
+      try {
+        await client.query(`
+          INSERT INTO public._schema_migrations (version, name, checksum)
+          SELECT version, COALESCE(name, version), 'legacy_supabase'
+          FROM supabase_migrations.schema_migrations
+          WHERE version <> $1
+          ON CONFLICT (version) DO NOTHING;
+        `, [GHOST_SUPABASE_LEDGER_VERSION]);
+      } catch (err) {
+        console.error(
+          '[FATAL] Failed to sync supabase_migrations.schema_migrations into public._schema_migrations:',
+          err.message,
+        );
+        throw err;
+      }
+    }
+  } else {
+    const ledgerExists = await client.query(`
+      SELECT 1 FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = '_schema_migrations'
+      LIMIT 1;
+    `);
+    if (!ledgerExists.rows.length) {
+      console.log('[DRY-RUN] public._schema_migrations not found — ledger treated as empty (no DDL executed).');
+      return { appliedMap, supabaseMigExists };
+    }
+  }
+
+  const appliedRes = await client.query(
+    `SELECT version, checksum FROM public._schema_migrations ORDER BY version;`,
+  );
+  for (const row of appliedRes.rows) {
+    appliedMap.set(row.version, row.checksum);
+  }
+  return { appliedMap, supabaseMigExists };
+}
+
+function shouldAcquireMigrationAdvisoryLock(target, isExecute) {
+  if (!isExecute) {
+    return false;
+  }
+  return (
+    target === 'staging' ||
+    target === 'production' ||
+    target === 'rehearsal' ||
+    target === 'replay' ||
+    target === 'replay_check'
+  );
+}
+
+async function tryAcquireMigrationAdvisoryLock(client, target, isExecute) {
+  if (!shouldAcquireMigrationAdvisoryLock(target, isExecute)) {
+    return false;
+  }
+  const lockRow = await client.query(
+    'SELECT pg_try_advisory_lock($1::integer, $2::integer) AS ok',
+    [MIGRATION_ADVISORY_LOCK_KEYS.classId, MIGRATION_ADVISORY_LOCK_KEYS.objectId],
+  );
+  if (!lockRow.rows[0]?.ok) {
+    console.error(
+      '[FATAL] Could not acquire migration advisory lock — another migrate.js session may be running on this database.',
+    );
+    process.exit(1);
+  }
+  console.log('✔ Migration advisory lock acquired.');
+  return true;
+}
+
+async function releaseMigrationAdvisoryLock(client, lockHeld) {
+  if (!lockHeld || !client) {
+    return;
+  }
+  await client
+    .query('SELECT pg_advisory_unlock($1::integer, $2::integer)', [
+      MIGRATION_ADVISORY_LOCK_KEYS.classId,
+      MIGRATION_ADVISORY_LOCK_KEYS.objectId,
+    ])
+    .catch(() => {});
+}
+
+function buildStagingPoolConfig(dbUrl) {
+  const config = { connectionString: dbUrl };
+  try {
+    const parsed = new URL(dbUrl.replace(/^postgres:\/\//i, 'postgresql://'));
+    const sslmode = (parsed.searchParams.get('sslmode') || '').toLowerCase();
+    if (sslmode === 'require' || sslmode === 'verify-ca' || sslmode === 'verify-full' || parsed.hostname.includes('supabase')) {
+      config.ssl = { rejectUnauthorized: false };
+    }
+  } catch (_) {
+    config.ssl = { rejectUnauthorized: false };
+  }
+  return config;
+}
+
+function listPendingMigrationFiles(appliedMap, target) {
+  const files = listMigrationsForTarget(target);
+  return files.filter((f) => !appliedMap.has(migrationVersionFromRel(f)));
+}
+
+function parseMigrationCliArgs(argv) {
+  const args = Array.isArray(argv) ? argv : process.argv.slice(2);
+  const wantsExecute = args.includes('--execute');
+  const wantsDryRun = args.includes('--dry-run') || args.includes('--dry-run-all');
+  const isDryRun = wantsDryRun || !wantsExecute;
+  const isExecute = !isDryRun;
+  return {
+    isExecute,
+    isDryRun,
+    isDryRunAll: args.includes('--dry-run-all'),
+    allowOutOfOrder: args.includes('--allow-out-of-order'),
+  };
+}
+
+function warnLedgerVersionsWithoutRepoFile({ appliedMap, files }) {
+  const repoVersions = new Set(files.map((rel) => migrationVersionFromRel(rel)));
+  for (const version of appliedMap.keys()) {
+    if (version === GHOST_SUPABASE_LEDGER_VERSION) {
+      continue;
+    }
+    if (!repoVersions.has(version)) {
+      console.warn(
+        `[WARN] Ledger version ${version} has no matching repo migration file (expected ghost only: ${GHOST_SUPABASE_LEDGER_VERSION}).`,
+      );
+    }
+  }
+}
+
+function assertPendingMigrationsInOrder({ files, appliedMap, target, allowOutOfOrder }) {
+  if (allowOutOfOrder || !MIGRATION_ADVISORY_TARGETS.has(target)) {
+    return;
+  }
+  if (appliedMap.size === 0) {
+    return;
+  }
+  const maxApplied = [...appliedMap.keys()].sort().pop();
+  for (const relPath of files) {
+    const version = migrationVersionFromRel(relPath);
+    if (appliedMap.has(version)) {
+      continue;
+    }
+    if (version < maxApplied) {
+      throw new Error(
+        `[FATAL] Out-of-order pending migration ${relPath} (version ${version}) is older than max applied version ${maxApplied}. ` +
+          'Reconcile the ledger or pass --allow-out-of-order for controlled recovery only.',
+      );
+    }
+  }
+}
+
+async function executeDryRunAllOnClient({
+  client,
+  target,
+  appliedMap,
+  skipCronMigration,
+  files,
+}) {
+  const pendingFiles = files.filter((f) => !appliedMap.has(migrationVersionFromRel(f)));
+  console.log(`Found ${pendingFiles.length} pending migration files: ${pendingFiles.join(', ')}`);
+
+  await client.query('BEGIN');
+  let dryRunTxnOpen = true;
+  const allErrors = [];
+  let totalStatements = 0;
+
+  try {
+    for (const file of pendingFiles) {
+      if (shouldSkipMigrationFile(path.basename(file), skipCronMigration)) {
+        console.log(`\n[SKIPPED — --allow-no-cron] ${file}`);
+        continue;
+      }
+      const { sqlContent } = loadActiveMigrationSql(file, target);
+
+      console.log(`\nParsing & testing statements in ${file}...`);
+      const stmts = await splitSqlStatements(sqlContent);
+      totalStatements += stmts.length;
+      console.log(`  Extracted ${stmts.length} top-level AST statements.`);
+
+      for (const item of stmts) {
+        if (isSkippableTransactionControlStatement(item.sql)) {
+          continue;
+        }
+        await client.query('SAVEPOINT sp_stmt;');
+        try {
+          await client.query(item.sql);
+          await client.query('RELEASE SAVEPOINT sp_stmt;');
+        } catch (err) {
+          allErrors.push({
+            file,
+            line: item.line,
+            sqlstate: err.code || 'UNKNOWN',
+            message: err.message,
+            snippet: item.sql.trim().replace(/\s+/g, ' ').slice(0, 90),
+          });
+          await client.query('ROLLBACK TO SAVEPOINT sp_stmt;');
+        }
+      }
+    }
+
+    await client.query('ROLLBACK');
+    dryRunTxnOpen = false;
+    console.log(`\n✔ Transaction ROLLED BACK. Nothing applied to database.`);
+    console.log(`\n=== DRY-RUN-ALL SUMMARY ===`);
+    console.log(
+      `Files tested: ${pendingFiles.length} | Statements tested: ${totalStatements} | Errors found: ${allErrors.length}`,
+    );
+
+    if (allErrors.length > 0) {
+      console.log('\n--- STATEMENT ERRORS DETECTED ---');
+      console.table(
+        allErrors.map((e, idx) => ({
+          '#': idx + 1,
+          File: e.file,
+          Line: e.line,
+          SQLSTATE: e.sqlstate,
+          Message: e.message,
+          Statement: e.snippet,
+        })),
+      );
+      throw new Error(`dry-run-all failed with ${allErrors.length} statement error(s)`);
+    }
+    console.log('\n✔ ZERO ERRORS DETECTED across all pending migration statements.');
+    return { pendingCount: pendingFiles.length, totalStatements, errors: allErrors };
+  } catch (dryRunErr) {
+    if (dryRunTxnOpen) {
+      await client.query('ROLLBACK').catch(() => {});
+      console.error('\n✔ Transaction ROLLED BACK after dry-run-all error.');
+    }
+    throw dryRunErr;
+  }
 }
 
 async function runMigrations() {
-  bootstrapMutatingScript('scripts/db/migrate.js');
   const args = process.argv.slice(2);
-  const isDryRun =
-    args.includes('--dry-run') ||
-    args.includes('--dry-run-all') ||
-    !args.includes('--execute');
-  const isDryRunAll = args.includes('--dry-run-all');
+  const { isExecute, isDryRun, isDryRunAll, allowOutOfOrder } = parseMigrationCliArgs(args);
   const targetArg = args.find(a => a.startsWith('--target='));
   const target = targetArg ? targetArg.split('=')[1].toLowerCase() : 'staging';
 
   console.log(`\n======================================================`);
   console.log(`DoctorNect Migration Runner (Target: ${target.toUpperCase()}${isDryRun ? ' [DRY-RUN]' : ''})`);
   console.log(`======================================================`);
+  console.log(`Mode: ${isDryRunAll ? '--dry-run-all (statement test + rollback)' : isDryRun ? 'dry-run (list only)' : '--execute (will commit)'}`);
+  console.log(`Env files: repo root .env only (scripts/lib/env_loader.js)`);
+  const stagingUrlKey = getEnv('STAGING_SUPABASE_DB_URL') ? 'STAGING_SUPABASE_DB_URL' : (getEnv('PROD_SUPABASE_DB_URL') ? 'PROD_SUPABASE_DB_URL' : null);
+  if (target === 'staging') {
+    console.log(`Staging DB URL variable: ${stagingUrlKey || '[MISSING — set STAGING_SUPABASE_DB_URL in root .env]'}`);
+  }
+
+  bootstrapMutatingScript('scripts/db/migrate.js');
 
   let dbUrl;
   let poolConfig;
+  let targetHostLabel = '';
 
   if (target === 'staging') {
     dbUrl = getEnv('STAGING_SUPABASE_DB_URL') || getEnv('PROD_SUPABASE_DB_URL');
+    if (!dbUrl) {
+      console.error('\n[FATAL] STAGING_SUPABASE_DB_URL is not set. Cannot connect.');
+      process.exit(1);
+    }
     const targetHost = getHostFingerprint(dbUrl);
-    assertDatabaseGuard({ targetKind: 'staging', operationName: 'Run Migrations', allowDestructive: !isDryRun && !isDryRunAll, targetHost });
-    poolConfig = { connectionString: dbUrl };
+    targetHostLabel = targetHost;
+    const guard = assertDatabaseGuard({ targetKind: 'staging', operationName: 'Run Migrations', allowDestructive: !isDryRun && !isDryRunAll, targetHost });
+    console.log(`Target host (staging): ${guard.host}`);
+    poolConfig = buildStagingPoolConfig(dbUrl);
   } else if (target === 'replay' || target === 'replay_check') {
     const rawReplayUrl = getEnv('REPLAY_DB_URL');
     if (!rawReplayUrl) {
@@ -85,8 +416,12 @@ async function runMigrations() {
       process.exit(1);
     }
     const parsed = new URL(rawReplayUrl);
-    parsed.pathname = '/replay_check';
-    const replayUser = getEnv('REPLAY_USER') || 'rds_master';
+    const rdsLikeReplay = process.env.REPLAY_RDS_LIKE === '1';
+    parsed.pathname = rdsLikeReplay
+      ? `/${getEnv('REPLAY_RDS_DB') || 'doctornect'}`
+      : '/replay_check';
+    const defaultReplayUser = rdsLikeReplay ? 'doctornect_admin' : 'rds_master';
+    const replayUser = getEnv('REPLAY_USER') || defaultReplayUser;
     if (replayUser) {
       parsed.username = replayUser;
     }
@@ -97,26 +432,14 @@ async function runMigrations() {
   } else if (target === 'rehearsal' || target === 'production') {
     const host = getEnv('PROD_RDS_HOST');
     assertDatabaseGuard({ targetKind: 'production', operationName: `Run Migrations on ${target}`, allowDestructive: false, targetHost: host });
-    const port = parseInt(getEnv('PROD_RDS_PORT') || '5432', 10);
-    const database = target === 'rehearsal' ? 'doctornect_rehearsal' : (getEnv('PROD_RDS_DB') || 'postgres');
-    const user = getEnv('PROD_RDS_USER') || 'postgres';
-    const password = getEnv('PROD_RDS_PASSWORD');
-    const certPath = getEnv('PROD_RDS_SSL_ROOT_CERT') || path.resolve(__dirname, '../../infra/aws/global-bundle.pem');
-
-    poolConfig = {
-      host,
-      port,
-      database,
-      user,
-      password,
-      ssl: {
-        rejectUnauthorized: true,
-        ca: fs.readFileSync(certPath),
-      },
-    };
-    dbUrl = `postgresql://${user}:****@${host}:${port}/${database}`;
+    const database = target === 'rehearsal' ? 'doctornect_rehearsal' : (getEnv('PROD_RDS_DB') || 'doctornect');
+    poolConfig = buildRdsPoolConfig({ database });
+    dbUrl = maskRdsTarget(poolConfig);
+    targetHostLabel = poolConfig.logicalHost;
   } else {
-    console.error(`Invalid target: ${target}. Must be staging, rehearsal, or production.`);
+    console.error(
+      `Invalid target: ${target}. Must be staging, production, rehearsal, replay, or replay_check.`,
+    );
     process.exit(1);
   }
 
@@ -124,148 +447,138 @@ async function runMigrations() {
   console.log(`Target Connection: ${maskConnectionString(dbUrl)}`);
   console.log(SESSION_CONNECTION_DOC);
 
-  const pool = new Pool(poolConfig);
-  const client = await pool.connect();
-
+  let pool;
+  let client;
   try {
-    // 1. Ensure migrations ledger exists
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS public._schema_migrations (
-        version text PRIMARY KEY,
-        name text NOT NULL,
-        checksum text NOT NULL,
-        applied_at timestamptz NOT NULL DEFAULT now()
-      );
-    `);
+    pool = new Pool(poolConfig);
+    client = await pool.connect();
+    console.log('✔ Database connection established.');
+    const { assertConnectedDatabaseMatchesConfirm } = require('../lib/live_data_guard');
+    await assertConnectedDatabaseMatchesConfirm(client, 'scripts/db/migrate.js');
+  } catch (connErr) {
+    console.error(`\n[FATAL] Could not connect to database (${targetHostLabel || target}): ${connErr.code || ''} ${connErr.message}`);
+    printConnectionFailureHint(target);
+    process.exit(1);
+  }
 
-    // Sync from legacy supabase_migrations if present (e.g. on Supabase staging)
-    let supabaseMigExists = false;
-    try {
-      const hasSupabaseMig = await client.query(`
-        SELECT 1 FROM information_schema.tables 
-        WHERE table_schema = 'supabase_migrations' AND table_name = 'schema_migrations';
-      `);
-      if (hasSupabaseMig.rows && hasSupabaseMig.rows.length > 0) {
-        supabaseMigExists = true;
-        await client.query(`
-          INSERT INTO public._schema_migrations (version, name, checksum)
-          SELECT version, COALESCE(name, version), 'legacy_supabase'
-          FROM supabase_migrations.schema_migrations
-          ON CONFLICT (version) DO NOTHING;
-        `);
-      }
-    } catch (_) {}
+  let lockHeld = false;
+  try {
+    lockHeld = await tryAcquireMigrationAdvisoryLock(client, target, isExecute);
 
-    // 2. Fetch applied migrations
-    const appliedRes = await client.query(`SELECT version, checksum FROM public._schema_migrations ORDER BY version;`);
-    const appliedMap = new Map();
-    for (const row of appliedRes.rows) {
-      appliedMap.set(row.version, row.checksum);
-    }
+    const { appliedMap, supabaseMigExists } = await loadAppliedMigrationsMap(client, isExecute);
     console.log(`Existing Applied Migrations in Ledger: ${appliedMap.size}`);
 
-    // 3. Scan migrations directory
-    const migrationsDir = path.resolve('db/migrations');
-    const overridesDir = path.resolve('db/rds_overrides');
-    const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
+    const files = listMigrationsForTarget(target);
+    warnLedgerVersionsWithoutRepoFile({ appliedMap, files });
+    if (target === 'staging') {
+      const prodMigrations = listMigrationsForTarget('production');
+      const rdsOnlySkipped = prodMigrations.length - files.length;
+      if (rdsOnlySkipped > 0) {
+        console.log(`Note: ${rdsOnlySkipped} RDS-only migration(s) skipped for target=${target}`);
+      }
+    }
 
-    // Check if pg_cron extension is available on this PostgreSQL instance
-    const hasCronExtRes = await client.query(`
-      SELECT 1 FROM pg_available_extensions WHERE name = 'pg_cron';
-    `);
-    const lacksPgCron = hasCronExtRes.rows.length === 0;
+    const pendingFilesPreview = listPendingMigrationFiles(appliedMap, target);
+    console.log(`\nPending migration files (${pendingFilesPreview.length}):`);
+    if (pendingFilesPreview.length === 0) {
+      console.log('  (none — schema is at head)');
+    } else {
+      for (const f of pendingFilesPreview) {
+        console.log(`  - ${f}`);
+      }
+    }
+
+    const pgCronCatalog = await queryPgCronCatalog(client);
+    const allowNoCron = allowNoCronFromArgv();
+    const pgCronPolicy = assertProductionPgCronOrThrow({
+      target,
+      available: pgCronCatalog.available,
+      installed: pgCronCatalog.installed,
+      allowNoCron,
+    });
+    const skipCronMigration = pgCronPolicy.skipCronMigration;
+
+    verifyAllAppliedChecksums({ files, appliedMap, target });
+    assertPendingMigrationsInOrder({ files, appliedMap, target, allowOutOfOrder });
+
+    if (isExecute && !isDryRun && !isDryRunAll) {
+      const needsBootstrap =
+        target === 'production' ||
+        target === 'rehearsal' ||
+        (target === 'replay' && process.env.REPLAY_RDS_LIKE === '1');
+      if (needsBootstrap) {
+        await assertRdsPreMigrateBootstrap(client);
+        console.log('✔ RDS pre-migrate bootstrap present (auth.users stub + auth.uid shim).');
+      }
+    }
 
     let pendingCount = 0;
+    let appliedThisRun = 0;
 
     if (isDryRunAll) {
-      console.log(`\n--- EXECUTING --dry-run-all (Statement-level testing inside single rollback transaction) ---`);
-      const pendingFiles = files.filter(f => !appliedMap.has(f.split('_')[0]));
-      console.log(`Found ${pendingFiles.length} pending migration files: ${pendingFiles.join(', ')}`);
+      console.log(
+        'Note: --dry-run-all wraps statements in a rollback transaction. ' +
+          'Top-level BEGIN/COMMIT/ROLLBACK in migration files are skipped (migrate.js owns the txn). ' +
+          'CREATE INDEX CONCURRENTLY may show false errors.',
+      );
 
-      await client.query('BEGIN');
-      const allErrors = [];
-      let totalStatements = 0;
+      if (target === 'production' || target === 'rehearsal') {
+        const prodBefore = await countAppSchemaObjects(client);
+        console.log(`\n[PROD SAFETY] Tripwire: production catalog objects=${prodBefore} (schemas public, auth, private).`);
+        console.log(
+          '[PROD SAFETY] dry-run-all on production NEVER mutates the production database; using migrate_scratch_* DB.',
+        );
+        console.log(`\n--- EXECUTING --dry-run-all on SCRATCH DATABASE (same RDS instance) ---`);
 
-      for (const file of pendingFiles) {
-        const baseSqlPath = path.join(migrationsDir, file);
-        const overrideSqlPath = path.join(overridesDir, file);
-        const useOverride = (target === 'production' || target === 'rehearsal' || target === 'replay' || target === 'replay_check') && fs.existsSync(overrideSqlPath);
-        const activeFilePath = useOverride ? overrideSqlPath : baseSqlPath;
-        let sqlContent = fs.readFileSync(activeFilePath, 'utf8');
-        if (lacksPgCron && file === '20260923000003_doctornect_cron.sql') {
-          sqlContent = sqlContent.replace(/CREATE EXTENSION IF NOT EXISTS pg_cron;/g, '-- [NO PG_CRON AVAILABLE] skipped extension creation');
-        }
-
-        console.log(`\nParsing & testing statements in ${file}...`);
-        const stmts = await splitSqlStatements(sqlContent);
-        totalStatements += stmts.length;
-        console.log(`  Extracted ${stmts.length} top-level AST statements.`);
-
-        for (const item of stmts) {
-          await client.query('SAVEPOINT sp_stmt;');
+        let scratchResult;
+        await withMigrateScratchDatabase(poolConfig, async (scratchPool) => {
+          const scratchClient = await scratchPool.connect();
           try {
-            await client.query(item.sql);
-            await client.query('RELEASE SAVEPOINT sp_stmt;');
-          } catch (err) {
-            allErrors.push({
-              file,
-              line: item.line,
-              sqlstate: err.code || 'UNKNOWN',
-              message: err.message,
-              snippet: item.sql.trim().replace(/\s+/g, ' ').slice(0, 90),
+            const { appliedMap: scratchApplied } = await loadAppliedMigrationsMap(scratchClient, false);
+            scratchResult = await executeDryRunAllOnClient({
+              client: scratchClient,
+              target,
+              appliedMap: scratchApplied,
+              skipCronMigration,
+              files,
             });
-            await client.query('ROLLBACK TO SAVEPOINT sp_stmt;');
+          } finally {
+            scratchClient.release();
           }
-        }
+        });
+
+        const prodAfter = await countAppSchemaObjects(client);
+        assertTripwireUnchanged(prodBefore, prodAfter, 'production/rehearsal dry-run-all (scratch workflow)');
+        console.log(`[PROD SAFETY] Tripwire OK: production catalog objects unchanged (${prodAfter}).`);
+        return scratchResult;
       }
 
-      await client.query('ROLLBACK');
-      console.log(`\n✔ Transaction ROLLED BACK. Nothing applied to database.`);
-      console.log(`\n=== DRY-RUN-ALL SUMMARY ===`);
-      console.log(`Files tested: ${pendingFiles.length} | Statements tested: ${totalStatements} | Errors found: ${allErrors.length}`);
-
-      if (allErrors.length > 0) {
-        console.log('\n--- STATEMENT ERRORS DETECTED ---');
-        console.table(allErrors.map((e, idx) => ({
-          '#': idx + 1,
-          File: e.file,
-          Line: e.line,
-          SQLSTATE: e.sqlstate,
-          Message: e.message,
-          Statement: e.snippet,
-        })));
-      } else {
-        console.log('\n✔ ZERO ERRORS DETECTED across all pending migration statements.');
-      }
-
-      return { pendingCount: pendingFiles.length, totalStatements, errors: allErrors };
+      console.log(`\n--- EXECUTING --dry-run-all (Statement-level testing inside single rollback transaction) ---`);
+      return await executeDryRunAllOnClient({
+        client,
+        target,
+        appliedMap,
+        skipCronMigration,
+        files,
+      });
     }
 
     for (const file of files) {
-      const version = file.split('_')[0];
-      const baseSqlPath = path.join(migrationsDir, file);
-      const overrideSqlPath = path.join(overridesDir, file);
-
-      // In RDS targets, use override file if present
-      const useOverride = (target === 'production' || target === 'rehearsal' || target === 'replay' || target === 'replay_check') && fs.existsSync(overrideSqlPath);
-      const activeFilePath = useOverride ? overrideSqlPath : baseSqlPath;
-      const sqlContent = fs.readFileSync(activeFilePath, 'utf8');
+      const version = migrationVersionFromRel(file);
+      const { sqlContent, useOverride } = loadActiveMigrationSql(file, target);
       const checksum = computeChecksum(sqlContent);
 
       if (appliedMap.has(version)) {
-        const recordedChecksum = appliedMap.get(version);
-        if (recordedChecksum !== 'legacy_supabase' && recordedChecksum !== checksum) {
-          console.error(`\n[FATAL CHECKSUM MISMATCH] Migration ${file} (version ${version}) has been altered!`);
-          console.error(`Recorded checksum: ${recordedChecksum}`);
-          console.error(`Current checksum:  ${checksum}`);
-          console.error('Altering already applied migrations violates database integrity.');
-          process.exit(1);
-        }
         continue;
       }
 
       pendingCount++;
       console.log(`\n[Pending Migration] -> ${file} (checksum: ${checksum.slice(0, 8)}...) ${useOverride ? '[RDS OVERRIDE]' : ''}`);
+
+      if (shouldSkipMigrationFile(path.basename(file), skipCronMigration)) {
+        console.log(`[SKIPPED — --allow-no-cron] Would skip: ${file}`);
+        continue;
+      }
 
       if (isDryRun) {
         console.log(`[DRY-RUN] Would apply: ${file}`);
@@ -274,7 +587,8 @@ async function runMigrations() {
 
       // Execute in a transaction
       console.log(`Applying ${file}...`);
-      await applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists, lacksPgCron });
+      await applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists });
+      appliedThisRun++;
     }
 
     if (!isDryRun) {
@@ -285,27 +599,44 @@ async function runMigrations() {
       } catch (_) {}
     }
 
-    console.log(`\nMigration run completed. Total pending applied: ${pendingCount}`);
+    console.log(`\n=== MIGRATION RUN SUMMARY ===`);
+    console.log(`Target: ${target} | Host: ${targetHostLabel || '(see connection mask above)'}`);
+    console.log(`Pending seen this run: ${pendingCount} | Applied this run: ${isDryRun ? 0 : appliedThisRun}`);
+    console.log(`Ledger total versions: ${appliedMap.size + (isDryRun ? 0 : appliedThisRun)}`);
+    if (appliedMap.size > 0 || isExecute) {
+      try {
+        const finalLedger = await client.query(
+          `SELECT version, name, applied_at FROM public._schema_migrations ORDER BY version DESC LIMIT 15;`,
+        );
+        if (finalLedger.rows.length) {
+          console.log('\nMost recent _schema_migrations rows:');
+          for (const row of finalLedger.rows) {
+            console.log(`  ${row.version}  ${row.name}  @ ${row.applied_at}`);
+          }
+        }
+      } catch (_) {
+        /* dry-run: ledger table may be absent */
+      }
+    }
+    console.log(`\nMigration run completed.`);
 
   } finally {
+    await releaseMigrationAdvisoryLock(client, lockHeld);
     client.release();
     await pool.end();
   }
 }
 
-async function applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists = false, lacksPgCron = false }) {
+async function applySingleMigration({ client, version, file, sqlContent, checksum, supabaseMigExists = false }) {
   await client.query('BEGIN');
   try {
-    let sqlToExecute = sqlContent;
-    if (lacksPgCron && file === '20260923000003_doctornect_cron.sql') {
-      sqlToExecute = sqlToExecute.replace(/CREATE EXTENSION IF NOT EXISTS pg_cron;/g, () => `
-        CREATE SCHEMA IF NOT EXISTS cron;
-        CREATE TABLE IF NOT EXISTS cron.job (jobid bigint, schedule text, command text, nodename text, nodeport integer, database text, username text, active boolean, jobname text);
-        CREATE OR REPLACE FUNCTION cron.schedule(text, text, text) RETURNS bigint LANGUAGE sql AS $$ SELECT 1::bigint; $$;
-        CREATE OR REPLACE FUNCTION cron.schedule(text, text) RETURNS bigint LANGUAGE sql AS $$ SELECT 1::bigint; $$;
-      `);
+    const stmts = await splitSqlStatements(sqlContent);
+    for (const item of stmts) {
+      if (isSkippableTransactionControlStatement(item.sql)) {
+        continue;
+      }
+      await client.query(item.sql);
     }
-    await client.query(sqlToExecute);
     await client.query(
       `INSERT INTO public._schema_migrations (version, name, checksum) VALUES ($1, $2, $3);`,
       [version, file, checksum]
@@ -348,10 +679,29 @@ async function applySingleMigration({ client, version, file, sqlContent, checksu
 }
 
 if (require.main === module) {
-  runMigrations().catch(err => {
-    console.error('Migration runner failed:', err.message);
-    process.exit(1);
-  });
+  runMigrations()
+    .then((result) => {
+      if (result?.errors?.length) {
+        process.exit(1);
+      }
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('\n[MIGRATION RUNNER FAILED]', err.message);
+      if (err.stack && process.env.DEBUG_MIGRATE === '1') {
+        console.error(err.stack);
+      }
+      process.exit(1);
+    });
 }
 
-module.exports = { runMigrations, applySingleMigration, computeChecksum };
+module.exports = {
+  runMigrations,
+  applySingleMigration,
+  executeDryRunAllOnClient,
+  computeChecksum,
+  parseMigrationCliArgs,
+  assertPendingMigrationsInOrder,
+  loadAppliedMigrationsMap,
+  shouldAcquireMigrationAdvisoryLock,
+};

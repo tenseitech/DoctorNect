@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-This checklist consolidates the end-to-end verification of the **DoctorNect** Patient Module migration from Firebase to Supabase. All 4 primary Patient-facing modules (Booking, Appointments, Profile, Prescriptions & Health Records) have been wired to `SupabasePatientRepository`, guarded by dual-layer safety nets (`PatientWriteGuard` + Postgres RLS/Constraints), and verified against the live Supabase Staging environment (`irpkyedfmdsuvapfnrim`).
+This checklist consolidates the end-to-end verification of the **DoctorNect** Patient Module migration from Firebase to Supabase. All 4 primary Patient-facing modules (Booking, Appointments, Profile, Prescriptions & Health Records) have been wired to `SupabasePatientRepository`, guarded by dual-layer safety nets (`PatientWriteGuard` + Postgres RLS/Constraints), and verified against the live Supabase Staging environment (`staging-project-ref`).
 
 > [!WARNING]
 > **Readiness Clarification:** Staging verification is 100% complete across all 14 test scenarios and screen flows. However, **production cutover cannot proceed** until the four production prerequisites in Section 6 (production secrets, baseline dry-run, signed release bundle, and doctor/staff parity decision) are formally executed and checked off.
@@ -35,7 +35,7 @@ The wiring of each patient feature was verified against the active codebase usin
 
 ## 2. Row-Level Security (RLS) & Database Constraints Audit
 
-A total of 14 security scenarios have been verified against the live staging PostgreSQL database (`irpkyedfmdsuvapfnrim`).
+A total of 14 security scenarios have been verified against the live staging PostgreSQL database (`staging-project-ref`).
 
 ### A. Baseline Platform Scenarios (Verified via [`scripts/test_rls_policies.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scripts/test_rls_policies.js))
 
@@ -113,7 +113,7 @@ The bidirectional synchronization bridge ensures zero data loss between legacy c
 | :--- | :--- | :--- | :--- |
 | **Loop Prevention** | `sync_origin` metadata tagging | **Active & Verified** | Every write tags origin (`'patient_supabase'` or `'firestore'`). Edge function and Firestore trigger suppress re-sync if incoming origin matches destination. |
 | **Dead Letter Queue (DLQ)** | `syncDeadLetters` (Firestore) + `sync_dlq` (SQL) | **Active & Verified** | Failed sync jobs record payload, deterministic ID, sanitized code, and next retry timestamp without leaking PII or raw stacks. |
-| **Reverse Sync Function** | `sync-to-firestore` Edge Function | **Active & Verified** | Supabase database webhook triggers reverse sync to Firestore REST API with optimistic concurrency (`updateTime`), terminal-state protection, and PII-free dead-lettering. |
+| **Reverse Sync Function** | `sync-to-firestore` Edge Function | **Not deployed (legacy)** | Cutover uses Postgres + `notification_outbox` worker; do not wire Supabase DB webhooks to Firestore. See `docs/ops/REMOVAL_PLAN.md`. |
 | **Data Parity Auditor** | `check_sync_parity.js` | **Active & Verified** | Script compares record counts, primary keys, and data hashes across Firestore collections and PostgreSQL tables to detect drift. |
 
 ---
@@ -316,7 +316,7 @@ Before executing the live cutover, the following items must be addressed and sig
   - Automatically identifies orphaned records across tables (e.g. missing parent patient `p1784184727525` and user UIDs) and generates exact synthetic tombstone statements and `--auto-tombstone` handling to preserve clinical history without foreign key violations.
 - [x] **Production Build Configuration Guard (`verify_production_build_config.js`):**
   - Automated pre-build check: `node scripts/verify_production_build_config.js` implemented and verified.
-  - Validates `SUPABASE_URL` and `SUPABASE_ANON_KEY`, asserts that `SUPABASE_URL` does NOT contain the staging reference (`irpkyedfmdsuvapfnrim`), validates MSG91 proxy/templates, and ensures Razorpay keys are live (`rzp_live_`) and not sandbox mock defaults.
+  - Validates `SUPABASE_URL` and `SUPABASE_ANON_KEY`, asserts that `SUPABASE_URL` does NOT contain the staging reference (`staging-project-ref`), validates MSG91 proxy/templates, and ensures Razorpay keys are live (`rzp_live_`) and not sandbox mock defaults.
   - Fully integrated into `scripts/release_build.ps1` via `--client-only` pre-compilation check.
 - [ ] **Production Supabase Secrets Verification:**
   - Confirm production project secrets (`MSG91_PROXY_URL`, `PROXY_SECRET`, `MSG91_TEMPLATE_ID_*`, `RAZORPAY_KEY_*`) are configured on the production Supabase project via `supabase secrets set`.

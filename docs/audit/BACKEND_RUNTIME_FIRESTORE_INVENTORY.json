@@ -1,0 +1,2134 @@
+{
+  "at": "2026-11-15T12:37:26.752Z",
+  "count": 304,
+  "hits": [
+    {
+      "rel": "abuse_rate_limit.js",
+      "line": "/** Shared abuse / bot protection rate limits (Firestore-backed). */",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 9
+    },
+    {
+      "rel": "abuse_rate_limit.js",
+      "line": "const ref = db.collection('abuse_rate_limits').doc(bucket);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 60
+    },
+    {
+      "rel": "abuse_rate_limit.js",
+      "line": "// Unit tests inject Firestore mock db without Redis: fall back to Firestore buckets.",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 188
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "beforeSnap = await tx.get(db.collection('doctor_slots').doc(beforeSlotId));",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 321
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "afterSnap = await tx.get(db.collection('doctor_slots').doc(afterSlotId));",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 324
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const dayCounterRef = db.collection('doctor_day_counters').doc(`${afterDoctorId}_${afterDate}`);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 330
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const beforeRef = db.collection('doctor_slots').doc(beforeSlotId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 349
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const afterRef = db.collection('doctor_slots').doc(afterSlotId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 367
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const dayCounterRef = db.collection('doctor_day_counters').doc(`${doctorId}_${slotDate}`);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 486
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const doctorSnap = await db.collection('doctors').doc(doctorId).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 536
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const availSnap = await db.collection('doctor_availability').doc(doctorId).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 551
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const slotRef = db.collection('doctor_slots').doc(slotId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 563
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const apptRef = db.collection('appointments').doc();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 564
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const existingApptSnap = await tx.get(db.collection('appointments').doc(existingId));",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 584
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const callerSnap = await db.collection('users').doc(auth.uid).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 665
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const apptRef = db.collection('appointments').doc(appointmentId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 685
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const doctorSnap = await db.collection('doctors').doc(doctorId).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 703
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const availSnap = await db.collection('doctor_availability').doc(doctorId).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 715
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const newSlotRef = db.collection('doctor_slots').doc(newSlotId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 753
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const existingApptSnap = await tx.get(db.collection('appointments').doc(existingId));",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 764
+    },
+    {
+      "rel": "appointment_slots.js",
+      "line": "const oldSlotRef = db.collection('doctor_slots').doc(oldSlotId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 787
+    },
+    {
+      "rel": "caller_identity.js",
+      "line": "* from Supabase `users` when cutover flag is ON, or from Firestore `users/{uid}` when OFF.",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 24
+    },
+    {
+      "rel": "caller_identity.js",
+      "line": "* @param {object} [params.db] Firestore instance (used when cutover is OFF)",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 27
+    },
+    {
+      "rel": "caller_identity.js",
+      "line": "throw new HttpsError('failed-precondition', 'Firestore profile lookup is disabled (Postgres-only).');",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 85
+    },
+    {
+      "rel": "caller_identity.js",
+      "line": "const userSnap = await db.collection('users').doc(uid).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 89
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "let query = db.collection(collection).where(field, '==', normalized).limit(200);",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 118
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "const snap = await db.collection(collection).where(field, '==', normalizedUid).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 331
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "const bookingsSnap = await db.collection('lab_bookings').where('labId', '==', pid).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 451
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "const ordersSnap = await db.collection('lab_orders').where('labId', '==', pid).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 462
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "db.collection('users').where('role', '==', 'super_admin').get(),",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 499
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "db.collection('users').where('role', '==', 'superAdmin').get(),",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 500
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "db.collection('otp_rate_limits').doc(`login_id_${hashKey(email)}`).delete().catch(() => {}),",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 527
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": ".collection('abuse_rate_limits')",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 532
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": ".collection('abuse_rate_limits')",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 543
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "db.collection('otp_challenges').doc(key).delete().catch(() => {}),",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 554
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "db.collection('otp_verification_sessions').doc(key).delete().catch(() => {}),",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 555
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "await deleteDocIfExists(db, db.collection('patients').doc(patientId));",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 565
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "await deleteDocIfExists(db, db.collection('doctor_availability').doc(doctorId));",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 571
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "await deleteDocIfExists(db, db.collection('doctors').doc(doctorId));",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 572
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "await deleteDocIfExists(db, db.collection('medical_stores').doc(storeId));",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 581
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "await deleteDocIfExists(db, db.collection('labs').doc(labId));",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 587
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "await deleteDocIfExists(db, db.collection('ambulances').doc(ambulanceId));",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 593
+    },
+    {
+      "rel": "delete_my_account.js",
+      "line": "let query = db.collection(collection).where(field, '==', normalizedUid).limit(200);",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 603
+    },
+    {
+      "rel": "fcm_push.js",
+      "line": "* When cutover flag is OFF, reads from Firestore document.",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 39
+    },
+    {
+      "rel": "fcm_push.js",
+      "line": "* @param {import('firebase-admin/firestore').Firestore} db",
+      "reachable": "IMPORT",
+      "reason": "admin firestore import",
+      "lineNo": 41
+    },
+    {
+      "rel": "fcm_push.js",
+      "line": "* @param {Function} [options.resolveToken] Optional custom token lookup (Firestore legacy)",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 51
+    },
+    {
+      "rel": "fcm_push.js",
+      "line": "// Legacy Firestore path",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 143
+    },
+    {
+      "rel": "fcm_push.js",
+      "line": "const ref = db.collection(collection).doc(docId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 153
+    },
+    {
+      "rel": "fcm_push.js",
+      "line": "const driverSnap = await db.collection('ambulances').doc(driverId).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 220
+    },
+    {
+      "rel": "fcm_push.js",
+      "line": ".collection('ambulances')",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 226
+    },
+    {
+      "rel": "fcm_push.js",
+      "line": ".collection('private')",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 228
+    },
+    {
+      "rel": "firestore_forbidden_guard.js",
+      "line": " * Production cutover: block runtime Firestore I/O when FIRESTORE_FORBIDDEN=1 or APP_ENV=production.\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 6
+    },
+    {
+      "rel": "firestore_forbidden_guard.js",
+      "line": "function isFirestoreForbidden() {\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 9
+    },
+    {
+      "rel": "firestore_forbidden_guard.js",
+      "line": "  if (String(process.env.FIRESTORE_FORBIDDEN || '').trim() === '1') return true;\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 10
+    },
+    {
+      "rel": "firestore_forbidden_guard.js",
+      "line": "function assertFirestoreForbidden(caller) {\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 15
+    },
+    {
+      "rel": "firestore_forbidden_guard.js",
+      "line": "  if (!isFirestoreForbidden()) return;\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 16
+    },
+    {
+      "rel": "firestore_forbidden_guard.js",
+      "line": "  const msg = `FIRESTORE_FORBIDDEN: Firestore access is blocked (${caller || 'unknown'})`;\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 17
+    },
+    {
+      "rel": "firestore_forbidden_guard.js",
+      "line": "  error('runtime_firestore_blocked', { caller: caller || 'unknown', appEnv: process.env.APP_ENV || null });\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 18
+    },
+    {
+      "rel": "firestore_forbidden_guard.js",
+      "line": "  err.code = 'FIRESTORE_FORBIDDEN';\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 20
+    },
+    {
+      "rel": "firestore_forbidden_guard.js",
+      "line": "function createFirestoreForbiddenProxy(caller = 'FirestoreProxy') {\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 24
+    },
+    {
+      "rel": "firestore_forbidden_guard.js",
+      "line": "    assertFirestoreForbidden(`${caller}.${method}`);\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 26
+    },
+    {
+      "rel": "firestore_forbidden_guard.js",
+      "line": "  isFirestoreForbidden,\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 38
+    },
+    {
+      "rel": "firestore_forbidden_guard.js",
+      "line": "  assertFirestoreForbidden,\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 39
+    },
+    {
+      "rel": "firestore_forbidden_guard.js",
+      "line": "  createFirestoreForbiddenProxy,\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 40
+    },
+    {
+      "rel": "index.js",
+      "line": "const { isFirestoreForbidden } = require('./firestore_forbidden_guard');",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 114
+    },
+    {
+      "rel": "index.js",
+      "line": ".collection('ambulances')",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 242
+    },
+    {
+      "rel": "index.js",
+      "line": ".collection('private')",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 244
+    },
+    {
+      "rel": "index.js",
+      "line": "const legacySnap = await db.collection('ambulances').doc(driverId).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 250
+    },
+    {
+      "rel": "index.js",
+      "line": ".collection('ambulances')",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 259
+    },
+    {
+      "rel": "index.js",
+      "line": "db && typeof db.collection === 'function' && !isFirestoreForbidden();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 280
+    },
+    {
+      "rel": "index.js",
+      "line": "if (isCutover || isFirestoreForbidden() || !useLegacyDocumentDb) {",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 281
+    },
+    {
+      "rel": "index.js",
+      "line": ".collection('ambulances')",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 338
+    },
+    {
+      "rel": "index.js",
+      "line": ".collection('private')",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 340
+    },
+    {
+      "rel": "index.js",
+      "line": "if (isFirestoreForbidden()) {",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 1083
+    },
+    {
+      "rel": "index.js",
+      "line": "'submitAmbulanceRating uses Postgres; Firestore path disabled (FIRESTORE_FORBIDDEN).',",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 1086
+    },
+    {
+      "rel": "index.js",
+      "line": "const broadcastRef = db.collection('ambulance_broadcasts').doc(broadcastId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1100
+    },
+    {
+      "rel": "index.js",
+      "line": "const ambRef = db.collection('ambulances').doc(ambulanceId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1101
+    },
+    {
+      "rel": "index.js",
+      "line": ".collection('ambulance_requests')",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1163
+    },
+    {
+      "rel": "index.js",
+      "line": "await runtimeDb.collection('ambulances').doc(verified.driverId).set({",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1203
+    },
+    {
+      "rel": "index.js",
+      "line": "if (isFirestoreForbidden()) {",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 1230
+    },
+    {
+      "rel": "index.js",
+      "line": "'backfillPatientCareTeams is a one-time Firestore migration; disabled under FIRESTORE_FORBIDDEN.',",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 1233
+    },
+    {
+      "rel": "index.js",
+      "line": "let query = db.collection('appointments').orderBy('__name__').limit(200);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1258
+    },
+    {
+      "rel": "index.js",
+      "line": "const patientRef = db.collection('patients').doc(patientId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1280
+    },
+    {
+      "rel": "input_sanitize.js",
+      "line": "* Firestore is not SQL — still reject control chars, script payloads, and",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 5
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "function buildDoctorNewAppointmentNotification(appointment, firestoreDocId) {",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 134
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "dedupeKey: appointmentId ? `d_appt_new_${appointmentId}` : `d_appt_new_${firestoreDocId}`,",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 152
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "sourceId: firestoreDocId,",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 155
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": ": `d_appt_request_${firestoreDocId}`,",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 170
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "sourceId: firestoreDocId,",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 173
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "function buildPatientAppointmentStatusNotification(before, after, firestoreDocId) {",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 180
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "const appointmentId = String(after.appointmentId || firestoreDocId).trim() || firestoreDocId;",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 190
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "sourceId: firestoreDocId,",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 209
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "sourceId: firestoreDocId,",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 225
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "function buildPatientLabBookingStatusNotification(booking, firestoreBookingId) {",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 232
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "const bookingId = String(booking.bookingId || firestoreBookingId).trim() || firestoreBookingId;",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 240
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "sourceId: firestoreBookingId,",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 257
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "sourceId: firestoreBookingId,",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 273
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "function buildPatientLabReportReadyNotification(booking, firestoreBookingId) {",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 280
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "const bookingId = String(booking.bookingId || firestoreBookingId).trim() || firestoreBookingId;",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 286
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "sourceId: firestoreBookingId,",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 299
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "function buildPatientLabOrderNotification(order, firestoreOrderId) {",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 303
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "const orderId = String(order.orderId || firestoreOrderId).trim() || firestoreOrderId;",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 308
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "sourceId: firestoreOrderId,",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 327
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "function buildDoctorReferralReceivedNotification(referral, firestoreDocId) {",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 567
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "const referralId = String(referral.referralId || firestoreDocId || '').trim();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 572
+    },
+    {
+      "rel": "in_app_notifications.js",
+      "line": "sourceId: firestoreDocId,",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 587
+    },
+    {
+      "rel": "legacy_db.js",
+      "line": "const { isFirestoreForbidden, createFirestoreForbiddenProxy } = require('./firestore_forbidden_guard');\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 3
+    },
+    {
+      "rel": "legacy_db.js",
+      "line": " * Legacy Firestore accessor — returns a forbidden proxy in production; null in dev without admin SDK.\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 6
+    },
+    {
+      "rel": "legacy_db.js",
+      "line": "function getLegacyFirestoreDb() {\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 8
+    },
+    {
+      "rel": "legacy_db.js",
+      "line": "  if (isFirestoreForbidden()) {\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 9
+    },
+    {
+      "rel": "legacy_db.js",
+      "line": "    return createFirestoreForbiddenProxy('getLegacyFirestoreDb');\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 10
+    },
+    {
+      "rel": "legacy_db.js",
+      "line": "  getLegacyFirestoreDb,\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 16
+    },
+    {
+      "rel": "promoted_ads.js",
+      "line": "const adRef = db.collection('promotedAds').doc(safeAdId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 456
+    },
+    {
+      "rel": "promoted_ads.js",
+      "line": "const paymentLedgerRef = db.collection('razorpayPayments').doc(safePaymentId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 457
+    },
+    {
+      "rel": "promoted_ads.js",
+      "line": "? db.collection('razorpayWebhookEvents').doc(safeEventId)",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 460
+    },
+    {
+      "rel": "promoted_ads.js",
+      "line": "const adRef = runtimeDb.collection('promotedAds').doc(adId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 943
+    },
+    {
+      "rel": "promoted_ads.js",
+      "line": "const docRef = runtimeDb.collection('razorpayWebhookRejections').doc(docId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1063
+    },
+    {
+      "rel": "promoted_ads.js",
+      "line": "const adRef = db.collection('promotedAds').doc(safeAdId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1204
+    },
+    {
+      "rel": "promoted_ads.js",
+      "line": ".collection('promotedAds')",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1280
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "const ref = db.collection('otp_rate_limits').doc(bucket);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 484
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "const ref = db.collection('otp_rate_limits').doc(bucket);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 550
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "const ref = db.collection('otp_rate_limits').doc(bucket);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 571
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "const snap = await db.collection('users').doc(uid).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 600
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "await db.collection('users').doc(uid).set(",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 607
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": ".collection('otp_verification_sessions')",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 617
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "const roleRef = db.collection(roleConfig.collection).doc(profileId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 744
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "batch.set(db.collection('users').doc(ownerUid), {",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 766
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "const snap = await db.collection('users').doc(normalized).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1394
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "const userSnap = await db.collection('users').where('profileId', '==', profileId).limit(1).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1414
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "db.collection('users').where(field, '==', candidate).limit(1).get().then((snap) => {",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1451
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "db.collection(coll).where(field, '==', candidate).limit(1).get().then((snap) => {",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1481
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "const userSnap = await db.collection('users').where('email', '==', normalized).limit(1).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1533
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "db.collection(coll).where('email', '==', normalized).limit(1).get().then(snap => {",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1541
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "await db.collection('users').doc(search.uid).set({",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 1701
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "const sessionRef = db.collection('otp_verification_sessions').doc(sessionId);",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 2003
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "const firestoreDoc = await readUserProfile(db, uid);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 2266
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "if (firestoreDoc) {",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 2267
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "firestoreDoc.mobileVerified === true || firestoreDoc.emailVerified === true;",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 2269
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "const ts = firestoreDoc.createdAt || firestoreDoc.updatedAt;",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 2271
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "profileId: firestoreDoc.profileId || null,",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 2281
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "role: firestoreDoc.role || null,",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 2282
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "await db.collection('users').doc(uid).delete().catch(() => {});",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 2345
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": ".collection('ambulances')",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 2621
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "await db.collection('ambulances').doc(found.id).set({",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 2671
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": ".collection('ambulances')",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 2752
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": ".collection('private')",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 2754
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "batch.set(db.collection('ambulances').doc(found.id), {",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 2762
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "db.collection('otp_rate_limits').doc(idBucket).get(),",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 2961
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "db.collection('otp_rate_limits').doc(ipBucket).get(),",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 2962
+    },
+    {
+      "rel": "registration_otp.js",
+      "line": "* `authenticated`. The app role stays in `app_role`. Firestore rules read",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 3053
+    },
+    {
+      "rel": "review_public_sync.js",
+      "line": "await db.collection('review_public').doc(reviewId).set(",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 28
+    },
+    {
+      "rel": "review_public_sync.js",
+      "line": "await db.collection('review_public').doc(reviewId).delete().catch(() => {});",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 36
+    },
+    {
+      "rel": "runtime_app_db.js",
+      "line": "  isFirestoreForbidden,\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 4
+    },
+    {
+      "rel": "runtime_app_db.js",
+      "line": "  createFirestoreForbiddenProxy,\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 5
+    },
+    {
+      "rel": "runtime_app_db.js",
+      "line": "} = require('./firestore_forbidden_guard');\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 6
+    },
+    {
+      "rel": "runtime_app_db.js",
+      "line": " * Production / FIRESTORE_FORBIDDEN=1: returns a proxy that throws on .collection() etc. (logged).\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 10
+    },
+    {
+      "rel": "runtime_app_db.js",
+      "line": "function getRuntimeAppDb() {\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 13
+    },
+    {
+      "rel": "runtime_app_db.js",
+      "line": "  if (isFirestoreForbidden()) {\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 14
+    },
+    {
+      "rel": "runtime_app_db.js",
+      "line": "    return createFirestoreForbiddenProxy('getRuntimeAppDb');\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 15
+    },
+    {
+      "rel": "runtime_app_db.js",
+      "line": "  getRuntimeAppDb,\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 21
+    },
+    {
+      "rel": "runtime_app_db.js",
+      "line": "  isFirestoreForbidden,\r",
+      "reachable": "GUARD",
+      "reason": "forbidden guard",
+      "lineNo": 22
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "await db.collection('storage_audit_logs').add({",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 343
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "// Verify lab booking or lab order ownership in Firestore",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 472
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "let bookingDoc = await db.collection('lab_bookings').doc(bookingId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 473
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "const orderDoc = await db.collection('lab_orders').doc(bookingId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 484
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "const bookingDoc = await db.collection('lab_bookings').doc(bookingId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 509
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "const doctorDoc = await db.collection('doctors').doc(caller.profileId || '').get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 756
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "const patientDoc = await db.collection('patients').doc(patientId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 762
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": ".collection('appointments')",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 777
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "const recordDoc = await db.collection('health_records').doc(recordId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 786
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "const bookingDoc = await db.collection('lab_bookings').doc(bookingId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 830
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "const orderDoc = await db.collection('lab_orders').doc(bookingId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 837
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "const rxDoc = await db.collection('prescriptions').doc(prescriptionId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 870
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": ".collection('pharmacy_deliveries')",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 889
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "const orderDoc = await db.collection('orders').doc(prescriptionId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 896
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "const bookingDoc = await db.collection('lab_bookings').doc(bookingId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 949
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "const orderDoc = await db.collection('lab_orders').doc(bookingId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 953
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "* DB update sets the same columns (Supabase .update / Firestore merge). No row delete or key rotation.",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 1296
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "// Flag is OFF -> Firestore path",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 1460
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "await ctx.db.collection('health_records').doc(recordId).set({",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 1462
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "await ctx.db.collection('lab_bookings').doc(recordId).set({",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 1471
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "await ctx.db.collection('patients').doc(caller.profileId || recordId).set({",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 1480
+    },
+    {
+      "rel": "s3_storage.js",
+      "line": "await ctx.db.collection('doctors').doc(caller.profileId || recordId).set({",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 1487
+    },
+    {
+      "rel": "scripts/audit-kyc-owneruid.js",
+      "line": "* Audits Firestore role docs used by KYC storage paths for ownership fields.",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 2
+    },
+    {
+      "rel": "scripts/audit-kyc-owneruid.js",
+      "line": "const { getFirestore } = require('firebase-admin/firestore');",
+      "reachable": "IMPORT",
+      "reason": "admin firestore import",
+      "lineNo": 12
+    },
+    {
+      "rel": "scripts/audit-kyc-owneruid.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 21
+    },
+    {
+      "rel": "scripts/audit-kyc-owneruid.js",
+      "line": "const snap = await db.collection(config.collection).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 66
+    },
+    {
+      "rel": "scripts/audit-kyc-owneruid.js",
+      "line": "const userSnap = await db.collection('users').doc(row.ownerValue).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 75
+    },
+    {
+      "rel": "scripts/backfill-review-public.js",
+      "line": "const { getFirestore } = require('firebase-admin/firestore');",
+      "reachable": "IMPORT",
+      "reason": "admin firestore import",
+      "lineNo": 10
+    },
+    {
+      "rel": "scripts/backfill-review-public.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 21
+    },
+    {
+      "rel": "scripts/backfill-review-public.js",
+      "line": "const snap = await db.collection('reviews').get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 24
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "* Safely provisions or promotes a Super Admin account in Firebase Auth and Firestore.",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 9
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "* 1. Default mode is DRY-RUN. Zero writes to Auth or Firestore without --execute.",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 13
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "* 5. Atomic: Firestore writes committed in a single batch.",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 17
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "const { getFirestore, FieldValue } = require('firebase-admin/firestore');",
+      "reachable": "IMPORT",
+      "reason": "admin firestore import",
+      "lineNo": 31
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 169
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "console.log('Checking current state in Firebase Auth and Firestore...');",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 171
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "// 5. DISCOVERY: Firestore users Collection Lookup",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 215
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "const docSnap = await db.collection('users').doc(targetUid).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 222
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "console.log(`[Found] Existing Firestore doc at users/${targetUid} (role=\"${existingUserDoc.role}\")`);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 226
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "const queries = candidates.map(c => db.collection('users').where('mobile', '==', c).limit(1).get());",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 233
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "console.log(`[Found] Existing Firestore doc via mobile query at users/${snap.docs[0].id} (role=\"${existingUserDoc.role}\")`);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 243
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "console.log('PROPOSED FIRESTORE MUTATIONS:');",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 307
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "// Step B: Write Firestore documents atomically",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 362
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "const userRef = db.collection('users').doc(realUid);",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 364
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "const companionRef = db.collection('super_admins').doc(profileId);",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 389
+    },
+    {
+      "rel": "scripts/create_super_admin.js",
+      "line": "console.log(`[Success] Atomic Firestore batch committed successfully.`);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 406
+    },
+    {
+      "rel": "scripts/diagnose-doctor-appointments-sync.js",
+      "line": "* Runs the SAME Firestore query as AppointmentRepository._doctorAppointmentsQuery",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 4
+    },
+    {
+      "rel": "scripts/diagnose-doctor-appointments-sync.js",
+      "line": "const { getFirestore, Timestamp } = require('firebase-admin/firestore');",
+      "reachable": "IMPORT",
+      "reason": "admin firestore import",
+      "lineNo": 17
+    },
+    {
+      "rel": "scripts/diagnose-doctor-appointments-sync.js",
+      "line": "const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 74
+    },
+    {
+      "rel": "scripts/diagnose-doctor-appointments-sync.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 89
+    },
+    {
+      "rel": "scripts/diagnose-doctor-appointments-sync.js",
+      "line": "const snap = await db.collection('appointments').orderBy('dateTime', 'desc').limit(3).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 90
+    },
+    {
+      "rel": "scripts/diagnose-doctor-appointments-sync.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 104
+    },
+    {
+      "rel": "scripts/diagnose-doctor-appointments-sync.js",
+      "line": "const snap = await db.collection('appointments')",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 108
+    },
+    {
+      "rel": "scripts/diagnose-doctor-appointments-sync.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 144
+    },
+    {
+      "rel": "scripts/diagnose-doctor-appointments-sync.js",
+      "line": "const userDoc = await db.collection('users').doc(auth.uid).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 145
+    },
+    {
+      "rel": "scripts/diagnose-lab-inapp-recipient.js",
+      "line": "const { getFirestore } = require('firebase-admin/firestore');",
+      "reachable": "IMPORT",
+      "reason": "admin firestore import",
+      "lineNo": 13
+    },
+    {
+      "rel": "scripts/diagnose-lab-inapp-recipient.js",
+      "line": "const snap = await db.collection('patients').where('ownerUid', '==', ownerUid).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 22
+    },
+    {
+      "rel": "scripts/diagnose-lab-inapp-recipient.js",
+      "line": "const snap = await db.collection('users').doc(uid).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 32
+    },
+    {
+      "rel": "scripts/diagnose-lab-inapp-recipient.js",
+      "line": ".collection('in_app_notifications')",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 45
+    },
+    {
+      "rel": "scripts/diagnose-lab-inapp-recipient.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 59
+    },
+    {
+      "rel": "scripts/diagnose-lab-inapp-recipient.js",
+      "line": "const bookingSnap = await db.collection('lab_bookings').doc(bookingId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 79
+    },
+    {
+      "rel": "scripts/diagnose-lab-inapp-recipient.js",
+      "line": "const patientSnap = await db.collection('patients').doc(data.patientId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 92
+    },
+    {
+      "rel": "scripts/diagnose-lab-inapp-recipient.js",
+      "line": "const notifSnap = await db.collection('in_app_notifications').doc(notifDocId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 103
+    },
+    {
+      "rel": "scripts/diagnose-lab-inapp-recipient.js",
+      "line": "const pSnap = await db.collection('patients').doc(n.recipientProfileId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 123
+    },
+    {
+      "rel": "scripts/diagnose-lab-inapp-recipient.js",
+      "line": "const bSnap = await db.collection('lab_bookings').doc(n.sourceId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 128
+    },
+    {
+      "rel": "scripts/fix-kyc-ownership.js",
+      "line": "const { getFirestore, FieldValue } = require('firebase-admin/firestore');",
+      "reachable": "IMPORT",
+      "reason": "admin firestore import",
+      "lineNo": 16
+    },
+    {
+      "rel": "scripts/fix-kyc-ownership.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 26
+    },
+    {
+      "rel": "scripts/fix-kyc-ownership.js",
+      "line": "const snap = await db.collection(config.collection).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 99
+    },
+    {
+      "rel": "scripts/fix-kyc-ownership.js",
+      "line": "const userSnap = await db.collection('users').doc(ownerUid).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 119
+    },
+    {
+      "rel": "scripts/fix-kyc-ownership.js",
+      "line": "await db.collection('users').doc(action.ownerUid).set(action.payload, { merge: true });",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 190
+    },
+    {
+      "rel": "scripts/inspect-kyc-ownership-issues.js",
+      "line": "const { getFirestore } = require('firebase-admin/firestore');",
+      "reachable": "IMPORT",
+      "reason": "admin firestore import",
+      "lineNo": 9
+    },
+    {
+      "rel": "scripts/inspect-kyc-ownership-issues.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 18
+    },
+    {
+      "rel": "scripts/inspect-kyc-ownership-issues.js",
+      "line": "const snap = await db.collection('users').where('profileId', '==', profileId).limit(5).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 28
+    },
+    {
+      "rel": "scripts/inspect-kyc-ownership-issues.js",
+      "line": "const snap = await db.collection(collection).doc(id).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 33
+    },
+    {
+      "rel": "scripts/inspect-kyc-ownership-issues.js",
+      "line": "const userSnap = await db.collection('users').doc(ownerValue).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 53
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "* 1. Deep discovery across all Firestore collections, Auth, and Storage.",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 8
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "const { Firestore } = require('@google-cloud/firestore');",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 22
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "const db = new Firestore({ projectId: PROJECT_ID, authClient });",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 100
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "const userSnaps = await db.collection('users').get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 141
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "const snap = await db.collection(coll).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 181
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "const snap = await db.collection(coll).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 231
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "const docRef = db.collection(parentColl).doc(pid);",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 273
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "const patientSnap = await db.collection('patients').get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 328
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "console.log(`TOTALS: ${matchedAuthUsers.length} Auth users, ${totalDocs} Firestore documents, ${matchedStorage.length} Storage files.`);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 388
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "await db.collection(coll).doc(item.id).delete();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 424
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "console.log(`[DELETED FIRESTORE] ${coll}/${item.id}`);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 425
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "console.error(`[FIRESTORE ERROR] ${coll}/${item.id}:`, e.message);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 427
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "await db.collection(coll).doc(item.id).delete();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 436
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "console.log(`[DELETED FIRESTORE] ${coll}/${item.id}`);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 437
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "console.error(`[FIRESTORE ERROR] ${coll}/${item.id}:`, e.message);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 439
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "await db.collection('users').doc(user.id).delete();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 447
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "console.log(`[DELETED FIRESTORE] users/${user.id}`);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 448
+    },
+    {
+      "rel": "scripts/purge-user-by-phone.js",
+      "line": "console.error(`[FIRESTORE ERROR] users/${user.id}:`, e.message);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 450
+    },
+    {
+      "rel": "scripts/reset-ambulance-auth-uids.js",
+      "line": "const { getFirestore } = require('firebase-admin/firestore');",
+      "reachable": "IMPORT",
+      "reason": "admin firestore import",
+      "lineNo": 13
+    },
+    {
+      "rel": "scripts/reset-ambulance-auth-uids.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 19
+    },
+    {
+      "rel": "scripts/reset-ambulance-auth-uids.js",
+      "line": "const snapshot = await db.collection('ambulances').get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 20
+    },
+    {
+      "rel": "scripts/review_promoted_ad.js",
+      "line": "const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');",
+      "reachable": "IMPORT",
+      "reason": "admin firestore import",
+      "lineNo": 15
+    },
+    {
+      "rel": "scripts/review_promoted_ad.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 43
+    },
+    {
+      "rel": "scripts/review_promoted_ad.js",
+      "line": "const adRef = db.collection('promotedAds').doc(adId);",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 44
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "const { getFirestore, FieldValue } = require('firebase-admin/firestore');",
+      "reachable": "IMPORT",
+      "reason": "admin firestore import",
+      "lineNo": 21
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 80
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "await db.collection('ambulances').doc(TEST.driverDocId).set({",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 85
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "await db.collection('ambulances').doc(TEST.driverDocId)",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 101
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": ".collection('private').doc('settings').set({ pin: pinHash });",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 102
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "await db.collection('ambulance_broadcasts').doc(TEST.broadcastId).set({",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 104
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "await db.collection('ambulance_requests').doc(TEST.requestId).set({",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 116
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 133
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "const snap = await db.collection('ambulances').doc(TEST.driverDocId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 147
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "console.log('Firestore authUid now:', snap.data()?.authUid);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 148
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "await db.collection('users').doc(uid).set({",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 153
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 163
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "const ambSnap = await db.collection('ambulances').doc(TEST.driverDocId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 180
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "const broadcastSnap = await db.collection('ambulance_broadcasts').doc(TEST.broadcastId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 181
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "const requestSnap = await db.collection('ambulance_requests').doc(TEST.requestId).get();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 182
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 213
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "await db.recursiveDelete(db.collection('ambulances').doc(TEST.driverDocId));",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 216
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "await db.collection('ambulance_broadcasts').doc(TEST.broadcastId).delete();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 217
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "await db.collection('ambulance_requests').doc(TEST.requestId).delete();",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 218
+    },
+    {
+      "rel": "scripts/smoke-test-ambulance-callables.js",
+      "line": "const usersSnap = await db.collection('users')",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 220
+    },
+    {
+      "rel": "security_logger.js",
+      "line": "* Structured security logging for Cloud Logging + optional Firestore audit trail.",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 7
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "const { getFirestore, FieldValue } = require('firebase-admin/firestore');",
+      "reachable": "IMPORT",
+      "reason": "admin firestore import",
+      "lineNo": 14
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "const db = getFirestore();",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 33
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "const docRef = db.collection('app_config').doc('demo_accounts');",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 36
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "console.log(`Writing demo_accounts to ${projectId} Firestore...`);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 53
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "const userSnapshot = await db.collection('users').where('mobile', 'in', [doctorPhone, `+91${doctorPhone}`]).limit(1).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 65
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "console.log(`Seeding fully verified demo doctor (${doctorPhone}) to Firestore...`);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 124
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "await db.collection('doctors').doc(doctorId).set(doctorProfile, { merge: true });",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 125
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "await db.collection('users').doc(doctorUid).set(userProfile, { merge: true });",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 126
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "const pharmacyUserSnapshot = await db.collection('users').where('mobile', 'in', [pharmacyPhone, `+91${pharmacyPhone}`]).limit(1).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 136
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "console.log(`Seeding fully verified demo pharmacy (${pharmacyPhone}) to Firestore...`);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 172
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "await db.collection('medical_stores').doc(pharmacyProfileId).set(pharmacyStoreData, { merge: true });",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 173
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "await db.collection('users').doc(pharmacyUid).set(pharmacyUserData, { merge: true });",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 174
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "const labUserSnapshot = await db.collection('users').where('mobile', 'in', [labPhone, `+91${labPhone}`]).limit(1).get();",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 184
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "console.log(`Seeding fully verified demo lab (${labPhone}) to Firestore...`);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 220
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "await db.collection('labs').doc(labProfileId).set(labData, { merge: true });",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 221
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "await db.collection('users').doc(labUid).set(labUserData, { merge: true });",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 222
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "console.log(`Seeding fully verified demo ambulance (${ambulancePhone}) to Firestore...`);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 263
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "await db.collection('ambulances').doc(ambulanceProfileId).set(ambulanceData, { merge: true });",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 264
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "await db.collection('users').doc(ambulanceAuthUid).set(ambulanceUserData, { merge: true });",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 265
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "await db.collection('users').doc(ambulanceProfileId).set(ambulanceUserData, { merge: true });",
+      "reachable": "LIVE_IF_FLAG_OFF",
+      "reason": "export/handler may run if forbidden flag off",
+      "lineNo": 266
+    },
+    {
+      "rel": "seed_demo_accounts.js",
+      "line": "console.error('Error writing to Firestore:', error);",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 269
+    },
+    {
+      "rel": "supabase_database_webhook.js",
+      "line": "const ref = db.collection('_webhook_processed_events').doc(dedupeKey);",
+      "reachable": "DEAD_OR_LEGACY",
+      "reason": "non-export helper",
+      "lineNo": 35
+    },
+    {
+      "rel": "sync_flags.js",
+      "line": "* Tests may set __TEST_FORCE_LEGACY_DOCTOR_PATIENT=1 to exercise Firestore-only paths.",
+      "reachable": "COMMENT_OR_STRING",
+      "reason": "grep hit",
+      "lineNo": 43
+    }
+  ]
+}

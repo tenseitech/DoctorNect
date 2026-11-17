@@ -1,0 +1,17 @@
+Production AAB attempt (2026-11-15) — FAIL at client preflight
+===========================================================
+
+Command:
+  cd frontend
+  flutter clean
+  .\scripts\release_build.ps1 -SkipIncrement   # NO -AllowStaging
+
+Failure:
+  DOCTORNECT PRODUCTION PRE-FLIGHT VALIDATION [CLIENT-ONLY]
+  Build stopped during verify_production_build_config (SUPABASE_URL / gateway rules).
+
+Root cause:
+  Shell APP_ENV=staging (from .env); production release requires APP_ENV=production,
+  SUPABASE_URL must point at PROD_GATEWAY_URL (not *.supabase.co) without -AllowStaging.
+
+See scripts/smoke/MANUAL_STEPS.md — Production Play track block.

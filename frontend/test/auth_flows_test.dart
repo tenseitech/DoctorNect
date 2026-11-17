@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:medibond/core/firebase/repositories/user_repository.dart';
@@ -282,15 +281,11 @@ void main() {
   });
 
   group('Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks)', () {
-    late FakeFirebaseFirestore fakeDb;
     late MockUser mockUser;
     late MockFirebaseAuth mockAuth;
     late MockSupabaseUserRepository mockSupabaseRepo;
 
     setUp(() {
-      fakeDb = FakeFirebaseFirestore();
-      UserRepository.debugFirestore = fakeDb;
-
       mockUser = MockUser();
       mockAuth = MockFirebaseAuth();
       mockSupabaseRepo = MockSupabaseUserRepository();
@@ -300,7 +295,6 @@ void main() {
     });
 
     tearDown(() {
-      UserRepository.debugFirestore = null;
       UserRepository.debugSupabaseUserRepository = null;
       FirebaseAuthService.debugAuth = null;
       DoctorPatientCutoverFlag.debugOverride = null;

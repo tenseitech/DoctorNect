@@ -14,7 +14,7 @@ abstract final class FirestoreQueryLimits {
   // ─── Scale revisit thresholds (audit H8, Jul 2026) ─────────────────────────
   // Revisit pagination / query design when production counts approach these:
   //
-  // • Ambulance booking (`FirestoreService.instance.ambulance.fetchAllOnlineDrivers`):
+  // • Ambulance booking (`AppDataService.instance.ambulance.fetchAllOnlineDrivers`):
   //   replace full-collection fetch with indexed `isAvailable` + city filter
   //   at ~50+ registered drivers. Also pass preferCache: false on booking path
   //   if drivers report stale availability.

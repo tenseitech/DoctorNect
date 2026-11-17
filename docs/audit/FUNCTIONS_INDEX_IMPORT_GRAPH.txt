@@ -1,0 +1,220 @@
+DoctorNect Cloud Functions import graph (static require from index.js)
+Generated: 2026-11-15T15:39:18.148Z
+Entry: backend/functions/index.js
+Reachable module files: 39
+
+=== REACHABILITY VERDICT ===
+src/db/pg_pool.js in graph: NO
+getPgPool() callers in graph: none
+cross_role_sync.js in graph: NO
+
+=== SYNC / DLQ (not exported) ===
+cross_role_sync.js is NOT imported from index.js. Firestore→Postgres bridge and DLQ SQL are offline when ENABLE_SUPABASE_SYNC=0 (cutover default).
+Live prod data path: client + callables → Auth Gateway (getDatabaseClient); Postgres triggers/RPC for writes; no deployed cross_role_sync listener.
+
+=== MODULE LIST ===
+  abuse_rate_limit.js
+  admin_console_read_api.js
+  admin_console_read_security.js
+  admin_platform_actions.js
+  appointment_slots.js
+  banner_cache_invalidation.js
+  caller_identity.js
+  delete_my_account.js
+  fcm_push.js
+  firestore_forbidden_guard.js
+  http_endpoint_security.js
+  index.js
+  input_sanitize.js
+  legacy_db.js
+  mail_dispatcher.js
+  msg91_email.js
+  notification_dispatch.js
+  notification_outbox_worker.js
+  production_otp_guard.js
+  promoted_ads.js
+  public_error_messages.js
+  redis.js
+  registration_otp.js
+  s3_storage.js
+  secure_config.js
+  security_logger.js
+  src/config/app_resources.js
+  src/config/redis.js
+  src/config/redis_keys.js
+  src/config/s3_bucket.js
+  src/db/assert_app_env.js
+  src/db/client.js
+  src/db/production_pg_pool_boot.js
+  supabase_database_webhook.js
+  supabase_keepalive.js
+  sync_flags.js
+  system_admin_auth_guard.js
+  user_id_bridge.js
+  validation_rules.js
+
+=== EDGES (sample) ===
+  index.js -> caller_identity.js
+  index.js -> firestore_forbidden_guard.js
+  index.js -> fcm_push.js
+  index.js -> supabase_database_webhook.js
+  index.js -> sync_flags.js
+  index.js -> validation_rules.js
+  index.js -> registration_otp.js
+  index.js -> promoted_ads.js
+  index.js -> appointment_slots.js
+  index.js -> input_sanitize.js
+  index.js -> security_logger.js
+  index.js -> secure_config.js
+  index.js -> production_otp_guard.js
+  index.js -> src/db/assert_app_env.js
+  index.js -> abuse_rate_limit.js
+  index.js -> http_endpoint_security.js
+  index.js -> public_error_messages.js
+  index.js -> delete_my_account.js
+  index.js -> s3_storage.js
+  index.js -> src/db/assert_app_env.js
+  index.js -> redis.js
+  index.js -> legacy_db.js
+  index.js -> sync_flags.js
+  index.js -> caller_identity.js
+  index.js -> sync_flags.js
+  index.js -> caller_identity.js
+  index.js -> msg91_email.js
+  index.js -> mail_dispatcher.js
+  index.js -> src/db/client.js
+  index.js -> admin_platform_actions.js
+  index.js -> admin_console_read_api.js
+  index.js -> notification_outbox_worker.js
+  index.js -> supabase_keepalive.js
+  index.js -> redis.js
+  caller_identity.js -> sync_flags.js
+  caller_identity.js -> src/db/client.js
+  caller_identity.js -> legacy_db.js
+  fcm_push.js -> firestore_forbidden_guard.js
+  fcm_push.js -> sync_flags.js
+  fcm_push.js -> caller_identity.js
+  supabase_database_webhook.js -> fcm_push.js
+  supabase_database_webhook.js -> src/config/redis_keys.js
+  supabase_database_webhook.js -> notification_dispatch.js
+  supabase_database_webhook.js -> redis.js
+  supabase_database_webhook.js -> src/db/client.js
+  registration_otp.js -> firestore_forbidden_guard.js
+  registration_otp.js -> sync_flags.js
+  registration_otp.js -> msg91_email.js
+  registration_otp.js -> secure_config.js
+  registration_otp.js -> production_otp_guard.js
+  registration_otp.js -> public_error_messages.js
+  registration_otp.js -> security_logger.js
+  registration_otp.js -> src/config/redis_keys.js
+  registration_otp.js -> redis.js
+  registration_otp.js -> redis.js
+  registration_otp.js -> abuse_rate_limit.js
+  registration_otp.js -> redis.js
+  registration_otp.js -> abuse_rate_limit.js
+  registration_otp.js -> caller_identity.js
+  registration_otp.js -> src/db/client.js
+  registration_otp.js -> src/db/client.js
+  registration_otp.js -> redis.js
+  registration_otp.js -> redis.js
+  registration_otp.js -> firestore_forbidden_guard.js
+  registration_otp.js -> redis.js
+  registration_otp.js -> redis.js
+  registration_otp.js -> redis.js
+  registration_otp.js -> src/db/client.js
+  registration_otp.js -> src/db/client.js
+  registration_otp.js -> firestore_forbidden_guard.js
+  promoted_ads.js -> caller_identity.js
+  promoted_ads.js -> firestore_forbidden_guard.js
+  promoted_ads.js -> sync_flags.js
+  promoted_ads.js -> src/db/client.js
+  promoted_ads.js -> abuse_rate_limit.js
+  promoted_ads.js -> secure_config.js
+  promoted_ads.js -> input_sanitize.js
+  promoted_ads.js -> legacy_db.js
+  promoted_ads.js -> legacy_db.js
+  promoted_ads.js -> legacy_db.js
+  promoted_ads.js -> legacy_db.js
+  promoted_ads.js -> legacy_db.js
+  promoted_ads.js -> firestore_forbidden_guard.js
+  promoted_ads.js -> legacy_db.js
+  promoted_ads.js -> sync_flags.js
+  promoted_ads.js -> caller_identity.js
+  promoted_ads.js -> legacy_db.js
+  promoted_ads.js -> legacy_db.js
+  promoted_ads.js -> legacy_db.js
+  appointment_slots.js -> abuse_rate_limit.js
+  appointment_slots.js -> caller_identity.js
+  appointment_slots.js -> legacy_db.js
+  appointment_slots.js -> sync_flags.js
+  appointment_slots.js -> legacy_db.js
+  appointment_slots.js -> firestore_forbidden_guard.js
+  appointment_slots.js -> legacy_db.js
+  appointment_slots.js -> firestore_forbidden_guard.js
+  appointment_slots.js -> sync_flags.js
+  appointment_slots.js -> legacy_db.js
+  appointment_slots.js -> firestore_forbidden_guard.js
+  appointment_slots.js -> sync_flags.js
+  appointment_slots.js -> legacy_db.js
+  security_logger.js -> firestore_forbidden_guard.js
+  security_logger.js -> sync_flags.js
+  security_logger.js -> caller_identity.js
+  security_logger.js -> legacy_db.js
+  src/db/assert_app_env.js -> src/db/production_pg_pool_boot.js
+  src/db/assert_app_env.js -> src/config/app_resources.js
+  src/db/assert_app_env.js -> src/config/redis.js
+  abuse_rate_limit.js -> firestore_forbidden_guard.js
+  abuse_rate_limit.js -> security_logger.js
+  abuse_rate_limit.js -> sync_flags.js
+  abuse_rate_limit.js -> src/config/redis_keys.js
+  abuse_rate_limit.js -> redis.js
+  delete_my_account.js -> caller_identity.js
+  delete_my_account.js -> firestore_forbidden_guard.js
+  delete_my_account.js -> user_id_bridge.js
+  delete_my_account.js -> secure_config.js
+  delete_my_account.js -> src/config/s3_bucket.js
+  delete_my_account.js -> redis.js
+  delete_my_account.js -> s3_storage.js
+  delete_my_account.js -> s3_storage.js
+  delete_my_account.js -> system_admin_auth_guard.js
+  delete_my_account.js -> sync_flags.js
+  delete_my_account.js -> legacy_db.js
+  s3_storage.js -> firestore_forbidden_guard.js
+  s3_storage.js -> sync_flags.js
+  s3_storage.js -> abuse_rate_limit.js
+  s3_storage.js -> src/config/redis_keys.js
+  s3_storage.js -> src/config/s3_bucket.js
+  s3_storage.js -> src/db/client.js
+  s3_storage.js -> legacy_db.js
+  s3_storage.js -> firestore_forbidden_guard.js
+  s3_storage.js -> caller_identity.js
+  s3_storage.js -> redis.js
+  s3_storage.js -> redis.js
+  s3_storage.js -> redis.js
+  s3_storage.js -> redis.js
+  s3_storage.js -> legacy_db.js
+  s3_storage.js -> legacy_db.js
+  s3_storage.js -> legacy_db.js
+  s3_storage.js -> legacy_db.js
+  s3_storage.js -> legacy_db.js
+  redis.js -> src/config/redis.js
+  legacy_db.js -> firestore_forbidden_guard.js
+  legacy_db.js -> firestore_forbidden_guard.js
+  mail_dispatcher.js -> msg91_email.js
+  admin_platform_actions.js -> caller_identity.js
+  admin_platform_actions.js -> system_admin_auth_guard.js
+  admin_platform_actions.js -> banner_cache_invalidation.js
+  admin_platform_actions.js -> abuse_rate_limit.js
+  admin_platform_actions.js -> src/db/client.js
+  admin_console_read_api.js -> admin_console_read_security.js
+  admin_console_read_api.js -> src/db/client.js
+  notification_outbox_worker.js -> fcm_push.js
+  notification_outbox_worker.js -> src/config/redis_keys.js
+  notification_outbox_worker.js -> notification_dispatch.js
+  notification_outbox_worker.js -> redis.js
+  notification_outbox_worker.js -> src/db/client.js
+  src/config/redis.js -> src/config/app_resources.js
+  src/config/s3_bucket.js -> src/config/app_resources.js
+  banner_cache_invalidation.js -> src/config/redis_keys.js
+  banner_cache_invalidation.js -> redis.js
+  admin_console_read_security.js -> caller_identity.js

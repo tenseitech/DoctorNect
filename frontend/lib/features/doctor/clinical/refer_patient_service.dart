@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 import '../../../core/firebase/models/doctor_referral.dart';
 import '../../../core/notifications/patient_notification_emitter.dart';
 import '../../../core/session/doctor_session.dart';
@@ -44,7 +44,7 @@ abstract final class ReferPatientService {
       createdAt: DateTime.now(),
     );
 
-    await FirestoreService.instance.referral.save(referral);
+    await AppDataService.instance.referral.save(referral);
 
     PatientNotificationEmitter.notifyReferralFromDoctor(
       fromDoctorName: fromDoctorName,

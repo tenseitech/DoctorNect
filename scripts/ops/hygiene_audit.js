@@ -5,7 +5,7 @@
  * 
  * Round 10 Item 7: Hygiene and PII / Secrets Audit
  * Scans all tracked git files for:
- * 1. Staging project ref ('rnltknemwnjrjxthtull')
+ * 1. Forbidden staging project refs (see infra_url_policy.scanTextForInfraFingerprints)
  * 2. Pooler hostnames ('pooler.supabase.com')
  * 3. Phone numbers (e.g. +91XXXXXXXXXX)
  * 
@@ -30,7 +30,7 @@ function runAudit() {
   const files = getTrackedFiles();
   console.log(`Total Tracked Files in Git: ${files.length}\n`);
 
-  const STAGING_REF = 'rnltknemwnjrjxthtull';
+  const { scanTextForInfraFingerprints } = require('../lib/infra_url_policy');
   const POOLER_HOST = 'pooler.supabase.com';
   const PHONE_REGEX = /(\+91[6-9]\d{9}|[6-9]\d{9})/g;
 
@@ -51,9 +51,11 @@ function runAudit() {
       continue;
     }
 
-    if (content.includes(STAGING_REF)) {
-      const occurrences = (content.match(new RegExp(STAGING_REF, 'g')) || []).length;
-      matchesRef.push({ file, occurrences });
+    const refHits = scanTextForInfraFingerprints(content, file).filter(
+      (h) => h.kind === 'supabase_ref',
+    );
+    if (refHits.length) {
+      matchesRef.push({ file, ref: refHits[0].value, occurrences: refHits.length });
     }
 
     if (content.includes(POOLER_HOST)) {
@@ -69,7 +71,7 @@ function runAudit() {
   }
 
   console.log('----------------------------------------------------------------');
-  console.log('1. STAGING PROJECT REF AUDIT (' + STAGING_REF + ')');
+  console.log('1. FORBIDDEN SUPABASE PROJECT REF AUDIT');
   console.log('----------------------------------------------------------------');
   console.log(`Total Tracked Files Matching: ${matchesRef.length}`);
   for (const m of matchesRef) {

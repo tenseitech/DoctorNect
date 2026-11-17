@@ -1,12 +1,12 @@
 # DoctorNect Cloud Functions Redeployment Checklist (CFG-01)
 
 ## Executive Summary
-During architecture audits, 50 legacy Cloud Functions in `baseline_functions.json` were found to have their `SUPABASE_URL` environment variable baked in pointing to the stale staging project reference (`irpkyedfmdsuvapfnrim.supabase.co`) instead of the active production PostgreSQL database (`rnltknemwnjrjxthtull.supabase.co`).
+During architecture audits, 50 legacy Cloud Functions in `baseline_functions.json` were found to have their `SUPABASE_URL` environment variable baked in pointing to the stale staging project reference (`legacy-staging-ref.supabase.co`) instead of the active production PostgreSQL database (`staging-project-ref.supabase.co`).
 
 ### Function Count & Discrepancy Resolution (Empirical Ground Truth)
 Inspection of `baseline_functions.json` (56 total functions deployed in production project `medibond-45fad`):
-- **50 Functions:** Contain `SUPABASE_URL=https://irpkyedfmdsuvapfnrim.supabase.co` (Stale staging ref needing redeployment).
-- **5 Functions:** Contain `SUPABASE_URL=https://rnltknemwnjrjxthtull.supabase.co` (`bookAppointment`, `expirePromotedAds`, `sendUserRegistrationOtp`, `verifyUserRegistrationOtp`, `reconcileAppointmentSlot`).
+- **50 Functions:** Contain `SUPABASE_URL=https://legacy-staging-ref.supabase.co` (Stale staging ref needing redeployment).
+- **5 Functions:** Contain `SUPABASE_URL=https://staging-project-ref.supabase.co` (`bookAppointment`, `expirePromotedAds`, `sendUserRegistrationOtp`, `verifyUserRegistrationOtp`, `reconcileAppointmentSlot`).
 - **1 Function:** Next.js Hosting SSR container (`ssrmedibond45fad`, no Supabase integration).
 - **Resolution of 44 vs 50 Discrepancy:** The earlier figure of 44 was an undercount from preliminary regex filters that missed 6 multi-line configuration blocks. The exact, verified count of functions requiring redeployment is **50**.
 
@@ -20,7 +20,7 @@ Inspection of `baseline_functions.json` (56 total functions deployed in producti
 ---
 
 ## Pre-Deployment Verification Checklist
-1. [ ] Confirm `backend/functions/.env` has `SUPABASE_URL=https://rnltknemwnjrjxthtull.supabase.co`.
+1. [ ] Confirm `backend/functions/.env` has `SUPABASE_URL=https://staging-project-ref.supabase.co`.
 2. [ ] Confirm `backend/functions/.env` has `USE_SUPABASE_DB_DOCTOR_PATIENT=false` (safe default during cutover phase).
 3. [ ] Verify environment parity locally:
    ```bash
@@ -143,7 +143,7 @@ firebase deploy --only \
    ```
 2. [ ] Verify zero occurrences of stale staging reference:
    ```bash
-   node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync('baseline_functions.json', 'utf8')).result; const staging = data.filter(f => JSON.stringify(f).includes('irpkyedfmdsuvapfnrim')); console.log('Stale staging refs remaining:', staging.length);"
+   node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync('baseline_functions.json', 'utf8')).result; const staging = data.filter(f => JSON.stringify(f).includes('legacy-staging-ref')); console.log('Stale staging refs remaining:', staging.length);"
    ```
    *Expected output: `Stale staging refs remaining: 0`.*
 3. [ ] Run pre-flight validator against the updated snapshot:

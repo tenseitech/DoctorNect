@@ -3,7 +3,7 @@
 **Status:** APPROVED FOR STAGING & PRODUCTION RUNTIME  
 **Document Version:** 1.0.0  
 **Updated:** 2026-10-30  
-**Target Environments:** AWS RDS PostgreSQL 15+, Supabase Staging, Local Scratch Replay
+**Target Environments:** AWS RDS PostgreSQL **18.3**, Supabase Staging (**17.11**), Local Scratch Replay (**postgres:18.3**)
 
 ---
 
@@ -52,14 +52,14 @@ DoctorNect uses automated cron schedules for campaign lifecycle management, ephe
 
 ## 3. Production Deployment Option A: AWS RDS `pg_cron` via Terraform
 
-To enable native `pg_cron` on AWS RDS PostgreSQL 15+, the Terraform RDS parameter group must configure the background worker libraries.
+To enable native `pg_cron` on AWS RDS PostgreSQL **18.x**, the Terraform RDS parameter group must configure the background worker libraries (`doctornect_pg18` in `infra/aws/rds.tf`).
 
 ### Terraform Configuration (`infra/terraform/rds.tf`)
 
 ```hcl
-resource "aws_db_parameter_group" "doctornect_pg15" {
-  name   = "doctornect-postgres15-pg-cron"
-  family = "postgres15"
+resource "aws_db_parameter_group" "doctornect_pg18" {
+  name   = "doctornect-postgres18-pg-cron"
+  family = "postgres18"
 
   # 1. Mandatory shared preload libraries (requires RDS reboot)
   parameter {

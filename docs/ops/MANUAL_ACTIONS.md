@@ -11,23 +11,23 @@
 
 ## Active Manual Action Items
 
-### [ ] Item 1: Install Native PostgreSQL 17 Client Tools (`pg_dump`, `pg_restore`, `psql`)
-- **Why:** Supabase staging runs PostgreSQL 17.11. To generate custom format physical dumps (`full.dump`, `schema_public_with_acl.sql`, `schema_public_no_acl.sql`) and verify restores without version/schema errors, native PostgreSQL client binaries (major version >= 17) are required. Docker is unavailable on this machine.
+### [ ] Item 1: Install Native PostgreSQL 18 Client Tools (`pg_dump`, `pg_restore`, `psql`)
+- **Why:** Production RDS runs **PostgreSQL 18.3** (`PROD_PG_MAJOR=18`, `PROD_PG_VERSION=18.3`). Staging Supabase may differ (report-only). Physical dumps/restores against RDS require client binaries with **major version ≥ 18** (prefer **18.3** match). Bastion: `dnf install postgresql18` on Amazon Linux 2023.
 - **Exact Steps (Choose Option A or B):**
   - **Option A (Full Package via winget):**
     Run in an elevated PowerShell terminal or user terminal:
     ```powershell
-    winget install --id PostgreSQL.PostgreSQL.17 --silent --accept-package-agreements --accept-source-agreements
+    winget install --id PostgreSQL.PostgreSQL.18 --silent --accept-package-agreements --accept-source-agreements
     ```
   - **Option B (Command Line Tools Only - Lightweight):**
-    Download the official EDB Windows installer for PostgreSQL 17 from `https://www.enterprisedb.com/downloads/postgres-postgresql-downloads` and during component selection, uncheck PostgreSQL Server, pgAdmin 4, and Stack Builder; select **only "Command Line Tools"**.
-  *(Note: If installed to `C:\Program Files\PostgreSQL\17\bin`, ensure this directory is in your `PATH` or accessible).*
+    Download the official EDB Windows installer for **PostgreSQL 18** from `https://www.enterprisedb.com/downloads/postgres-postgresql-downloads` and during component selection, uncheck PostgreSQL Server, pgAdmin 4, and Stack Builder; select **only "Command Line Tools"**.
+  *(Note: If installed to `C:\Program Files\PostgreSQL\18\bin`, ensure this directory is in your `PATH` or accessible).*
 - **Verification Command:**
   ```powershell
-  & "C:\Program Files\PostgreSQL\17\bin\pg_dump.exe" --version
+  & "C:\Program Files\PostgreSQL\18\bin\pg_dump.exe" --version
   ```
   *(Or if added to PATH: `pg_dump --version`)*  
-  *Expected output:* `pg_dump (PostgreSQL) 17.x` (major version >= 17).
+  *Expected output:* `pg_dump (PostgreSQL) 18.x` (major version **>= 18**).
 - **Unblocks:** Phase 2.1 & 2.2 (`pg_dump` physical backups) and Phase 2 restore verification (which opens the Write Gate for database writes).
 
 ---

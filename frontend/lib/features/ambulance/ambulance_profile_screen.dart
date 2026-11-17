@@ -1,6 +1,4 @@
-import '../../core/firebase/firestore_service.dart';
-import '../../core/firebase/firestore_client.dart';
-import '../../core/config/doctor_patient_cutover_flag.dart';
+import '../../core/firebase/app_data_service.dart';
 import '../../core/notifications/app_toast.dart';
 
 import 'dart:async';
@@ -33,10 +31,10 @@ import 'widgets/ambulance_service_form_fields.dart';
 import '../promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/auth/verification_lifecycle.dart';
-import '../../core/firebase/firestore_paths.dart';
+import '../../core/supabase/supabase_bootstrap.dart';
+import '../../core/supabase/repositories/supabase_user_repository.dart';
 import '../../widgets/verified_badge_icon.dart';
 import '../../core/theme/app_typography.dart';
 
@@ -116,7 +114,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
   Future<void> _loadProfile() async {
     try {
       final cached = AmbulanceStore.instance.findAmbulance(widget.ambulanceId);
-      final fresh = await FirestoreService.instance.ambulance
+      final fresh = await AppDataService.instance.ambulance
           .fetchAmbulanceById(widget.ambulanceId);
       if (!mounted) return;
       _applyAmbulance(fresh ?? cached);
@@ -189,7 +187,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        await FirestoreService.instance.user.deleteAccount(user: user);
+        await AppDataService.instance.user.deleteAccount(user: user);
       }
       if (!context.mounted) return;
       Navigator.of(context).pop();
@@ -358,7 +356,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
       pincode: _pincodeCtrl.text.trim(),
     );
 
-    final ok = await FirestoreService.instance.ambulance.updateAmbulanceProfile(
+    final ok = await AppDataService.instance.ambulance.updateAmbulanceProfile(
       updated,
     );
     if (!mounted) return;
@@ -977,38 +975,26 @@ Future<void> submitAmbulanceVerificationBatch({
   required String uid,
   required String ambulanceId,
 }) async {
-  try {
-    final batch = FirestoreClient.instance.batch();
-    if (uid.isNotEmpty) {
-      final userRef =
-          FirestoreClient.instance.collection(FirestorePaths.users).doc(uid);
-      batch.set(
-        userRef,
-        {
-          'verificationStatus': 'submitted_for_verification',
+  final now = DateTime.now().toUtc().toIso8601String();
+  if (SupabaseBootstrap.isReady) {
+    try {
+      if (uid.isNotEmpty) {
+        await SupabaseBootstrap.client.from('users').update({
+          'verification_status': 'submitted_for_verification',
           'status': 'pending_review',
-          'submittedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-    }
-    if (ambulanceId.isNotEmpty) {
-      final ambRef = FirestoreClient.instance
-          .collection(FirestorePaths.ambulances)
-          .doc(ambulanceId);
-      batch.set(
-        ambRef,
-        {
-          'verificationStatus': 'submitted_for_verification',
+          'submitted_at': now,
+          'updated_at': now,
+        }).or('id.eq.$uid,firebase_uid.eq.$uid');
+      }
+      if (ambulanceId.isNotEmpty) {
+        await SupabaseBootstrap.client.from('ambulances').update({
+          'verification_status': 'submitted_for_verification',
           'status': 'pending_review',
-          'submittedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-    }
-    await batch.commit();
-  } catch (_) {
-    // Graceful fallback for test or offline environments
+          'submitted_at': now,
+          'updated_at': now,
+        }).eq('ambulance_id', ambulanceId);
+      }
+    } catch (_) {}
   }
   RoleVerificationController.instance.setRoleState(
     UserType.ambulance,
@@ -1078,17 +1064,20 @@ class _AmbulanceProfileCompletionCardState
             AmbulanceStore.instance.findAmbulance(widget.ambulance.id) ??
                 widget.ambulance;
 
-        if (uid.isEmpty || DoctorPatientCutoverFlag.isEnabled) {
+        if (uid.isEmpty || !SupabaseBootstrap.isReady) {
           return _buildContent(context, uid, live, {'verified': live.verified});
         }
 
-        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          stream: FirestoreClient.instance
-              .collection(FirestorePaths.users)
-              .doc(uid)
-              .snapshots(),
+        return StreamBuilder(
+          stream: SupabaseUserRepository.instance.watchProfile(uid),
           builder: (context, snapshot) {
-            final userData = snapshot.data?.data();
+            final profile = snapshot.data;
+            final userData = profile == null
+                ? null
+                : {
+                    'verified': profile.verificationStatus == 'verified',
+                    'verificationStatus': profile.verificationStatus,
+                  };
             return _buildContent(context, uid, live, userData);
           },
         );

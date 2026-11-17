@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -95,7 +95,7 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
 
     setState(() => _refreshing = true);
     try {
-      final bookings = await FirestoreService.instance.labBooking.fetchForLab(
+      final bookings = await AppDataService.instance.labBooking.fetchForLab(
         labId,
       );
       LabWorklistStore.instance.mergeBookings(bookings);
@@ -457,7 +457,7 @@ class _PatientBookingCard extends StatelessWidget {
                   if (newStatus != booking.status) {
                     // Update all linked booking docs for grouped bookings
                     for (final id in booking.linkedBookingIds) {
-                      FirestoreService.instance.labBooking.updateBookingStatus(
+                      AppDataService.instance.labBooking.updateBookingStatus(
                         id,
                         newStatus,
                       );

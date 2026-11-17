@@ -1,4 +1,4 @@
-import '../../core/firebase/firestore_service.dart';
+import '../../core/firebase/app_data_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -158,12 +158,12 @@ class _AmbulanceInviteSetupScreenState
     final ambulanceId = _invite!.ambulanceId;
     final username = _usernameCtrl.text.trim().toLowerCase();
     final pin = _pinCtrl.text.trim();
-    await FirestoreService.instance.ambulance.linkDriverAuth(
+    await AppDataService.instance.ambulance.linkDriverAuth(
       ambulanceId,
       username: username,
       pin: pin,
     );
-    await FirestoreService.instance.ambulance.fetchAmbulanceById(ambulanceId);
+    await AppDataService.instance.ambulance.fetchAmbulanceById(ambulanceId);
 
     final fresh = AmbulanceStore.instance.findAmbulance(ambulanceId) ??
         _invite!.toRegisteredAmbulance(username: username, pinHash: '');

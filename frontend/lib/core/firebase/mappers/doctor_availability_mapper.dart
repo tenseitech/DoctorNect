@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../util/map_date_time.dart';
 
 import '../models/doctor_availability.dart';
 
@@ -21,13 +21,13 @@ abstract final class DoctorScheduleAvailabilityMapper {
       'breakStart': schedule.breakStart,
       'breakEnd': schedule.breakEnd,
       'blockedDates': schedule.blockedDates
-          .map((d) => Timestamp.fromDate(DateTime(d.year, d.month, d.day)))
+          .map((d) => DateTime(d.year, d.month, d.day).toUtc().toIso8601String())
           .toList(),
       if (schedule.leaveStart != null)
-        'leaveStart': Timestamp.fromDate(schedule.leaveStart!),
+        'leaveStart': schedule.leaveStart!.toUtc().toIso8601String(),
       if (schedule.leaveEnd != null)
-        'leaveEnd': Timestamp.fromDate(schedule.leaveEnd!),
-      'updatedAt': FieldValue.serverTimestamp(),
+        'leaveEnd': schedule.leaveEnd!.toUtc().toIso8601String(),
+      'updatedAt': DateTime.now().toUtc().toIso8601String(),
     };
   }
 
@@ -36,8 +36,8 @@ abstract final class DoctorScheduleAvailabilityMapper {
     try {
       final blocked = <DateTime>{};
       for (final item in data['blockedDates'] as List<dynamic>? ?? const []) {
-        if (item is Timestamp) {
-          final d = item.toDate();
+        final d = parseMapDateTime(item);
+        if (d != null) {
           blocked.add(DateTime(d.year, d.month, d.day));
         }
       }
@@ -57,8 +57,8 @@ abstract final class DoctorScheduleAvailabilityMapper {
         breakStart: data['breakStart'] as String? ?? '01:00 PM',
         breakEnd: data['breakEnd'] as String? ?? '02:00 PM',
         blockedDates: blocked,
-        leaveStart: (data['leaveStart'] as Timestamp?)?.toDate(),
-        leaveEnd: (data['leaveEnd'] as Timestamp?)?.toDate(),
+        leaveStart: parseMapDateTime(data['leaveStart']),
+        leaveEnd: parseMapDateTime(data['leaveEnd']),
       );
     } catch (_) {
       return null;

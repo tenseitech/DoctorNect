@@ -16,6 +16,8 @@ try {
   }
 }
 
+const { listMigrationsForTarget, migrationRelPathToAbs } = require('../lib/migration_file_list');
+
 async function validateAllMigrations() {
   const migrationsDir = path.resolve(__dirname, '../../db/migrations');
   if (!fs.existsSync(migrationsDir)) {
@@ -23,21 +25,18 @@ async function validateAllMigrations() {
     process.exit(1);
   }
 
-  const files = fs
-    .readdirSync(migrationsDir)
-    .filter((f) => f.endsWith('.sql'))
-    .sort();
+  const files = listMigrationsForTarget('production');
 
   console.log(`\n======================================================`);
   console.log(`DoctorNect Migration SQL Validator (libpg-query AST parser)`);
-  console.log(`Scanning ${files.length} migration files in db/migrations/`);
+  console.log(`Scanning ${files.length} migration files in db/migrations/ (+ rds/ on prod path)`);
   console.log(`======================================================\n`);
 
   let failures = 0;
   let totalStatements = 0;
 
   for (const file of files) {
-    const fullPath = path.join(migrationsDir, file);
+    const fullPath = migrationRelPathToAbs(file);
     const sqlContent = fs.readFileSync(fullPath, 'utf8');
 
     try {

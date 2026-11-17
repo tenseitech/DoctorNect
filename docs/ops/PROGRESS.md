@@ -8,7 +8,7 @@
 ---
 
 ## Architecture Decisions (Locked)
-1. **Current Supabase (`rnltknemwnjrjxthtull`) -> STAGING:** Holds test data only.
+1. **Current Supabase (`staging-project-ref`) -> STAGING:** Holds test data only.
 2. **New Amazon RDS PostgreSQL -> PRODUCTION:** Plain PostgreSQL. Tables, roles, `auth` shim, RLS must be provisioned via code.
 3. **Production Access Layer = Option A:** PostgREST on AWS in front of RDS + Node auth gateway (Firebase token verification) + adaptive polling replacement for Realtime.
 4. **Unchanged:** Firebase Auth, Redis for ephemeral rate limits/locations, AWS S3 for documents.
@@ -57,12 +57,12 @@
 
 ### Gate Deviations
 - **Write Gate Opened on Verified Logical Backup**:
-  - **Deviation Rationale**: Native physical `pg_dump` 17 client binary is unavailable on the Windows host. Staging Supabase (`rnltknemwnjrjxthtull`) holds only 8 mock test fixture rows across 4 tables (`doctor_directory_updates`: 1, `doctors`: 2, `medical_stores`: 2, `system_config`: 3) and 0 rows across the remaining 66 tables.
+  - **Deviation Rationale**: Native physical `pg_dump` 17 client binary is unavailable on the Windows host. Staging Supabase (`staging-project-ref`) holds only 8 mock test fixture rows across 4 tables (`doctor_directory_updates`: 1, `doctors`: 2, `medical_stores`: 2, `system_config`: 3) and 0 rows across the remaining 66 tables.
   - **Empirical Parity Proof**: Executed `scripts/db/staging_logical_backup.js`. All 70 tables in `public` and `private` schemas dumped to NDJSON under `backups/staging_logical_2026-10-29T07-41-24-509Z/data/`, along with sequences, function definitions, RLS policies, triggers, and SHA-256 checksums. Compared row counts with `docs/ops/source_facts_preflight.json`: 100% exact match (8 rows live vs 8 rows preflight, 0 mismatches).
   - **Gate Decision**: The Write Gate is formally OPENED for staging database schema migration application.
 - **RLS Harness Execution on Staging Before Backup Verification**: `scripts/db/rls_sql_harness.js --target=staging` was executed prior to verifying the physical `pg_dump` backup. Even though executed inside rolled-back transactions (`ROLLBACK`), temporary row seeding counts as database interaction.
 - **Empirical Proof of Zero Residue**:
-  - Ran `scripts/db/verify_zero_residue.js` against staging database (`rnltknemwnjrjxthtull`).
+  - Ran `scripts/db/verify_zero_residue.js` against staging database (`staging-project-ref`).
   - Row counts across all 68 public tables compared against `docs/ops/source_facts_preflight.json`: **100% exact match** (4 populated tables: `doctor_directory_updates`: 1, `doctors`: 2, `medical_stores`: 2, `system_config`: 3; all other 64 tables: 0 rows).
   - Search across text columns for harness test identifiers (`test_*`, `harness_*`, `smoke_*`, `live_rls_*`): **0 rows found (Zero Residue)**.
   - Sequence check: `prescription_medicines_id_seq` advanced to 2 (acceptable consequence of transaction seeding). Full proof saved to `docs/ops/zero_residue_audit.json`.

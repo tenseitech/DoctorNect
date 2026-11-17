@@ -1,9 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../../data/data_page.dart';
 import '../../supabase/repositories/supabase_medical_directory_repository.dart';
 import '../firestore_query_limits.dart';
 import '../models/doctor_medical_directory_entry.dart';
-import '../models/firestore_page.dart';
 
 class MedicalDirectoryRepository {
   MedicalDirectoryRepository._();
@@ -23,9 +21,9 @@ class MedicalDirectoryRepository {
     return SupabaseMedicalDirectoryRepository.instance.delete(entryId);
   }
 
-  Future<FirestorePage<DoctorMedicalDirectoryEntry>> fetchForDoctor(
+  Future<DataPage<DoctorMedicalDirectoryEntry>> fetchForDoctor(
     String doctorId, {
-    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    String? startAfterCursor,
     int limit = FirestoreQueryLimits.medicalDirectoryPage,
     bool preferCache = true,
   }) async {

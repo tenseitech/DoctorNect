@@ -20,11 +20,9 @@ test('env_loader: reads only process.env and documented .env files', () => {
   assert.ok(!loaderSource.includes('pgpass'), 'Must not reference pgpass');
   assert.ok(!loaderSource.includes('pg_hba'), 'Must not reference pg_hba');
 
-  // 3. Documented .env files only
-  const allowedFiles = ['.env', '.env.migration', 'backend/functions/.env'];
-  for (const f of allowedFiles) {
-    assert.ok(loaderSource.includes(f), `env_loader should explicitly load documented file: ${f}`);
-  }
+  // 3. Single root .env only (via bootstrap_root_env)
+  assert.ok(loaderSource.includes('bootstrap_root_env'), 'env_loader must load repo root .env only');
+  assert.ok(!loaderSource.includes('.env.migration'), 'env_loader must not reference .env.migration');
 
   // 4. maskConnectionString properly redacts credentials
   const rawUrl = 'postgresql://myuser:secretpassword123@myhost.rds.amazonaws.com:5432/mydb';

@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../util/map_date_time.dart';
 
 enum PromotedAdProviderType { doctor, lab, pharmacy, ambulance }
 
@@ -30,22 +30,21 @@ class PromotedAdModel {
   });
 
   final String adId;
-  final String providerType; // 'doctor', 'lab', 'pharmacy', 'ambulance'
+  final String providerType;
   final String providerId;
   final String title;
   final String description;
   final String imageUrl;
   final String? imageKey;
-  final String? imageStorage; // 's3' or 'firebase'
+  final String? imageStorage;
   final String ctaLabel;
   final int durationHours;
   final num amountPaid;
   final String? targetCity;
   final String? razorpayOrderId;
   final String? razorpayPaymentId;
-  final String paymentStatus; // 'pending', 'verified', 'failed'
-  final String
-      status; // 'draft', 'pending_payment', 'pending_approval', 'active', 'expired', 'rejected'
+  final String paymentStatus;
+  final String status;
   final DateTime? startTime;
   final DateTime? endTime;
   final DateTime? createdAt;
@@ -84,50 +83,48 @@ class PromotedAdModel {
   }
 
   factory PromotedAdModel.fromRow(Map<String, dynamic> row) {
-    DateTime? parseDate(dynamic val) {
-      if (val is DateTime) return val;
-      if (val is String) return DateTime.tryParse(val);
-      return null;
-    }
-
     return PromotedAdModel(
       adId: (row['ad_id'] ?? row['adId'] ?? '').toString(),
-      providerType:
-          ((row['provider_type'] ?? row['providerType']) as String?)?.toLowerCase() ?? 'doctor',
+      providerType: ((row['provider_type'] ?? row['providerType']) as String?)
+              ?.toLowerCase() ??
+          'doctor',
       providerId: (row['provider_id'] ?? row['providerId'] ?? '').toString(),
       title: (row['title'] ?? '').toString(),
       description: (row['description'] ?? '').toString(),
       imageUrl: (row['image_url'] ?? row['imageUrl'] ?? '').toString(),
-      imageKey: (row['image_s3_key'] ?? row['image_key'] ?? row['imageKey']) as String?,
-      imageStorage: (row['image_storage_provider'] ?? row['image_storage'] ?? row['imageStorage'] ?? 's3') as String?,
-      ctaLabel: (row['cta_label'] ?? row['ctaLabel'] ?? 'View Details').toString(),
-      durationHours: ((row['duration_hours'] ?? row['durationHours']) as num?)?.toInt() ?? 24,
+      imageKey:
+          (row['image_s3_key'] ?? row['image_key'] ?? row['imageKey']) as String?,
+      imageStorage: (row['image_storage_provider'] ??
+              row['image_storage'] ??
+              row['imageStorage'] ??
+              's3')
+          as String?,
+      ctaLabel:
+          (row['cta_label'] ?? row['ctaLabel'] ?? 'View Details').toString(),
+      durationHours:
+          ((row['duration_hours'] ?? row['durationHours']) as num?)?.toInt() ??
+              24,
       amountPaid: ((row['amount_paid'] ?? row['amountPaid']) as num?) ?? 300,
       targetCity: (row['target_city'] ?? row['targetCity']) as String?,
-      razorpayOrderId: (row['razorpay_order_id'] ?? row['razorpayOrderId']) as String?,
-      razorpayPaymentId: (row['razorpay_payment_id'] ?? row['razorpayPaymentId']) as String?,
+      razorpayOrderId:
+          (row['razorpay_order_id'] ?? row['razorpayOrderId']) as String?,
+      razorpayPaymentId:
+          (row['razorpay_payment_id'] ?? row['razorpayPaymentId']) as String?,
       paymentStatus:
-          ((row['payment_status'] ?? row['paymentStatus']) as String?)?.toLowerCase() ?? 'pending',
+          ((row['payment_status'] ?? row['paymentStatus']) as String?)
+                  ?.toLowerCase() ??
+              'pending',
       status: ((row['status']) as String?)?.toLowerCase() ?? 'draft',
-      startTime: parseDate(row['start_time'] ?? row['startTime']),
-      endTime: parseDate(row['end_time'] ?? row['endTime']),
-      createdAt: parseDate(row['created_at'] ?? row['createdAt']),
+      startTime: parseMapDateTime(row['start_time'] ?? row['startTime']),
+      endTime: parseMapDateTime(row['end_time'] ?? row['endTime']),
+      createdAt: parseMapDateTime(row['created_at'] ?? row['createdAt']),
     );
   }
 
-  factory PromotedAdModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>? ?? {};
-
-    DateTime? parseDate(dynamic val) {
-      if (val is Timestamp) return val.toDate();
-      if (val is String) return DateTime.tryParse(val);
-      return null;
-    }
-
+  factory PromotedAdModel.fromMap(Map<String, dynamic> data, {String? id}) {
     return PromotedAdModel(
-      adId: doc.id,
-      providerType:
-          (data['providerType'] as String?)?.toLowerCase() ?? 'doctor',
+      adId: id ?? (data['adId'] as String? ?? ''),
+      providerType: (data['providerType'] as String?)?.toLowerCase() ?? 'doctor',
       providerId: data['providerId'] as String? ?? '',
       title: data['title'] as String? ?? '',
       description: data['description'] as String? ?? '',
@@ -143,34 +140,9 @@ class PromotedAdModel {
       paymentStatus:
           (data['paymentStatus'] as String?)?.toLowerCase() ?? 'pending',
       status: (data['status'] as String?)?.toLowerCase() ?? 'draft',
-      startTime: parseDate(data['startTime']),
-      endTime: parseDate(data['endTime']),
-      createdAt: parseDate(data['createdAt']),
+      startTime: parseMapDateTime(data['startTime']),
+      endTime: parseMapDateTime(data['endTime']),
+      createdAt: parseMapDateTime(data['createdAt']),
     );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'providerType': providerType,
-      'providerId': providerId,
-      'title': title,
-      'description': description,
-      'imageUrl': imageUrl,
-      if (imageKey != null) 'imageKey': imageKey,
-      if (imageStorage != null) 'imageStorage': imageStorage,
-      'ctaLabel': ctaLabel,
-      'durationHours': durationHours,
-      'amountPaid': amountPaid,
-      if (targetCity != null) 'targetCity': targetCity,
-      if (razorpayOrderId != null) 'razorpayOrderId': razorpayOrderId,
-      if (razorpayPaymentId != null) 'razorpayPaymentId': razorpayPaymentId,
-      'paymentStatus': paymentStatus,
-      'status': status,
-      if (startTime != null) 'startTime': Timestamp.fromDate(startTime!),
-      if (endTime != null) 'endTime': Timestamp.fromDate(endTime!),
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
-    };
   }
 }

@@ -1,5 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../../core/firebase/firestore_client.dart';
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -7,9 +7,6 @@ import '../../../../core/constants/app_constants.dart';
 /// Booking-flow helpers extracted for unit tests (Issue #16 regressions).
 abstract final class BookingFlowHelpers {
   BookingFlowHelpers._();
-
-  @visibleForTesting
-  static CollectionReference<Map<String, dynamic>>? debugAppointmentsCollection;
 
   /// Canonical Male | Female | Other for appointments; rejects unset/invalid values.
   static String? resolvePatientGender(String gender) {
@@ -20,11 +17,11 @@ abstract final class BookingFlowHelpers {
     return normalized;
   }
 
-  /// Firestore auto-id — avoids legacy `APT${timestamp}` collisions (Issue #16).
+  /// Unique appointment id without Firestore (Issue #16 collision fix retained).
   static String newAppointmentId() {
-    final collection = debugAppointmentsCollection ??
-        FirestoreClient.instance.collection('appointments');
-    return collection.doc().id;
+    final ts = DateTime.now().microsecondsSinceEpoch;
+    final r = Random().nextInt(0x7fffffff);
+    return 'apt_${ts.toRadixString(36)}_${r.toRadixString(36)}';
   }
 
   /// Legacy pattern that caused same-day booking collisions before Issue #16.
@@ -53,7 +50,5 @@ abstract final class BookingFlowHelpers {
   }
 
   @visibleForTesting
-  static void debugReset() {
-    debugAppointmentsCollection = null;
-  }
+  static void debugReset() {}
 }

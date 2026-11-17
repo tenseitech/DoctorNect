@@ -1,4 +1,4 @@
-import '../../core/firebase/firestore_service.dart';
+import '../../core/firebase/app_data_service.dart';
 
 import 'dart:async';
 
@@ -91,7 +91,7 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
   Future<void> _prepareAuth() async {
     final ok = await AmbulanceAuthHelper.ensureSignedIn();
     if (ok) {
-      await FirestoreService.instance.ambulance.linkDriverAuth(
+      await AppDataService.instance.ambulance.linkDriverAuth(
         widget.ambulance.id,
       );
       await AmbulancePushService.registerDriver(widget.ambulance.id);
@@ -99,7 +99,7 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
   }
 
   Future<void> _refreshProfile() async {
-    final fresh = await FirestoreService.instance.ambulance.fetchAmbulanceById(
+    final fresh = await AppDataService.instance.ambulance.fetchAmbulanceById(
       widget.ambulance.id,
     );
     if (fresh != null) {

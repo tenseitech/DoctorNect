@@ -1,4 +1,3 @@
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/core/auth/profile_completion_service.dart';
 import 'package:medibond/core/config/firestore_forbidden_guard.dart';
@@ -59,14 +58,6 @@ void main() {
       );
     });
 
-    test('debugFirestoreOverride setter throws under debugForceReleaseMode', () {
-      ProfileCompletionService.debugForceReleaseMode = true;
-      expect(
-        () => ProfileCompletionService.debugFirestoreOverride =
-            () => FakeFirebaseFirestore(),
-        throwsAssertionError,
-      );
-    });
 
     test('debugOverrideForTesting setter throws under debugForceReleaseMode', () {
       FirestoreForbiddenGuard.debugForceReleaseMode = true;

@@ -386,6 +386,20 @@ class SupabaseReviewRepository {
     }
   }
 
+  /// Doctor reply to a patient review (authorized via RLS / gateway JWT).
+  Future<void> saveDoctorReply({
+    required String reviewId,
+    required String reply,
+  }) async {
+    if (!SupabaseBootstrap.isReady || reviewId.isEmpty) {
+      throw StateError('Cannot save review reply — database not ready.');
+    }
+    await _client.from('reviews').update({
+      'doctor_reply': reply.trim(),
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('review_id', reviewId);
+  }
+
   PatientDoctorReview _reviewFromRow(Map<String, dynamic> data) {
     final name = data['patient_name'] as String? ?? 'Patient';
     DateTime date = DateTime.now();

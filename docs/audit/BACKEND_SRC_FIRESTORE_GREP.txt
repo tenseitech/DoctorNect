@@ -1,0 +1,5 @@
+# Proof command (authoritative):
+#   rg -n -i "firestore" backend/functions/src
+#
+# Line count: 0
+# Full output: (empty — no matches)

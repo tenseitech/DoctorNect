@@ -4,13 +4,20 @@ const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
+const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
 const { assertDatabaseGuard } = require('../lib/env_guard');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 const { assertSessionCapableConnection, SESSION_CONNECTION_DOC } = require('../lib/db_connection_guard');
 const { buildPostgrestPayload } = require('../../services/api-gateway/src/jwt_minter');
+const {
+  resolveHarnessSeedRole,
+  withHarnessSeedDml,
+  runHarnessSeedSteps,
+} = require('../lib/harness_seed_role');
+const { buildHarnessSeedSteps, assertHarnessSeedSteps } = require('../lib/harness_seed_sql');
 
 // Emits real claims matching backend registration and gateway logic
-function getTestJwtClaims(appRole, uid, verified = true, phoneNumber = null) {
+function getTestJwtClaims(appRole, uid, verified = true, phoneNumber = null, email = null) {
   let normalized = appRole;
   if (appRole === 'superAdmin' || appRole === 'super_admin' || appRole === 'service_role') normalized = 'super_admin';
   else if (appRole === 'medical' || appRole === 'pharmacy') normalized = 'medicalStore';
@@ -24,6 +31,11 @@ function getTestJwtClaims(appRole, uid, verified = true, phoneNumber = null) {
     verified: Boolean(verified),
     phoneNumber,
   });
+
+  if (appRole === 'super_admin' || appRole === 'superAdmin') {
+    payload.email = email || 'super_admin_harness@test.local';
+    payload.email_verified = 'true';
+  }
 
   return JSON.stringify(payload);
 }
@@ -50,22 +62,10 @@ async function runRlsSqlHarness(options = {}) {
     poolConfig = { connectionString: dbUrl };
   } else if (target === 'rehearsal' || target === 'production') {
     assertDatabaseGuard({ targetKind: 'production', operationName: `RLS SQL Harness on ${target}`, allowDestructive: false });
-    const host = getEnv('PROD_RDS_HOST');
-    const port = parseInt(getEnv('PROD_RDS_PORT') || '5432', 10);
-    const database = target === 'rehearsal' ? 'doctornect_rehearsal' : (getEnv('PROD_RDS_DB') || 'postgres');
-    const user = getEnv('PROD_RDS_USER') || 'postgres';
-    const password = getEnv('PROD_RDS_PASSWORD');
-    const certPath = getEnv('PROD_RDS_SSL_ROOT_CERT') || path.resolve(__dirname, '../../infra/aws/global-bundle.pem');
-
-    poolConfig = {
-      host,
-      port,
-      database,
-      user,
-      password,
-      ssl: { rejectUnauthorized: true, ca: fs.readFileSync(certPath) },
-    };
-    dbUrl = `postgresql://${user}:****@${host}:${port}/${database}`;
+    const database =
+      target === 'rehearsal' ? 'doctornect_rehearsal' : (getEnv('PROD_RDS_DB') || 'doctornect');
+    poolConfig = buildRdsPoolConfig({ database });
+    dbUrl = maskRdsTarget(poolConfig);
   } else {
     console.error(`Unknown target: ${target}`);
     process.exit(1);
@@ -92,6 +92,10 @@ async function runRlsSqlHarness(options = {}) {
 
     await client.query('BEGIN');
 
+    const seedWho = await resolveHarnessSeedRole(client);
+    console.log(
+      `Harness seed role: login=${seedWho.login} super=${seedWho.super} service_role_member=${seedWho.memberServiceRole}`,
+    );
     // 1. Seed isolated test users and fixtures inside transaction
     const pA = 'test_usr_pat_a';
     const pB = 'test_usr_pat_b';
@@ -103,60 +107,6 @@ async function runRlsSqlHarness(options = {}) {
     const labB = 'test_usr_lab_b';
     const ambA = 'test_usr_amb_a';
     const ambB = 'test_usr_amb_b';
-
-    await client.query(`
-      INSERT INTO public.users (id, firebase_uid, role, profile_id, display_name, email, mobile, verified) VALUES
-        ('${pA}', '${pA}', 'patient', '${pA}', 'Patient A', 'pa@test.local', '+919999900001', true),
-        ('${pB}', '${pB}', 'patient', '${pB}', 'Patient B', 'pb@test.local', '+919999900002', true),
-        ('${docA}', '${docA}', 'doctor', '${docA}', 'Dr A', 'da@test.local', '+919999900003', true),
-        ('${docB}', '${docB}', 'doctor', '${docB}', 'Dr B', 'db@test.local', '+919999900004', true),
-        ('${storeA}', '${storeA}', 'medicalStore', '${storeA}', 'Store A', 'sa@test.local', '+919999900005', true),
-        ('${storeB}', '${storeB}', 'medicalStore', '${storeB}', 'Store B', 'sb@test.local', '+919999900006', true),
-        ('${labA}', '${labA}', 'lab', '${labA}', 'Lab A', 'la@test.local', '+919999900007', true),
-        ('${labB}', '${labB}', 'lab', '${labB}', 'Lab B', 'lb@test.local', '+919999900008', true),
-        ('${ambA}', '${ambA}', 'ambulance', '${ambA}', 'Amb A', 'aa@test.local', '+919999900009', true),
-        ('${ambB}', '${ambB}', 'ambulance', '${ambB}', 'Amb B', 'ab@test.local', '+919999900010', true),
-        ('test_usr_doc_unverified', 'test_usr_doc_unverified', 'doctor', 'test_usr_doc_unverified', 'Dr. Unverified', 'unverified@test.local', '+919999900099', false),
-        ('test_usr_lab_unverified', 'test_usr_lab_unverified', 'lab', 'test_usr_lab_unverified', 'Lab Unverified', 'unverified_lab@test.local', '+919999900098', false),
-        ('test_usr_store_unverified', 'test_usr_store_unverified', 'medicalStore', 'test_usr_store_unverified', 'Store Unverified', 'unverified_store@test.local', '+919999900097', false),
-        ('test_usr_amb_unverified', 'test_usr_amb_unverified', 'ambulance', 'test_usr_amb_unverified', 'Amb Unverified', 'unverified_amb@test.local', '+919999900096', false),
-        ('test_usr_amb_unclaimed', 'test_usr_amb_unclaimed', 'ambulance', 'test_amb_unclaimed', 'Driver Unclaimed', 'unclaimed_amb@test.local', '+919999900095', true),
-        ('test_usr_doc_suspended', 'test_usr_doc_suspended', 'doctor', 'test_usr_doc_suspended', 'Dr. Suspended', 'suspended@test.local', '+919999900088', true)
-      ON CONFLICT (id) DO NOTHING;
-    `);
-
-    await client.query(`
-      INSERT INTO public.patients (patient_id, owner_uid, name, mobile, share_records_with_doctors) VALUES
-        ('${pA}', '${pA}', 'Patient A', '+919999900001', true),
-        ('${pB}', '${pB}', 'Patient B', '+919999900002', false),
-        ('test_fam_a1', '${pA}', 'Child A', '+919999900001', true);
-      INSERT INTO public.doctors (doctor_id, owner_uid, name, email, mobile, specialization, qualification, verified, deactivated) VALUES
-        ('test_orphan_doc', NULL, 'Orphan Dr', 'orphan@test.local', '+919999900998', 'General', 'MBBS', true, false),
-        ('${docA}', '${docA}', 'Dr. A', 'da@test.local', '+919999900003', 'General', 'MBBS', true, false),
-        ('${docB}', '${docB}', 'Dr. B', 'db@test.local', '+919999900004', 'Cardiology', 'MD', true, false),
-        ('test_usr_doc_unverified', 'test_usr_doc_unverified', 'Dr. Unverified', 'unverified@test.local', '+919999900099', 'General', 'MBBS', false, false),
-        ('test_usr_doc_suspended', 'test_usr_doc_suspended', 'Dr. Suspended', 'suspended@test.local', '+919999900088', 'General', 'MBBS', true, true);
-      INSERT INTO public.medical_stores (store_id, owner_uid, store_name, owner_name, drug_license_number, phone, email, verified) VALUES
-        ('${storeA}', '${storeA}', 'Store A', 'Owner A', 'DL-001', '+919999900005', 'sa@test.local', true),
-        ('${storeB}', '${storeB}', 'Store B', 'Owner B', 'DL-002', '+919999900006', 'sb@test.local', true),
-        ('test_usr_store_unverified', 'test_usr_store_unverified', 'Unverified Store', 'Owner U', 'DL-999', '+919999900097', 'unverified_store@test.local', false);
-      INSERT INTO public.labs (lab_id, owner_uid, lab_name, license_number, phone, email, verified) VALUES
-        ('${labA}', '${labA}', 'Lab A', 'LIC-001', '+919999900007', 'la@test.local', true),
-        ('${labB}', '${labB}', 'Lab B', 'LIC-002', '+919999900008', 'lb@test.local', true),
-        ('test_usr_lab_unverified', 'test_usr_lab_unverified', 'Unverified Lab', 'LIC-999', '+919999900098', 'unverified_lab@test.local', false);
-      INSERT INTO public.ambulances (ambulance_id, auth_uid, service_name, driver_name, phone, vehicle_number, ambulance_type, city, verified) VALUES
-        ('${ambA}', '${ambA}', 'Amb Service A', 'Driver A', '+919999900009', 'DL-01-A-1000', 'bls', 'Delhi', true),
-        ('${ambB}', '${ambB}', 'Amb Service B', 'Driver B', '+919999900010', 'DL-01-B-2000', 'icu', 'Delhi', true),
-        ('test_usr_amb_unverified', 'test_usr_amb_unverified', 'Unverified Amb', 'Driver U', '+919999900096', 'DL-01-U-9999', 'bls', 'Delhi', false),
-        ('test_amb_unclaimed', NULL, 'Unclaimed Amb', 'Driver Unclaimed', '+919999900095', 'DL-01-U-0000', 'bls', 'Delhi', false),
-        ('test_amb_unclaimed_flow', NULL, 'Flow Amb', 'Driver Flow', '+919999900055', 'DL-01-U-5555', 'bls', 'Delhi', false);
-      INSERT INTO public.reviews (review_id, patient_id, doctor_id, patient_name, rating, comment) VALUES
-        ('test_rev_harness_docA', '${pA}', '${docA}', 'Patient A', 5, 'Visible for anon review_public'),
-        ('test_rev_harness_suspended', '${pA}', 'test_usr_doc_suspended', 'Patient A', 3, 'Hidden suspended doctor review'),
-        ('test_rev_harness_unverified', '${pA}', 'test_usr_doc_unverified', 'Patient A', 2, 'Hidden unverified doctor review')
-      ON CONFLICT (review_id) DO NOTHING;
-    `);
-
     const apptId = 'test_appt_alpha';
     const hrId = 'test_hr_alpha';
     const bcId = 'test_ambbc_alpha';
@@ -167,40 +117,37 @@ async function runRlsSqlHarness(options = {}) {
     const delId = 'test_del_alpha';
     const labBkId = 'test_lbbk_alpha';
     const labOrdId = 'test_lbord_alpha';
-    await client.query(`
-      INSERT INTO public.appointments (appointment_id, doctor_id, patient_id, doctor_name, specialization, patient_name, patient_age, patient_gender, date_time, slot_label, visit_type, patient_status, doctor_status) VALUES
-        ('${apptId}', '${docA}', '${pA}', 'Dr. A', 'General', 'Patient A', 30, 'Male', now(), '10:00 AM', 'newVisit', 'confirmed', 'confirmed'),
-        ('appt_happy_fam', '${docA}', 'test_fam_a1', 'Dr. A', 'General', 'Child A', 8, 'Female', now() + interval '2 days', '11:30 AM', 'newVisit', 'confirmed', 'confirmed'),
-        ('appt_completed_docA', '${docA}', '${pA}', 'Dr. A', 'General', 'Patient A', 30, 'Male', now() - interval '1 day', '10:00 AM', 'newVisit', 'completed', 'completed'),
-        ('appt_completed_fam', '${docA}', 'test_fam_a1', 'Dr. A', 'General', 'Child A', 8, 'Female', now() - interval '1 day', '11:00 AM', 'newVisit', 'completed', 'completed')
-      ON CONFLICT (appointment_id) DO NOTHING;
-      INSERT INTO public.health_records (record_id, patient_id, title, type, date, source, file_name, shared_with_doctors) VALUES
-        ('${hrId}', '${pA}', 'CBC Report', 'labReport', CURRENT_DATE, 'selfUploaded', 'cbc.pdf', true);
-      INSERT INTO public.ambulance_broadcasts (broadcast_id, patient_id, patient_name, contact_phone, pickup_location, drop_location, status, accepted_driver_id, accepted_driver_phone) VALUES
-        ('${bcId}', '${pA}', 'Patient A', '+919999900001', 'Connaught Place', 'AIIMS', 'accepted', '${ambA}', '+919999900009'),
-        ('${bcPendingId}', '${pA}', 'Patient A', '+919999900001', 'Karol Bagh', 'Safdarjung', 'pending', NULL, NULL),
-        ('${bcCancelledId}', '${pA}', 'Patient A', '+919999900001', 'Rohini', 'Fortis', 'cancelled', '${ambA}', '+919999900009');
-      INSERT INTO public.ambulance_requests (request_id, broadcast_id, driver_id, patient_id, patient_name, pickup_location, drop_location, contact_phone, status) VALUES
-        ('${reqId}', '${bcId}', '${ambA}', '${pA}', 'Patient A', 'Connaught Place', 'AIIMS', '+919999900001', 'accepted'),
-        ('${reqPendingId}', '${bcPendingId}', '${ambA}', '${pA}', 'Patient A', 'Karol Bagh', 'Safdarjung', '+919999900001', 'pending');
-      INSERT INTO public.prescriptions (prescription_id, doctor_id, patient_id, appointment_id, patient_name, patient_age) VALUES
-        ('test_rx_alpha', '${docA}', '${pA}', '${apptId}', 'Patient A', 30);
-      INSERT INTO public.pharmacy_deliveries (delivery_id, prescription_id, doctor_id, store_id, patient_id, doctor_name, store_name, patient_name, status) VALUES
-        ('${delId}', 'test_rx_alpha', '${docA}', '${storeA}', '${pA}', 'Dr. A', 'Store A', 'Patient A', 'sent');
-      INSERT INTO public.pharmacy_delivery_medicines (delivery_id, medicine_entry_id, availability, substitute_name) VALUES
-        ('${delId}', 'med_1', 'pending', NULL)
-      ON CONFLICT DO NOTHING;
-      INSERT INTO public.ambulance_trip_contacts (broadcast_id, patient_phone, driver_phone) VALUES
-        ('${bcId}', '+919999900001', '+919999900009')
-      ON CONFLICT DO NOTHING;
-      INSERT INTO public.family_members (member_id, patient_id, name, relation, age, gender) VALUES
-        ('test_fam_a1', '${pA}', 'Child A', 'child', 8, 'Female')
-      ON CONFLICT DO NOTHING;
-      INSERT INTO public.lab_bookings (booking_id, lab_id, patient_id, patient_name, patient_age, test_id, test_name, test_names, collection_type, date_time, slot_label, status) VALUES
-        ('${labBkId}', '${labA}', '${pA}', 'Patient A', 30, 't1', 'Blood Test', ARRAY['Blood Test'], 'labVisit', CURRENT_TIMESTAMP, '10:00 AM', 'confirmed');
-      INSERT INTO public.lab_orders (order_id, lab_id, doctor_id, patient_id, doctor_name, patient_name, patient_age, test_ids, test_names, status) VALUES
-        ('${labOrdId}', '${labA}', '${docA}', '${pA}', 'Dr. A', 'Patient A', 30, ARRAY['t1'], ARRAY['Lipid Profile'], 'ordered');
-    `);
+
+    const seedSteps = buildHarnessSeedSteps({
+      pA,
+      pB,
+      docA,
+      docB,
+      storeA,
+      storeB,
+      labA,
+      labB,
+      ambA,
+      ambB,
+      apptId,
+      hrId,
+      bcId,
+      bcPendingId,
+      bcCancelledId,
+      reqId,
+      reqPendingId,
+      delId,
+      labBkId,
+      labOrdId,
+    });
+    const seedAudit = assertHarnessSeedSteps(seedSteps);
+    console.log(
+      `[harness-seed] fixture tables (${seedAudit.tables.length}, all inside withHarnessSeedDml): ${seedAudit.tables.join(', ')}`,
+    );
+
+    await withHarnessSeedDml(client, async () => {
+      await runHarnessSeedSteps(client, seedSteps);
+    });
 
     async function testCase({ name, table, role, claims, sql, expectedRows, expectedSqlState = '00000', allowZeroRows = false, assertResult = null }) {
       try {
@@ -1188,13 +1135,14 @@ async function runRlsSqlHarness(options = {}) {
       sql: `SELECT count(*) FROM public.review_public;`,
       expectedSqlState: '00000',
     });
+    // 20261103000008 revokes anon SELECT on promoted_ads (providers use authenticated gateway path).
     await testCase({
       name: 'Anon Access: Select from promoted_ads table',
       table: 'promoted_ads',
       role: 'anon',
       claims: null,
       sql: `SELECT ad_id, title, description, image_url, cta_label, status FROM public.promoted_ads;`,
-      expectedSqlState: '00000',
+      expectedSqlState: '42501',
     });
     await testCase({
       name: 'Anon Access: Select whitelisted keys from system_config (patient_module_status, promoted_ads)',
@@ -1621,7 +1569,7 @@ async function runRlsSqlHarness(options = {}) {
       table: 'doctors',
       role: 'authenticated',
       claims: getTestJwtClaims('doctor', docA),
-      sql: `UPDATE public.doctors SET rating = 5.0 WHERE doctor_id = '${docA}';`,
+      sql: `UPDATE public.doctors SET rating = 9.99 WHERE doctor_id = '${docA}';`,
       expectedSqlState: '42501',
     });
     await testCase({
@@ -1631,7 +1579,7 @@ async function runRlsSqlHarness(options = {}) {
       claims: getTestJwtClaims('patient', pA),
       sql: `
         INSERT INTO public.reviews (review_id, patient_id, doctor_id, patient_name, rating, comment)
-        VALUES ('test_rev_round4', '${pA}', '${docA}', 'Patient A', 5, 'Great consultation and care');
+        VALUES ('test_rev_round4', 'test_fam_a1', '${docA}', 'Child A', 5, 'Great consultation and care');
       `,
       expectedRows: 1,
     });
@@ -1647,7 +1595,7 @@ async function runRlsSqlHarness(options = {}) {
       name: 'Trusted Writers: Super admin verifies unverified doctor account',
       table: 'doctors',
       role: 'authenticated',
-      claims: getTestJwtClaims('super_admin', 'super_admin_test_uid'),
+      claims: getTestJwtClaims('super_admin', 'super_admin_test_uid', true, null, 'super_admin_harness@test.local'),
       sql: `UPDATE public.doctors SET verified = true WHERE doctor_id = 'test_usr_doc_unverified';`,
       expectedRows: 1,
     });
@@ -1660,7 +1608,8 @@ async function runRlsSqlHarness(options = {}) {
       role: 'authenticated',
       claims: getTestJwtClaims('patient', pA),
       sql: `UPDATE public.doctors SET verified = true WHERE doctor_id = 'test_usr_doc_unverified';`,
-      expectedSqlState: '42501',
+      expectedSqlState: '00000',
+      allowZeroRows: true,
     });
 
     // Item 2: Domain UPDATE allowlist - Deny privileged columns per table

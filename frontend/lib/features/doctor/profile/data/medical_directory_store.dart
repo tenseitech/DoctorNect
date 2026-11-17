@@ -1,8 +1,7 @@
-import '../../../../core/firebase/firestore_service.dart';
+import '../../../../core/firebase/repositories/medical_directory_repository.dart';
 
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/firebase/models/doctor_medical_directory_entry.dart';
@@ -15,7 +14,7 @@ class MedicalDirectoryStore extends ChangeNotifier {
   static final MedicalDirectoryStore instance = MedicalDirectoryStore._();
 
   final List<DoctorMedicalDirectoryEntry> _entries = [];
-  DocumentSnapshot<Map<String, dynamic>>? _lastPage;
+  String? _lastPageCursor;
   bool _hasMore = true;
   bool _loading = false;
 
@@ -35,7 +34,7 @@ class MedicalDirectoryStore extends ChangeNotifier {
       (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
     );
     notifyListeners();
-    unawaited(FirestoreService.instance.medicalDirectory.save(entry));
+    unawaited(MedicalDirectoryRepository.instance.save(entry));
   }
 
   void update(DoctorMedicalDirectoryEntry entry) {
@@ -45,13 +44,13 @@ class MedicalDirectoryStore extends ChangeNotifier {
       (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
     );
     notifyListeners();
-    unawaited(FirestoreService.instance.medicalDirectory.update(entry));
+    unawaited(MedicalDirectoryRepository.instance.update(entry));
   }
 
   void remove(String entryId) {
     _entries.removeWhere((e) => e.entryId == entryId);
     notifyListeners();
-    unawaited(FirestoreService.instance.medicalDirectory.delete(entryId));
+    unawaited(MedicalDirectoryRepository.instance.delete(entryId));
   }
 
   void mergeFromFirestore(List<DoctorMedicalDirectoryEntry> remote) {
@@ -69,7 +68,7 @@ class MedicalDirectoryStore extends ChangeNotifier {
     final doctorId = DoctorSession.loggedInDoctorId;
     if (preferCache && forDoctor(doctorId).isNotEmpty) return;
 
-    _lastPage = null;
+    _lastPageCursor = null;
     _hasMore = true;
     await loadMoreForDoctor(preferCache: preferCache);
   }
@@ -81,13 +80,13 @@ class MedicalDirectoryStore extends ChangeNotifier {
 
     try {
       final page =
-          await FirestoreService.instance.medicalDirectory.fetchForDoctor(
+          await MedicalDirectoryRepository.instance.fetchForDoctor(
         DoctorSession.loggedInDoctorId,
-        startAfter: _lastPage,
+        startAfterCursor: _lastPageCursor,
         preferCache: preferCache,
       );
       mergeFromFirestore(page.items);
-      _lastPage = page.lastDocument;
+      _lastPageCursor = page.cursor;
       _hasMore = page.hasMore;
     } finally {
       _loading = false;

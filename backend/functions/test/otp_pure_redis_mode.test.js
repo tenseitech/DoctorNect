@@ -83,8 +83,14 @@ function createMockRedisStore() {
       }
       return 1;
     },
-    async eval() {
-      return 1;
+    async eval(_lua, _numKeys, attemptsKey, ttlMs, maxStr) {
+      const max = Number(maxStr) || 5;
+      const n = await this.incr(attemptsKey);
+      if (n === 1) {
+        await this.pexpire(attemptsKey, Number(ttlMs) || 900000);
+      }
+      if (n > max) return -1;
+      return n;
     },
   };
 }

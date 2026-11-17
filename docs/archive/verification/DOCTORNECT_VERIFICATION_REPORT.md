@@ -3,7 +3,7 @@
 **Audit Date:** October 26, 2026  
 **Auditor:** Senior Full-Stack Engineer & Security Auditor (Gravitas Engine)  
 **Target Environments:**
-- **Staging Database:** Supabase project `rnltknemwnjrjxthtull` (Holds test data only; Write Gate prevents writes until backup verification passes)
+- **Staging Database:** Supabase project `staging-project-ref` (Holds test data only; Write Gate prevents writes until backup verification passes)
 - **Production Database:** Amazon RDS PostgreSQL 17 (Empty, managed instance in `ap-south-1`)
 - **Production Access Layer:** Option A (AWS ECS Fargate PostgREST + Node.js Auth Gateway with Firebase RS256 JWKS verification + `streamTable()` adaptive polling)
 - **Firebase Project:** `medibond-45fad` (Unchanged: Firebase Auth, Redis ephemeral cache, AWS S3 storage)
@@ -32,7 +32,7 @@ All production infrastructure and application code for Option A has been built, 
 
 ### 2.1 Staging Project Gate
 - Inspected `.env.migration`: `STAGING_SUPABASE_URL`, `STAGING_SUPABASE_DB_URL`, `STAGING_SUPABASE_ANON_KEY`, and `STAGING_SUPABASE_SERVICE_ROLE_KEY` are currently empty.
-- As instructed, all automated execution against Supabase has halted at this boundary. Safety guards in `scripts/test_live_rls_idor.js` and `scripts/replay_client_postgrest.js` prevent any unintended execution against production (`rnltknemwnjrjxthtull`).
+- As instructed, all automated execution against Supabase has halted at this boundary. Safety guards in `scripts/test_live_rls_idor.js` and `scripts/replay_client_postgrest.js` prevent any unintended execution against production (`staging-project-ref`).
 
 ### 2.2 Migration Directory & Rollback Isolation
 - Real migration files live in `db/migrations/` (restructured from `backend/supabase/migrations/`).

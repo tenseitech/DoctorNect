@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../../../core/firebase/repositories/patient_profile_repository.dart';
 import '../../../../core/firebase/repositories/prescription_repository.dart';
 
@@ -38,9 +36,9 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
 
   final List<PrescriptionDraft> _records = [];
 
-  DocumentSnapshot<Map<String, dynamic>>? _lastDoctorPage;
+  String? _lastDoctorPage;
 
-  DocumentSnapshot<Map<String, dynamic>>? _lastPatientPage;
+  String? _lastPatientPage;
 
   bool _hasMoreDoctor = true;
 

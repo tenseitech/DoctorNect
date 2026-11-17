@@ -7,6 +7,7 @@ const { Client } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { getHostFingerprint } = require('../lib/env_guard');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
+const { getReplayPgDockerTag, getProdPgVersion } = require('../lib/pg_version_policy');
 
 async function checkDockerAvailable() {
   try {
@@ -47,8 +48,10 @@ async function replayFromScratch() {
     console.log('1. REPLAY_DB_URL environment variable is not configured.');
     console.log('2. Docker engine is not running (docker ps failed).');
     console.log('\nTo run a from-scratch replay:');
-    console.log('- Provide an isolated scratch PostgreSQL instance: export REPLAY_DB_URL=postgresql://postgres:pass@localhost:5433/replay');
-    console.log('- OR start Docker Desktop / daemon for automated postgres:17 container provisioning.');
+    console.log('- Provide an isolated scratch PostgreSQL 18 instance: export REPLAY_DB_URL=postgresql://postgres:pass@127.0.0.1:5440/postgres');
+    console.log(
+      `- OR start Docker Desktop / daemon for automated postgres:${getReplayPgDockerTag()} container provisioning.`,
+    );
     console.log('\nSkipping replay step without failure. Continuing pipeline.');
     return { status: 'SKIPPED', reason: 'Prerequisites not met (no REPLAY_DB_URL, Docker unavailable)' };
   }
@@ -57,17 +60,22 @@ async function replayFromScratch() {
   let containerId = null;
 
   if (!targetUrl && dockerAvailable) {
-    console.log('Docker detected. Provisioning temporary postgres:17 container...');
-    const randomPort = Math.floor(Math.random() * 1000) + 15432;
+    const dockerTag = getReplayPgDockerTag();
+    console.log(`Docker detected. Provisioning temporary postgres:${dockerTag} container (target PROD_PG_VERSION=${getProdPgVersion()})...`);
     try {
-      const runOut = execSync(`docker run -d --rm -e POSTGRES_PASSWORD=scratchpass -p ${randomPort}:5432 postgres:17`, { encoding: 'utf8' });
+      const defaultPort = getEnv('LOCAL_REPLAY_PG_PORT') || '5440';
+      const hostPort = process.env.REPLAY_DOCKER_PORT || defaultPort;
+      const runOut = execSync(
+        `docker run -d --rm -e POSTGRES_PASSWORD=scratchpass -p ${hostPort}:5432 postgres:${dockerTag}`,
+        { encoding: 'utf8' },
+      );
       containerId = runOut.trim();
-      targetUrl = `postgresql://postgres:scratchpass@127.0.0.1:${randomPort}/postgres`;
-      console.log(`Ephemeral Postgres container started: ${containerId.slice(0, 12)} on port ${randomPort}`);
+      targetUrl = `postgresql://postgres:scratchpass@127.0.0.1:${hostPort}/postgres`;
+      console.log(`Ephemeral Postgres container started: ${containerId.slice(0, 12)} on port ${hostPort}`);
       // Wait for postgres to be ready
       await new Promise(r => setTimeout(r, 4000));
     } catch (e) {
-      console.error('Failed to start Docker postgres:17:', e.message);
+      console.error('Failed to start Docker postgres:18:', e.message);
       return { status: 'SKIPPED', reason: 'Docker container launch failed' };
     }
   }

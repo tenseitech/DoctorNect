@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/core/config/ambulance_enabled.dart';
 import 'package:medibond/core/config/firestore_forbidden_guard.dart';
 import 'package:medibond/core/firebase/firebase_bootstrap.dart';
-import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/app_data_service.dart';
 import 'package:medibond/core/firebase/firestore_ui.dart';
 import 'package:medibond/core/session/doctor_session.dart';
 import 'package:medibond/core/supabase/supabase_bootstrap.dart';
@@ -46,22 +46,22 @@ void main() {
   });
 
   group('release Firestore forbidden smoke', () {
-    test('FirestoreService throws under debugForceReleaseMode', () {
+    test('AppDataService stays available under debugForceReleaseMode', () {
       FirestoreForbiddenGuard.resetForTesting();
       FirestoreForbiddenGuard.debugForceReleaseMode = true;
-      expect(() => FirestoreService.instance, throwsStateError);
+      expect(AppDataService.instance.patientProfile, isNotNull);
     });
 
-    test('FirestoreUi.guardSync returns null instead of throwing', () {
+    test('legacy client guard still blocked under debugForceReleaseMode', () {
       FirestoreForbiddenGuard.resetForTesting();
       FirestoreForbiddenGuard.debugForceReleaseMode = true;
-      String? shown;
-      final v = FirestoreUi.guardSync(
-        () => FirestoreService.instance,
-        showError: (m) => shown = m,
+      expect(
+        () => FirestoreUi.guardSync(
+          () => throw StateError(FirestoreUi.userMessage),
+          showError: (_) {},
+        ),
+        throwsStateError,
       );
-      expect(v, isNull);
-      expect(shown, FirestoreUi.userMessage);
     });
 
     test('ambulance deep routes off by default in release', () {

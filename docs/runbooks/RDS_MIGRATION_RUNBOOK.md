@@ -24,10 +24,19 @@
 
 ```powershell
 cd c:\Users\khije\Downloads\DoctorNect\doctor
-# Dry-run all pending statements
-node scripts/db/migrate.js --target=staging --dry-run-all
-# Apply (requires STAGING_SUPABASE_DB_URL in environment / .env.migration)
-node scripts/db/migrate.js --target=staging
+# Live-data guard: staging env requires --confirm-live-data (stderr may show host fingerprint e.g. 40D01C23)
+# Dry-run all pending statements (rollback test)
+node scripts/db/migrate.js --target=staging --dry-run-all --confirm-live-data
+# List pending only (no SQL execution)
+node scripts/db/migrate.js --target=staging --dry-run --confirm-live-data
+# Apply (requires STAGING_SUPABASE_DB_URL in .env.migration + --confirm-staging for mutating runs)
+node scripts/db/migrate.js --target=staging --execute --confirm-live-data --confirm-staging
+```
+
+If apply exits on **checksum mismatch** for an already-applied version (SQL file edited after apply), sync ledger metadata only:
+
+```powershell
+node scripts/db/sync_ledger_checksum.js --version=20261103000008 --file=20261103000008_staging_anon_security_cleanup.sql --confirm-live-data
 ```
 
 Verify:

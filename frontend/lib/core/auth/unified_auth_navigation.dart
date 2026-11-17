@@ -11,7 +11,7 @@ import 'verification_lifecycle.dart';
 import '../enums/user_type.dart';
 import '../firebase/firebase_auth_service.dart';
 import '../firebase/firebase_bootstrap.dart';
-import '../firebase/firestore_service.dart';
+import '../firebase/app_data_service.dart';
 import '../session/ambulance_session.dart';
 import '../session/doctor_session.dart';
 import '../session/lab_session.dart';
@@ -216,7 +216,7 @@ abstract final class UnifiedAuthNavigation {
         );
         if (FirebaseBootstrap.isReady) {
           unawaited(
-            FirestoreService.instance.ambulance.registerAmbulance(
+            AppDataService.instance.ambulance.registerAmbulance(
               ambulance,
               extraFields: {
                 'profileCompleted': false,

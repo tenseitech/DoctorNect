@@ -34,7 +34,7 @@ if (fs.existsSync(loadEnvPath)) {
 
 // Load shared helpers from backend/functions
 const { toUserUuid, executeUserSyncWithEmailFallback } = require('../functions/user_id_bridge');
-const { buildUserSupabasePayload, normalizeRole } = require('../functions/cross_role_sync');
+const { buildUserSupabasePayload, normalizeRole } = require('../functions/user_supabase_payload');
 
 // Graceful Firebase Admin loader
 let admin;

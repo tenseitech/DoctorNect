@@ -17,15 +17,23 @@
  * 9. Teardown: Drops database 'replay_check' to ensure zero residual state.
  * 
  * GUARD RULE: Refuses production DBs; strictly requires isolated execution.
+ * Shared RDS instance: docs/runbooks/RDS_SHARED_INSTANCE_SCRIPTS.md
  */
 
 const fs = require('fs');
 const path = require('path');
 const { Client, Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
-const { getHostFingerprint, assertDatabaseGuard } = require('../lib/env_guard');
+const { getHostFingerprint } = require('../lib/env_guard');
+const { assertReplayDatabaseUrlSafe } = require('../lib/replay_connection_guard');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 const { fetchCatalog, compareCatalogs } = require('./schema_diff');
+const {
+  listMigrationsForTarget,
+  resolveMigrationSqlPath,
+} = require('../lib/migration_file_list');
+const { isSkippableTransactionControlStatement } = require('../lib/migration_txn_sql');
+const { normalizeRdsMigrationSql } = require('../lib/rds_migration_sql_normalize');
 
 let parse;
 try {
@@ -88,6 +96,15 @@ function classifyDiff(diff) {
 
 const TARGET_DB_NAME = 'replay_check';
 
+/** Used before pg_cron checks; exported for static import regression tests (no DB). */
+function isRdsReplayTargetHost(hostname, prodRdsHost = getEnv('PROD_RDS_HOST')) {
+  const host = String(hostname || '').toLowerCase();
+  return (
+    host.includes('.rds.amazonaws.com')
+    || Boolean(prodRdsHost && host === getHostFingerprint(prodRdsHost))
+  );
+}
+
 async function preflightChecks(adminClient) {
   console.log('--- PRE-FLIGHT CHECKS ON RDS INSTANCE ---');
   
@@ -130,23 +147,22 @@ async function runRdsScratchReplay() {
   console.log('DoctorNect: AWS RDS Scratch Replay & Security Parity Verification');
   console.log('================================================================\n');
 
+  const keepDb = process.argv.includes('--keep-db');
+  const diffStagingCatalog = process.argv.includes('--diff-staging-catalog');
+  const allowNonstandardReplayPort = process.argv.includes('--allow-nonstandard-replay-port');
+  if (diffStagingCatalog) {
+    console.log('[OPTION] --diff-staging-catalog: read-only staging catalog compare via schema_diff.');
+  }
+  if (keepDb) {
+    console.log('[OPTION] --keep-db: skip DROP DATABASE at end (replay_check retained for inspection).');
+  }
   const rdsAdminUrl = getEnv('REPLAY_DB_URL') || getEnv('RDS_ADMIN_DB_URL') || getEnv('RDS_MASTER_URL');
-  if (!rdsAdminUrl) {
-    console.error('[ERROR] Missing replay admin connection string (REPLAY_DB_URL, RDS_ADMIN_DB_URL, or RDS_MASTER_URL).');
-    console.error('Provide connection string pointing to postgres/template1 on the target host (e.g. localhost or RDS).');
-    process.exit(1);
-  }
-
-  // Safety assertions: Verify host is valid replay host and not staging or production Supabase
-  const stagingUrl = getEnv('STAGING_SUPABASE_DB_URL');
-  if (stagingUrl && getHostFingerprint(rdsAdminUrl) === getHostFingerprint(stagingUrl)) {
-    console.error('[FATAL GUARD] Target replay URL matches STAGING_SUPABASE_DB_URL! Replay refused.');
-    process.exit(1);
-  }
-
-  const prodUrl = getEnv('PROD_SUPABASE_DB_URL');
-  if (prodUrl && getHostFingerprint(rdsAdminUrl) === getHostFingerprint(prodUrl)) {
-    console.error('[FATAL GUARD] Target replay URL matches PROD_SUPABASE_DB_URL! Replay refused.');
+  const replayGuard = assertReplayDatabaseUrlSafe({
+    replayUrl: rdsAdminUrl,
+    allowNonstandardReplayPort,
+  });
+  if (!replayGuard.ok) {
+    console.error(`[FATAL GUARD] ${replayGuard.message} (${replayGuard.code})`);
     process.exit(1);
   }
 
@@ -208,8 +224,7 @@ async function runRdsScratchReplay() {
 
       // Verify pg_cron availability: on RDS targets, pg_cron MUST be available or replay fails immediately.
       // On local/scratch non-RDS environments, install a labeled TEST-ONLY mock recorder.
-      const isRdsHost = parsedAdmin.hostname.includes('.rds.amazonaws.com') ||
-        (getEnv('PROD_RDS_HOST') && parsedAdmin.hostname === getHostFingerprint(getEnv('PROD_RDS_HOST')));
+      const isRdsHost = isRdsReplayTargetHost(parsedAdmin.hostname);
 
       const hasCronExtRes = await replayClient.query(`
         SELECT 1 FROM pg_available_extensions WHERE name = 'pg_cron';
@@ -262,17 +277,19 @@ async function runRdsScratchReplay() {
         console.log('✔ TEST-ONLY cron recorder installed in replay_check.\n');
       }
 
-      // 2. Apply Migrations in chronological sequence with statement-level error capturing
-      const migrationsDir = path.resolve(__dirname, '../../db/migrations');
-      const migrationFiles = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
-      console.log(`Applying ${migrationFiles.length} migrations in chronological sequence...`);
+      // 2. Apply migrations (shared + db/migrations/rds/) with RDS overrides
+      const migrationFiles = listMigrationsForTarget('replay');
+      console.log(`Applying ${migrationFiles.length} migrations in chronological sequence (target=replay)...`);
 
       const migrationErrors = [];
       let totalReplayedStmts = 0;
 
-      for (const file of migrationFiles) {
-        process.stdout.write(`  -> Applying ${file}... `);
-        let sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+      for (const relPath of migrationFiles) {
+        const file = path.basename(relPath);
+        const { sqlPath, useOverride } = resolveMigrationSqlPath({ relPath, target: 'replay' });
+        process.stdout.write(`  -> Applying ${relPath}${useOverride ? ' [RDS override]' : ''}... `);
+        let sql = fs.readFileSync(sqlPath, 'utf8');
+        sql = normalizeRdsMigrationSql(sql, process.env.REPLAY_RDS_LIKE === '1' ? 'production' : 'replay');
         if (lacksPgCron && file === '20260923000003_doctornect_cron.sql') {
           // If server lacks pg_cron, replace unguarded CREATE EXTENSION with no-op in replay
           sql = sql.replace(/CREATE EXTENSION IF NOT EXISTS pg_cron;/g, '-- [REPLAY TEST-ONLY] Skipped pg_cron extension creation');
@@ -286,8 +303,7 @@ async function runRdsScratchReplay() {
         let fileFailedStmts = 0;
         for (let sIdx = 0; sIdx < stmts.length; sIdx++) {
           const stmt = stmts[sIdx];
-          const trimmedClean = stmt.sql.trim().toUpperCase().replace(/;$/, '');
-          if (trimmedClean === 'BEGIN' || trimmedClean === 'COMMIT' || trimmedClean === 'END' || trimmedClean === 'BEGIN TRANSACTION' || trimmedClean === 'COMMIT TRANSACTION') {
+          if (isSkippableTransactionControlStatement(stmt.sql)) {
             continue;
           }
           const spName = `sp_${sIdx}`;
@@ -299,7 +315,7 @@ async function runRdsScratchReplay() {
             await replayClient.query(`ROLLBACK TO SAVEPOINT ${spName}`);
             fileFailedStmts++;
             migrationErrors.push({
-              file,
+              file: relPath,
               line: stmt.line,
               sqlstate: stmtErr.code || 'UNKNOWN',
               message: stmtErr.message,
@@ -363,7 +379,7 @@ async function runRdsScratchReplay() {
       console.log('================================================================\n');
 
       const stagingUri = getEnv('STAGING_SUPABASE_DB_URL');
-      if (stagingUri) {
+      if (diffStagingCatalog && stagingUri) {
         console.log('Fetching live staging catalog for parity diff...');
         const stagingClient = new Client({ connectionString: stagingUri, ssl: { rejectUnauthorized: false } });
         await stagingClient.connect();
@@ -402,8 +418,8 @@ async function runRdsScratchReplay() {
         } finally {
           await stagingClient.end().catch(() => {});
         }
-      } else {
-        console.warn('[WARNING] STAGING_SUPABASE_DB_URL not set; skipping live staging diff comparison.');
+      } else if (diffStagingCatalog) {
+        console.warn('[WARNING] --diff-staging-catalog set but STAGING_SUPABASE_DB_URL missing; skipping.');
       }
 
       // 5. Cron Job Scheduling Parity Check
@@ -469,18 +485,21 @@ async function runRdsScratchReplay() {
     }
 
   } finally {
-    // Teardown: strictly drop replay_check
-    console.log(`Teardown: Dropping scratch database "${TARGET_DB_NAME}"...`);
-    try {
-      await adminClient.query(`
-        SELECT pg_terminate_backend(pid)
-        FROM pg_stat_activity
-        WHERE datname = $1 AND pid <> pg_backend_pid();
-      `, [TARGET_DB_NAME]);
-      await adminClient.query(`DROP DATABASE IF EXISTS ${TARGET_DB_NAME};`);
-      console.log(`✔ Scratch database "${TARGET_DB_NAME}" successfully dropped.`);
-    } catch (dropErr) {
-      console.error(`[WARNING] Failed to drop scratch database "${TARGET_DB_NAME}":`, dropErr.message);
+    if (keepDb) {
+      console.log(`Teardown: --keep-db set; leaving scratch database "${TARGET_DB_NAME}" in place.`);
+    } else {
+      console.log(`Teardown: Dropping scratch database "${TARGET_DB_NAME}"...`);
+      try {
+        await adminClient.query(`
+          SELECT pg_terminate_backend(pid)
+          FROM pg_stat_activity
+          WHERE datname = $1 AND pid <> pg_backend_pid();
+        `, [TARGET_DB_NAME]);
+        await adminClient.query(`DROP DATABASE IF EXISTS ${TARGET_DB_NAME};`);
+        console.log(`✔ Scratch database "${TARGET_DB_NAME}" successfully dropped.`);
+      } catch (dropErr) {
+        console.error(`[WARNING] Failed to drop scratch database "${TARGET_DB_NAME}":`, dropErr.message);
+      }
     }
     await adminClient.end();
   }
@@ -493,5 +512,5 @@ if (require.main === module) {
   });
 }
 
-module.exports = { runRdsScratchReplay };
+module.exports = { runRdsScratchReplay, isRdsReplayTargetHost };
 

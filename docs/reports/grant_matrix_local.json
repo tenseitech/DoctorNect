@@ -1,0 +1,2220 @@
+{
+  "generatedAt": "2026-11-12T11:20:59.762Z",
+  "local": {
+    "pgVersion": "PostgreSQL 17.11 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit",
+    "tables": [
+      {
+        "grantee": "service_role",
+        "table_name": "abuse_rate_limits",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "admin_audit_logs",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "admin_audit_logs",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "ambulance_broadcasts",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_broadcasts",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_invites",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "ambulance_location_updates",
+        "privileges": "INSERT,SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_location_updates",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_locations",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_private_settings",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "ambulance_requests",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_requests",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_trip_contacts",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "ambulances",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulances",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "appointments",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "appointments",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "community_body_parts",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "community_diagnoses",
+        "privileges": "INSERT,SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "community_lab_tests",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "community_medicines",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "community_radiology",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctor_availability",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctor_blocked_dates",
+        "privileges": "DELETE,INSERT,SELECT"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "doctor_directory",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctor_directory",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_directory",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_directory_updates",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctor_education",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_education",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctor_facilities",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_facilities",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_invites",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctor_private",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_private",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctors",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctors",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "family_members",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "family_members",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "health_records",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "health_records",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "in_app_notifications",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "in_app_notifications",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "lab_bookings",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "lab_bookings",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "lab_catalog_tests",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "lab_catalog_tests",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "lab_connections",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "lab_orders",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "lab_orders",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "labs",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "labs",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "mail_queue",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "medical_directory",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "medical_stores",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "medical_stores",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "notification_outbox",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "otp_challenges",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "otp_verification_sessions",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "patient_care_team",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "patient_doctor_links",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "patient_doctor_links",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "patient_safe",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "patient_safe",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "patients",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "patients",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "pharmacy_connections",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "pharmacy_deliveries",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "pharmacy_deliveries",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "pharmacy_delivery_medicines",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "pharmacy_doctor_invites",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "prescription_investigations",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "prescription_medicines",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "prescription_referrals",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "prescriptions",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "prescriptions",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "promoted_ads",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "promoted_ads",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "razorpay_orders",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "razorpay_payments",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "razorpay_webhook_events",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "referrals",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "referrals",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "review_public",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "review_public",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "review_votes",
+        "privileges": "DELETE,INSERT,SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "reviews",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "reviews",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "security_events",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "storage_audit_logs",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "super_admins",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "support_ticket_messages",
+        "privileges": "INSERT,SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "support_ticket_messages",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "support_tickets",
+        "privileges": "INSERT,SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "support_tickets",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "sync_dead_letter_queue",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "system_config",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "system_config",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "system_config",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "user_devices",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "user_devices",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "users",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "users",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      }
+    ],
+    "routines": [
+      {
+        "grantee": "authenticated",
+        "name": "accept_ambulance_request",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "accept_ambulance_request",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "book_appointment_atomic",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "book_appointment_atomic",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "cancel_ambulance_broadcast",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "cancel_ambulance_broadcast",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "claim_ambulance_driver",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "claim_ambulance_driver",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "complete_ambulance_trip",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "complete_ambulance_trip",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "create_prescription_atomic",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "create_prescription_atomic",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "current_profile_id",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "current_profile_id",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "current_user_role",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "current_user_role",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "deactivate_provider_profile",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "deactivate_provider_profile",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "doctor_can_access_patient",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "doctor_can_access_patient",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "expire_stale_ambulance_broadcasts",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "fn_sync_review_aggregates",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "fn_sync_review_aggregates",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "fn_sync_review_helpful_count",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "fn_sync_review_helpful_count",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "get_ambulance_trip_contact",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "get_ambulance_trip_location",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "get_ambulance_trip_location",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "is_profile_completed",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "is_profile_completed",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "is_super_admin",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "is_verified_doctor",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "is_verified_doctor",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "reactivate_provider_profile",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "reactivate_provider_profile",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "register_device_token",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "reschedule_appointment_atomic",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "reschedule_appointment_atomic",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "update_ambulance_location",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "update_ambulance_location",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "update_lab_booking_status",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "update_lab_booking_status",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "update_lab_order_status",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "update_lab_order_status",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "update_pharmacy_delivery_status",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "update_pharmacy_delivery_status",
+        "privileges": "EXECUTE"
+      }
+    ],
+    "sequences": [
+      {
+        "grantee": "authenticated",
+        "name": "doctor_blocked_dates_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "doctor_blocked_dates_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "doctor_education_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "doctor_education_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "pharmacy_delivery_medicines_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "pharmacy_delivery_medicines_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "prescription_investigations_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "prescription_investigations_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "prescription_medicines_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "prescription_medicines_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "prescription_referrals_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "prescription_referrals_id_seq",
+        "privileges": "USAGE"
+      }
+    ]
+  },
+  "staging": {
+    "pgVersion": "PostgreSQL 17.11 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit",
+    "tables": [
+      {
+        "grantee": "service_role",
+        "table_name": "_schema_migrations",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "abuse_rate_limits",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "admin_audit_logs",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "admin_audit_logs",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "ambulance_broadcasts",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_broadcasts",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_invites",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "ambulance_location_updates",
+        "privileges": "INSERT,SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_location_updates",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_locations",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_private_settings",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "ambulance_requests",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_requests",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulance_trip_contacts",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "ambulances",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "ambulances",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "appointments",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "appointments",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "community_body_parts",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "community_body_parts",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "community_diagnoses",
+        "privileges": "INSERT,SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "community_diagnoses",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "community_lab_tests",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "community_lab_tests",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "community_medicines",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "community_medicines",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "community_radiology",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "community_radiology",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctor_availability",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_availability",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctor_blocked_dates",
+        "privileges": "DELETE,INSERT,SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_blocked_dates",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "doctor_directory",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctor_directory",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_directory",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_directory_updates",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctor_education",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_education",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctor_facilities",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_facilities",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_invites",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctor_private",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctor_private",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "doctors",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "doctors",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "facilities",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "family_members",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "family_members",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "health_records",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "health_records",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "in_app_notifications",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "in_app_notifications",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "lab_bookings",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "lab_bookings",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "lab_catalog_tests",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "lab_catalog_tests",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "lab_catalog_tests",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "lab_connections",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "lab_connections",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "lab_orders",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "lab_orders",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "labs",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "labs",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "mail_queue",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "medical_directory",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "medical_directory",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "medical_stores",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "medical_stores",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "notification_outbox",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "otp_challenges",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "otp_verification_sessions",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "patient_care_team",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "patient_doctor_links",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "patient_doctor_links",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "patient_safe",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "patient_safe",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "patients",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "patients",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "pharmacy_connections",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "pharmacy_connections",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "pharmacy_deliveries",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "pharmacy_deliveries",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "pharmacy_delivery_medicines",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "pharmacy_delivery_medicines",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "pharmacy_doctor_invites",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "prescription_investigations",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "prescription_investigations",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "prescription_medicines",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "prescription_medicines",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "prescription_referrals",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "prescription_referrals",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "prescriptions",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "prescriptions",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "promoted_ads",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "promoted_ads",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "razorpay_orders",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "razorpay_payments",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "razorpay_webhook_events",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "referrals",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "referrals",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "review_public",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "review_public",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "review_public",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "review_votes",
+        "privileges": "DELETE,INSERT,SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "review_votes",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "reviews",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "reviews",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "security_events",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "storage_audit_logs",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "super_admins",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "support_ticket_messages",
+        "privileges": "INSERT,SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "support_ticket_messages",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "support_tickets",
+        "privileges": "INSERT,SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "support_tickets",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "sync_dead_letter_queue",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "anon",
+        "table_name": "system_config",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "system_config",
+        "privileges": "SELECT"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "system_config",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "user_devices",
+        "privileges": "DELETE,INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "user_devices",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      },
+      {
+        "grantee": "authenticated",
+        "table_name": "users",
+        "privileges": "INSERT,SELECT,UPDATE"
+      },
+      {
+        "grantee": "service_role",
+        "table_name": "users",
+        "privileges": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+      }
+    ],
+    "routines": [
+      {
+        "grantee": "authenticated",
+        "name": "accept_ambulance_request",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "accept_ambulance_request",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "book_appointment_atomic",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "book_appointment_atomic",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "cancel_ambulance_broadcast",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "cancel_ambulance_broadcast",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "check_appointment_cancellation_integrity",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "claim_ambulance_driver",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "claim_ambulance_driver",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "complete_ambulance_trip",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "complete_ambulance_trip",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "create_prescription_atomic",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "create_prescription_atomic",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "current_profile_id",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "current_profile_id",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "current_user_role",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "current_user_role",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "deactivate_provider_profile",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "deactivate_provider_profile",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "doctor_can_access_patient",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "doctor_can_access_patient",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "enqueue_notification_outbox",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "expire_stale_ambulance_broadcasts",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "fn_sync_review_aggregates",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "fn_sync_review_aggregates",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "fn_sync_review_helpful_count",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "fn_sync_review_helpful_count",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "fn_touch_doctor_directory",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "get_ambulance_trip_contact",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "get_ambulance_trip_location",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "get_ambulance_trip_location",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "is_profile_completed",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "is_profile_completed",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "is_super_admin",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "is_verified_doctor",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "is_verified_doctor",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "reactivate_provider_profile",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "reactivate_provider_profile",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "register_device_token",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "reschedule_appointment_atomic",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "reschedule_appointment_atomic",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "rls_auto_enable",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "trigger_set_timestamp",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "update_ambulance_location",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "update_ambulance_location",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "update_lab_booking_status",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "update_lab_booking_status",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "update_lab_order_status",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "update_lab_order_status",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "update_pharmacy_delivery_status",
+        "privileges": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "update_pharmacy_delivery_status",
+        "privileges": "EXECUTE"
+      }
+    ],
+    "sequences": [
+      {
+        "grantee": "authenticated",
+        "name": "doctor_blocked_dates_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "doctor_blocked_dates_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "doctor_education_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "doctor_education_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "pharmacy_delivery_medicines_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "pharmacy_delivery_medicines_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "prescription_investigations_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "prescription_investigations_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "prescription_medicines_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "prescription_medicines_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "authenticated",
+        "name": "prescription_referrals_id_seq",
+        "privileges": "USAGE"
+      },
+      {
+        "grantee": "service_role",
+        "name": "prescription_referrals_id_seq",
+        "privileges": "USAGE"
+      }
+    ]
+  },
+  "tableDiffs": [
+    {
+      "key": "admin_audit_logs:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "ambulance_broadcasts:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "ambulance_invites:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "ambulance_location_updates:service_role",
+      "kind": "privilege_mismatch",
+      "local": "INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "ambulance_locations:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "ambulance_private_settings:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "ambulance_requests:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "ambulance_trip_contacts:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "ambulances:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "appointments:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "doctor_directory:service_role",
+      "kind": "privilege_mismatch",
+      "local": "SELECT",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "doctor_directory_updates:service_role",
+      "kind": "privilege_mismatch",
+      "local": "SELECT",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "doctor_education:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "doctor_facilities:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "doctor_invites:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "doctor_private:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "doctors:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "family_members:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "health_records:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "in_app_notifications:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "lab_bookings:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "lab_orders:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "labs:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "medical_stores:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "notification_outbox:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "patient_care_team:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "patient_doctor_links:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "patient_safe:service_role",
+      "kind": "privilege_mismatch",
+      "local": "SELECT",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "patients:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "pharmacy_deliveries:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "pharmacy_doctor_invites:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "prescriptions:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "promoted_ads:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "razorpay_orders:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "razorpay_payments:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "razorpay_webhook_events:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "referrals:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "reviews:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "security_events:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "super_admins:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "support_ticket_messages:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "support_tickets:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "sync_dead_letter_queue:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "user_devices:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "users:service_role",
+      "kind": "privilege_mismatch",
+      "local": "DELETE,INSERT,SELECT,UPDATE",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "_schema_migrations:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "community_body_parts:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "community_diagnoses:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "community_lab_tests:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "community_medicines:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "community_radiology:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "doctor_availability:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "doctor_blocked_dates:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "facilities:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "lab_catalog_tests:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "lab_connections:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "medical_directory:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "pharmacy_connections:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "pharmacy_delivery_medicines:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "prescription_investigations:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "prescription_medicines:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "prescription_referrals:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "review_public:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    },
+    {
+      "key": "review_votes:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+    }
+  ],
+  "routineDiffs": [
+    {
+      "key": "check_appointment_cancellation_integrity:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "EXECUTE"
+    },
+    {
+      "key": "enqueue_notification_outbox:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "EXECUTE"
+    },
+    {
+      "key": "fn_touch_doctor_directory:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "EXECUTE"
+    },
+    {
+      "key": "rls_auto_enable:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "EXECUTE"
+    },
+    {
+      "key": "trigger_set_timestamp:service_role",
+      "kind": "missing_in_a",
+      "a": "local",
+      "b": "staging",
+      "staging": "EXECUTE"
+    }
+  ],
+  "anonSurprises": [],
+  "gatewayServiceRoleTables": [
+    "abuse_rate_limits",
+    "admin_audit_logs",
+    "admin_users",
+    "ambulance_invites",
+    "ambulance_locations",
+    "ambulance_private_settings",
+    "ambulance_trip_contacts",
+    "doctor_education",
+    "doctor_facilities",
+    "doctor_invites",
+    "doctor_private",
+    "mail_queue",
+    "notification_outbox",
+    "otp_challenges",
+    "patient_care_team",
+    "pharmacy_doctor_invites",
+    "provisioning_errors",
+    "razorpay_orders",
+    "razorpay_payments",
+    "razorpay_webhook_events",
+    "security_events",
+    "storage_audit_logs",
+    "super_admins",
+    "sync_dead_letter_queue"
+  ]
+}

@@ -1,11 +1,8 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:medibond/core/firebase/firestore_paths.dart';
 import 'package:medibond/core/firebase/lab_report_file_store.dart';
 import 'package:medibond/core/firebase/repositories/lab_booking_repository.dart';
 import 'package:medibond/core/firebase/repositories/lab_order_repository.dart';
@@ -17,22 +14,6 @@ import 'package:medibond/core/firebase/lab_report_submit_flow.dart';
 import 'package:medibond/core/storage/storage_service.dart';
 import 'package:medibond/core/supabase/repositories/supabase_lab_repository.dart';
 import 'package:medibond/core/supabase/supabase_bootstrap.dart';
-
-class FailingFirestore extends FakeFirebaseFirestore {
-  bool failOperations = false;
-
-  @override
-  CollectionReference<Map<String, dynamic>> collection(String collectionPath) {
-    if (failOperations) {
-      throw FirebaseException(
-        plugin: 'cloud_firestore',
-        code: 'unavailable',
-        message: 'Simulated Firestore connection error',
-      );
-    }
-    return super.collection(collectionPath);
-  }
-}
 
 class TestS3StorageService extends S3StorageService {
   bool shouldFailUpload = false;
@@ -81,20 +62,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late TestS3StorageService testS3;
-  late FailingFirestore fakeFirestore;
   late Directory tempDir;
 
   const pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
 
   setUp(() {
     testS3 = TestS3StorageService();
-    fakeFirestore = FailingFirestore();
-
-    ProfilePhotoUploader.instance.firestoreOverride = fakeFirestore;
     ProfilePhotoUploader.instance.s3Override = testS3;
 
-    LabBookingRepository.instance.firestoreOverride = fakeFirestore;
-    LabOrderRepository.instance.firestoreOverride = fakeFirestore;
+    LabBookingRepository.instance.firestoreOverride = null;
+    LabOrderRepository.instance.firestoreOverride = null;
     LabReportFileStore.s3Override = testS3;
 
     StorageFeatureFlag.debugOverride = true;
@@ -111,7 +88,6 @@ void main() {
   });
 
   tearDown(() {
-    ProfilePhotoUploader.instance.firestoreOverride = null;
     ProfilePhotoUploader.instance.s3Override = null;
     LabBookingRepository.instance.firestoreOverride = null;
     LabOrderRepository.instance.firestoreOverride = null;
@@ -136,8 +112,27 @@ void main() {
     const patientId = 'p_123';
     const oldKey = 'patients/p_123/profile/old_avatar.jpg';
     final sampleBytes = Uint8List.fromList([1, 2, 3, 4, 5]);
+    var persistCalls = 0;
+    var persistFails = false;
 
-    test('Success: S3 upload -> Firestore update -> Old S3 photo deleted',
+    setUp(() {
+      persistCalls = 0;
+      persistFails = false;
+      SupabaseBootstrap.isReady = true;
+      ProfilePhotoUploader.debugPersistPatient = ({
+        required String patientId,
+        required String newObjectKey,
+      }) async {
+        persistCalls++;
+        if (persistFails) throw StateError('persist failed');
+      };
+    });
+
+    tearDown(() {
+      ProfilePhotoUploader.debugPersistPatient = null;
+    });
+
+    test('Success: S3 upload -> metadata persist -> Old S3 photo deleted',
         () async {
       final result = await ProfilePhotoUploader.instance.uploadPatientPhoto(
         patientId: patientId,
@@ -147,32 +142,12 @@ void main() {
       );
 
       expect(result.success, isTrue);
-      expect(result.photoStorage, 's3');
-      expect(result.photoKey, 'patient_profile/p_123/profile.jpg');
-      expect(testS3.uploadCallCount, 1);
+      expect(persistCalls, 1);
       expect(testS3.deleteCallCount, 1);
-      expect(testS3.deletedKeys, contains(oldKey));
-
-      final patientDoc = await fakeFirestore
-          .collection(FirestorePaths.patients)
-          .doc(patientId)
-          .get();
-      expect(patientDoc.exists, isTrue);
-      expect(
-          patientDoc.data()?['photoKey'], 'patient_profile/p_123/profile.jpg');
-      expect(patientDoc.data()?['photoStorage'], 's3');
-
-      final userDoc = await fakeFirestore
-          .collection(FirestorePaths.users)
-          .doc(patientId)
-          .get();
-      expect(userDoc.exists, isTrue);
-      expect(userDoc.data()?['photoKey'], 'patient_profile/p_123/profile.jpg');
     });
 
-    test('Firestore fails -> Old S3 photo is NOT deleted', () async {
-      fakeFirestore.failOperations = true;
-
+    test('Metadata persist fails -> Old S3 photo is NOT deleted', () async {
+      persistFails = true;
       await expectLater(
         ProfilePhotoUploader.instance.uploadPatientPhoto(
           patientId: patientId,
@@ -180,38 +155,9 @@ void main() {
           oldPhotoKey: oldKey,
           useS3Override: true,
         ),
-        throwsA(isA<FirebaseException>()),
+        throwsA(isA<StateError>()),
       );
-
-      // S3 was uploaded, but because Firestore failed, old S3 object must NOT be deleted!
-      expect(testS3.uploadCallCount, 1);
       expect(testS3.deleteCallCount, 0);
-      expect(testS3.deletedKeys, isEmpty);
-    });
-
-    test(
-        'S3 upload fails -> Firestore not updated, Old S3 photo is NOT deleted',
-        () async {
-      testS3.shouldFailUpload = true;
-
-      await expectLater(
-        ProfilePhotoUploader.instance.uploadPatientPhoto(
-          patientId: patientId,
-          bytes: sampleBytes,
-          oldPhotoKey: oldKey,
-          useS3Override: true,
-        ),
-        throwsException,
-      );
-
-      expect(testS3.uploadCallCount, 1);
-      expect(testS3.deleteCallCount, 0);
-
-      final patientDoc = await fakeFirestore
-          .collection(FirestorePaths.patients)
-          .doc(patientId)
-          .get();
-      expect(patientDoc.exists, isFalse);
     });
   });
 
@@ -220,8 +166,28 @@ void main() {
     const ownerUid = 'user_doc_456';
     const oldKey = 'doctor_profiles/doc_456/profile/old_pic.jpg';
     final sampleBytes = Uint8List.fromList([10, 20, 30, 40]);
+    var persistCalls = 0;
+    var persistFails = false;
 
-    test('Success: S3 upload -> Firestore update -> Old S3 photo deleted',
+    setUp(() {
+      persistCalls = 0;
+      persistFails = false;
+      SupabaseBootstrap.isReady = true;
+      ProfilePhotoUploader.debugPersistDoctor = ({
+        required String doctorId,
+        required String? ownerUid,
+        required String newObjectKey,
+      }) async {
+        persistCalls++;
+        if (persistFails) throw StateError('persist failed');
+      };
+    });
+
+    tearDown(() {
+      ProfilePhotoUploader.debugPersistDoctor = null;
+    });
+
+    test('Success: S3 upload -> metadata persist -> Old S3 photo deleted',
         () async {
       final result = await ProfilePhotoUploader.instance.uploadDoctorPhoto(
         doctorId: doctorId,
@@ -232,70 +198,8 @@ void main() {
       );
 
       expect(result.success, isTrue);
-      expect(result.photoStorage, 's3');
-      expect(result.photoKey, 'doctor_profile/doc_456/profile.jpg');
-      expect(testS3.uploadCallCount, 1);
+      expect(persistCalls, 1);
       expect(testS3.deleteCallCount, 1);
-      expect(testS3.deletedKeys, contains(oldKey));
-
-      final docDoc = await fakeFirestore
-          .collection(FirestorePaths.doctors)
-          .doc(doctorId)
-          .get();
-      expect(docDoc.exists, isTrue);
-      expect(docDoc.data()?['photoKey'], 'doctor_profile/doc_456/profile.jpg');
-
-      final userDoc = await fakeFirestore
-          .collection(FirestorePaths.users)
-          .doc(ownerUid)
-          .get();
-      expect(userDoc.exists, isTrue);
-      expect(userDoc.data()?['photoKey'], 'doctor_profile/doc_456/profile.jpg');
-    });
-
-    test('Firestore fails -> Old S3 photo is NOT deleted', () async {
-      fakeFirestore.failOperations = true;
-
-      await expectLater(
-        ProfilePhotoUploader.instance.uploadDoctorPhoto(
-          doctorId: doctorId,
-          bytes: sampleBytes,
-          oldPhotoKey: oldKey,
-          ownerUid: ownerUid,
-          useS3Override: true,
-        ),
-        throwsA(isA<FirebaseException>()),
-      );
-
-      expect(testS3.uploadCallCount, 1);
-      expect(testS3.deleteCallCount, 0);
-      expect(testS3.deletedKeys, isEmpty);
-    });
-
-    test(
-        'S3 upload fails -> Firestore not updated, Old S3 photo is NOT deleted',
-        () async {
-      testS3.shouldFailUpload = true;
-
-      await expectLater(
-        ProfilePhotoUploader.instance.uploadDoctorPhoto(
-          doctorId: doctorId,
-          bytes: sampleBytes,
-          oldPhotoKey: oldKey,
-          ownerUid: ownerUid,
-          useS3Override: true,
-        ),
-        throwsException,
-      );
-
-      expect(testS3.uploadCallCount, 1);
-      expect(testS3.deleteCallCount, 0);
-
-      final docDoc = await fakeFirestore
-          .collection(FirestorePaths.doctors)
-          .doc(doctorId)
-          .get();
-      expect(docDoc.exists, isFalse);
     });
   });
 

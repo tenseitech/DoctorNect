@@ -1,16 +1,10 @@
-import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:medibond/core/auth/profile_completion_service.dart';
 import 'package:medibond/core/config/ambulance_enabled.dart';
 import 'package:medibond/core/config/ambulance_entry_points.dart';
-import 'package:medibond/core/config/doctor_patient_cutover_flag.dart';
 import 'package:medibond/core/data/shared_appointments_store.dart';
-import 'package:medibond/core/enums/user_type.dart';
-import 'package:medibond/core/firebase/firestore_paths.dart';
 import 'package:medibond/core/notifications/app_notification.dart';
 import 'package:medibond/core/notifications/doctor_notification_trigger.dart';
 import 'package:medibond/core/notifications/in_app_notification_service.dart';
-import 'package:medibond/core/firebase/firebase_bootstrap.dart';
 import 'package:medibond/core/session/doctor_session.dart';
 import 'package:medibond/core/session/patient_session.dart';
 import 'package:medibond/core/supabase/in_app_notification_supabase_repository.dart';
@@ -208,42 +202,6 @@ void main() {
     });
   });
 
-  group('ProfileCompletionService (Firestore only via debugFirestoreOverride)', () {
-    late FakeFirebaseFirestore fakeFs;
-
-    setUp(() {
-      fakeFs = FakeFirebaseFirestore();
-      DoctorPatientCutoverFlag.debugOverride = false;
-      SupabaseBootstrap.isReady = false;
-      FirebaseBootstrap.isReady = true;
-      ProfileCompletionService.instance.reset();
-      ProfileCompletionService.debugFirestoreOverride = () => fakeFs;
-    });
-
-    tearDown(() {
-      ProfileCompletionService.debugFirestoreOverride = null;
-      ProfileCompletionService.debugForceReleaseMode = false;
-      DoctorPatientCutoverFlag.resetForTesting();
-      FirebaseBootstrap.isReady = false;
-    });
-
-    test('markComplete uses injected Firestore', () async {
-      await fakeFs
-          .collection(FirestorePaths.users)
-          .doc('u1')
-          .set({'profileCompleted': false});
-
-      await ProfileCompletionService.instance.markComplete(
-        role: UserType.doctor,
-        uid: 'u1',
-        profileId: 'doc1',
-      );
-
-      final snap =
-          await fakeFs.collection(FirestorePaths.users).doc('u1').get();
-      expect(snap.data()?['profileCompleted'], true);
-    });
-  });
 
   group('AmbulanceEnabled / tab mapping', () {
     tearDown(() {

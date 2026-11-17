@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
@@ -52,7 +52,7 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _doctorFuture = FirestoreService.instance.doctorProfileDetail.fetch(
+    _doctorFuture = AppDataService.instance.doctorProfileDetail.fetch(
       widget.doctorId,
     );
   }
@@ -100,7 +100,7 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
     PatientDoctorReview? existingReview;
     if (patientId.isNotEmpty) {
       existingReview =
-          await FirestoreService.instance.review.fetchReviewForPatientAndDoctor(
+          await AppDataService.instance.review.fetchReviewForPatientAndDoctor(
         patientId: patientId,
         doctorId: widget.doctorId,
       );
@@ -115,7 +115,7 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
       initialRating: existingReview?.rating,
       initialComment: existingReview?.text,
       onSubmit: (rating, comment) async {
-        final reviewId = await FirestoreService.instance.review.submitReview(
+        final reviewId = await AppDataService.instance.review.submitReview(
           patientId: patientId,
           doctorId: widget.doctorId,
           appointmentId: '',
@@ -128,7 +128,7 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
     );
     if (!mounted || submitted != true) return;
     setState(() {
-      _doctorFuture = FirestoreService.instance.doctorProfileDetail.fetch(
+      _doctorFuture = AppDataService.instance.doctorProfileDetail.fetch(
         widget.doctorId,
       );
     });
@@ -153,7 +153,7 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
     );
     if (!mounted || submitted != true) return;
     setState(() {
-      _doctorFuture = FirestoreService.instance.doctorProfileDetail.fetch(
+      _doctorFuture = AppDataService.instance.doctorProfileDetail.fetch(
         widget.doctorId,
       );
     });
@@ -990,7 +990,7 @@ class _ReviewsTabState extends State<_ReviewsTab> {
     final patientId = PatientSession.loggedInPatientId;
     Set<String> liked = const {};
     if (patientId.isNotEmpty) {
-      liked = await FirestoreService.instance.review.likedReviewIdsForPatient(
+      liked = await AppDataService.instance.review.likedReviewIdsForPatient(
         patientId: patientId,
         reviewIds: reviewIds,
       );
@@ -1034,7 +1034,7 @@ class _ReviewsTabState extends State<_ReviewsTab> {
 
     bool? remoteLiked;
     if (patientId.isNotEmpty) {
-      remoteLiked = await FirestoreService.instance.review.toggleHelpfulVote(
+      remoteLiked = await AppDataService.instance.review.toggleHelpfulVote(
         reviewId: review.id,
         patientId: patientId,
       );

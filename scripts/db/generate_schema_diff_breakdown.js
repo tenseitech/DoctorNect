@@ -215,12 +215,14 @@ async function main() {
       system schemas (auth, storage, vault, realtime, graphql). On plain PostgreSQL (replay),
       only explicit grants defined in migrations exist.
    b. Staging Drift:
-      Column defaults (e.g. now() vs CURRENT_TIMESTAMP formatting across PG 15 and PG 17),
+      Column defaults (e.g. now() vs CURRENT_TIMESTAMP wording in catalog),
       index naming conventions, and constraints created manually or via earlier legacy Supabase
       dashboard experiments prior to repository migration consolidation.
-   c. Replay Bug / Engine Variations:
-      PostgreSQL 15 (Supabase Staging) vs PostgreSQL 17 (Local Replay) internal catalog differences
-      in type representations (e.g., character varying vs text formatting in system views).
+   c. Engine / major-version gap (staging vs production-like replay):
+      Staging Supabase is PostgreSQL **17.11**; production RDS is **18.3**. Local replay must use
+      **postgres:18.3** (not staging major). PG18 stores NOT NULL in pg_constraint (extra diff keys);
+      pg_get_functiondef text can differ across 17 vs 18 — use rpc_body_parity_staging.js (normalized)
+      for RPC logic, not raw FUNCTION_BODY hashes alone.
 `);
     console.log('================================================================');
     console.log('SCHEMA DIFF BREAKDOWN COMPLETE.');

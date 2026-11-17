@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 
 import 'dart:async'; // FIXED: for the realtime delivery subscription
 
@@ -62,7 +62,7 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
     });
     // FIXED: live-sync incoming deliveries so prescriptions appear without an app restart
     final storeId = MedicalStoreSession.loggedInStoreId;
-    _deliverySub = FirestoreService.instance.pharmacyFirestore
+    _deliverySub = AppDataService.instance.pharmacyFirestore
         .watchDeliveriesForStore(storeId)
         .listen((deliveries) {
       PharmacyPrescriptionStore.instance.mergeFromFirestore(deliveries);
@@ -72,7 +72,7 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
   // FIXED: pull-to-refresh fallback when realtime sync is unavailable
   Future<void> _refreshDeliveries() async {
     final storeId = MedicalStoreSession.loggedInStoreId;
-    final deliveries = await FirestoreService.instance.pharmacyFirestore
+    final deliveries = await AppDataService.instance.pharmacyFirestore
         .fetchDeliveriesForStore(storeId);
     PharmacyPrescriptionStore.instance.mergeFromFirestore(deliveries);
   }

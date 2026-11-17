@@ -11,10 +11,12 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '../..');
 const FILES = [
+  '.env.example',
   'backend/functions/.env.example',
   'backend/functions/.secret.local.example',
   '.env.migration.example',
-  'backend/functions/.env.migration.example',
+  'backend/.env.migration.example',
+  'frontend/.env.example',
 ];
 
 const PLACEHOLDER =

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/core/firebase/mappers/appointment_firestore_mapper.dart';
@@ -36,7 +35,7 @@ void main() {
         'patientName': 'Rahul Verma',
         'patientAge': 32,
         'patientGender': 'Male',
-        'dateTime': Timestamp.fromDate(now),
+        'dateTime': now.toUtc().toIso8601String(),
         'slotLabel': '10:00 AM',
         'tokenNumber': 5,
         'visitType': 'newVisit',
@@ -114,7 +113,7 @@ void main() {
         'patientName': 'Rahul Verma',
         'patientAge': 32,
         'patientGender': 'Male',
-        'dateTime': Timestamp.fromDate(DateTime(2026, 10, 15, 10, 0)),
+        'dateTime': DateTime(2026, 10, 15, 10, 0).toUtc().toIso8601String(),
         'slotLabel': '10:00 AM',
         'tokenNumber': 5,
         'visitType': 'newVisit',
@@ -157,7 +156,7 @@ void main() {
         'patientName': 'Rahul Verma',
         'patientAge': 32,
         'patientGender': 'Male',
-        'dateTime': Timestamp.fromDate(DateTime(2026, 10, 15, 10, 0)),
+        'dateTime': DateTime(2026, 10, 15, 10, 0).toUtc().toIso8601String(),
         'slotLabel': '10:00 AM',
         'tokenNumber': 5,
         'visitType': 'newVisit',

@@ -1,0 +1,23 @@
+# npm test skipped tests (18) — from docs/audit/npm_test_verify_suite.txt
+
+| # | Test file | Skip reason | Release-critical? |
+|---|-----------|-------------|-------------------|
+| 1 | backend/functions/test/client_payload_replay.rules.test.js | FIRESTORE_EMULATOR_HOST | No — legacy Firestore rules replay; Postgres RLS is authoritative |
+| 2 | backend/functions/test/client_read_replay.rules.test.js | FIRESTORE_EMULATOR_HOST | No |
+| 3 | backend/functions/test/doctor_slots_emulator.test.js | FIRESTORE_EMULATOR_HOST | **Yes (low)** — slot race behavior; mitigated by Postgres booking RPC + gateway tests |
+| 4 | backend/functions/test/firestore_directory_and_appointments.rules.test.js | FIRESTORE_EMULATOR_HOST | No |
+| 5 | backend/functions/test/firestore.rules.test.js | FIRESTORE_EMULATOR_HOST | No |
+| 6 | backend/functions/test/firestore_s3.rules.test.js | FIRESTORE_EMULATOR_HOST | No |
+| 7 | backend/functions/test/otp_redis_integration.test.js | Redis :6390 unavailable | **Yes** — real OTP cooldown/TTL; unit tests cover logic; integration UNVERIFIED without Redis |
+| 8 | backend/functions/test/profile_claims_rules.test.js | FIRESTORE_EMULATOR_HOST | No |
+| 9 | backend/functions/test/promoted_ads_verification.test.js (rules block) | FIRESTORE_EMULATOR_HOST | Partial — ads Postgres path tested elsewhere |
+| 10 | backend/functions/test/storage_doctor_kyc.rules.test.js | Storage emulator | No — S3/KYC on Postgres path separate |
+| 11 | backend/functions/test/storage_live_app_paths.rules.test.js | Storage emulator | No |
+| 12 | backend/functions/test/storage_provider_kyc.rules.test.js | Storage emulator | No |
+| 13 | backend/functions/test/syncDeadLetters.rules.test.js | FIRESTORE_EMULATOR_HOST | No — dead letter queue is Postgres |
+| 14 | backend/functions/test/sync_to_firestore_emulator.test.js (5 tests) | FIRESTORE_EMULATOR_HOST | No — sync bridge is test-only / deprecated for release |
+
+Release-critical summary:
+- **Must address before cutover:** otp_redis_integration (run with Redis on :6390 or CI service).
+- **Watch but not blocking:** doctor_slots_emulator (Postgres `book_appointment_atomic` + RLS suite cover primary path).
+- **Not release-critical:** remaining 15 Firestore/Storage emulator rule harnesses (legacy).

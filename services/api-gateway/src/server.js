@@ -1,5 +1,6 @@
 'use strict';
 
+require('../../../scripts/lib/bootstrap_root_env').loadRootEnv();
 const http = require('node:http');
 const path = require('node:path');
 const config = require('./config');
@@ -10,6 +11,7 @@ const { mintPostgrestJwt } = require('./jwt_minter');
 const { secureCompare, hashUid, RateLimiter, emitAuditLog } = require('./security');
 const { proxyToPostgrest } = require('./proxy');
 const { defaultJwksClient } = require('./jwks');
+const { resolveDataPlane, assertClientRoutingHintIgnored } = require('../../../scripts/lib/demo_routing');
 
 function extractEmbeddedRelations(queryString) {
   if (!queryString) return [];
@@ -175,11 +177,29 @@ function createGatewayServer(overrides = {}) {
     } catch (_) {}
     let cleanPath = path.posix.normalize(decodedPath).replace(/^\/+/, '/').replace(/\/+$/, '') || '/';
 
-    // Health check
+    // Health check (gateway + PostgREST upstream)
     if (cleanPath === '/healthz') {
-      return sendJson(200, {
-        status: 'healthy',
+      let postgrest = { ok: false, status: 'unknown' };
+      const pgRoot = String(cfg.postgrestUrl || '').replace(/\/+$/, '');
+      if (pgRoot) {
+        try {
+          const upstream = await fetch(`${pgRoot}/`, {
+            method: 'GET',
+            signal: AbortSignal.timeout(3000),
+          });
+          postgrest = {
+            ok: upstream.ok || upstream.status === 404 || upstream.status === 405,
+            status: upstream.status,
+          };
+        } catch (err) {
+          postgrest = { ok: false, status: 'unreachable', message: err.message };
+        }
+      }
+      const healthy = postgrest.ok;
+      return sendJson(healthy ? 200 : 503, {
+        status: healthy ? 'healthy' : 'degraded',
         service: 'doctornect-auth-gateway',
+        postgrest,
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
       });
@@ -208,6 +228,14 @@ function createGatewayServer(overrides = {}) {
         return sendJson(413, { error: 'Payload Too Large', message: `Request body exceeds ${cfg.maxBodySizeBytes} bytes.` });
       }
       return sendJson(400, { error: 'Bad Request', message: `Error reading request body: ${err.message}` });
+    }
+
+    const hintCheck = assertClientRoutingHintIgnored(req.headers);
+    if (!hintCheck.ok) {
+      return sendJson(400, {
+        error: 'Bad Request',
+        message: 'Client routing hints are not permitted.',
+      });
     }
 
     // Validate that route belongs to /rest/v1/*
@@ -353,17 +381,17 @@ function createGatewayServer(overrides = {}) {
     if (subPath.startsWith('/rpc/')) {
       const rpcName = subPath.slice('/rpc/'.length).replace(/^\/+/, '').split('/')[0].toLowerCase();
       if (!effectiveAllowedRpcs.has(rpcName)) {
-        return sendJson(404, {
-          error: 'Not Found',
-          message: `RPC function '${rpcName}' is not allowed or not found.`,
+        return sendJson(403, {
+          error: 'Forbidden',
+          message: `RPC function '${rpcName}' is not allowed.`,
         });
       }
     } else {
       const tableName = subPath.replace(/^\/+/, '').split('/')[0].toLowerCase();
       if (!effectiveDirectAllowedTables.has(tableName)) {
-        return sendJson(404, {
-          error: 'Not Found',
-          message: `Resource table '${tableName}' is not allowed or not found.`,
+        return sendJson(403, {
+          error: 'Forbidden',
+          message: `Resource table '${tableName}' is not allowed.`,
         });
       }
 
@@ -386,11 +414,33 @@ function createGatewayServer(overrides = {}) {
 
       for (const rel of embeddedRelations) {
         if (!effectiveAllowedTables.has(rel)) {
-          return sendJson(404, {
-            error: 'Not Found',
-            message: `Embedded resource '${rel}' is not allowed or not found.`,
+          return sendJson(403, {
+            error: 'Forbidden',
+            message: `Embedded resource '${rel}' is not allowed.`,
           });
         }
+      }
+    }
+
+    const appEnv = String(process.env.APP_ENV || '').toLowerCase();
+    let targetBaseUrl = cfg.postgrestUrl;
+    let jwtSecret = cfg.postgrestJwtSecret;
+    let jwtAud = cfg.postgrestJwtAud;
+    if (appEnv === 'production' && cfg.demoRealRoutingEnabled && clientRole !== 'service_role') {
+      const plane = resolveDataPlane({
+        appEnv,
+        firebaseUid: authenticatedPayload?.uid || null,
+      });
+      if (plane === 'supabase') {
+        if (!cfg.demoPostgrestUrl || !cfg.demoPostgrestJwtSecret) {
+          return sendJson(503, {
+            error: 'Service Unavailable',
+            message: 'Demo data plane is not configured.',
+          });
+        }
+        targetBaseUrl = cfg.demoPostgrestUrl;
+        jwtSecret = cfg.demoPostgrestJwtSecret;
+        jwtAud = cfg.demoPostgrestJwtAud;
       }
     }
 
@@ -399,8 +449,8 @@ function createGatewayServer(overrides = {}) {
     if (clientRole === 'service_role') {
       postgrestJwt = mintPostgrestJwt({
         role: 'service_role',
-        jwtSecret: cfg.postgrestJwtSecret,
-        jwtAud: cfg.postgrestJwtAud,
+        jwtSecret,
+        jwtAud,
       });
     } else if (clientRole === 'authenticated') {
       postgrestJwt = mintPostgrestJwt({
@@ -409,14 +459,14 @@ function createGatewayServer(overrides = {}) {
         appRole: authenticatedPayload.appRole,
         verified: authenticatedPayload.verified,
         phoneNumber: authenticatedPayload.phoneNumber,
-        jwtSecret: cfg.postgrestJwtSecret,
-        jwtAud: cfg.postgrestJwtAud,
+        jwtSecret,
+        jwtAud,
       });
     } else {
       postgrestJwt = mintPostgrestJwt({
         role: 'anon',
-        jwtSecret: cfg.postgrestJwtSecret,
-        jwtAud: cfg.postgrestJwtAud,
+        jwtSecret,
+        jwtAud,
       });
     }
 
@@ -431,7 +481,7 @@ function createGatewayServer(overrides = {}) {
     }
 
     return proxyToPostgrest(req, res, {
-      targetBaseUrl: cfg.postgrestUrl,
+      targetBaseUrl,
       postgrestJwt,
       body: bodyBuf,
     });

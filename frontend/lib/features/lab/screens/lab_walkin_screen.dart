@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -94,7 +94,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
 
     try {
       final booking =
-          await FirestoreService.instance.labBooking.saveWalkInBooking(
+          await AppDataService.instance.labBooking.saveWalkInBooking(
         labId: labId,
         labName: labName.isNotEmpty ? labName : 'Lab',
         patientName: _nameController.text.trim(),

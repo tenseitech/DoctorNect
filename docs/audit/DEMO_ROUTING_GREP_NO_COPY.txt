@@ -1,0 +1,4 @@
+# Grep: no runtime Supabase → RDS user/data copy in scripts/db
+# Command: rg "INSERT INTO.*FROM.*supabase|COPY.*FROM.*staging|migrate.*supabase.*rds" scripts/db
+# Result: 0 matches (exit 1 = no lines)
+# Legacy one-off doc reference only: scripts/ops/generate_firestore_inventory.js mentions migrate_firestore_to_supabase.js (historical).

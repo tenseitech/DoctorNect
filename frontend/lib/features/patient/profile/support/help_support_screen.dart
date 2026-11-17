@@ -1,9 +1,6 @@
 import '../../../../core/notifications/app_toast.dart';
-import '../../../../core/firebase/firestore_client.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../../../../core/config/doctor_patient_cutover_flag.dart';
 import '../../../../core/media/gallery_image_picker.dart';
 import '../../../../core/session/patient_session.dart';
 import '../../../../core/supabase/supabase_bootstrap.dart';
@@ -40,24 +37,16 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _submitting = true);
     try {
-      if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
-        await SupportTicketSupabaseRepository.instance.createTicket(
-          issueType: _issueType,
-          message: _issueController.text.trim(),
-          screenshotName: _screenshot,
-          patientId: PatientSession.loggedInPatientId,
-          role: 'patient',
-        );
-      } else {
-        await FirestoreClient.instance.collection('support_tickets').add({
-          'patientId': PatientSession.loggedInPatientId,
-          'issueType': _issueType,
-          'message': _issueController.text.trim(),
-          if (_screenshot != null) 'screenshotName': _screenshot,
-          'status': 'open',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+      if (!SupabaseBootstrap.isReady) {
+        throw StateError('Database not ready');
       }
+      await SupportTicketSupabaseRepository.instance.createTicket(
+        issueType: _issueType,
+        message: _issueController.text.trim(),
+        screenshotName: _screenshot,
+        patientId: PatientSession.loggedInPatientId,
+        role: 'patient',
+      );
     } catch (_) {
       if (!mounted) return;
       setState(() => _submitting = false);

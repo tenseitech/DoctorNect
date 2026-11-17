@@ -1,13 +1,5 @@
-import '../../../../core/config/doctor_patient_cutover_flag.dart';
-import '../../../../core/firebase/firestore_client.dart';
-import '../../../../core/config/firestore_forbidden_guard.dart';
 import '../../../../core/supabase/supabase_bootstrap.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-
-import '../../../../core/firebase/firebase_bootstrap.dart';
-import '../../../../core/firebase/firestore_paths.dart';
-import '../../../../core/firebase/firestore_read_helper.dart';
 import 'indian_medicines_database.dart';
 import 'dosage_units.dart';
 
@@ -66,49 +58,22 @@ class CommunityMedicineRepository {
   List<CommunityMedicine> get cached => List.unmodifiable(_cache);
 
   Future<void> fetchAll() async {
-    final bool useSupabase = DoctorPatientCutoverFlag.isEnabled ||
-        FirestoreForbiddenGuard.isForbidden;
-    if (useSupabase) {
-      if (SupabaseBootstrap.isReady) {
-        try {
-          final res = await SupabaseBootstrap.client
-              .from('community_medicines')
-              .select('id, name, dosage_unit, form, added_by_doctor_id')
-              .order('name', ascending: true)
-              .limit(_fetchLimit);
-          _cache
-            ..clear()
-            ..addAll((res as List).map((row) => CommunityMedicine(
-                  id: row['id']?.toString() ?? '',
-                  name: row['name']?.toString() ?? '',
-                  dosageUnit: row['dosage_unit']?.toString() ?? '',
-                  form: row['form']?.toString() ?? '',
-                  addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
-                )));
-          return;
-        } catch (e, st) {
-          if (kDebugMode) {
-            debugPrint('CommunityMedicineRepository.fetchAll Supabase failed: $e\n$st');
-          }
-        }
-      }
-      return;
-    }
-
-    if (!FirebaseBootstrap.isReady) return;
+    if (!SupabaseBootstrap.isReady) return;
     try {
-      final query = FirestoreClient.instance
-          .collection(FirestorePaths.communityMedicines)
-          .orderBy('name')
+      final res = await SupabaseBootstrap.client
+          .from('community_medicines')
+          .select('id, name, dosage_unit, form, added_by_doctor_id')
+          .order('name', ascending: true)
           .limit(_fetchLimit);
-      final snap = await FirestoreReadHelper.getQuery(
-        query: query,
-        preferCache: true,
-      );
-
       _cache
         ..clear()
-        ..addAll(snap.docs.map(_fromDoc));
+        ..addAll((res as List).map((row) => CommunityMedicine(
+              id: row['id']?.toString() ?? '',
+              name: row['name']?.toString() ?? '',
+              dosageUnit: row['dosage_unit']?.toString() ?? '',
+              form: row['form']?.toString() ?? '',
+              addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
+            )));
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('CommunityMedicineRepository.fetchAll failed: $e\n$st');
@@ -204,23 +169,23 @@ class CommunityMedicineRepository {
     final existing = findByName(trimmed);
     if (existing != null) return existing;
 
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError('Internet is required to add a community medicine.');
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError('Database not ready — cannot add community medicine.');
     }
 
-    final doc = await FirestoreClient.instance
-        .collection(FirestorePaths.communityMedicines)
-        .add({
+    final id =
+        'cm_${DateTime.now().microsecondsSinceEpoch}_${doctorId.hashCode.abs()}';
+    await SupabaseBootstrap.client.from('community_medicines').insert({
+      'id': id,
       'name': trimmed,
-      'nameLower': trimmed.toLowerCase(),
-      'dosageUnit': dosageUnit,
+      'name_lower': trimmed.toLowerCase(),
+      'dosage_unit': dosageUnit,
       'form': form,
-      'addedByDoctorId': doctorId,
-      'addedAt': FieldValue.serverTimestamp(),
+      'added_by_doctor_id': doctorId,
     });
 
     final medicine = CommunityMedicine(
-      id: doc.id,
+      id: id,
       name: trimmed,
       dosageUnit: dosageUnit,
       form: form,
@@ -231,16 +196,4 @@ class CommunityMedicineRepository {
     return medicine;
   }
 
-  static CommunityMedicine _fromDoc(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
-    final data = doc.data();
-    return CommunityMedicine(
-      id: doc.id,
-      name: data['name'] as String? ?? '',
-      dosageUnit: data['dosageUnit'] as String? ?? 'mg',
-      form: data['form'] as String? ?? 'Tablet',
-      addedByDoctorId: data['addedByDoctorId'] as String? ?? '',
-    );
-  }
 }

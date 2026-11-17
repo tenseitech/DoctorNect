@@ -64,6 +64,37 @@ function otpAttemptsRedisKey(digits) {
   return envPrefixedRedisKey(`otp:attempts:${digits}`);
 }
 
+const OTP_VERIFY_ATTEMPT_MAX = 5;
+const OTP_ATTEMPTS_TTL_MS = 15 * 60 * 1000;
+
+/**
+ * Atomically reserves a verify attempt (max 5 per mobile). Returns null when locked out.
+ */
+async function reserveOtpVerifyAttemptSlot(redis, attemptsKey) {
+  const lua = `
+    local n = redis.call('INCR', KEYS[1])
+    if n == 1 then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end
+    if n > tonumber(ARGV[2]) then return -1 end
+    return n
+  `;
+  if (typeof redis.eval === 'function') {
+    const n = await withOtpRedisTimeout(
+      redis.eval(lua, 1, attemptsKey, String(OTP_ATTEMPTS_TTL_MS), String(OTP_VERIFY_ATTEMPT_MAX)),
+    );
+    if (Number(n) === -1) return null;
+    return Number(n);
+  }
+  let newAttempts = 1;
+  if (typeof redis.incr === 'function') {
+    newAttempts = await withOtpRedisTimeout(redis.incr(attemptsKey));
+    if (newAttempts === 1 && typeof redis.pexpire === 'function') {
+      await withOtpRedisTimeout(redis.pexpire(attemptsKey, OTP_ATTEMPTS_TTL_MS)).catch(() => {});
+    }
+  }
+  if (newAttempts > OTP_VERIFY_ATTEMPT_MAX) return null;
+  return newAttempts;
+}
+
 function otpSessionRedisKey(sessionIdOrHash) {
   return envPrefixedRedisKey(`otp:session:${sessionIdOrHash}`);
 }
@@ -251,6 +282,12 @@ function legacyHashOtp(code) {
   return crypto.createHash('sha256').update(String(code || '')).digest('hex');
 }
 
+function resolveOtpHmacSecret() {
+  const dedicated = String(process.env.OTP_HMAC_SECRET || '').trim();
+  if (dedicated) return dedicated;
+  return readMsg91AuthKey({ required: false }) || null;
+}
+
 function hashOtp(code, roleOrOpts, maybeDigits, maybeOpts) {
   let role = '';
   let digits = '';
@@ -268,7 +305,10 @@ function hashOtp(code, roleOrOpts, maybeDigits, maybeOpts) {
       purpose = maybeOpts.purpose || '';
     }
   }
-  const secret = readMsg91AuthKey({ required: false });
+  const secret = resolveOtpHmacSecret();
+  const normRole = role ? normalizeRole(role) : '';
+  const normDigits = digits ? normalizeMobileDigits(digits) : '';
+  const codeStr = String(code || '').trim();
   if (!secret) {
     if (isProductionFirebaseProject() && !isFunctionsEmulator()) {
       console.error(JSON.stringify({
@@ -280,11 +320,15 @@ function hashOtp(code, roleOrOpts, maybeDigits, maybeOpts) {
       }));
       throw new HttpsError('internal', 'Could not send OTP. Please try again.');
     }
+    if (purpose === 'create' && !allowLegacyUnsaltedOtpHash()) {
+      throw new HttpsError(
+        'failed-precondition',
+        'OTP HMAC secret required (MSG91 auth key or OTP_HMAC_SECRET).',
+      );
+    }
     return legacyHashOtp(code);
   }
-  const normRole = role ? normalizeRole(role) : '';
-  const normDigits = digits ? normalizeMobileDigits(digits) : '';
-  const payload = `${normRole}:${normDigits}:${String(code || '').trim()}`;
+  const payload = `${normRole}:${normDigits}:${codeStr}`;
   return crypto.createHmac('sha256', secret).update(payload).digest('hex');
 }
 
@@ -2011,14 +2055,9 @@ async function consumeOtpChallengeAtomically(
     const attemptsKey = otpAttemptsRedisKey(digits);
 
     let rawChallenge = null;
-    let attempts = 0;
     try {
       rawChallenge = (keyNull ? await withOtpRedisTimeout(redis.get(keyNull)) : null)
         || (keyRole ? await withOtpRedisTimeout(redis.get(keyRole)) : null);
-      const attemptsRaw = (typeof redis.get === 'function')
-        ? await withOtpRedisTimeout(redis.get(attemptsKey)).catch(() => 0)
-        : 0;
-      attempts = Number(attemptsRaw) || 0;
     } catch (err) {
       throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
     }
@@ -2034,7 +2073,20 @@ async function consumeOtpChallengeAtomically(
       challenge = {};
     }
 
-    if (attempts >= 5) {
+    if (challenge.expiresAt && Date.now() > challenge.expiresAt) {
+      try {
+        await deleteOtpRedisKeys(redis, normalizedRole, digits);
+      } catch (_) {}
+      throw new HttpsError('deadline-exceeded', 'OTP expired. Send a new one.');
+    }
+
+    let attemptNo;
+    try {
+      attemptNo = await reserveOtpVerifyAttemptSlot(redis, attemptsKey);
+    } catch (err) {
+      throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+    }
+    if (attemptNo == null) {
       try {
         await deleteOtpRedisKeys(redis, normalizedRole, digits);
         if (typeof redis.del === 'function') {
@@ -2042,13 +2094,6 @@ async function consumeOtpChallengeAtomically(
         }
       } catch (_) {}
       throw new HttpsError('resource-exhausted', 'Too many failed attempts. Request a new OTP.');
-    }
-
-    if (challenge.expiresAt && Date.now() > challenge.expiresAt) {
-      try {
-        await deleteOtpRedisKeys(redis, normalizedRole, digits);
-      } catch (_) {}
-      throw new HttpsError('deadline-exceeded', 'OTP expired. Send a new one.');
     }
 
     const reviewerCfg = getReviewerConfig(normalizedRole || role);
@@ -2076,25 +2121,23 @@ async function consumeOtpChallengeAtomically(
       }
 
       return { consumed: true, challenge };
-    } else {
-      let newAttempts = attempts + 1;
-      try {
-        if (typeof redis.incr === 'function') {
-          newAttempts = await withOtpRedisTimeout(redis.incr(attemptsKey));
-          if (newAttempts === 1 && typeof redis.pexpire === 'function') {
-            await withOtpRedisTimeout(redis.pexpire(attemptsKey, 15 * 60 * 1000)).catch(() => {});
-          }
-        }
-        if (newAttempts >= 5) {
-          await deleteOtpRedisKeys(redis, normalizedRole, digits);
-          throw new HttpsError('resource-exhausted', 'Too many failed attempts. Request a new OTP.');
-        }
-      } catch (err) {
-        if (err instanceof HttpsError) throw err;
-        throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
-      }
-      throw new HttpsError('invalid-argument', 'Invalid OTP.');
     }
+
+    if (attemptNo >= OTP_VERIFY_ATTEMPT_MAX) {
+      try {
+        await deleteOtpRedisKeys(redis, normalizedRole, digits);
+        if (typeof redis.del === 'function') {
+          await withOtpRedisTimeout(redis.del(attemptsKey)).catch(() => {});
+        }
+      } catch (_) {}
+      throw new HttpsError('resource-exhausted', 'Too many failed attempts. Request a new OTP.');
+    }
+    throw new HttpsError('invalid-argument', 'Invalid OTP.');
+  }
+
+  const { assertFirestoreNotForbidden, isProductionLegacyFirestoreBlocked } = require('./firestore_forbidden_guard');
+  if (isProductionLegacyFirestoreBlocked()) {
+    assertFirestoreNotForbidden('consumeOtpChallengeAtomically');
   }
 
   const challengeRef = db.collection('otp_challenges').doc(challengeKey);
@@ -2960,6 +3003,14 @@ async function findAmbulanceByPhone(db, phone) {
 
 /** Ambulance driver login after mobile OTP — same outcome as username/PIN verify. */
 async function completeAmbulanceMobileOtpLogin(db, data, auth, { clientIp = 'unknown' } = {}) {
+  if (!db || typeof db.collection !== 'function') {
+    const { assertFirestoreNotForbidden, isProductionLegacyFirestoreBlocked } = require('./firestore_forbidden_guard');
+    if (isProductionLegacyFirestoreBlocked()) {
+      assertFirestoreNotForbidden('completeAmbulanceMobileOtpLogin');
+    }
+    throw new HttpsError('failed-precondition', 'Document database unavailable.');
+  }
+
   if (!auth?.uid) {
     throw new HttpsError('unauthenticated', 'Anonymous sign-in required.');
   }
@@ -3433,6 +3484,8 @@ module.exports = {
   normalizeMobileDigits,
   verifyMsg91Otp,
   otpRedisKey,
+  otpAttemptsRedisKey,
+  reserveOtpVerifyAttemptSlot,
   isOtpRedisMirrorEnabled,
   OTP_REDIS_TIMEOUT_MS,
   allowLegacyUnsaltedOtpHash,

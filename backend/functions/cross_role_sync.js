@@ -15,9 +15,12 @@ require('./firestore_forbidden_guard');
  *    is allowed. Stale snapshots are skipped, not applied.
  * 3. Dead-Letter Queue (DLQ) logging on unrecoverable failures and when the
  *    writer origin cannot be determined (those rows are not guessed).
+ *
+ * **needs pg_pool** — batch/DLQ direct SQL; not exported from `index.js`. Hot paths use Auth Gateway.
  */
 
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { FieldValue } = require('firebase-admin/firestore');
+const { getLegacyFirestoreDb } = require('./legacy_db');
 const crypto = require('crypto');
 const { toUserUuid, executeUserSyncWithEmailFallback } = require('./user_id_bridge');
 const { readSupabaseServiceRoleKey } = require('./secure_config');
@@ -34,23 +37,7 @@ function getSupabaseConfig() {
   return { url, key };
 }
 
-let _pgPool = null;
-function getPgPool() {
-  const dbUrl = process.env.STAGING_SUPABASE_DB_URL || process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
-  if (!dbUrl) return null;
-  if (!_pgPool) {
-    try {
-      const { Pool } = require('pg');
-      _pgPool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
-    } catch (_) {
-      try {
-        const { Pool } = require('../scripts/node_modules/pg');
-        _pgPool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
-      } catch (__) {}
-    }
-  }
-  return _pgPool;
-}
+const { getPgPool } = require('./src/db/pg_pool');
 
 /**
  * Execute an async operation with exponential backoff retry
@@ -136,9 +123,10 @@ async function recordDlqFailure({ direction, entityType, entityId, payload, erro
     } catch (_) {}
   }
 
-  // 3. Fallback to Firestore _sync_dlq collection
+  // 3. Fallback to Firestore _sync_dlq collection (skipped when FIRESTORE_FORBIDDEN=1)
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
+    if (!db) return;
     await db.collection('_sync_dlq').doc(`${entityType}_${entityId}_${Date.now()}`).set({
       ...dlqEntry,
       fallbackSavedAt: FieldValue.serverTimestamp(),
@@ -701,7 +689,15 @@ async function readRemoteUpdatedAtMs({ url, key, pool, table, idColumn, id }) {
     throw new Error('Unsupported compare-and-skip target');
   }
   if (url && key) {
-    const endpoint = `${url.replace(/\/+$/, '')}/rest/v1/${table}?${idColumn}=eq.${encodeURIComponent(id)}&select=updated_at&limit=1`;
+    const base = url.replace(/\/+$/, '');
+    let endpoint;
+    if (table === 'appointments' && idColumn === 'appointment_id') {
+      endpoint = `${base}/rest/v1/appointments?appointment_id=eq.${encodeURIComponent(id)}&select=updated_at&limit=1`;
+    } else if (table === 'users' && idColumn === 'firebase_uid') {
+      endpoint = `${base}/rest/v1/users?firebase_uid=eq.${encodeURIComponent(id)}&select=updated_at&limit=1`;
+    } else {
+      throw new Error('Unsupported compare-and-skip REST target');
+    }
     const resp = await fetch(endpoint, {
       method: 'GET',
       headers: {
@@ -1093,7 +1089,7 @@ async function ensureDoctorExistsInPostgres(doctorId, { url, key, pool }) {
   // 2. Doctor not in Postgres; check Firestore for existing doc data
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('doctors').doc(doctorId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -1660,7 +1656,7 @@ async function ensureMedicalStoreExistsInPostgres(storeId, fallbackData = {}, { 
 
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('medical_stores').doc(storeId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -1726,7 +1722,7 @@ async function ensureLabExistsInPostgres(labId, fallbackData = {}, { url, key, p
 
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('labs').doc(labId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -1792,7 +1788,7 @@ async function ensurePatientExistsInPostgres(patientId, fallbackData = {}, { url
 
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('patients').doc(patientId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -1868,7 +1864,7 @@ async function ensurePrescriptionExistsInPostgres(prescriptionId, fallbackData =
 
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('prescriptions').doc(prescriptionId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -3348,7 +3344,7 @@ async function ensureAmbulanceExistsInPostgres(ambulanceId, fallbackData = {}, {
 
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('ambulances').doc(ambulanceId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -3423,7 +3419,7 @@ async function ensureAmbulanceBroadcastExistsInPostgres(broadcastId, fallbackDat
 
   let docData = null;
   try {
-    const db = getFirestore();
+    const db = getLegacyFirestoreDb();
     const snap = await db.collection('ambulance_broadcasts').doc(broadcastId).get();
     if (snap.exists) docData = snap.data();
   } catch (_) {}
@@ -3706,7 +3702,7 @@ async function syncFirestoreAmbulancePrivateSettingsToSupabase(event) {
   // Fallback check from Firestore ambulances/{ambulanceId}/private/settings if still missing
   if (!pinHash) {
     try {
-      const db = getFirestore();
+      const db = getLegacyFirestoreDb();
       const privSnap = await db.collection('ambulances').doc(ambulanceId).collection('private').doc('settings').get();
       const privPin = privSnap.data()?.pin || privSnap.data()?.pinHash;
       if (isAmbulancePinHash(privPin)) pinHash = String(privPin).trim();

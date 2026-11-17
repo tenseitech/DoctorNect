@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'dart:async';
@@ -55,7 +55,7 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
     if (patientId.isNotEmpty) {
       try {
         if (logs.isEmpty) {
-          final records = await FirestoreService.instance.patientProfile
+          final records = await AppDataService.instance.patientProfile
               .fetchHealthRecords(patientId);
           HealthRecordsMock.applyFromFirestore(records);
           logs = HealthRecordsMock.vitalsHistory();
@@ -156,7 +156,7 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isNotEmpty) {
       try {
-        await FirestoreService.instance.patientProfile.saveHealthRecord(
+        await AppDataService.instance.patientProfile.saveHealthRecord(
           patientId,
           _healthRecordFromLog(log),
         );

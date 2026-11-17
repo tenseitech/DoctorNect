@@ -1,13 +1,9 @@
 import 'dart:async';
-import '../firebase/firestore_client.dart';
 import 'dart:math' as math;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 
-import '../config/firestore_forbidden_guard.dart';
-import '../firebase/firebase_bootstrap.dart';
 import '../supabase/supabase_bootstrap.dart';
 import '../supabase/supabase_stream_table.dart';
 import '../models/promoted_ad_model.dart';
@@ -18,8 +14,6 @@ import '../storage/s3_storage_service.dart';
 import '../storage/storage_feature_flag.dart';
 
 abstract final class PromotedAdsService {
-  static const _collection = 'promotedAds';
-
   static String _generateAdId() {
     const chars =
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -31,18 +25,9 @@ abstract final class PromotedAdsService {
   }
 
   @visibleForTesting
-  static FirebaseFirestore? firestoreOverride;
-  static FirebaseFirestore get _db {
-    if (firestoreOverride != null) return firestoreOverride!;
-    FirestoreForbiddenGuard.assertNotForbidden('PromotedAdsService._db');
-    return FirestoreClient.instance;
-  }
-
-  @visibleForTesting
   static S3StorageService? s3Override;
   static S3StorageService get _s3 => s3Override ?? S3StorageService.instance;
 
-  /// Default pricing map in INR: 1 Day, 3 Days, 1 Week, 1 Month
   static const Map<int, int> defaultPricingTiers = {
     24: 300,
     72: 750,
@@ -50,10 +35,8 @@ abstract final class PromotedAdsService {
     720: 5000,
   };
 
-  /// Backwards compatibility pricingTiers getter
   static Map<int, int> get pricingTiers => defaultPricingTiers;
 
-  /// Fetches real-time pricing for a given duration in hours from Super Admin config
   static Future<int> getDynamicPlanPrice(int durationHours) async {
     try {
       final config = await BannerConfigService.fetchConfig();
@@ -65,7 +48,6 @@ abstract final class PromotedAdsService {
     }
   }
 
-  /// Uploads ad banner image bytes to S3 and returns public URL.
   static Future<String> uploadAdImage(
     String providerId,
     String adId,
@@ -92,7 +74,6 @@ abstract final class PromotedAdsService {
     return uploadResult.downloadUrl ?? '';
   }
 
-  /// 1. Create a draft promoted ad in Firestore with status 'draft'
   static Future<PromotedAdModel> createDraftAd({
     required String providerType,
     required String providerId,
@@ -122,16 +103,21 @@ abstract final class PromotedAdsService {
       throw ArgumentError('Title and description failed validation.');
     }
 
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError(
+        'Cannot create promoted ad: database connection is not ready.',
+      );
+    }
+
     final amountPaid = customAmountPaid ?? pricingTiers[durationHours] ?? 300;
     final adId = adIdOverride ?? _generateAdId();
 
     final useS3 = useS3Override ?? StorageFeatureFlag.useS3Storage;
     String imageUrl = '';
     String? imageKey;
-    String? imageStorage;
+    String imageStorage = 's3';
 
     if (useS3) {
-      // 1. Upload to S3
       final uploadResult = await _s3.uploadBytes(
         purpose: 'ad_banner',
         parentId: adId,
@@ -141,87 +127,35 @@ abstract final class PromotedAdsService {
       );
       imageKey = uploadResult.objectKey;
       imageUrl = uploadResult.downloadUrl ?? '';
-      imageStorage = 's3';
     } else {
-      // Legacy Firebase upload
       imageUrl = await uploadAdImage(providerId, adId, imageBytes);
       imageStorage = 'firebase';
     }
 
-    final adMap = {
-      'adId': adId,
-      'providerType': providerType.toLowerCase(),
-      'providerId': providerId,
+    final supabasePayload = {
+      'ad_id': adId,
+      'provider_type': providerType.toLowerCase(),
+      'provider_id': providerId,
       'title': safeTitle,
       'description': safeDescription,
-      'imageUrl': imageUrl,
-      if (imageKey != null) 'imageKey': imageKey,
-      'imageStorage': imageStorage,
-      'ctaLabel': safeCta,
-      'durationHours': durationHours,
-      'amountPaid': amountPaid,
+      'image_url': imageUrl,
+      if (imageKey != null) 'image_s3_key': imageKey,
+      'image_storage_provider': imageStorage,
+      'cta_label': safeCta,
+      'duration_hours': durationHours,
+      'amount_paid': amountPaid,
       if (targetCity != null && targetCity.isNotEmpty)
-        'targetCity': InputSanitize.plainText(targetCity, maxLength: 80),
-      if (targetCities != null && targetCities.isNotEmpty)
-        'targetCities': targetCities
-            .map((c) => InputSanitize.plainText(c, maxLength: 80))
-            .where((c) => c.isNotEmpty)
-            .take(20)
-            .toList(),
-      'paymentStatus': 'pending',
+        'target_city': InputSanitize.plainText(targetCity, maxLength: 80),
+      'payment_status': 'pending',
       'status': 'draft',
-      'createdAt': FieldValue.serverTimestamp(),
+      'created_at': DateTime.now().toIso8601String(),
+      'updated_at': DateTime.now().toIso8601String(),
     };
+    await SupabaseBootstrap.client
+        .from('promoted_ads')
+        .upsert(supabasePayload, onConflict: 'ad_id');
 
-    if (firestoreOverride == null) {
-      if (!SupabaseBootstrap.isReady) {
-        throw StateError(
-          'Cannot create promoted ad: database connection is not ready.',
-        );
-      }
-      final supabasePayload = {
-        'ad_id': adId,
-        'provider_type': providerType.toLowerCase(),
-        'provider_id': providerId,
-        'title': safeTitle,
-        'description': safeDescription,
-        'image_url': imageUrl,
-        if (imageKey != null) 'image_s3_key': imageKey,
-        'image_storage_provider': 's3',
-        'cta_label': safeCta,
-        'duration_hours': durationHours,
-        'amount_paid': amountPaid,
-        if (targetCity != null && targetCity.isNotEmpty)
-          'target_city': InputSanitize.plainText(targetCity, maxLength: 80),
-        'payment_status': 'pending',
-        'status': 'draft',
-        'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
-      };
-      await SupabaseBootstrap.client.from('promoted_ads').upsert(supabasePayload, onConflict: 'ad_id');
-
-      if (oldImageKey != null &&
-          oldImageKey.trim().isNotEmpty &&
-          oldImageKey.trim() != imageKey) {
-        try {
-          await _s3.deleteObject(oldImageKey.trim());
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('[PromotedAdsService] failed to delete old S3 banner: $e');
-          }
-        }
-      }
-
-      return PromotedAdModel.fromRow(supabasePayload);
-    }
-
-    // Test-only Firestore path
-    final docRef = _db.collection(_collection).doc(adId);
-    await docRef.set(adMap);
-
-    // 3. Delete old S3 object ONLY after new upload AND Firestore write succeed
-    if (useS3 &&
-        oldImageKey != null &&
+    if (oldImageKey != null &&
         oldImageKey.trim().isNotEmpty &&
         oldImageKey.trim() != imageKey &&
         (oldImageStorage == null || oldImageStorage == 's3')) {
@@ -234,15 +168,9 @@ abstract final class PromotedAdsService {
       }
     }
 
-    final docSnap = await docRef.get();
-    return PromotedAdModel.fromFirestore(docSnap);
+    return PromotedAdModel.fromRow(supabasePayload);
   }
 
-  /// Updates the banner image of an existing ad.
-  /// Strict ordering:
-  /// 1. Upload new banner image (to S3 if enabled, or Firebase Storage if disabled).
-  /// 2. Update Firestore document.
-  /// 3. Delete old S3 object ONLY AFTER both upload AND Firestore write succeed.
   static Future<PromotedAdModel> updateAdBanner({
     required String adId,
     required String providerId,
@@ -251,14 +179,19 @@ abstract final class PromotedAdsService {
     String? oldImageStorage,
     bool? useS3Override,
   }) async {
+    if (!SupabaseBootstrap.isReady) {
+      throw StateError(
+        'Cannot update promoted ad: database connection is not ready.',
+      );
+    }
+
     final useS3 = useS3Override ?? StorageFeatureFlag.useS3Storage;
 
     String imageUrl = '';
     String? newImageKey;
-    String? newImageStorage;
+    String newImageStorage = 's3';
 
     if (useS3) {
-      // 1. Upload to S3
       final uploadResult = await _s3.uploadBytes(
         purpose: 'ad_banner',
         parentId: adId,
@@ -268,75 +201,42 @@ abstract final class PromotedAdsService {
       );
       newImageKey = uploadResult.objectKey;
       imageUrl = uploadResult.downloadUrl ?? '';
-      newImageStorage = 's3';
-
-      if (SupabaseBootstrap.isReady && firestoreOverride == null) {
-        await SupabaseBootstrap.client.from('promoted_ads').update({
-          'image_url': imageUrl,
-          'image_s3_key': newImageKey,
-          'image_storage_provider': 's3',
-          'updated_at': DateTime.now().toIso8601String(),
-        }).eq('ad_id', adId);
-
-        if (oldImageKey != null &&
-            oldImageKey.trim().isNotEmpty &&
-            oldImageKey.trim() != newImageKey) {
-          try {
-            await _s3.deleteObject(oldImageKey.trim());
-          } catch (e) {
-            if (kDebugMode) {
-              debugPrint('[PromotedAdsService] failed to delete old S3 banner: $e');
-            }
-          }
-        }
-
-        final res = await SupabaseBootstrap.client.from('promoted_ads').select().eq('ad_id', adId).maybeSingle();
-        if (res != null) {
-          return PromotedAdModel.fromRow(res);
-        }
-      }
-
-      // 2. Firestore update
-      final docRef = _db.collection(_collection).doc(adId);
-      await docRef.update({
-        'imageUrl': imageUrl,
-        'imageKey': newImageKey,
-        'imageStorage': newImageStorage,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      // 3. Delete old S3 object ONLY after both upload AND Firestore update succeeded
-      if (oldImageKey != null &&
-          oldImageKey.trim().isNotEmpty &&
-          oldImageKey.trim() != newImageKey &&
-          (oldImageStorage == null || oldImageStorage == 's3')) {
-        try {
-          await _s3.deleteObject(oldImageKey.trim());
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint(
-                '[PromotedAdsService] failed to delete old S3 banner: $e');
-          }
-        }
-      }
-
-      final docSnap = await docRef.get();
-      return PromotedAdModel.fromFirestore(docSnap);
     } else {
-      // Legacy upload
       imageUrl = await uploadAdImage(providerId, adId, imageBytes);
-      final docRef = _db.collection(_collection).doc(adId);
-      await docRef.update({
-        'imageUrl': imageUrl,
-        'imageStorage': 'firebase',
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      final docSnap = await docRef.get();
-      return PromotedAdModel.fromFirestore(docSnap);
+      newImageStorage = 'firebase';
     }
+
+    await SupabaseBootstrap.client.from('promoted_ads').update({
+      'image_url': imageUrl,
+      if (newImageKey != null) 'image_s3_key': newImageKey,
+      'image_storage_provider': newImageStorage,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('ad_id', adId);
+
+    if (oldImageKey != null &&
+        oldImageKey.trim().isNotEmpty &&
+        oldImageKey.trim() != newImageKey &&
+        (oldImageStorage == null || oldImageStorage == 's3')) {
+      try {
+        await _s3.deleteObject(oldImageKey.trim());
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[PromotedAdsService] failed to delete old S3 banner: $e');
+        }
+      }
+    }
+
+    final res = await SupabaseBootstrap.client
+        .from('promoted_ads')
+        .select()
+        .eq('ad_id', adId)
+        .maybeSingle();
+    if (res != null) {
+      return PromotedAdModel.fromRow(res);
+    }
+    throw StateError('Ad not found after banner update.');
   }
 
-  /// 2. Call Cloud Function to create Razorpay Order
   static Future<Map<String, dynamic>> createRazorpayOrder({
     required String adId,
     required int durationHours,
@@ -352,7 +252,6 @@ abstract final class PromotedAdsService {
     return Map<String, dynamic>.from(result.data as Map);
   }
 
-  /// 3. Call Cloud Function to verify Razorpay Payment server-side
   static Future<bool> verifyRazorpayPayment({
     required String adId,
     required String orderId,
@@ -373,89 +272,30 @@ abstract final class PromotedAdsService {
     return data['success'] == true;
   }
 
-  /// 4. Query active ads for Patient Home screen banner carousel
   static Future<List<PromotedAdModel>> fetchActiveAds() async {
-    if (SupabaseBootstrap.isReady && firestoreOverride == null) {
-      try {
-        final res = await SupabaseBootstrap.client
-            .from('promoted_ads')
-            .select()
-            .eq('status', 'active');
-        final now = DateTime.now();
-        final activeAds = (res as List)
-            .map((d) => PromotedAdModel.fromRow(d as Map<String, dynamic>))
-            .where((ad) => ad.endTime == null || ad.endTime!.isAfter(now))
-            .toList();
-        activeAds.shuffle();
-        return activeAds;
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('[PromotedAdsService] Supabase fetchActiveAds error: $e');
-        }
-        return [];
-      }
-    }
-
-    if (!FirebaseBootstrap.isReady) return [];
-
+    if (!SupabaseBootstrap.isReady) return [];
     try {
-      final snap = await _db
-          .collection(_collection)
-          .where('status', isEqualTo: 'active')
-          .get();
-
+      final res = await SupabaseBootstrap.client
+          .from('promoted_ads')
+          .select()
+          .eq('status', 'active');
       final now = DateTime.now();
-      final activeAds = snap.docs
-          .map((d) => PromotedAdModel.fromFirestore(d))
+      final activeAds = (res as List)
+          .map((d) => PromotedAdModel.fromRow(d as Map<String, dynamic>))
           .where((ad) => ad.endTime == null || ad.endTime!.isAfter(now))
           .toList();
-
       activeAds.shuffle();
       return activeAds;
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('[PromotedAdsService] fetchActiveAds error: $e');
+      }
       return [];
     }
   }
 
-  /// Stream of active ads for real-time patient carousel updates (respects Super Admin config.enabled)
   static Stream<List<PromotedAdModel>> streamActiveAds() {
-    if (SupabaseBootstrap.isReady && firestoreOverride == null) {
-      if (SupabaseBootstrap.isProduction) {
-        return streamTable(
-          table: 'promoted_ads',
-          primaryKey: ['ad_id'],
-          filterColumn: 'status',
-          filterValue: 'active',
-        ).map((rows) {
-          final now = DateTime.now();
-          final active = rows
-              .map((r) => PromotedAdModel.fromRow(r))
-              .where((ad) => ad.endTime == null || ad.endTime!.isAfter(now))
-              .toList();
-          active.shuffle();
-          return active;
-        });
-      }
-
-      return SupabaseBootstrap.client
-          .from('promoted_ads')
-          .stream(primaryKey: ['ad_id'])
-          .eq('status', 'active')
-          .map((rows) {
-            final now = DateTime.now();
-            final active = rows
-                .map((r) => PromotedAdModel.fromRow(r))
-                .where((ad) => ad.endTime == null || ad.endTime!.isAfter(now))
-                .toList();
-            active.shuffle();
-            return active;
-          });
-    }
-
-    if (!FirebaseBootstrap.isReady && firestoreOverride == null)
-      return Stream.value([]);
+    if (!SupabaseBootstrap.isReady) return Stream.value([]);
 
     final controller = StreamController<List<PromotedAdModel>>.broadcast();
     BannerConfigModel lastConfig = const BannerConfigModel();
@@ -482,12 +322,23 @@ abstract final class PromotedAdsService {
       emit();
     }, onError: (_) => emit());
 
-    final adsSub = _db
-        .collection(_collection)
-        .where('status', isEqualTo: 'active')
-        .snapshots()
-        .listen((snap) {
-      lastAds = snap.docs.map((d) => PromotedAdModel.fromFirestore(d)).toList();
+    final Stream<List<Map<String, dynamic>>> adsRows;
+    if (SupabaseBootstrap.isProduction) {
+      adsRows = streamTable(
+        table: 'promoted_ads',
+        primaryKey: ['ad_id'],
+        filterColumn: 'status',
+        filterValue: 'active',
+      );
+    } else {
+      adsRows = SupabaseBootstrap.client
+          .from('promoted_ads')
+          .stream(primaryKey: ['ad_id'])
+          .eq('status', 'active');
+    }
+
+    final adsSub = adsRows.listen((rows) {
+      lastAds = rows.map(PromotedAdModel.fromRow).toList();
       emit();
     }, onError: (_) => emit());
 
@@ -499,57 +350,33 @@ abstract final class PromotedAdsService {
     return controller.stream;
   }
 
-  /// 5. Query provider's own ads for "My Ads" dashboard view
   static Stream<List<PromotedAdModel>> streamProviderAds(String providerId) {
     if (providerId.isEmpty) return Stream.value([]);
-    if (SupabaseBootstrap.isReady && firestoreOverride == null) {
-      if (SupabaseBootstrap.isProduction) {
-        return streamTable(
-          table: 'promoted_ads',
-          primaryKey: ['ad_id'],
-          filterColumn: 'provider_id',
-          filterValue: providerId,
-        ).map((rows) {
-          final list = rows.map((r) => PromotedAdModel.fromRow(r)).toList();
-          list.sort(
-            (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
-              a.createdAt ?? DateTime.now(),
-            ),
-          );
-          return list;
-        });
-      }
+    if (!SupabaseBootstrap.isReady) return Stream.value([]);
 
-      return SupabaseBootstrap.client
+    final Stream<List<Map<String, dynamic>>> rows;
+    if (SupabaseBootstrap.isProduction) {
+      rows = streamTable(
+        table: 'promoted_ads',
+        primaryKey: ['ad_id'],
+        filterColumn: 'provider_id',
+        filterValue: providerId,
+      );
+    } else {
+      rows = SupabaseBootstrap.client
           .from('promoted_ads')
           .stream(primaryKey: ['ad_id'])
-          .eq('provider_id', providerId)
-          .map((rows) {
-            final list = rows.map((r) => PromotedAdModel.fromRow(r)).toList();
-            list.sort(
-              (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
-                a.createdAt ?? DateTime.now(),
-              ),
-            );
-            return list;
-          });
+          .eq('provider_id', providerId);
     }
 
-    if (!FirebaseBootstrap.isReady && firestoreOverride == null)
-      return Stream.value([]);
-    return _db
-        .collection(_collection)
-        .where('providerId', isEqualTo: providerId)
-        .snapshots()
-        .map((snap) {
-      final list =
-          snap.docs.map((d) => PromotedAdModel.fromFirestore(d)).toList();
-      list.sort(
+    return rows.map((list) {
+      final ads = list.map(PromotedAdModel.fromRow).toList();
+      ads.sort(
         (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
           a.createdAt ?? DateTime.now(),
         ),
       );
-      return list;
+      return ads;
     });
   }
 }

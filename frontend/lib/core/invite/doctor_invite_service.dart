@@ -1,8 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../firebase/firestore_client.dart';
-
-import '../firebase/firebase_bootstrap.dart';
-import '../firebase/firestore_paths.dart';
 import '../session/doctor_session.dart';
 import '../../features/doctor/profile/data/doctor_profile_store.dart';
 
@@ -17,7 +12,7 @@ enum InviteNetworkUserType {
   final String label;
 }
 
-/// Doctor → patient invite links backed by Firestore metadata.
+/// Doctor → patient invite links (derived from doctor id; no Firestore metadata).
 abstract final class DoctorInviteService {
   static const inviteBaseUrl = 'https://doctornect.com/join';
 
@@ -77,17 +72,9 @@ abstract final class DoctorInviteService {
     };
   }
 
+  /// Invite URLs are deterministic; no remote metadata write required.
   static Future<void> ensureInviteMetadata(String doctorId) async {
-    if (!FirebaseBootstrap.isReady || doctorId.isEmpty) return;
-
-    await FirestoreClient.instance
-        .collection(FirestorePaths.doctors)
-        .doc(doctorId)
-        .set({
-      'inviteCode': doctorId,
-      'inviteLink': buildInviteLink(doctorId),
-      'inviteUpdatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    if (doctorId.isEmpty) return;
   }
 
   static Future<String> linkForCurrentDoctor({

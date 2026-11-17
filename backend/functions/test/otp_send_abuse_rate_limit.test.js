@@ -12,6 +12,7 @@ let origRateLimitBackend;
 test.beforeEach(() => {
   origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
   origRateLimitBackend = process.env.RATE_LIMIT_BACKEND;
+  process.env.FIRESTORE_FORBIDDEN = '0';
   process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
   process.env.RATE_LIMIT_BACKEND = 'firestore';
   setRedisClientForTesting(null);

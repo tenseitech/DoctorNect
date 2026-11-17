@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../util/map_date_time.dart';
 
 import '../models/doctor_lab_order.dart';
 
@@ -79,14 +79,7 @@ abstract final class LabOrderFirestoreMapper {
     }
   }
 
-  static DateTime? _optionalParseDate(dynamic value) {
-    if (value == null) return null;
-    if (value is Timestamp) return value.toDate();
-    if (value is DateTime) return value;
-    return null;
-  }
+  static DateTime? _optionalParseDate(dynamic value) => parseMapDateTime(value);
 
-  static DateTime _parseDate(dynamic value) {
-    return _optionalParseDate(value) ?? DateTime.now();
-  }
+  static DateTime _parseDate(dynamic value) => parseMapDateTime(value) ?? DateTime.now();
 }

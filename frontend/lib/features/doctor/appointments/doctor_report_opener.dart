@@ -1,4 +1,4 @@
-import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/app_data_service.dart';
 
 import 'package:flutter/material.dart';
 
@@ -23,7 +23,7 @@ abstract final class DoctorReportOpener {
     }
 
     try {
-      if (!await FirestoreService.instance.patientProfile
+      if (!await AppDataService.instance.patientProfile
           .isPatientSharingClinicalDataWithDoctors(patientId)) {
         if (!context.mounted) return;
         _showMessage(
@@ -34,7 +34,7 @@ abstract final class DoctorReportOpener {
         return;
       }
 
-      final records = await FirestoreService.instance.patientProfile
+      final records = await AppDataService.instance.patientProfile
           .fetchHealthRecordsForDoctor(patientId);
       final match = _findRecord(records, reportName);
 

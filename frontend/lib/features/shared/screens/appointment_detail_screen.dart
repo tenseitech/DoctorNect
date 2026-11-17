@@ -9,7 +9,7 @@ import 'package:medibond/core/constants/app_constants.dart';
 import 'package:medibond/core/constants/app_icons.dart';
 import 'package:medibond/core/data/shared_appointments_store.dart';
 import 'package:medibond/core/firebase/firebase_error_messages.dart';
-import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/app_data_service.dart';
 import 'package:medibond/core/layout/responsive_layout.dart';
 import 'package:medibond/core/notifications/doctor_notification_emitter.dart';
 import 'package:medibond/core/session/doctor_session.dart';
@@ -211,7 +211,7 @@ class _DoctorAppointmentDetailScreenState
 
       if (phone.isEmpty || name.isEmpty) {
         try {
-          final data = await FirestoreService.instance.patientProfile
+          final data = await AppDataService.instance.patientProfile
               .fetchPatientDocumentForDoctor(patientKey);
           if (data != null) {
             if (phone.isEmpty) {
@@ -1050,7 +1050,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
     PatientDoctorReview? existingReview;
     if (patientId.isNotEmpty) {
       existingReview =
-          await FirestoreService.instance.review.fetchReviewForPatientAndDoctor(
+          await AppDataService.instance.review.fetchReviewForPatientAndDoctor(
         patientId: patientId,
         doctorId: a.doctorId,
       );
@@ -1073,7 +1073,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
   Future<void> _editReview(BuildContext context, PatientAppointment a) async {
     String? initialComment;
     if (a.reviewId != null && a.reviewId!.isNotEmpty) {
-      final review = await FirestoreService.instance.review.fetchReview(
+      final review = await AppDataService.instance.review.fetchReview(
         a.reviewId!,
       );
       initialComment = review?.text;

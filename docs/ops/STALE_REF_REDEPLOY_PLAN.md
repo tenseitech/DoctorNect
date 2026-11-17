@@ -4,20 +4,20 @@
 - **Status:** PREPARATION ONLY — NO DEPLOY EXECUTED
 - **Audit Branch:** `audit/full-verify`
 - **Issue Reference:** CFG-01 (Deployment Configuration Drift)
-- **Stale Staging Ref:** `irpkyedfmdsuvapfnrim.supabase.co`
-- **Target Production Ref:** `rnltknemwnjrjxthtull.supabase.co`
+- **Stale Staging Ref:** `legacy-staging-ref.supabase.co`
+- **Target Production Ref:** `staging-project-ref.supabase.co`
 - **GCP/Firebase Production Project:** `medibond-45fad`
 
 ---
 
 ## 1. Executive Summary
 
-During full architecture and configuration audits, inspection of `baseline_functions.json` revealed that **50 deployed Cloud Functions** in production project `medibond-45fad` have their `SUPABASE_URL` environment variable baked in pointing to a stale staging database instance (`irpkyedfmdsuvapfnrim.supabase.co`) rather than the production database (`rnltknemwnjrjxthtull.supabase.co`).
+During full architecture and configuration audits, inspection of `baseline_functions.json` revealed that **50 deployed Cloud Functions** in production project `medibond-45fad` have their `SUPABASE_URL` environment variable baked in pointing to a stale staging database instance (`legacy-staging-ref.supabase.co`) rather than the production database (`staging-project-ref.supabase.co`).
 
 ### Census & Empirical Ground Truth
 - **Total Functions in Production (`medibond-45fad`):** 56
-- **Functions Pointing to Stale Staging Ref (`irpkyedfmdsuvapfnrim`):** **50**
-- **Functions Already Pointing to Production (`rnltknemwnjrjxthtull`):** **5** (`bookAppointment`, `expirePromotedAds`, `sendUserRegistrationOtp`, `verifyUserRegistrationOtp`, `reconcileAppointmentSlot`)
+- **Functions Pointing to Stale Staging Ref (`legacy-staging-ref`):** **50**
+- **Functions Already Pointing to Production (`staging-project-ref`):** **5** (`bookAppointment`, `expirePromotedAds`, `sendUserRegistrationOtp`, `verifyUserRegistrationOtp`, `reconcileAppointmentSlot`)
 - **Hosting / SSR Functions (No Supabase URL):** **1** (`ssrmedibond45fad`)
 
 ---

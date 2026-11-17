@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../util/map_date_time.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../notifications/app_notification.dart';
@@ -57,11 +57,8 @@ abstract final class InAppNotificationFirestoreMapper {
     }
   }
 
-  static DateTime _createdAt(Object? value) {
-    if (value is Timestamp) return value.toDate();
-    if (value is DateTime) return value;
-    return DateTime.now();
-  }
+  static DateTime _createdAt(Object? value) =>
+      parseMapDateTime(value) ?? DateTime.now();
 
   static AppNotificationType _type(String? raw) {
     if (raw == null || raw.isEmpty) return AppNotificationType.system;

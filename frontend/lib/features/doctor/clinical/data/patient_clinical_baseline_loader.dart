@@ -1,4 +1,4 @@
-import '../../../../core/firebase/firestore_service.dart';
+import '../../../../core/firebase/app_data_service.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -39,7 +39,7 @@ abstract final class PatientClinicalBaselineLoader {
     try {
       final doctorId = DoctorSession.loggedInDoctorId;
       if (doctorId.isNotEmpty) {
-        if (!await FirestoreService.instance.patientProfile
+        if (!await AppDataService.instance.patientProfile
             .isPatientSharingClinicalDataWithDoctors(
           patientId,
           preferCache: false,
@@ -47,7 +47,7 @@ abstract final class PatientClinicalBaselineLoader {
           return null;
         }
 
-        final page = await FirestoreService.instance.prescription
+        final page = await AppDataService.instance.prescription
             .fetchForDoctorAndPatientForDoctor(
           doctorId,
           patientId,
@@ -76,11 +76,11 @@ abstract final class PatientClinicalBaselineLoader {
 
   static Future<String?> fetchProfileAllergiesText(String patientId) async {
     if (patientId.isEmpty) return null;
-    if (!await FirestoreService.instance.patientProfile
+    if (!await AppDataService.instance.patientProfile
         .isPatientSharingClinicalDataWithDoctors(patientId)) {
       return null;
     }
-    final data = await FirestoreService.instance.patientProfile
+    final data = await AppDataService.instance.patientProfile
         .fetchPatientDocumentForDoctor(patientId);
     if (data == null) return null;
     final list = (data['allergies'] as List<dynamic>? ?? const [])

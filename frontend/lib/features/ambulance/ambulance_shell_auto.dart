@@ -1,4 +1,4 @@
-import '../../core/firebase/firestore_service.dart';
+import '../../core/firebase/app_data_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -67,7 +67,7 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
       return;
     }
 
-    final profile = await FirestoreService.instance.ambulance
+    final profile = await AppDataService.instance.ambulance
         .fetchAmbulanceById(_ambulanceId);
     if (!mounted) return;
 
@@ -111,7 +111,7 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
         return;
       }
 
-      final login = await FirestoreService.instance.ambulance.verifyDriverLogin(
+      final login = await AppDataService.instance.ambulance.verifyDriverLogin(
         username: _username!,
         pin: pin,
       );
@@ -127,7 +127,7 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
 
       final match = login.profile!;
 
-      await FirestoreService.instance.ambulance.linkDriverAuth(
+      await AppDataService.instance.ambulance.linkDriverAuth(
         match.id,
         username: _username!,
         pin: pin,

@@ -1,8 +1,26 @@
 # DoctorNect: Environment Architecture & Configuration Guide
 
-**Document Version:** 1.0.0  
+**Document Version:** 1.1.0  
 **Environments:** Staging (`staging`) vs Production (`production`)  
 **Target Architecture:** Firebase Auth + Supabase PostgreSQL + AWS S3 + Redis
+
+---
+
+## 0. Single source of truth (repo root)
+
+| File | Git | Purpose |
+|---|---|---|
+| **`.env.example`** | Committed | Every variable name + safe placeholder; one line comment per key |
+| **`.env`** | **Gitignored** | Real values for **both** staging and production (`APP_ENV` selects runtime behavior) |
+
+All Node scripts, migration tooling, Cloud Functions (local + deploy materialization), API gateway, and Flutter release builds load **only** the repo root `.env`. Legacy paths (`.env.migration`, `backend/functions/.env`, `frontend/.env`) are removed — deploy generates a transient `backend/functions/.env` from root `.env` and deletes it after Firebase deploy.
+
+Verification (local):
+
+```bash
+npm run env:verify
+node scripts/env/verify_env_file_policy.js
+```
 
 ---
 
@@ -14,7 +32,7 @@ DoctorNect maintains **two strictly isolated environments**: **Staging** and **P
 
 | Component | Staging Environment (`staging`) | Production Environment (`production`) | Enforcement Mechanism |
 |---|---|---|---|
-| **Database** | Current Supabase (`rnltknemwnjrjxthtull`) | New Amazon RDS PostgreSQL 17 (Option A) | Complete database & network segregation |
+| **Database** | Staging Supabase (`staging-project-ref`) | Amazon RDS PostgreSQL **18.3** (`PROD_PG_MAJOR=18`, `PROD_PG_VERSION=18.3`) | Complete database & network segregation |
 | **Access Layer** | Direct Supabase PostgREST | AWS PostgREST + Node.js Auth Gateway | Independent endpoints & JWT signing |
 | **Firebase Auth & Project** | `medibond-45fad` (Shared today) | `medibond-45fad` (Shared today) | Claim/role tagging & separate staging app ID recommended |
 | **AWS S3 Storage Bucket** | `doctornect` (Shared today) | `doctornect-prod-vault` (Dedicated recommended) | S3 key prefix `staging/` or dedicated production bucket |
@@ -79,7 +97,7 @@ Configuration files are maintained in JSON format for compile-time injection:
 ```json
 {
   "APP_ENV": "staging",
-  "SUPABASE_URL": "https://irpkyedfmdsuvapfnrim.supabase.co",
+  "SUPABASE_URL": "https://staging-project-ref.supabase.co",
   "SUPABASE_ANON_KEY": "<STAGING_ANON_KEY>",
   "USE_S3_STORAGE": "true",
   "USE_SUPABASE_DB_DOCTOR_PATIENT": "true",
@@ -94,14 +112,14 @@ Configuration files are maintained in JSON format for compile-time injection:
 ```json
 {
   "APP_ENV": "production",
-  "SUPABASE_URL": "https://rnltknemwnjrjxthtull.supabase.co",
+  "SUPABASE_URL": "https://api.gateway.doctornect.example",
   "SUPABASE_ANON_KEY": "<PROD_ANON_KEY>",
   "USE_S3_STORAGE": "true",
   "USE_SUPABASE_DB_DOCTOR_PATIENT": "true",
   "FIREBASE_API_KEY_ANDROID": "<PROD_ANDROID_KEY>",
   "FIREBASE_API_KEY_IOS": "<PROD_IOS_KEY>",
   "FIREBASE_API_KEY_WEB": "<PROD_WEB_KEY>",
-  "RAZORPAY_KEY_ID": "rzp_live_ProdLiveKey456"
+  "RAZORPAY_KEY_ID": "rzp_live_<LIVE_KEY_ID>"
 }
 ```
 
