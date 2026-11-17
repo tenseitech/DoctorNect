@@ -51,6 +51,8 @@ Repo migration **not** applied on real ledgers until operator confirms (in-place
 
 ## Prod cutover
 
+**prod gates pending (doctornect_admin harness 210/0 unverified, pg_cron cron.database_name unverified)**
+
 - [ ] Fresh `doctornect_admin` rehearsal: gateway **74/0** + harness **210/0**  
 - [ ] `migrate.js` **72/72** on prod (no `--allow-no-cron`)  
 - [ ] `definer_force_rls_audit.js` exit **0** after migrate  

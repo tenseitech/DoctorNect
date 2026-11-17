@@ -170,3 +170,16 @@ infra/aws/.terraform/
 
 frontend/lib/firebase_options.secrets.dart
 docs/reports/rls_coverage_audit.json
+
+# Local prod/staging audit runs — do not commit (schema/role/version snapshots)
+docs/audit-local/
+docs/audit/prod_rds_readonly_diagnostic_20*.json
+docs/audit/prod_rds_readonly_diagnostic_latest.txt
+docs/audit/prod_rds_readonly_diagnostic_latest_run.txt
+docs/audit/migration_audit_*.txt
+docs/audit/prod_dry_run_*.txt
+docs/audit/gateway_prep_*.txt
+docs/audit/rdslike_dry_run_*.txt
+docs/reports/rls_harness_replay_*.md
+docs/reports/rls_harness_staging_*.md
+docs/reports/gateway_rls_authorization_suite.json
