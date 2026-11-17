@@ -1,75 +1,56 @@
 # DoctorNect migration status
 
 **Branch:** `fix/pre-accept-gate-lab-auth`  
-**Updated:** 2026-11-17 (`5800216`; harness **210** re-run **UNVERIFIED** — Docker `127.0.0.1:5442` down)  
-**Evidence:** `docs/audit/HARNESS_SEED_ROOT_CAUSE.md`; `docs/audit/PG_CRON_MIGRATION_READING.md`; `docs/audit/prod_rds_readonly_diagnostic_2026-11-16T10-41-46-620Z.json`.
+**Updated:** 2026-11-17 (DEFINER batch in `000005`; **fresh gate UNVERIFIED** — Docker engine down, prod tunnel down)  
+**Evidence:** `docs/audit/DEFINER_FORCE_RLS_CATALOG.md`; `docs/audit/SECURITY_REVIEW_20261118000005.md`.
 
 ---
 
-## Production RDS (read-only, 2026-11-16)
+## Pre-check (2026-11-17)
 
-| Fact | Value | Proof |
-|------|-------|-------|
-| PG version | 18.3 aarch64 | diagnostic JSON `session.version` |
-| `_schema_migrations` | **exists**, **0 rows** | diagnostic `ledger`, `migration_count.n=0` |
-| `public` tables | **1** (`_schema_migrations` only) | diagnostic `object_inventory` |
-| `auth` / `private` | empty (no user tables) | preflight / diagnostic |
-| Bootstrap | **missing** (`auth.users` / `auth.uid()` not present) | preflight + diagnostic |
-| `cron.database_name` | **UNVERIFIED** | diagnostic printed `undefined` |
+| Check | Status | Proof |
+|-------|--------|-------|
+| Docker `rdslike-pg18` `:5442` | **FAIL** | `docker ps` → `dockerDesktopLinuxEngine` pipe missing |
+| Prod ledger `20261118000005` | **UNVERIFIED** | `ECONNREFUSED 127.0.0.1:5433` (tunnel not up) |
+| Staging ledger `20261118000005` | **UNVERIFIED** | no staging read in this run |
 
----
-
-## Migrations (repo vs ledgers)
-
-| Target | SQL files | Ledger | Notes |
-|--------|----------:|-------:|-------|
-| **production / rehearsal** | **72** | prod **0**; rehearsal **UNVERIFIED** after 2026-11-17 | Local `:5442` unavailable 2026-11-17 |
-| **staging** | **71** | **62** rows (read-only) | Pending (9): `20261116000001`, `20261117000001`–`000004`, `20261118000001`–`000005` |
-
-`20261118000005` — **not** on prod/staging ledger.
+Repo migration **not** applied on real ledgers until operator confirms (in-place edit allowed).
 
 ---
 
-## Gates
+## DEFINER / `000005` (code)
 
-| Gate | Status | Counts / proof |
-|------|--------|----------------|
-| Harness seed root cause | **PASS** (code) | `09b62dd` — trigger DEFINER on pending `ambulance_broadcasts`; see `docs/audit/HARNESS_SEED_ROOT_CAUSE.md` |
-| `000005` + REVOKE CREATE | **PASS** (code) | `9dcc1fa` — `ALTER FUNCTION private.trg_ambulance_broadcast_contact_guard() OWNER TO service_role` + `REVOKE CREATE` |
-| **`doctornect_admin` rehearsal harness 210** | **UNVERIFIED** | Fix landed; need fresh `doctornect_rehearsal` + `rls_sql_harness.js` (2026-11-16 baseline: **74/0** gateway, harness **FAIL**) |
-| **`doctornect_admin` rehearsal gateway 74** | **UNVERIFIED** | Re-run with harness after Docker up |
-| rdsadmin `replay_check` | **PASS** — **NOT prod gate** | Prior **210/0**, **74/0** (see `docs/reports/`) |
-| Parity filtered | **UNVERIFIED** | `schema_diff.js` drops `pg_stat_statements` noise; see `docs/audit/PARITY_REPLAY_REHEARSAL_FILTERED.md` |
-| pg_cron local apply | **UNVERIFIED** | `rdslike-pg18` image has no `pg_cron`; reading in `docs/audit/PG_CRON_MIGRATION_READING.md` |
-| Prod `migrate --execute` | **NO** | — |
+| Item | Status |
+|------|--------|
+| FORCE RLS DEFINER set re-homed | **PASS** (code) — **9** functions → `service_role` owner (`docs/audit/DEFINER_FORCE_RLS_CATALOG.md`) |
+| Live catalog audit | **UNVERIFIED** | `scripts/db/definer_force_rls_audit.js` needs `:5442` DB |
+| Security review | **PASS** (design) | `SECURITY_REVIEW_20261118000005.md` updated |
 
 ---
 
-## Prior rehearsal (2026-11-16, `doctornect_admin`, `:5442`)
+## `doctornect_admin` rehearsal gate
 
-| Step | Exit | Notes |
-|------|-----:|-------|
-| Full migrate + bootstrap 04 | **0** | Ledger **71/72** (`--allow-no-cron`) |
-| Gateway | **0** | **74 / 0** |
-| Harness | **1** | Seed trip_contacts (pre trigger-owner fix) |
-
-**Post-fix expectation:** seed logs per-step `session_user` / `current_user` / `bypassrls`; verify `has_schema_privilege('service_role', …, 'CREATE')` = false after migrate.
-
----
-
-## Prod cutover checklist
-
-- [ ] `migrate.js --execute` **72/72** (no `--allow-no-cron` on prod)  
-- [ ] Bootstrap 04 post-migrate  
-- [ ] **`doctornect_admin`**: gateway **74/0** + harness **210/0** on same rehearsal DB  
+| Step | Status |
+|------|--------|
+| Full sequence + migrate ledger | **UNVERIFIED** | Docker down |
+| Harness **210/0** | **UNVERIFIED** | — |
+| Gateway **74/0** | **UNVERIFIED** | 2026-11-16 prior: **74/0** on older `000005` |
+| `has_schema_privilege` CREATE | **UNVERIFIED** | — |
+| Parity (pg_stat filtered) | **UNVERIFIED** | `schema_diff.js` filter in repo |
+| pg_cron local migrate | **UNVERIFIED** | no `pg_cron` in `rdslike-pg18` image |
 
 ---
 
-## Key docs
+## Migrations repo
 
-| Doc | Purpose |
-|-----|---------|
-| `docs/audit/HARNESS_SEED_ROOT_CAUSE.md` | Seed vs trigger DEFINER |
-| `docs/audit/SECURITY_REVIEW_20261118000005.md` | Owner moves + grants |
-| `docs/audit/PG_CRON_MIGRATION_READING.md` | Scheduled jobs inventory |
-| `docs/audit/PARITY_REPLAY_REHEARSAL_FILTERED.md` | Parity minus stats noise |
+| Target | Files | Staging ledger (last known) |
+|--------|------:|----------------------------|
+| production / rehearsal | **72** | staging **62** rows; pending includes `20261118000005` |
+
+---
+
+## Prod cutover
+
+- [ ] Fresh `doctornect_admin` rehearsal: gateway **74/0** + harness **210/0**  
+- [ ] `migrate.js` **72/72** on prod (no `--allow-no-cron`)  
+- [ ] `definer_force_rls_audit.js` exit **0** after migrate  
