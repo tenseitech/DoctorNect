@@ -60,6 +60,11 @@ resource "aws_ecs_task_definition" "app" {
   memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
 
+  runtime_platform {
+    operating_system_family = "LINUX"
+    cpu_architecture        = upper(var.ecs_cpu_architecture)
+  }
+
   container_definitions = jsonencode([
     # 1. Auth Gateway Container (Port 3000)
     {
