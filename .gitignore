@@ -172,6 +172,10 @@ frontend/lib/firebase_options.secrets.dart
 docs/reports/rls_coverage_audit.json
 
 # Local prod/staging audit runs — do not commit (schema/role/version snapshots)
+docs/audit/PROD_RDS_FORENSICS.json
+docs/audit/PROD_RDS_FORENSICS.md
+docs/audit/PROD_RDS_MIGRATION_DIAGNOSIS.md
+docs/audit/prod_rds_preflight_readonly.txt
 docs/audit-local/
 docs/audit/prod_rds_readonly_diagnostic_20*.json
 docs/audit/prod_rds_readonly_diagnostic_latest.txt
