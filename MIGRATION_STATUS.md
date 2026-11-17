@@ -1,7 +1,7 @@
 # DoctorNect migration status
 
 **Branch:** `fix/pre-accept-gate-lab-auth`  
-**Updated:** 2026-11-17 (harness seed root cause + `000005` REVOKE CREATE; **harness 210 re-run UNVERIFIED** — local Docker down)  
+**Updated:** 2026-11-17 (`5800216`; harness **210** re-run **UNVERIFIED** — Docker `127.0.0.1:5442` down)  
 **Evidence:** `docs/audit/HARNESS_SEED_ROOT_CAUSE.md`; `docs/audit/PG_CRON_MIGRATION_READING.md`; `docs/audit/prod_rds_readonly_diagnostic_2026-11-16T10-41-46-620Z.json`.
 
 ---
@@ -34,8 +34,8 @@
 
 | Gate | Status | Counts / proof |
 |------|--------|----------------|
-| Harness seed root cause | **PASS** (code) | Trigger `trg_ambulance_broadcast_contact_guard` DEFINER owner was migrator → indirect `ambulance_trip_contacts` RLS; **not** seed outside helper (`docs/audit/HARNESS_SEED_ROOT_CAUSE.md`) |
-| `000005` + REVOKE CREATE | **PASS** (code) | Temp `GRANT CREATE` → `ALTER OWNER` (incl. broadcast contact trigger) → `REVOKE CREATE` on `public`/`private` from `service_role` |
+| Harness seed root cause | **PASS** (code) | `09b62dd` — trigger DEFINER on pending `ambulance_broadcasts`; see `docs/audit/HARNESS_SEED_ROOT_CAUSE.md` |
+| `000005` + REVOKE CREATE | **PASS** (code) | `9dcc1fa` — `ALTER FUNCTION private.trg_ambulance_broadcast_contact_guard() OWNER TO service_role` + `REVOKE CREATE` |
 | **`doctornect_admin` rehearsal harness 210** | **UNVERIFIED** | Fix landed; need fresh `doctornect_rehearsal` + `rls_sql_harness.js` (2026-11-16 baseline: **74/0** gateway, harness **FAIL**) |
 | **`doctornect_admin` rehearsal gateway 74** | **UNVERIFIED** | Re-run with harness after Docker up |
 | rdsadmin `replay_check` | **PASS** — **NOT prod gate** | Prior **210/0**, **74/0** (see `docs/reports/`) |
