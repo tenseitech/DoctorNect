@@ -20,11 +20,6 @@ EXCEPTION WHEN undefined_table THEN
   RAISE NOTICE 'skip missing public.%', 'admin_audit_logs';
 END $$;
 DO $$ BEGIN
-  EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO service_role', 'ambulance_invites');
-EXCEPTION WHEN undefined_table THEN
-  RAISE NOTICE 'skip missing public.%', 'ambulance_invites';
-END $$;
-DO $$ BEGIN
   EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO service_role', 'ambulance_locations');
 EXCEPTION WHEN undefined_table THEN
   RAISE NOTICE 'skip missing public.%', 'ambulance_locations';
@@ -133,6 +128,11 @@ EXCEPTION WHEN undefined_table THEN
   RAISE NOTICE 'skip missing public.%', 'ambulance_broadcasts';
 END $$;
 DO $$ BEGIN
+  EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO service_role', 'ambulance_invites');
+EXCEPTION WHEN undefined_table THEN
+  RAISE NOTICE 'skip missing public.%', 'ambulance_invites';
+END $$;
+DO $$ BEGIN
   EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO service_role', 'ambulance_requests');
 EXCEPTION WHEN undefined_table THEN
   RAISE NOTICE 'skip missing public.%', 'ambulance_requests';
@@ -201,6 +201,11 @@ DO $$ BEGIN
   EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO service_role', 'pharmacy_deliveries');
 EXCEPTION WHEN undefined_table THEN
   RAISE NOTICE 'skip missing public.%', 'pharmacy_deliveries';
+END $$;
+DO $$ BEGIN
+  EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO service_role', 'pharmacy_delivery_medicines');
+EXCEPTION WHEN undefined_table THEN
+  RAISE NOTICE 'skip missing public.%', 'pharmacy_delivery_medicines';
 END $$;
 DO $$ BEGIN
   EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO service_role', 'prescriptions');
