@@ -112,16 +112,21 @@ async function main() {
     const ext = await client.query(
       `SELECT extname FROM pg_extension WHERE extname IN ('pgcrypto','uuid-ossp','pg_stat_statements') ORDER BY 1`,
     );
-    let resetGrant = null;
+    let resetGrant = false;
+    await client.query('SAVEPOINT sp_reset_grant');
     try {
       const g = await client.query(
         `SELECT has_function_privilege('doctornect_admin', 'pg_stat_statements_reset()', 'EXECUTE') AS ok`,
       );
       resetGrant = g.rows[0].ok;
+      await client.query('RELEASE SAVEPOINT sp_reset_grant');
     } catch (_) {
+      await client.query('ROLLBACK TO SAVEPOINT sp_reset_grant');
       resetGrant = false;
     }
-    const ledger = await client.query(`SELECT count(*)::int AS n FROM public._schema_migrations`);
+    const ledger = await client.query(`
+      SELECT CASE WHEN to_regclass('public._schema_migrations') IS NULL THEN 0
+        ELSE (SELECT count(*)::int FROM public._schema_migrations) END AS n`);
     const pub = await client.query(`
       SELECT count(*)::int AS n FROM pg_class c
       JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind = 'r'`);

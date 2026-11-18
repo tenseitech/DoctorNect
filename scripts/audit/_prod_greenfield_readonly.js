@@ -83,9 +83,9 @@ async function main() {
     }),
   );
 
-    const ledger = await client.query(
-      `SELECT count(*)::int AS n FROM public._schema_migrations`,
-    );
+    const ledger = await client.query(`
+      SELECT CASE WHEN to_regclass('public._schema_migrations') IS NULL THEN 0
+        ELSE (SELECT count(*)::int FROM public._schema_migrations) END AS n`);
     console.log('LEDGER_ROWS', ledger.rows[0].n);
 
     const schemas = await client.query(`

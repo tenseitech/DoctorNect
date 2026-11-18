@@ -12,7 +12,7 @@ One command (starts SSM to bastion `i-0248ed3a2aad183be`, local **5434**):
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/audit/prod_readonly_bundle.ps1
 ```
 
-**2026-11-18 evening:** Master keys load; **placeholder password** in `PROD_RDS_MASTER_PASSWORD` → master SQL **28P01**. Inventory/backup/pg_cron blocked until real master secret saved. Tunnel **5434** OK.
+**2026-11-18 evening (tasks 1–4):** Master keys load (no placeholder). Tunnel **5434** TCP OK (reused). Inventory **PARTIAL** on PG **18.3**: `doctornect_admin` exists; bootstrap roles **01** present; extensions + **`auth.jwt()`** + **`auth.users`** + **private USAGE** missing; ledger **0/77**. **pg_cron** preloaded + `cron.database_name=doctornect` — **no param-group reboot needed**. Backup v2 **3703 B** / **15** TOC entries; **`pg_dumpall --roles-only` denied** because `PROD_RDS_MASTER_USER` is **`doctornect_admin`** not **`postgres`**. Fix master vars before bootstrap **01** + roles dump.
 
 **2026-11-18 run (earlier):**
 
@@ -81,6 +81,8 @@ node scripts/db/migrate.js --target=production --execute `
 ## pg_cron — your manual AWS steps (read-only prep; do before step 12)
 
 From `20260923000003_doctornect_cron.sql` + `scripts/lib/pg_cron_policy.js`:
+
+**2026-11-18 prod read-only:** `shared_preload_libraries` already includes **`pg_cron`**; **`cron.database_name=doctornect`**. Skip param-group work unless a future `SHOW` disagrees. Extension still **uninstalled** until migrate/bootstrap.
 
 1. **Parameter group:** Create a **custom** DB parameter group (default groups are not editable). Attach it to the prod instance.
 2. Set **`shared_preload_libraries`** = include **`pg_cron`** (often `pg_stat_statements,pg_cron` — preserve existing values).
