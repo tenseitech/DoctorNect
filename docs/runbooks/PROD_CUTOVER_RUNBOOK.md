@@ -1,137 +1,130 @@
 # Production RDS cutover runbook
 
 **Branch:** `migration-cutover-fixes`  
-**Hard stops:** No `--execute` / bootstrap on prod without exact phrase **`APPROVED FOR PROD`**. TLS required; never disable SSL. Host/port in commands below are **placeholders** — use your SSM tunnel values from `.env`.
+**Hard stops:** No prod `--execute` without **`APPROVED FOR PROD`** (your verbal/written approval) **and** live-data guards. Production migrate/bootstrap **`--confirm=`** is always the **full `PROD_RDS_HOST` hostname**, not the approval phrase. TLS required (`PROD_RDS_SSLMODE=require`); never disable SSL.
 
 | Step | Who | Credentials | Reversible? |
 |------|-----|-------------|-------------|
-| 0 Snapshot | DBA / AWS console | RDS IAM | Yes (restore to new instance) |
-| 1 Bootstrap 01 | DBA | **RDS master** via tunnel | Partially |
-| 2 Bootstrap 02–03 | Migrator | **`doctornect_admin`** | Partially |
-| 3 Preflight | Engineer | Read-only tunnel | Yes |
-| 4 `dry-run-all` | Engineer | **`doctornect_admin`** | Yes |
-| 5 `execute` | Engineer (after **APPROVED FOR PROD**) | **`doctornect_admin`** | **No** (ledger append-only) |
-| 6 Bootstrap 04 | DBA / migrator | **`rdsadmin`** or master | Partially |
-| 7 Gates | Engineer | tunnel roles | Yes (read-only) |
+| 0 Snapshot check | You / DBA | AWS IAM | N/A (read-only) |
+| 1 Bootstrap **01** | **You** (master) | RDS **master** via tunnel | Partially |
+| 2 Bootstrap **02–03** | Agent / you | **`doctornect_admin`** | Partially |
+| 3 Preflight | Agent | tunnel read-only | Yes |
+| 4 `dry-run-all` | Agent | **`doctornect_admin`** | Yes |
+| 5 `execute` | Agent (after approval) | **`doctornect_admin`** | **No** |
+| 6 Bootstrap **04** | **You** or agent | **`rdsadmin`** or master | Partially |
+| 7 Gates | Agent | tunnel roles | Yes (read-only) |
 
 ---
 
-## 0 — RDS snapshot (cannot skip)
-
-**Who:** DBA  
-**Action:** Manual snapshot of `doctornect` in AWS console or CLI before any bootstrap/migrate.  
-**Expected:** Snapshot status `available`.  
-**On failure:** Abort cutover; do not mutate prod.
-
----
-
-## 1 — Bootstrap `01_roles_and_extensions.sql` (master)
-
-**Who:** DBA with cluster **master** user (not `doctornect_admin`).  
-**Masked command:**
+## 0 — RDS snapshot (read-only; do not create here)
 
 ```powershell
-$env:PROD_RDS_SSLMODE='require'
-psql "$env:PROD_RDS_MASTER_URL" -v ON_ERROR_STOP=1 -f db/rds_bootstrap/01_roles_and_extensions.sql
+Test-NetConnection 127.0.0.1 -Port $env:PROD_RDS_PORT
+aws rds describe-db-snapshots --db-instance-identifier <instance-id> --query "DBSnapshots | sort_by(@,&SnapshotCreateTime) | [-1]" 
+aws rds describe-db-instances --db-instance-identifier <instance-id> --query "DBInstances[0].BackupRetentionPeriod"
 ```
 
-Or: `node scripts/db/rds_bootstrap_apply.js --target=production --file=01 --confirm-live-data --confirm-db=doctornect` (if script supports master URL).
-
-**Expected:** Roles `anon`, `authenticated`, `service_role`, `doctornect_admin`, `authenticator` exist; `pg_cron` if available.  
-**On failure:** Stop; rollback = no DB deletion — fix SQL and retry only if nothing partial applied.  
-**Undo:** Limited — dropping roles is destructive; prefer new rehearsal DB.
+**Expected:** Latest snapshot time recorded; `BackupRetentionPeriod` &gt; 0.  
+**On failure:** Abort cutover until backup posture is clear.
 
 ---
 
-## 2 — Bootstrap `02_auth_shim.sql`, `03_legacy_compat.sql`
+## 1 — Bootstrap `01_roles_and_extensions.sql` (**master only**)
 
-**Who:** Engineer with **`doctornect_admin`**.  
-**Masked command:**
+`rds_bootstrap_apply.js` connects as **`doctornect_admin`** from `buildRdsPoolConfig()` — **insufficient for 01**. Use master:
 
 ```powershell
-node scripts/db/rds_bootstrap_apply.js --target=production --files=02,03 --confirm-live-data --confirm-db=doctornect
+psql "postgresql://<master_user>:****@127.0.0.1:$($env:PROD_RDS_PORT)/doctornect?sslmode=require" `
+  -v ON_ERROR_STOP=1 -f db/rds_bootstrap/01_roles_and_extensions.sql
 ```
 
-**Expected:** `auth` stub, `private` schema, `GRANT USAGE ON SCHEMA private TO authenticated`.  
-**On failure:** Stop; capture error line; do not run migrate.
+**Expected:** Roles `anon`, `authenticated`, `service_role`, `doctornect_admin`, `authenticator`; extensions including `pgcrypto`; conditional `GRANT EXECUTE ON pg_stat_statements_reset() TO doctornect_admin` (in **01**, not **04**).  
+**Undo:** Hard — role drops are destructive.
+
+---
+
+## 2 — Bootstrap `02` + `03` (`doctornect_admin`)
+
+```powershell
+node scripts/db/rds_bootstrap_apply.js --target=production --execute --pre-migrate-only `
+  --confirm-live-data --confirm=<PROD_RDS_HOST> --confirm-db=doctornect
+```
+
+**Expected:** `auth` shim, `private` schema, `GRANT USAGE ON SCHEMA private TO authenticated`.  
+**On failure:** Stop; do not migrate.
 
 ---
 
 ## 3 — Preflight (read-only)
 
-**Who:** Engineer  
-**Commands:**
-
 ```powershell
-Test-NetConnection 127.0.0.1 -Port $env:PROD_RDS_PORT
 node scripts/audit/_prod_greenfield_readonly.js
-node scripts/db/migrate.js --target=production --dry-run --confirm-live-data
+node scripts/db/prod_rds_preflight_readonly.js
+node scripts/db/migrate.js --target=production --dry-run --confirm-live-data --confirm-db=doctornect --confirm=<PROD_RDS_HOST>
 ```
-
-**Expected:** Tunnel up; forensics not Docker bleed; pending migrations list matches repo (currently **77** files on shared+rds track including `19000005` when on this branch).  
-**On failure:** Fix tunnel/credentials; refresh forensics.
 
 ---
 
 ## 4 — `dry-run-all`
 
 ```powershell
-node scripts/db/migrate.js --target=production --dry-run-all --confirm-live-data
+node scripts/db/migrate.js --target=production --dry-run-all --confirm-live-data --confirm-db=doctornect --confirm=<PROD_RDS_HOST>
 ```
 
-**Expected:** **0** checksum/parse errors for every pending file.  
-**On failure:** Stop — fix branch; never hand-edit prod.
+**Do not** pass `--allow-no-cron` on production.
 
 ---
 
-## 5 — Migrate execute (requires **APPROVED FOR PROD**)
+## 5 — Migrate execute (requires your **`APPROVED FOR PROD`** + host confirm)
 
 ```powershell
-node scripts/db/migrate.js --target=production --execute --confirm-live-data --confirm-db=doctornect --confirm=APPROVED_FOR_PROD
+node scripts/db/migrate.js --target=production --execute --confirm-live-data --confirm-db=doctornect --confirm=<PROD_RDS_HOST>
 ```
 
-**Expected:** All pending versions applied; `_schema_migrations` max = repo head.  
-**On failure:** **Stop immediately** — record version, error, ledger; no re-run without human triage.  
-**Undo:** Restore snapshot or logical restore from pre-cutover `pg_dump` — **not** automatic.
+Optional: `node scripts/db/rds_readiness_probe.js --target=production --confirm=<PROD_RDS_HOST>` before/after.
+
+**Expected:** **77** ledger versions (76 shared + `rds/20261113000001`; cron file applies if pg_cron available).  
+**Undo:** Restore snapshot / logical restore only.
 
 ---
 
 ## 6 — Bootstrap `04_rds_runtime_grants.sql` (post-migrate)
 
-**Who:** DBA / `rdsadmin`  
-**Masked command:**
+**Recommended (script, all of 04 only):**
 
 ```powershell
-psql "postgresql://rdsadmin:****@127.0.0.1:${PROD_RDS_PORT}/doctornect?sslmode=require" -v ON_ERROR_STOP=1 -f db/rds_bootstrap/04_rds_runtime_grants.sql
+# 04 only: apply via psql as rdsadmin/master (script applies 01–04 if you omit --pre-migrate-only)
+psql "postgresql://rdsadmin:****@127.0.0.1:$($env:PROD_RDS_PORT)/doctornect?sslmode=require" `
+  -v ON_ERROR_STOP=1 -f db/rds_bootstrap/04_rds_runtime_grants.sql
 ```
 
-**Expected:** `REVOKE ALL … FROM anon` on public routines; `service_role` table grants present.  
-**On failure:** Prod may be live but API path broken — do not run app traffic until fixed.
+`04` does **not** call `pg_stat_statements_reset()`; replay failures on that function were extension/grant drift in **01**, wrapped in exception handlers.
 
 ---
 
-## 7 — Readiness + gates
+## 7 — Gates
 
 ```powershell
-node scripts/db/definer_force_rls_audit.js --target=production --confirm-live-data
-node scripts/db/gateway_rls_authorization_suite.js --target=production --confirm-live-data
-node scripts/db/rls_sql_harness.js --target=production --confirm-live-data
+node scripts/db/definer_force_rls_audit.js --target=production --confirm-live-data --confirm=<PROD_RDS_HOST>
+node scripts/db/gateway_rls_authorization_suite.js   # local replay DB + gateway; not wired to live staging
+node scripts/db/rls_sql_harness.js --target=production --confirm-live-data --confirm=<PROD_RDS_HOST>
 ```
 
-**Expected:** Definer **0** hits; gateway **74/0**; harness **210/0** (if `--target=production` supported for harness).  
-**On failure:** Triage; may need follow-up migration (not bootstrap 04 rollback).
+---
+
+## pg_cron (production)
+
+| Requirement | Detail |
+|-------------|--------|
+| Parameter group | `shared_preload_libraries` includes `pg_cron` |
+| | `cron.database_name` = `doctornect` (or `PROD_RDS_DB`) |
+| RDS reboot | Required after parameter change |
+| Migration | `20260923000003_doctornect_cron.sql` runs `CREATE EXTENSION pg_cron` + schedules |
+| **`--allow-no-cron`** | **Forbidden** on prod execute — skips cron migration and jobs |
 
 ---
 
-## Gate migrations on prod (from repo ledger)
+## Staging reference (2026-11-18)
 
-All four apply on production target: `20261119000001`–`20261119000004`.  
-Pending `20261119000005` (system admin EXECUTE grants) applies after staging approval — **does not** change step order; it is one more shared migration before/within the same execute window.
-
----
-
-## `19000005` impact on this plan
-
-- Insert **after** `19000004` in the same `execute` batch (no separate bootstrap).  
-- **No** change to snapshot → 01 → 02 → 03 → dry-run → execute → 04 → gates sequence.  
-- Staging should run `19000005` first to confirm harness **210/0** before prod execute includes it.
+Staging Supabase ledger at **`20261119000005`**; `rls_sql_harness --target=staging` **210/0**.  
+`gateway_rls_authorization_suite.js` has **no** `--target=staging` (local gateway + fresh DB only).
