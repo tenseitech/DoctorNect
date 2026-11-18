@@ -15,6 +15,9 @@ const backendDmlTables = [
   'ambulances',
   'appointments',
   'prescriptions',
+  'prescription_medicines',
+  'prescription_investigations',
+  'prescription_referrals',
   'pharmacy_deliveries',
   'pharmacy_delivery_medicines',
   'lab_bookings',
@@ -28,6 +31,7 @@ const backendDmlTables = [
   'ambulance_broadcasts',
   'ambulance_invites',
   'ambulance_requests',
+  'ambulance_location_updates',
   'referrals',
   'patient_doctor_links',
   'support_tickets',
@@ -98,6 +102,10 @@ END $$;`);
   out.push(`GRANT SELECT ON public.system_config TO anon;`);
   out.push(`GRANT SELECT ON public.review_public TO anon;`);
   out.push(`REVOKE ALL ON ALL ROUTINES IN SCHEMA public FROM anon;`);
+  out.push(
+    '-- Discovery views call SECURITY DEFINER doctor_directory_rows(); re-grant after routine REVOKE.',
+  );
+  out.push(`GRANT EXECUTE ON FUNCTION public.doctor_directory_rows() TO anon, authenticated, service_role;`);
   out.push('');
 
   out.push('-- --- PostgREST authenticator ---');

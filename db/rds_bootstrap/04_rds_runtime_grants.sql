@@ -133,6 +133,11 @@ EXCEPTION WHEN undefined_table THEN
   RAISE NOTICE 'skip missing public.%', 'ambulance_invites';
 END $$;
 DO $$ BEGIN
+  EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO service_role', 'ambulance_location_updates');
+EXCEPTION WHEN undefined_table THEN
+  RAISE NOTICE 'skip missing public.%', 'ambulance_location_updates';
+END $$;
+DO $$ BEGIN
   EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO service_role', 'ambulance_requests');
 EXCEPTION WHEN undefined_table THEN
   RAISE NOTICE 'skip missing public.%', 'ambulance_requests';
@@ -208,6 +213,21 @@ EXCEPTION WHEN undefined_table THEN
   RAISE NOTICE 'skip missing public.%', 'pharmacy_delivery_medicines';
 END $$;
 DO $$ BEGIN
+  EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO service_role', 'prescription_investigations');
+EXCEPTION WHEN undefined_table THEN
+  RAISE NOTICE 'skip missing public.%', 'prescription_investigations';
+END $$;
+DO $$ BEGIN
+  EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO service_role', 'prescription_medicines');
+EXCEPTION WHEN undefined_table THEN
+  RAISE NOTICE 'skip missing public.%', 'prescription_medicines';
+END $$;
+DO $$ BEGIN
+  EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO service_role', 'prescription_referrals');
+EXCEPTION WHEN undefined_table THEN
+  RAISE NOTICE 'skip missing public.%', 'prescription_referrals';
+END $$;
+DO $$ BEGIN
   EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.%I TO service_role', 'prescriptions');
 EXCEPTION WHEN undefined_table THEN
   RAISE NOTICE 'skip missing public.%', 'prescriptions';
@@ -262,6 +282,8 @@ GRANT SELECT ON public.lab_catalog_tests TO anon;
 GRANT SELECT ON public.system_config TO anon;
 GRANT SELECT ON public.review_public TO anon;
 REVOKE ALL ON ALL ROUTINES IN SCHEMA public FROM anon;
+-- Discovery views call SECURITY DEFINER doctor_directory_rows(); re-grant after routine REVOKE.
+GRANT EXECUTE ON FUNCTION public.doctor_directory_rows() TO anon, authenticated, service_role;
 
 -- --- PostgREST authenticator ---
 GRANT anon, authenticated, service_role TO authenticator;
