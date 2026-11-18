@@ -1,29 +1,41 @@
 # DoctorNect migration status
 
 **Branch:** `migration-cutover-fixes` (local, **not pushed**)  
-**Updated:** 2026-11-18 (Task A/B/C — `19000005` drafted, **not** applied on staging)
+**Updated:** 2026-11-18 — **GO STAGING** `19000005` applied
 
 ---
 
-## Ledger / progress
+## Migration completion % (honest)
 
-| Track | State | % |
-|-------|--------|---|
-| **Staging Supabase** | **76 / 77** applied (head `20261119000004`; pending **`20261119000005`**) | **~99%** schema ledger |
-| **Replay (fresh :5442)** | **76** ledger rows + **04**; gates **210/0**, **74/0**, definer **0** with **`19000005`** | **100%** gate path |
-| **Prod RDS** | Tunnel **down**; migrate **0** | **~0%** prod DB |
-
-**Overall cutover readiness:** **~52%** (staging almost at head; prod path blocked).
+| Scope | Applied / total | % | Notes |
+|-------|-----------------|---|--------|
+| **Staging (Supabase)** | **77 / 77** ledger rows | **100%** | Head `20261119000005`; RDS-only `rds/13000001` skipped by design |
+| **Staging shared SQL files** | **75 / 75** (+ ghost parity) | **100%** | All repo files for `target=staging` |
+| **Prod RDS migrations** | **0 / 77** | **0%** | Tunnel down; not executed |
+| **Prod bootstrap 01–03** | unknown | **0%** verified | Forensics skipped |
+| **Prod bootstrap 04** | 0 | **0%** | Post-migrate |
+| **End-to-end RDS cutover** | — | **~55%** | Staging + replay gates done; prod blocked |
 
 ---
 
-## Staging harness (pre-`19000005`)
+## Staging (after `19000005`)
+
+| Check | Result |
+|-------|--------|
+| Pooler | **5432** session (`aws-0-ap-south-1.pooler.supabase.com`) |
+| `rls_sql_harness` | **210 / 0** (`docs/reports/rls_harness_staging_2026-11-18T09-05-49-408Z.md`) |
+| System-admin ACL | `authenticated` + `service_role` EXECUTE; `anon` false |
+| `gateway_rls` on staging | **N/A** — suite uses local fresh DB only |
+
+---
+
+## Replay (reference)
 
 | Gate | Result |
 |------|--------|
-| `rls_sql_harness` | **199 / 11** — all `permission denied for function is_system_admin_user` |
-| Root cause | `20261112000001` creates helpers with no `GRANT EXECUTE`; `20260930000001` default revoke on Supabase (`postgres` owner) |
-| Fix (branch) | `20261119000005_system_admin_helper_execute_grants.sql` — **dry-run-all 0 errors**; **await OK** for `--execute` |
+| Harness | **210 / 0** (with `19000005`) |
+| Gateway | **74 / 0** (replay) |
+| Definer | **0** |
 
 ---
 
@@ -31,17 +43,16 @@
 
 | Check | Status |
 |-------|--------|
-| SSM `:5434` | **Down** — forensics + `pg_dump` v2 **skipped** |
-| Prod file list (repo) | **77** migrations (incl. `rds/20261113000001`); gate files **19000001–05** all on prod track |
-| Runbook | `docs/runbooks/PROD_CUTOVER_RUNBOOK.md` |
+| SSM `:5434` | **Down** — Tasks B/C skipped |
+| Prod dry-run / forensics / backup | **Pending tunnel** |
 
 ---
 
-## Prod readiness (blocks **APPROVED FOR PROD**)
+## Blocks **APPROVED FOR PROD**
 
-- [ ] Staging `--execute` for **`19000005`** + harness **210/0**
-- [ ] Prod SSM tunnel + forensics + backup v2
+- [x] Staging at head + harness **210/0**
+- [ ] Prod tunnel + forensics + preflight + backup v2
 - [ ] Bootstrap **01–03** on prod
-- [ ] **`APPROVED FOR PROD`** from you
-- [ ] Prod migrate + **04** + gates on prod
-- [x] Replay green with **`19000005`** (2026-11-18 fresh docker replay)
+- [ ] Prod `dry-run-all` (77 pending, incl. `rds/13000001`)
+- [ ] Your **`APPROVED FOR PROD`**
+- [ ] Prod `execute` + **04** + prod gates
