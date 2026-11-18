@@ -1,0 +1,81 @@
+# Production cutover — day-of plan (numbered)
+
+**Prerequisites:** SSM tunnel `127.0.0.1:$PROD_RDS_PORT` (e.g. **5434**), `PROD_RDS_SSLMODE=require`, CA bundle configured.  
+**No prod writes** until you say **`APPROVED FOR PROD`**.  
+**Estimates** are per-step wall time for a prepared operator; **77-file migrate** may take **45–120+ min** depending on RDS size and tunnel stability.
+
+| # | Who | Action | Masked command | Expected output | Undo / risk | ~min |
+|---|-----|--------|----------------|-----------------|-------------|------|
+| 0 | **You** | Verify tunnel | `Test-NetConnection 127.0.0.1 -Port $env:PROD_RDS_PORT` | `TcpTestSucceeded : True` | — | 1 |
+| 1 | **You** | **Manual RDS snapshot** (console or CLI) | `aws rds create-db-snapshot --db-instance-identifier <id> --db-snapshot-identifier doctornect-pre-cutover-<date>` | Snapshot → `available` | Restore to new instance if needed | 10–30 |
+| 2 | **You** | Confirm automated backups | `aws rds describe-db-instances --db-instance-identifier <id> --query "DBInstances[0].[BackupRetentionPeriod,PreferredBackupWindow]"` | Retention ≥ 1 | Read-only | 2 |
+| 3 | Agent | Prod forensics (read-only) | `node scripts/audit/_prod_greenfield_readonly.js` | Not Docker bleed; verdict **GREENFIELD/PARTIAL/POPULATED** | — | 2 |
+| 4 | Agent | Preflight | `node scripts/db/prod_rds_preflight_readonly.js` | Diagnostic OK | — | 3 |
+| 5 | Agent | Migrate dry-run (pending list) | `node scripts/db/migrate.js --target=production --dry-run --confirm-live-data --confirm-db=doctornect --confirm=$env:PROD_RDS_HOST` | **77** pending, incl. `rds/20261113000001` | — | 5 |
+| 6 | **You** | **pg_cron parameter group** (if not ready) | See § pg_cron below | `shared_preload_libraries` includes `pg_cron`; `cron.database_name=doctornect` | **Reboot required** after change | 15 + **reboot window** |
+| 7 | **You** | **Bootstrap 01** (master) | `psql "postgresql://<master>:****@127.0.0.1:$($env:PROD_RDS_PORT)/doctornect?sslmode=require" -v ON_ERROR_STOP=1 -f db/rds_bootstrap/01_roles_and_extensions.sql` | Roles + extensions | Hard to undo role DDL | 10 |
+| 8 | Agent | **Bootstrap 02–03** | `node scripts/db/rds_bootstrap_apply.js --target=production --execute --pre-migrate-only --confirm-live-data --confirm=$env:PROD_RDS_HOST --confirm-db=doctornect` | `✅ Bootstrap complete` | Partial DDL | 5 |
+| 9 | Agent | **dry-run-all** (after 02–03) | `node scripts/db/migrate.js --target=production --dry-run-all --confirm-live-data --confirm-db=doctornect --confirm=$env:PROD_RDS_HOST` | **0 errors** across all pending SQL | Safe | 30–90 |
+| 10 | **You** | Logical backup v2 | `pg_dump --format=directory … -f C:\Users\khije\Backups\doctornect-prod-<date>-v2` | `pg_restore --list` shows RDS host in TOC | — | 10–60 |
+| 11 | **You** | Say **`APPROVED FOR PROD`** | — | Human gate | — | — |
+| 12 | Agent | **Migrate execute** | `node scripts/db/migrate.js --target=production --execute --confirm-live-data --confirm-db=doctornect --confirm=$env:PROD_RDS_HOST` | **77** applied (cron file unless policy aborts) | **Irreversible** ledger | 45–120+ |
+| 13 | **You** | **Bootstrap 04** | `psql "postgresql://rdsadmin:****@127.0.0.1:$($env:PROD_RDS_PORT)/doctornect?sslmode=require" -v ON_ERROR_STOP=1 -f db/rds_bootstrap/04_rds_runtime_grants.sql` | Grants applied | Partial | 5 |
+| 14 | Agent | Gates | `definer_force_rls_audit.js`; `rls_sql_harness.js --target=production …` | **0** / **210/0** | Read-only | 15–25 |
+
+**`dry-run-all` before bootstrap 02/03:** Will fail or mislead (missing `auth.uid`, roles, stubs). Run **only after** step 8.
+
+---
+
+## pg_cron — your manual AWS steps (read-only prep; do before step 12)
+
+From `20260923000003_doctornect_cron.sql` + `scripts/lib/pg_cron_policy.js`:
+
+1. **Parameter group:** Create a **custom** DB parameter group (default groups are not editable). Attach it to the prod instance.
+2. Set **`shared_preload_libraries`** = include **`pg_cron`** (often `pg_stat_statements,pg_cron` — preserve existing values).
+3. Set **`cron.database_name`** = **`doctornect`** (match `PROD_RDS_DB`).
+4. Apply parameter group → instance shows **`pending-reboot`** → schedule **maintenance reboot**.
+5. After reboot, SQL (read-only): `SHOW shared_preload_libraries;` and `SELECT * FROM pg_available_extensions WHERE name='pg_cron';` → `installed=false` is OK before migrate; migration runs `CREATE EXTENSION pg_cron` + four `cron.schedule` jobs.
+6. **Do not** use `--allow-no-cron` on prod execute.
+
+**Jobs scheduled:** `expire-promoted-ads` (hourly), `cleanup-expired-otp-challenges` (03:00 UTC), `cleanup-expired-rate-limits` (03:15 UTC), plus any remaining lines in the migration file.
+
+---
+
+## `migrate --execute` — what can go wrong and recovery
+
+| Failure | Symptom | Recovery |
+|---------|---------|----------|
+| **pg_cron unavailable** | Migrate aborts before/during `20260923000003` (`PG_CRON_NOT_AVAILABLE`) | Fix parameter group + reboot; re-run `--dry-run` then `--execute` (skips applied versions). **Do not** use `--allow-no-cron` on prod. |
+| **pg_cron CREATE EXTENSION denied** | Error on `CREATE EXTENSION pg_cron` | Ensure `rds.extensions` / RDS allows `pg_cron`; grant superuser path via master; fix and re-execute. |
+| **Tunnel drop mid-run** | TCP reset; partial ledger | Check `_schema_migrations` max version; **never** guess. Reconnect tunnel; run `--dry-run` for pending only; `--execute` continues idempotently **if** last file committed per-file (migrate uses per-migration txn). If broken mid-statement, restore snapshot or fix manually from error line. |
+| **Advisory lock held** | `Could not acquire migration advisory lock` | Another session running migrate; or stale lock after crash (wait or identify `pg_locks` holder on bastion). |
+| **Long lock / timeout** | Heavy migration waits | Use maintenance window; check `pg_stat_activity`; avoid concurrent app traffic. |
+| **CONCURRENTLY / non-transactional** | Rare in this repo; dry-run-all surfaces issues | Fix migration on branch; **no** prod hand-edits. |
+| **Wrong DB / bleed** | Script refuses via guards | Fix `PROD_RDS_*` env; forensics must show tunnel port + `rds_superuser`. |
+| **Checksum mismatch** | Ledger vs repo | Stop; branch must match what staging ran. |
+| **Tripwire (dry-run only)** | Object count changed during dry-run-all | N/A on execute; investigate if dry-run-all mutates (should not). |
+
+**Interrupted 77-file run:** Ledger records each **completed** file. After reconnect: `--dry-run` → pending count &lt; 77; `--execute` applies remainder only. **Cannot undo** applied versions without snapshot restore.
+
+---
+
+## Surviving tunnel idle during execute
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **Run migrate on SSM bastion / EC2 in VPC** (recommended) | Same region as RDS; no laptop sleep; stable TCP | One-time setup; copy repo + `.env` carefully (no secrets in logs) |
+| **Laptop tunnel + keepalives** | Quick | Sleep/VPN drops risk mid-run |
+| **AWS Session Manager port-forward** with active session | No SSH keys | Session timeout if idle |
+
+**Recommendation:** Run **`node scripts/db/migrate.js --target=production --execute …`** from a **VPC bastion** with `PROD_RDS_CONNECT_HOST` pointed at the **RDS endpoint** (or short hop), TLS on, **not** through a fragile local forward. If you must use local `127.0.0.1:5434`, set PostgreSQL client **`keepalives=1`** / **`keepalives_idle=30`** in the connection URL or `PG*` env, keep laptop awake, and use **`screen`/`tmux`** on a Linux jump host—not PuTTY alone without keepalive.
+
+---
+
+## Rollback summary
+
+| Step | Rollback |
+|------|----------|
+| Snapshot (0–1) | Restore DB instance from snapshot (AWS) |
+| Bootstrap 01–03 | Painful; prefer new rehearsal DB |
+| **Migrate execute (12)** | **Snapshot / pg_dump restore only** |
+| Bootstrap 04 | Re-apply or manual grant fix; not full rollback |

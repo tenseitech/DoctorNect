@@ -1,58 +1,57 @@
 # DoctorNect migration status
 
 **Branch:** `migration-cutover-fixes` (local, **not pushed**)  
-**Updated:** 2026-11-18 — **GO STAGING** `19000005` applied
+**Updated:** 2026-11-18 (tunnel check — prod Tasks A–C **NOT RUN**)
 
 ---
 
-## Migration completion % (honest)
+## Tunnel
 
-| Scope | Applied / total | % | Notes |
-|-------|-----------------|---|--------|
-| **Staging (Supabase)** | **77 / 77** ledger rows | **100%** | Head `20261119000005`; RDS-only `rds/13000001` skipped by design |
-| **Staging shared SQL files** | **75 / 75** (+ ghost parity) | **100%** | All repo files for `target=staging` |
-| **Prod RDS migrations** | **0 / 77** | **0%** | Tunnel down; not executed |
-| **Prod bootstrap 01–03** | unknown | **0%** verified | Forensics skipped |
-| **Prod bootstrap 04** | 0 | **0%** | Post-migrate |
-| **End-to-end RDS cutover** | — | **~55%** | Staging + replay gates done; prod blocked |
+`Test-NetConnection 127.0.0.1:5434` → **False** (this session). Prod read-only forensics, dry-run, backup, AWS, and pg_cron SQL **skipped**.
 
 ---
 
-## Staging (after `19000005`)
+## Migration completion %
 
-| Check | Result |
-|-------|--------|
-| Pooler | **5432** session (`aws-0-ap-south-1.pooler.supabase.com`) |
-| `rls_sql_harness` | **210 / 0** (`docs/reports/rls_harness_staging_2026-11-18T09-05-49-408Z.md`) |
-| System-admin ACL | `authenticated` + `service_role` EXECUTE; `anon` false |
-| `gateway_rls` on staging | **N/A** — suite uses local fresh DB only |
+| Scope | Applied / total | % |
+|-------|-----------------|---|
+| **Staging Supabase ledger** | **77 / 77** | **100%** |
+| **Staging shared SQL files** (`target=staging`) | **75 / 75** | **100%** |
+| **Prod RDS migrate ledger** | **0 / 77** | **0%** |
+| **Prod bootstrap 01–03** | unverified (NOT RUN) | **—** |
+| **Prod bootstrap 04** | 0 | **0%** |
+| **Cutover (staging + gates + prod path)** | — | **~55%** |
 
 ---
 
-## Replay (reference)
+## Staging (confirmed)
 
-| Gate | Result |
+| Item | Result |
 |------|--------|
-| Harness | **210 / 0** (with `19000005`) |
-| Gateway | **74 / 0** (replay) |
-| Definer | **0** |
+| Head | `20261119000005` |
+| `rls_sql_harness` | **210 / 0** |
 
 ---
 
-## Production
+## Production (NOT RUN today)
 
-| Check | Status |
-|-------|--------|
-| SSM `:5434` | **Down** — Tasks B/C skipped |
-| Prod dry-run / forensics / backup | **Pending tunnel** |
+| Item | Status |
+|------|--------|
+| Forensics / preflight / dry-run | **NOT RUN** (tunnel) |
+| Backup v2 / AWS RDS describe | **NOT RUN** |
+| pg_cron live parameter/SQL check | **NOT RUN** |
 
 ---
 
-## Blocks **APPROVED FOR PROD**
+## Docs added for cutover day
 
-- [x] Staging at head + harness **210/0**
-- [ ] Prod tunnel + forensics + preflight + backup v2
-- [ ] Bootstrap **01–03** on prod
-- [ ] Prod `dry-run-all` (77 pending, incl. `rds/13000001`)
-- [ ] Your **`APPROVED FOR PROD`**
-- [ ] Prod `execute` + **04** + prod gates
+- `docs/runbooks/PROD_CUTOVER_DAY_PLAN.md` — numbered timeline, failures, tunnel advice
+- `docs/PR_SUMMARY_migration-cutover-fixes.md` — branch PR draft
+
+---
+
+## Next
+
+1. Bring up **SSM tunnel :5434** and re-run Tasks A–C (read-only).  
+2. Complete pg_cron parameter group + reboot if SQL checks fail.  
+3. Bootstrap 01–03 → `dry-run-all` → backup → **`APPROVED FOR PROD`** → execute.
