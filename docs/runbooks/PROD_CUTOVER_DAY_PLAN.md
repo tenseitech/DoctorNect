@@ -4,6 +4,45 @@
 **No prod writes** until you say **`APPROVED FOR PROD`**.  
 **Estimates** are per-step wall time for a prepared operator; **77-file migrate** may take **45–120+ min** depending on RDS size and tunnel stability.
 
+### Automated read-only bundle (Windows)
+
+One command (starts SSM to bastion `i-0248ed3a2aad183be`, local **5434**):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/audit/prod_readonly_bundle.ps1
+```
+
+**2026-11-18 run:** tunnel **OK**; SQL steps blocked on **`28P01`** for `doctornect_admin` (rotate `PROD_RDS_PASSWORD` in `.env` or apply bootstrap **01** first); AWS CLI **`rds:DescribeDBInstances` denied** for IAM user `doctornect-admin`. Resolve duplicate `PROD_RDS_HOST` in `.env` (keep logical `*.rds.amazonaws.com`, not `127.0.0.1`).
+
+### Bastion migrate execute (recommended)
+
+| Fact | 2026-11-18 evidence |
+|------|----------------------|
+| Instance | `i-0248ed3a2aad183be` **running**, private IP `172.31.46.143`, SSM **Online** |
+| RDS reach | SSM port-forward from laptop → bastion → RDS **works** (TCP on 5434) |
+| Node / git on bastion | **Not probed** (no `ssm:SendCommand` in bundle). **Before cutover:** `aws ssm start-session --target i-0248ed3a2aad183be` then run `node -v`, `git --version`, `test -d /opt/doctornect` |
+
+**If bastion has no Node/repo:** least-risk fallback = **local tunnel** with:
+
+- `prod_readonly_bundle.ps1` env overrides (`PROD_RDS_CONNECT_HOST=127.0.0.1`, `PROD_RDS_PORT=5434`, logical `PROD_RDS_HOST` = RDS endpoint, `verify-full`)
+- `powercfg /change standby-timeout-ac 0` for execute window
+- PostgreSQL URL/query params: `keepalives=1&keepalives_idle=30&keepalives_interval=10`
+- **Preferred:** clone repo on bastion, install Node 20+, set `.env` with **direct** `PROD_RDS_HOST` + VPC security (no double-hop), run `migrate --execute` inside **`tmux`**
+
+**Resume after tunnel drop during execute:** reconnect tunnel; `migrate.js --target=production --dry-run …` → pending = remainder; `--execute` applies only unrecorded versions (per-file commit). If error mid-file, stop — triage ledger `max(version)` and error log; restore snapshot if partial DDL.
+
+**Masked execute command (bastion or local tunnel):**
+
+```powershell
+cd <repo>
+$env:PROD_RDS_SSLMODE='verify-full'
+node scripts/db/migrate.js --target=production --execute `
+  --confirm-live-data --confirm-db=doctornect `
+  --confirm=<PROD_RDS_HOST-logical-endpoint>
+```
+
+**Do not** use `--allow-no-cron` on production.
+
 | # | Who | Action | Masked command | Expected output | Undo / risk | ~min |
 |---|-----|--------|----------------|-----------------|-------------|------|
 | 0 | **You** | Verify tunnel | `Test-NetConnection 127.0.0.1 -Port $env:PROD_RDS_PORT` | `TcpTestSucceeded : True` | — | 1 |

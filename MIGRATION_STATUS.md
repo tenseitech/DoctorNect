@@ -1,13 +1,7 @@
 # DoctorNect migration status
 
 **Branch:** `migration-cutover-fixes` (local, **not pushed**)  
-**Updated:** 2026-11-18 (tunnel check — prod Tasks A–C **NOT RUN**)
-
----
-
-## Tunnel
-
-`Test-NetConnection 127.0.0.1:5434` → **False** (this session). Prod read-only forensics, dry-run, backup, AWS, and pg_cron SQL **skipped**.
+**Updated:** 2026-11-18 — `prod_readonly_bundle.ps1` run
 
 ---
 
@@ -16,42 +10,42 @@
 | Scope | Applied / total | % |
 |-------|-----------------|---|
 | **Staging Supabase ledger** | **77 / 77** | **100%** |
-| **Staging shared SQL files** (`target=staging`) | **75 / 75** | **100%** |
-| **Prod RDS migrate ledger** | **0 / 77** | **0%** |
-| **Prod bootstrap 01–03** | unverified (NOT RUN) | **—** |
-| **Prod bootstrap 04** | 0 | **0%** |
-| **Cutover (staging + gates + prod path)** | — | **~55%** |
+| **Staging harness** | **210 / 210** | **100%** |
+| **Prod RDS migrate** | **unknown / 77** | **0%** (DB auth blocked forensics) |
+| **Prod bootstrap 01–03** | unknown | **not verified** |
+| **End-to-end cutover** | — | **~55%** |
 
 ---
 
-## Staging (confirmed)
+## Bundle run (2026-11-18)
 
-| Item | Result |
+| Step | Result |
 |------|--------|
-| Head | `20261119000005` |
-| `rls_sql_harness` | **210 / 0** |
+| AWS STS | **PASS** (`doctornect-admin`) |
+| SSM tunnel `:5434` | **PASS** (script starts or reuses `session-manager-plugin`) |
+| Bastion `i-0248ed3a2aad183be` | **running**, SSM **Online**, AL2023 agent |
+| RDS SQL (doctornect_admin) | **FAIL** `28P01` — fix `PROD_RDS_PASSWORD` / create role in bootstrap **01** |
+| `migrate --dry-run` | Guard **PASS**; connect **FAIL** (same auth) |
+| `pg_dump` v2 | **FAIL** (auth) |
+| `aws rds describe-*` | **FAIL** `AccessDenied` — needs `rds:DescribeDBInstances`, `DescribeDBParameters`, `DescribeDBSnapshots` |
+| `.env` hygiene | **Warning:** duplicate `PROD_RDS_HOST` — bundle uses `_resolve_prod_rds_endpoint.js` (prefer `*.rds.amazonaws.com`) |
+
+**Script:** `scripts/audit/prod_readonly_bundle.ps1` (re-run after credentials + IAM fix).
 
 ---
 
-## Production (NOT RUN today)
+## Staging (unchanged)
 
-| Item | Status |
-|------|--------|
-| Forensics / preflight / dry-run | **NOT RUN** (tunnel) |
-| Backup v2 / AWS RDS describe | **NOT RUN** |
-| pg_cron live parameter/SQL check | **NOT RUN** |
+Head `20261119000005`; harness **210/0**.
 
 ---
 
-## Docs added for cutover day
+## Blocks **APPROVED FOR PROD**
 
-- `docs/runbooks/PROD_CUTOVER_DAY_PLAN.md` — numbered timeline, failures, tunnel advice
-- `docs/PR_SUMMARY_migration-cutover-fixes.md` — branch PR draft
-
----
-
-## Next
-
-1. Bring up **SSM tunnel :5434** and re-run Tasks A–C (read-only).  
-2. Complete pg_cron parameter group + reboot if SQL checks fail.  
-3. Bootstrap 01–03 → `dry-run-all` → backup → **`APPROVED FOR PROD`** → execute.
+- [x] Staging + replay gates
+- [ ] Valid **`PROD_RDS_PASSWORD`** for `doctornect_admin` through tunnel
+- [ ] Prod forensics + pending **77** count
+- [ ] Backup v2
+- [ ] AWS RDS read-only IAM (or console checks)
+- [ ] pg_cron parameter verification
+- [ ] Bootstrap **01–03** + `dry-run-all` + approval + execute
