@@ -15,12 +15,15 @@ const tcp = getEnv('PROD_RDS_CONNECT_HOST') || '127.0.0.1';
 const logical = resolveLogicalProdRdsHost() || getEnv('PROD_RDS_HOST');
 const p = getEnv('PROD_RDS_PORT') || '5434';
 const d = getEnv('PROD_RDS_DB');
-const u = getEnv('PROD_RDS_USER');
+const masterUser = getEnv('PROD_RDS_MASTER_USER') || getEnv('PROD_RDS_MASTER_USERNAME');
+const masterPass = getEnv('PROD_RDS_MASTER_PASSWORD');
+const useMaster = Boolean(masterUser && masterPass);
+const u = useMaster ? masterUser : getEnv('PROD_RDS_USER');
 const pemFs = path.resolve(process.cwd(), getEnv('PROD_RDS_SSL_ROOT_CERT') || 'infra/aws/global-bundle.pem');
 const pem = pemFs.replace(/\\/g, '/');
 const env = {
   ...process.env,
-  PGPASSWORD: getEnv('PROD_RDS_PASSWORD'),
+  PGPASSWORD: useMaster ? masterPass : getEnv('PROD_RDS_PASSWORD'),
   PGSSLMODE: 'verify-full',
   PGSSLROOTCERT: pemFs,
   PGSSLSERVERNAME: getEnv('PROD_RDS_SSL_SERVERNAME') || logical,
@@ -37,9 +40,7 @@ if (r1.status !== 0) {
   console.error('pg_dump FAIL', r1.stderr?.toString().slice(0, 900));
   process.exit(1);
 }
-let rolesMode = 'doctornect_admin';
-const masterUser = getEnv('PROD_RDS_MASTER_USER') || getEnv('PROD_RDS_MASTER_USERNAME');
-const masterPass = getEnv('PROD_RDS_MASTER_PASSWORD');
+let rolesMode = useMaster ? 'master' : 'doctornect_admin';
 const rolesEnv = { ...env, PGPASSWORD: env.PGPASSWORD };
 let rolesConn = conninfo;
 const r2 = spawnSync(path.join(bin, 'pg_dumpall.exe'), ['-d', rolesConn, '--roles-only', '-f', roles, '--no-password'], {
@@ -72,5 +73,6 @@ console.log(
     toc_lines: (list.stdout?.toString() || '').split('\n').filter(Boolean).length,
     list_ok: list.status === 0,
     roles_dump_user: rolesMode,
+    data_dump_user: useMaster ? 'master' : 'doctornect_admin',
   }),
 );

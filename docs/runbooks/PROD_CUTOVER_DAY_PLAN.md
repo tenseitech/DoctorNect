@@ -12,7 +12,9 @@ One command (starts SSM to bastion `i-0248ed3a2aad183be`, local **5434**):
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/audit/prod_readonly_bundle.ps1
 ```
 
-**2026-11-18 run (latest):**
+**2026-11-18 evening:** Master keys load; **placeholder password** in `PROD_RDS_MASTER_PASSWORD` → master SQL **28P01**. Inventory/backup/pg_cron blocked until real master secret saved. Tunnel **5434** OK.
+
+**2026-11-18 run (earlier):**
 
 | Signal | Result |
 |--------|--------|
