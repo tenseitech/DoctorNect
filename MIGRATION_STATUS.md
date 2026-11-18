@@ -1,58 +1,67 @@
 # DoctorNect migration status
 
-**Branch:** `fix/pre-accept-gate-lab-auth`  
-**Updated:** 2026-11-17 (DEFINER batch in `000005`; **fresh gate UNVERIFIED** — Docker engine down, prod tunnel down)  
-**Evidence:** `docs/audit/DEFINER_FORCE_RLS_CATALOG.md`; `docs/audit/SECURITY_REVIEW_20261118000005.md`.
+**Branch:** `migration-cutover-fixes` (local, **not pushed**)  
+**Updated:** 2026-11-18  
+**Overall (staging ledger):** **62 / 75 ≈ 83%** applied (13 SQL files pending on staging track, incl. 4 gate-fix migrations)
 
 ---
 
-## Pre-check (2026-11-17)
+## Corrections
 
-| Check | Status | Proof |
-|-------|--------|-------|
-| Docker `rdslike-pg18` `:5442` | **FAIL** | `docker ps` → `dockerDesktopLinuxEngine` pipe missing |
-| Prod ledger `20261118000005` | **UNVERIFIED** | `ECONNREFUSED 127.0.0.1:5433` (tunnel not up) |
-| Staging ledger `20261118000005` | **UNVERIFIED** | no staging read in this run |
-
-Repo migration **not** applied on real ledgers until operator confirms (in-place edit allowed).
+| Issue | Fix |
+|-------|-----|
+| Prod forensics “ledger 72 / full schema” | **Bleed from `:5442` replay** when `PROD_RDS_PORT` was wrong. Script now **HARD_ABORT** unless port **5434**, TLS on, `rds_superuser` present, server **18.3**. |
+| Earlier **3.7 KB** `pg_dump` | TOC shows **18.3** RDS + tiny schema (only `_schema_migrations`). Confirmed **legit prod-empty** snapshot; **not** Docker. Redo dump when `:5434` tunnel up. |
 
 ---
 
-## DEFINER / `000005` (code)
+## Task 1 (staging / replay)
 
 | Item | Status |
 |------|--------|
-| FORCE RLS DEFINER set re-homed | **PASS** (code) — **9** functions → `service_role` owner (`docs/audit/DEFINER_FORCE_RLS_CATALOG.md`) |
-| Live catalog audit | **UNVERIFIED** | `scripts/db/definer_force_rls_audit.js` needs `:5442` DB |
-| Security review | **PASS** (design) | `SECURITY_REVIEW_20261118000005.md` updated |
+| `20261118000002` policy guard | **Done** (edited in place; `000006` **removed**) |
+| `20261116000001` role stubs | **Reverted** (were for dry-run on Supabase; **not** needed after `000002` guard) |
+| Staging `dry-run-all` | **PASS** — **13** pending files, **80** stmts, **0** errors *(was “10” before gate migrations `20261119…`)* |
+| Fresh replay | bootstrap **01–03** → migrate → **04** (`rdsadmin`) + gate SQL |
 
 ---
 
-## `doctornect_admin` rehearsal gate
+## Gates (replay `:5442`, latest)
 
-| Step | Status |
+| Gate | Result |
 |------|--------|
-| Full sequence + migrate ledger | **UNVERIFIED** | Docker down |
-| Harness **210/0** | **UNVERIFIED** | — |
-| Gateway **74/0** | **UNVERIFIED** | 2026-11-16 prior: **74/0** on older `000005` |
-| `has_schema_privilege` CREATE | **UNVERIFIED** | — |
-| Parity (pg_stat filtered) | **UNVERIFIED** | `schema_diff.js` filter in repo |
-| pg_cron local migrate | **UNVERIFIED** | no `pg_cron` in `rdslike-pg18` image |
+| `gateway_rls_authorization_suite` | **74 / 0** |
+| `rls_sql_harness` | **196 / 14** (not **210/0**) |
+| `definer_force_rls_audit` | **0 hits**, exit **0** (after `19000003` + `19000004`) |
 
 ---
 
-## Migrations repo
+## Production RDS (read-only)
 
-| Target | Files | Staging ledger (last known) |
-|--------|------:|----------------------------|
-| production / rehearsal | **72** | staging **62** rows; pending includes `20261118000005` |
+| Check | Status |
+|-------|--------|
+| SSM `:5434` | **Down** this session (`TcpTestSucceeded: False`) |
+| Forensics script | **HARD_ABORT** without tunnel / TLS — **no new prod row counts** |
+| Bootstrap on prod | **01** partial (roles); **02** + **03** **missing** (`auth.jwt`, legacy compat) |
+| Verdict (last trusted `:5434` read) | **PARTIAL** — empty ledger, no app data |
 
 ---
 
-## Prod cutover
+## Step D blockers (staging `--execute`)
 
-**prod gates pending (doctornect_admin harness 210/0 unverified, pg_cron cron.database_name unverified)**
+1. **Replay harness** not **210/0** (14 fails: mostly cross-tenant RPC **P0002 vs 42501**, appointment reschedule RLS).  
+2. **`19000001`–`19000004`** on staging track — need product sign-off before staging apply.  
+3. **Prod** bootstrap **02–03** + gates + explicit **"APPROVED FOR PROD"**.  
+4. **Operator OK** to merge `migration-cutover-fixes` (commits on branch, not `main`).
 
-- [ ] Fresh `doctornect_admin` rehearsal: gateway **74/0** + harness **210/0**  
-- [ ] `migrate.js` **72/72** on prod (no `--allow-no-cron`)  
-- [ ] `definer_force_rls_audit.js` exit **0** after migrate  
+---
+
+## Commits on `migration-cutover-fixes` (7)
+
+1. `000002` policy guard  
+2. `generate_rds_runtime_grants` + `04`  
+3. `definer_force_rls_audit` TypeError  
+4. `19000001` promoted_ads  
+5. `19000002` anon discovery EXECUTE  
+6. `19000003` RPC rehome batch  
+7. `19000004` signature fix + prod forensics guards  
