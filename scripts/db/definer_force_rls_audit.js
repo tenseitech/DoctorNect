@@ -94,7 +94,17 @@ async function main() {
     const items = [...bySig.values()];
     console.log(`\n=== DEFINER + FORCE RLS DML hits (owner without BYPASSRLS): ${items.length} ===\n`);
     for (const it of items) {
-      const exec = (it.execute_roles || []).filter(Boolean).join(',') || '(none explicit)';
+      const rawExec = it.execute_roles;
+      const execList = Array.isArray(rawExec)
+        ? rawExec
+        : rawExec == null || rawExec === ''
+          ? []
+          : String(rawExec)
+              .replace(/^\{|\}$/g, '')
+              .split(',')
+              .map((s) => s.trim().replace(/^"|"$/g, ''))
+              .filter(Boolean);
+      const exec = execList.filter(Boolean).join(',') || '(none explicit)';
       console.log(
         `${it.schema_name}.${it.func_name} | owner=${it.owner} | search_path_pinned=${it.search_path_pinned} | EXECUTE=${exec} | FORCE RLS tables: ${it.force_rls_tables.join(', ')}`,
       );
