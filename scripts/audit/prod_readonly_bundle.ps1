@@ -52,8 +52,11 @@ function Start-SsmTunnel([string]$RdsHost) {
   $owner = Get-ListenerOwner
   if ($owner) {
     if ($owner.ProcessName -match 'session-manager') {
-      Write-Host "Port $LocalPort already held by $($owner.ProcessName) (reuse)."
-      return
+      if (Test-TunnelUp) {
+        Write-Host "Port $LocalPort already held by $($owner.ProcessName) (reuse, TCP OK)."
+        return
+      }
+      Write-Host "Port $LocalPort held by $($owner.ProcessName) but TCP not ready — starting a new forward (leave stale plugin alone)."
     }
     throw "Port $LocalPort in use by PID $($owner.Id) process $($owner.ProcessName) — not session-manager-plugin. Free the port manually."
   }
@@ -126,7 +129,7 @@ AWS STS failed. Fix before retry:
   $id = $sts | ConvertFrom-Json
   Write-Host "STS Account=$($id.Account) Arn=$($id.Arn)"
 
-  $ProdHost = (node (Join-Path $RepoRoot 'scripts/audit/_resolve_prod_rds_endpoint.js')).Trim()
+  $ProdHost = (node -e "console.log(require('./scripts/lib/prod_rds_host_policy').resolveLogicalProdRdsHost())").Trim()
   $ProdDb = (node -e "require('./scripts/lib/bootstrap_root_env').loadRootEnv();const {getEnv}=require('./scripts/lib/env_loader');process.stdout.write(getEnv('PROD_RDS_DB')||'doctornect');").Trim()
   if (-not $ProdHost) { throw 'PROD_RDS_HOST missing in .env (loaded via node)' }
 
@@ -145,9 +148,18 @@ AWS STS failed. Fix before retry:
     throw "Port $LocalPort busy: $($listener.ProcessName) PID $($listener.Id)"
   }
 
+  Write-Step 'Task 1: PROD env audit'
+  $code = Invoke-NodeStep 'env_audit' 'scripts/audit/_prod_env_audit_readonly.js' @()
+  if ($code -ne 0) { $Global:Summary.failures += 'env_audit' }
+
   $restart = 0
   Start-SsmTunnel $ProdHost
   Record-Step 'tunnel' 0
+
+  Write-Step 'Task 1: auth probe (discrete pg params)'
+  Ensure-Tunnel $ProdHost $restart
+  $code = Invoke-NodeStep 'auth_probe' 'scripts/audit/_prod_auth_probe_readonly.js' @()
+  if ($code -ne 0) { $Global:Summary.failures += 'auth_probe' }
 
   $runWithTunnel = {
     param($StepName, $Block)
@@ -255,6 +267,32 @@ PendingModified=$($match.PendingModifiedValues | ConvertTo-Json -Compress)
   Ensure-Tunnel $ProdHost $restart
   $code = Invoke-NodeStep 'pg_cron_sql' 'scripts/audit/_prod_pg_cron_sql_readonly.js' @()
   if ($code -ne 0) { $Global:Summary.failures += 'pg_cron_sql' }
+
+  Write-Step 'Task 4: bastion SSM read-only probe'
+  $rdsForNc = $ProdHost
+  $ssmParamFile = Join-Path $env:TEMP "doctornect-ssm-cmd-$((Get-Date).ToUniversalTime().ToString('HHmmss')).json"
+  @{
+    commands = @(
+      'node -v 2>&1 || echo NODE_MISSING',
+      'git --version 2>&1 || echo GIT_MISSING',
+      'tmux -V 2>&1 || echo TMUX_MISSING',
+      'whoami',
+      'df -h /',
+      "nc -zv $rdsForNc 5432 2>&1 || echo NC_FAILED"
+    )
+  } | ConvertTo-Json | Set-Content -Encoding UTF8 $ssmParamFile
+  $paramUri = 'file://' + ($ssmParamFile -replace '\\', '/')
+  $send = aws ssm send-command --region $Region --instance-ids $BastionId --document-name "AWS-RunShellScript" `
+    --parameters $paramUri --output json 2>&1
+  if ($LASTEXITCODE -eq 0) {
+    $cmdId = ($send | ConvertFrom-Json).Command.CommandId
+    Write-Host "SSM CommandId=$cmdId"
+    Start-Sleep -Seconds 8
+    aws ssm get-command-invocation --region $Region --command-id $cmdId --instance-id $BastionId --output json 2>&1
+  } else {
+    Write-Host $send
+    $Global:Summary.failures += 'bastion_send_command'
+  }
 
   Write-Step 'Task 4: bastion metadata (read-only AWS API)'
   aws ec2 describe-instances --instance-ids $BastionId --region $Region `

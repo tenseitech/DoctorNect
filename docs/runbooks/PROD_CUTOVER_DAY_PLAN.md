@@ -12,7 +12,18 @@ One command (starts SSM to bastion `i-0248ed3a2aad183be`, local **5434**):
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/audit/prod_readonly_bundle.ps1
 ```
 
-**2026-11-18 run:** tunnel **OK**; SQL steps blocked on **`28P01`** for `doctornect_admin` (rotate `PROD_RDS_PASSWORD` in `.env` or apply bootstrap **01** first); AWS CLI **`rds:DescribeDBInstances` denied** for IAM user `doctornect-admin`. Resolve duplicate `PROD_RDS_HOST` in `.env` (keep logical `*.rds.amazonaws.com`, not `127.0.0.1`).
+**2026-11-18 run (latest):**
+
+| Signal | Result |
+|--------|--------|
+| `.env` | `PROD_RDS_HOST=*.rds.amazonaws.com`, `PORT=5434`, `DB=doctornect`, no duplicate keys in file |
+| Tunnel | Restart when stale `session-manager-plugin` holds **5434** but TCP fails |
+| Auth probe | **28P01** with **discrete** `pg` Client fields (rules out URL special-char parsing) |
+| Master vars | **`PROD_RDS_MASTER_USER` / `PROD_RDS_MASTER_PASSWORD` not in .env** — you add for inventory + roles dump |
+| AWS RDS CLI | **AccessDenied** — use `docs/audit/iam_rds_readonly_policy.json` or console |
+| Bastion `cda2c3fb-…` | **No node/git/tmux/nc**; disk **6.4G** free; runs as **root** |
+
+**Bastion installs (you approve; not run by agent):** e.g. `sudo dnf install -y nodejs git tmux nmap-ncat`, then clone repo. **Simpler fallback:** laptop tunnel + keepalives for forensics; for **77-file execute** prefer installing Node on bastion later.
 
 ### Bastion migrate execute (recommended)
 
