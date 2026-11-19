@@ -1,7 +1,7 @@
 # DoctorNect migration status
 
 **Branch:** `migration-cutover-fixes` (local, **not pushed**)  
-**Updated:** 2026-11-19 — prod login + inventory (read-only)
+**Updated:** 2026-11-19 — connection verify (STOP at db name)
 
 ---
 
@@ -12,31 +12,26 @@
 | **Staging ledger** | **77 / 77** | **100%** |
 | **Staging harness** | **210 / 210** | **100%** |
 | **Prod RDS migrate** | **0 / 77** | **0%** |
-| **Prod bootstrap 01–03** | **partial** | **~50%** (roles yes; ext + 02/03 gaps) |
+| **Prod bootstrap 01–03** | **partial** | **~50%** |
 | **Cutover overall** | — | **~63%** |
 
 ---
 
-## Prod read-only (2026-11-19)
+## Prod (2026-11-19)
 
 | Check | Result |
 |-------|--------|
-| **`PROD_RDS_MASTER_USER` on disk** | **`doctornect_admin`** (not `postgres` — save `.env` after edit) |
-| **`postgres` + `PROD_RDS_MASTER_PASSWORD`** | **28P01** |
-| **`doctornect_admin` + `PROD_RDS_PASSWORD`** | **28P01** (migrator slot out of sync) |
-| **`doctornect_admin` + `PROD_RDS_MASTER_PASSWORD`** | **OK** (password is migrator secret today, not RDS master) |
-| RDS manual snapshot | **`<REAL SNAPSHOT ID>`** / **`<REAL UTC TIME>`** (as reported) |
-| SSM tunnel | Started **PID 21212**, closed after run |
-| Verdict | **PARTIAL** — unchanged gaps vs 2026-11-18 |
-| **pg_dumpall as postgres** | **NOT RUN** (blocked at **28P01**) |
-| **Backup folder** | `C:\Users\khije\Backups\doctornect-prod-2026-11-19-v2` — failed **postgres** dump (**0** B stub); use **2026-11-18-v2** data dump until fixed |
+| RDS master (console) | **`doctornect_admin`** (not `postgres`) |
+| **`PROD_RDS_MASTER_USER` / `PROD_RDS_USER`** | **`doctornect_admin`** |
+| **`PROD_RDS_DB` on disk** | **`doctornect-prod`** — **FAIL** (must be **`doctornect`**) |
+| Logins | **`3D000`** (wrong database name) — auth not reached |
+| Snapshot | **`<REAL SNAPSHOT ID>`** / **`<REAL UTC TIME>`** |
+| Tunnel | SSM **PID 7232** (closed after run) |
+| Inventory / backup v2 | **NOT RUN** (blocked at Task 1) |
 
-### Inventory gaps (unchanged)
+**Fix:** Set **`PROD_RDS_DB=doctornect`**, save `.env`, re-run `node scripts/audit/_prod_dual_login_readonly.js`.
 
-- **01:** `pgcrypto`, `uuid-ossp`, `pg_stat_statements`; `pg_stat_statements_reset` grant **false**
-- **02:** `auth.jwt()`
-- **03:** `auth.users` stub; **private USAGE** for `authenticated`
-- **Ledger:** **0**; **pg_cron** preload **OK**
+Last inventory (2026-11-18): **PARTIAL** — extensions + 02/03 gaps; ledger **0**; pg_cron preload **OK**.
 
 ---
 
@@ -44,10 +39,8 @@
 
 | Gate | Status |
 |------|--------|
-| **Gate 1** `APPROVED FOR PROD: BOOTSTRAP` | **not given** |
+| **Gate 1** `APPROVED FOR PROD: BOOTSTRAP` | not given |
 | **Gate 2** `APPROVED FOR PROD: MIGRATE` | not given |
-
-**Blocker before Gate 1:** RDS master username **`postgres`** in `PROD_RDS_MASTER_USER`; **`PROD_RDS_MASTER_PASSWORD`** = RDS master password (Console → modify master password if needed); **`PROD_RDS_PASSWORD`** = `doctornect_admin` after `\password`. Save `.env`.
 
 ---
 

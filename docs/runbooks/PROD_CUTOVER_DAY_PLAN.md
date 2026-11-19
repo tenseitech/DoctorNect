@@ -12,7 +12,7 @@ One command (starts SSM to bastion `i-0248ed3a2aad183be`, local **5434**):
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/audit/prod_readonly_bundle.ps1
 ```
 
-**2026-11-19 (read-only):** On-disk **`PROD_RDS_MASTER_USER=doctornect_admin`**; **`postgres`+master password → 28P01**; **`doctornect_admin`+`PROD_RDS_PASSWORD` → 28P01**; master password currently matches **`doctornect_admin`** only. Snapshot **`<REAL SNAPSHOT ID>`** **`<REAL UTC TIME>`**. Inventory **PARTIAL** (same gaps). **postgres** `pg_dumpall` **blocked**. RDS snapshot recorded; fix master/migrator **`.env`** before Gate 1.
+**2026-11-19:** RDS **master username = `doctornect_admin`** (console); use the same role for **01**, **`pg_dump` / `pg_dumpall`**, and **`rds_bootstrap_apply`** — not `postgres`. **`PROD_RDS_DB` must be exactly `doctornect`** (value `doctornect-prod` → SQLSTATE **3D000**). Snapshot **`<REAL SNAPSHOT ID>`** **`<REAL UTC TIME>`**. No post-01 `\password` step when master and migrator passwords already match in `.env`.
 
 **2026-11-18 evening (tasks 1–4):** Tunnel **5434** OK. Inventory **PARTIAL**; pg_cron preload OK; **2026-11-18-v2** logical dump **3703 B** / **15** TOC (non-superuser roles stub).
 
@@ -67,7 +67,7 @@ node scripts/db/migrate.js --target=production --execute `
 | 4 | Agent | Preflight | `node scripts/db/prod_rds_preflight_readonly.js` | Diagnostic OK | — | 3 |
 | 5 | Agent | Migrate dry-run (pending list) | `node scripts/db/migrate.js --target=production --dry-run --confirm-live-data --confirm-db=doctornect --confirm=$env:PROD_RDS_HOST` | **77** pending, incl. `rds/20261113000001` | — | 5 |
 | 6 | **You** | **pg_cron parameter group** (if not ready) | See § pg_cron below | `shared_preload_libraries` includes `pg_cron`; `cron.database_name=doctornect` | **Reboot required** after change | 15 + **reboot window** |
-| 7 | **You** | **Bootstrap 01** (master) | `psql "postgresql://<master>:****@127.0.0.1:$($env:PROD_RDS_PORT)/doctornect?sslmode=require" -v ON_ERROR_STOP=1 -f db/rds_bootstrap/01_roles_and_extensions.sql` | Roles + extensions | Hard to undo role DDL | 10 |
+| 7 | **You** | **Bootstrap 01** (`doctornect_admin`) | See **Gate 1 — bootstrap 01** below (`PGPASSWORD` + `psql -U doctornect_admin`, `verify-full`) | Roles + extensions | Hard to undo role DDL | 10 |
 | 8 | Agent | **Bootstrap 02–03** | `node scripts/db/rds_bootstrap_apply.js --target=production --execute --pre-migrate-only --confirm-live-data --confirm=$env:PROD_RDS_HOST --confirm-db=doctornect` | `✅ Bootstrap complete` | Partial DDL | 5 |
 | 9 | Agent | **dry-run-all** (after 02–03) | `node scripts/db/migrate.js --target=production --dry-run-all --confirm-live-data --confirm-db=doctornect --confirm=$env:PROD_RDS_HOST` | **0 errors** across all pending SQL | Safe | 30–90 |
 | 10 | **You** | Logical backup v2 | `pg_dump --format=directory … -f C:\Users\khije\Backups\doctornect-prod-<date>-v2` | `pg_restore --list` shows RDS host in TOC | — | 10–60 |
@@ -112,6 +112,33 @@ From `20260923000003_doctornect_cron.sql` + `scripts/lib/pg_cron_policy.js`:
 | **Tripwire (dry-run only)** | Object count changed during dry-run-all | N/A on execute; investigate if dry-run-all mutates (should not). |
 
 **Interrupted 77-file run:** Ledger records each **completed** file. After reconnect: `--dry-run` → pending count &lt; 77; `--execute` applies remainder only. **Cannot undo** applied versions without snapshot restore.
+
+---
+
+## Gate 1 — bootstrap 01 (`doctornect_admin`, not `postgres`)
+
+Requires phrase **`APPROVED FOR PROD: BOOTSTRAP`**. TLS **`verify-full`**; tunnel **`127.0.0.1:5434`**. Set **`PGPASSWORD`** from **`PROD_RDS_MASTER_PASSWORD`** in the shell (never inline in chat).
+
+```powershell
+cd <repo>
+$env:PROD_RDS_CONNECT_HOST = '127.0.0.1'
+$env:PROD_RDS_PORT = '5434'
+$env:PROD_RDS_SSLMODE = 'verify-full'
+# PROD_RDS_HOST / PROD_RDS_SSL_SERVERNAME = logical *.rds.amazonaws.com
+$env:PGSSLMODE = 'verify-full'
+$env:PGSSLROOTCERT = '<repo>\infra\aws\global-bundle.pem'
+$env:PGSSLSERVERNAME = $env:PROD_RDS_HOST
+$env:PGPASSWORD = <load from .env in shell; do not echo>
+& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' -h 127.0.0.1 -p 5434 -U doctornect_admin -d doctornect `
+  -v ON_ERROR_STOP=1 -f db\rds_bootstrap\01_roles_and_extensions.sql
+Remove-Item Env:PGPASSWORD
+```
+
+**02+03 (agent, after 01 verified):** `node scripts/db/rds_bootstrap_apply.js --target=production --execute --pre-migrate-only --confirm-live-data --confirm-db=doctornect --confirm=<logical PROD_RDS_HOST>`
+
+**Backups:** `node scripts/audit/_prod_backup_once.js C:\Users\khije\Backups\doctornect-prod-<date>-v2` (uses **`PROD_RDS_MASTER_USER`** → `doctornect_admin`, `pg_dumpall --roles-only --no-role-passwords`).
+
+**No `\password doctornect_admin`** when master and **`PROD_RDS_PASSWORD`** already match.
 
 ---
 

@@ -43,7 +43,7 @@ if (r1.status !== 0) {
 let rolesMode = useMaster ? 'master' : 'doctornect_admin';
 const rolesEnv = { ...env, PGPASSWORD: env.PGPASSWORD };
 let rolesConn = conninfo;
-const r2 = spawnSync(path.join(bin, 'pg_dumpall.exe'), ['-d', rolesConn, '--roles-only', '-f', roles, '--no-password'], {
+const r2 = spawnSync(path.join(bin, 'pg_dumpall.exe'), ['-d', rolesConn, '--roles-only', '--no-role-passwords', '-f', roles, '--no-password'], {
   env: rolesEnv,
   stdio: ['ignore', 'pipe', 'pipe'],
 });
@@ -51,7 +51,7 @@ if (r2.status !== 0 && masterUser && masterPass) {
   rolesMode = 'master';
   rolesConn = `dbname=${d} user=${masterUser} hostaddr=${tcp} host=${logical} port=${p} sslmode=verify-full sslrootcert=${pem}`;
   const masterEnv = { ...env, PGPASSWORD: masterPass };
-  const r2b = spawnSync(path.join(bin, 'pg_dumpall.exe'), ['-d', rolesConn, '--roles-only', '-f', roles, '--no-password'], {
+  const r2b = spawnSync(path.join(bin, 'pg_dumpall.exe'), ['-d', rolesConn, '--roles-only', '--no-role-passwords', '-f', roles, '--no-password'], {
     env: masterEnv,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
