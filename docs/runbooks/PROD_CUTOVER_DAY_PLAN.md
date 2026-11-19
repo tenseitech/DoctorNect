@@ -12,7 +12,7 @@ One command (starts SSM to bastion `i-0248ed3a2aad183be`, local **5434**):
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/audit/prod_readonly_bundle.ps1
 ```
 
-**2026-11-19 (Tasks 1–2 PASS):** **`PROD_RDS_DB=doctornect`**, dual login **OK**, backup **`2026-11-19-v2`** (dump **3703 B**, roles **4873 B**, **26** TOC). Inventory **PARTIAL**, ledger **0**, pg_cron preload OK. Master **`doctornect_admin`**. Snapshot **`<REAL SNAPSHOT ID>`** **`<REAL UTC TIME>`**. **Waiting for Gate 1.**
+**2026-11-19 Gate 1 DONE:** Bootstrap **01–03** applied on **`doctornect`**. **dry-run** **77** pending. **`--dry-run-all`:** **451** errors — production uses empty **`migrate_scratch_*`** DB without repeating bootstrap **01–03** (environment/gap in `migrate.js`, not a prod DDL failure on `doctornect`). **Gate 2 waiting.** psql **01** TLS: use `host=<logical RDS> hostaddr=127.0.0.1` conn string.
 
 **2026-11-18 evening (tasks 1–4):** Tunnel **5434** OK. Inventory **PARTIAL**; pg_cron preload OK; **2026-11-18-v2** logical dump **3703 B** / **15** TOC (non-superuser roles stub).
 
@@ -121,18 +121,15 @@ Requires phrase **`APPROVED FOR PROD: BOOTSTRAP`**. TLS **`verify-full`**; tunne
 
 ```powershell
 cd <repo>
-$env:PROD_RDS_CONNECT_HOST = '127.0.0.1'
-$env:PROD_RDS_PORT = '5434'
-$env:PROD_RDS_SSLMODE = 'verify-full'
-# PROD_RDS_HOST / PROD_RDS_SSL_SERVERNAME = logical *.rds.amazonaws.com
-$env:PGSSLMODE = 'verify-full'
-$env:PGSSLROOTCERT = '<repo>\infra\aws\global-bundle.pem'
-$env:PGSSLSERVERNAME = $env:PROD_RDS_HOST
-$env:PGPASSWORD = <load from .env in shell; do not echo>
-& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' -h 127.0.0.1 -p 5434 -U doctornect_admin -d doctornect `
-  -v ON_ERROR_STOP=1 -f db\rds_bootstrap\01_roles_and_extensions.sql
+$LogicalHost = $env:PROD_RDS_HOST   # *.rds.amazonaws.com
+$Pem = '<repo>\infra\aws\global-bundle.pem' -replace '\\','/'
+$env:PGPASSWORD = <load PROD_RDS_MASTER_PASSWORD in shell only>
+$Conn = "host=$LogicalHost hostaddr=127.0.0.1 port=5434 dbname=doctornect user=doctornect_admin sslmode=verify-full sslrootcert=$Pem"
+& 'C:\Program Files\PostgreSQL\18\bin\psql.exe' -d $Conn -v ON_ERROR_STOP=1 -f db\rds_bootstrap\01_roles_and_extensions.sql
 Remove-Item Env:PGPASSWORD
 ```
+
+**`--dry-run-all` on production:** Runs on a fresh **`migrate_scratch_*`** database (prod tripwire). That DB does **not** inherit bootstrap **01–03** from `doctornect`; expect many **3F000/42883** until `migrate.js` applies bootstrap to scratch first (code change) or you accept **dry-run** + staging parity for Gate 2.
 
 **02+03 (agent, after 01 verified):** `node scripts/db/rds_bootstrap_apply.js --target=production --execute --pre-migrate-only --confirm-live-data --confirm-db=doctornect --confirm=<logical PROD_RDS_HOST>`
 
