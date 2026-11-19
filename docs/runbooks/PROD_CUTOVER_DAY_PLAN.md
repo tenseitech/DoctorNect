@@ -12,7 +12,7 @@ One command (starts SSM to bastion `i-0248ed3a2aad183be`, local **5434**):
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/audit/prod_readonly_bundle.ps1
 ```
 
-**2026-11-19:** RDS **master username = `doctornect_admin`** (console); use the same role for **01**, **`pg_dump` / `pg_dumpall`**, and **`rds_bootstrap_apply`** — not `postgres`. **`PROD_RDS_DB` must be exactly `doctornect`** (value `doctornect-prod` → SQLSTATE **3D000**). Snapshot **`<REAL SNAPSHOT ID>`** **`<REAL UTC TIME>`**. No post-01 `\password` step when master and migrator passwords already match in `.env`.
+**2026-11-19 (Tasks 1–2 PASS):** **`PROD_RDS_DB=doctornect`**, dual login **OK**, backup **`2026-11-19-v2`** (dump **3703 B**, roles **4873 B**, **26** TOC). Inventory **PARTIAL**, ledger **0**, pg_cron preload OK. Master **`doctornect_admin`**. Snapshot **`<REAL SNAPSHOT ID>`** **`<REAL UTC TIME>`**. **Waiting for Gate 1.**
 
 **2026-11-18 evening (tasks 1–4):** Tunnel **5434** OK. Inventory **PARTIAL**; pg_cron preload OK; **2026-11-18-v2** logical dump **3703 B** / **15** TOC (non-superuser roles stub).
 

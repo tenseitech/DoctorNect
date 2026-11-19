@@ -51,6 +51,7 @@ async function identity(user, password) {
         JOIN pg_roles u ON u.oid = m.member
         WHERE r.rolname = 'rds_superuser' AND u.rolname = current_user
       ) AS member_of_rds_superuser`);
+    const canCreateExtension = superMember.rows[0].member_of_rds_superuser;
     await client.end();
     return {
       current_user: id.rows[0].current_user,
@@ -61,7 +62,8 @@ async function identity(user, password) {
       rolcreaterole: priv.rows[0]?.rolcreaterole,
       rolcreatedb: priv.rows[0]?.rolcreatedb,
       member_of_rds_superuser: superMember.rows[0].member_of_rds_superuser,
-      can_create_in_db: extPriv.rows[0].can_create_schema_objects,
+      can_create_in_db: extPriv.rows[0].can_create_in_db,
+      can_create_extension_effective: canCreateExtension,
     };
   } catch (e) {
     try {
