@@ -12,7 +12,9 @@ One command (starts SSM to bastion `i-0248ed3a2aad183be`, local **5434**):
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/audit/prod_readonly_bundle.ps1
 ```
 
-**2026-11-18 evening (tasks 1–4):** Master keys load (no placeholder). Tunnel **5434** TCP OK (reused). Inventory **PARTIAL** on PG **18.3**: `doctornect_admin` exists; bootstrap roles **01** present; extensions + **`auth.jwt()`** + **`auth.users`** + **private USAGE** missing; ledger **0/77**. **pg_cron** preloaded + `cron.database_name=doctornect` — **no param-group reboot needed**. Backup v2 **3703 B** / **15** TOC entries; **`pg_dumpall --roles-only` denied** because `PROD_RDS_MASTER_USER` is **`doctornect_admin`** not **`postgres`**. Fix master vars before bootstrap **01** + roles dump.
+**2026-11-19 (read-only):** On-disk **`PROD_RDS_MASTER_USER=doctornect_admin`**; **`postgres`+master password → 28P01**; **`doctornect_admin`+`PROD_RDS_PASSWORD` → 28P01**; master password currently matches **`doctornect_admin`** only. Snapshot **`<REAL SNAPSHOT ID>`** **`<REAL UTC TIME>`**. Inventory **PARTIAL** (same gaps). **postgres** `pg_dumpall` **blocked**. RDS snapshot recorded; fix master/migrator **`.env`** before Gate 1.
+
+**2026-11-18 evening (tasks 1–4):** Tunnel **5434** OK. Inventory **PARTIAL**; pg_cron preload OK; **2026-11-18-v2** logical dump **3703 B** / **15** TOC (non-superuser roles stub).
 
 **2026-11-18 run (earlier):**
 

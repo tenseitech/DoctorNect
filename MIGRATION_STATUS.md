@@ -1,7 +1,7 @@
 # DoctorNect migration status
 
 **Branch:** `migration-cutover-fixes` (local, **not pushed**)  
-**Updated:** 2026-11-18 — prod read-only bundle (tasks 1–4)
+**Updated:** 2026-11-19 — prod login + inventory (read-only)
 
 ---
 
@@ -12,33 +12,31 @@
 | **Staging ledger** | **77 / 77** | **100%** |
 | **Staging harness** | **210 / 210** | **100%** |
 | **Prod RDS migrate** | **0 / 77** | **0%** |
-| **Prod bootstrap 01–03** | **partial** (roles yes; extensions + 02/03 gaps) | **~45%** |
-| **Cutover overall** | — | **~62%** |
+| **Prod bootstrap 01–03** | **partial** | **~50%** (roles yes; ext + 02/03 gaps) |
+| **Cutover overall** | — | **~63%** |
 
 ---
 
-## Prod read-only (2026-11-18)
+## Prod read-only (2026-11-19)
 
 | Check | Result |
 |-------|--------|
-| `PROD_RDS_MASTER_USER` / `PROD_RDS_MASTER_PASSWORD` | **present** in `env_loader`; no placeholder pattern |
-| **Warning** | `PROD_RDS_MASTER_USER` is **`doctornect_admin`**, not RDS instance master **`postgres`** — works for inventory but **`pg_dumpall --roles-only` fails** (`pg_authid`); bootstrap **01** must use **postgres** + real master secret |
-| SSM tunnel **5434** | **TCP OK** (reused existing forward; no new agent PID) |
-| Verdict | **PARTIAL** — PG **18.3**, `rds_superuser=true`, SSL via tunnel, logical host `doctorne….amazonaws.com` |
-| `doctornect_admin` | **exists**, `rolcanlogin=true`, createrole/createdb, no bypassrls |
-| Bootstrap **01** | All six roles present; extensions **`pgcrypto` / `uuid-ossp` / `pg_stat_statements`** **missing**; reset grant **false** |
-| Bootstrap **02** | **`auth.jwt()`** missing (`auth` schema present) |
-| Bootstrap **03** | **`auth.users` stub**, **`GRANT USAGE ON SCHEMA private TO authenticated`** missing |
-| Ledger | **0** rows; public user tables **0** (empty `_schema_migrations` only) |
-| **pg_cron** | **Preloaded** (`pg_cron` in `shared_preload_libraries`); **`cron.database_name=doctornect`**; extension **not installed** (expected pre-migrate) |
-| Backup v2 | `C:\Users\khije\Backups\doctornect-prod-2026-11-18-v2` — dump **3703** bytes, **15** TOC entries (**26** list lines); **`pg_dumpall` roles FAIL** (non-superuser) |
-| Path | **Not Path A** (role exists). **Path B** for app creds + **Gate 1** still required for **01/02/03** gaps |
+| **`PROD_RDS_MASTER_USER` on disk** | **`doctornect_admin`** (not `postgres` — save `.env` after edit) |
+| **`postgres` + `PROD_RDS_MASTER_PASSWORD`** | **28P01** |
+| **`doctornect_admin` + `PROD_RDS_PASSWORD`** | **28P01** (migrator slot out of sync) |
+| **`doctornect_admin` + `PROD_RDS_MASTER_PASSWORD`** | **OK** (password is migrator secret today, not RDS master) |
+| RDS manual snapshot | **`<REAL SNAPSHOT ID>`** / **`<REAL UTC TIME>`** (as reported) |
+| SSM tunnel | Started **PID 21212**, closed after run |
+| Verdict | **PARTIAL** — unchanged gaps vs 2026-11-18 |
+| **pg_dumpall as postgres** | **NOT RUN** (blocked at **28P01**) |
+| **Backup folder** | `C:\Users\khije\Backups\doctornect-prod-2026-11-19-v2` — failed **postgres** dump (**0** B stub); use **2026-11-18-v2** data dump until fixed |
 
----
+### Inventory gaps (unchanged)
 
-## Staging
-
-Head `20261119000005`; harness **210/0**.
+- **01:** `pgcrypto`, `uuid-ossp`, `pg_stat_statements`; `pg_stat_statements_reset` grant **false**
+- **02:** `auth.jwt()`
+- **03:** `auth.users` stub; **private USAGE** for `authenticated`
+- **Ledger:** **0**; **pg_cron** preload **OK**
 
 ---
 
@@ -46,7 +44,13 @@ Head `20261119000005`; harness **210/0**.
 
 | Gate | Status |
 |------|--------|
-| **Gate 1** `APPROVED FOR PROD: BOOTSTRAP` | **not given** — waiting |
+| **Gate 1** `APPROVED FOR PROD: BOOTSTRAP` | **not given** |
 | **Gate 2** `APPROVED FOR PROD: MIGRATE` | not given |
 
-**Next:** Set **`PROD_RDS_MASTER_USER=postgres`** and real RDS master password (save `.env`, do not commit). Align **`PROD_RDS_PASSWORD`** with `doctornect_admin`. Confirm manual RDS snapshot time. Then Gate 1.
+**Blocker before Gate 1:** RDS master username **`postgres`** in `PROD_RDS_MASTER_USER`; **`PROD_RDS_MASTER_PASSWORD`** = RDS master password (Console → modify master password if needed); **`PROD_RDS_PASSWORD`** = `doctornect_admin` after `\password`. Save `.env`.
+
+---
+
+## Staging
+
+Head `20261119000005`; harness **210/0**.
