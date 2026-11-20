@@ -62,6 +62,7 @@ const {
   shouldSkipMigrationFile,
   queryPgCronCatalog,
   allowNoCronFromArgv,
+  isRdsProductionTarget,
 } = require('../lib/pg_cron_policy');
 const {
   listMigrationsForTarget,
@@ -73,6 +74,8 @@ const { isSkippableTransactionControlStatement } = require('../lib/migration_txn
 const { normalizeRdsMigrationSql } = require('../lib/rds_migration_sql_normalize');
 const { countAppSchemaObjects, assertTripwireUnchanged } = require('../lib/migrate_prod_tripwire');
 const { withMigrateScratchDatabase } = require('../lib/migrate_scratch_db');
+const { applyBootstrapToScratchDatabase, SCRATCH_DB_PATTERN } = require('../lib/migrate_scratch_bootstrap');
+const { CRON_MIGRATION_FILE } = require('../lib/pg_cron_policy');
 
 const MIGRATION_ADVISORY_TARGETS = new Set(['production', 'rehearsal']);
 
@@ -304,6 +307,10 @@ async function executeDryRunAllOnClient({
   const pendingFiles = files.filter((f) => !appliedMap.has(migrationVersionFromRel(f)));
   console.log(`Found ${pendingFiles.length} pending migration files: ${pendingFiles.join(', ')}`);
 
+  const scratchDbRes = await client.query('SELECT current_database() AS db');
+  const scratchDbName = scratchDbRes.rows[0].db;
+  const isScratchDb = SCRATCH_DB_PATTERN.test(scratchDbName);
+
   await client.query('BEGIN');
   let dryRunTxnOpen = true;
   const allErrors = [];
@@ -311,7 +318,18 @@ async function executeDryRunAllOnClient({
 
   try {
     for (const file of pendingFiles) {
-      if (shouldSkipMigrationFile(path.basename(file), skipCronMigration)) {
+      const base = path.basename(file);
+      if (
+        isScratchDb &&
+        isRdsProductionTarget(target) &&
+        base === CRON_MIGRATION_FILE
+      ) {
+        console.log(
+          `\n[SKIPPED — scratch DB pg_cron] ${file} (RDS installs pg_cron only in PROD_RDS_DB; validated on --execute)`,
+        );
+        continue;
+      }
+      if (shouldSkipMigrationFile(base, skipCronMigration)) {
         console.log(`\n[SKIPPED — --allow-no-cron] ${file}`);
         continue;
       }
@@ -534,6 +552,7 @@ async function runMigrations() {
         await withMigrateScratchDatabase(poolConfig, async (scratchPool) => {
           const scratchClient = await scratchPool.connect();
           try {
+            await applyBootstrapToScratchDatabase(scratchClient);
             const { appliedMap: scratchApplied } = await loadAppliedMigrationsMap(scratchClient, false);
             scratchResult = await executeDryRunAllOnClient({
               client: scratchClient,

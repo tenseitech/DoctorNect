@@ -129,7 +129,18 @@ $Conn = "host=$LogicalHost hostaddr=127.0.0.1 port=5434 dbname=doctornect user=d
 Remove-Item Env:PGPASSWORD
 ```
 
-**`--dry-run-all` on production:** Runs on a fresh **`migrate_scratch_*`** database (prod tripwire). That DB does **not** inherit bootstrap **01–03** from `doctornect`; expect many **3F000/42883** until `migrate.js` applies bootstrap to scratch first (code change) or you accept **dry-run** + staging parity for Gate 2.
+**`--dry-run-all` on production (2026-11-20):** `migrate.js` applies bootstrap **01–03** to each **`migrate_scratch_*`** DB before statement tests; scratch DB is **always dropped** in `finally`. **`20260923000003_doctornect_cron.sql`** is **skipped on scratch** only (RDS: pg_cron only in `PROD_RDS_DB`); it still runs on **`--execute`** in `doctornect`. Latest run: **0 errors**, **1718** statements.
+
+**Gate 2 execute (prepared, not run):**
+```powershell
+node scripts/db/migrate.js --target=production --execute `
+  --confirm-live-data --confirm-db=doctornect --confirm=<logical PROD_RDS_HOST>
+```
+**Post-execute:** bootstrap **04** as `doctornect_admin` (same psql host/hostaddr pattern as 01). Then `definer_force_rls_audit.js`, `rls_sql_harness.js --target=production`, `rds_readiness_probe.js`.
+
+**Tunnel:** Re-check `Test-NetConnection 127.0.0.1 -Port 5434` before each step. **Prefer bastion** for 77-file execute if laptop sleep/VPN is a risk (install **Node 20+**, clone repo, `.env` with direct RDS or local forward); **local SSM** OK with keepalives + stay awake.
+
+**Mid-run drop:** Each migration file commits separately on `--execute`; reconnect tunnel and re-run the **same** command — only pending versions apply.
 
 **02+03 (agent, after 01 verified):** `node scripts/db/rds_bootstrap_apply.js --target=production --execute --pre-migrate-only --confirm-live-data --confirm-db=doctornect --confirm=<logical PROD_RDS_HOST>`
 
