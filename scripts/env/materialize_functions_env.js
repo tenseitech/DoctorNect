@@ -31,6 +31,7 @@ const FUNCTIONS_KEYS = new Set([
   'REVIEW_DOCTOR_PHONES',
   'REVIEW_LAB_PHONES',
   'REVIEW_MEDICAL_STORE_PHONES',
+  'REVIEW_MEDICALSTORE_PHONES',
   'REVIEW_AMBULANCE_PHONES',
   'MSG91_AUTH_KEY',
   'MSG91_TEMPLATE_ID',
@@ -104,7 +105,7 @@ function main() {
   ];
   for (const key of [...FUNCTIONS_KEYS].sort()) {
     const val = process.env[key] ?? parsed[key] ?? '';
-    if (val === '' && !['APP_ENV', 'FIRESTORE_FORBIDDEN'].includes(key)) continue;
+    if (val === '') continue;
     lines.push(`${key}=${val}`);
   }
   const out = path.join(root, 'backend', 'functions', '.env');
