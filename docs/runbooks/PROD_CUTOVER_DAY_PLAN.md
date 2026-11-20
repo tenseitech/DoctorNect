@@ -12,7 +12,7 @@ One command (starts SSM to bastion `i-0248ed3a2aad183be`, local **5434**):
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/audit/prod_readonly_bundle.ps1
 ```
 
-**2026-11-19 Gate 1 DONE:** Bootstrap **01–03** applied on **`doctornect`**. **dry-run** **77** pending. **`--dry-run-all`:** **451** errors — production uses empty **`migrate_scratch_*`** DB without repeating bootstrap **01–03** (environment/gap in `migrate.js`, not a prod DDL failure on `doctornect`). **Gate 2 waiting.** psql **01** TLS: use `host=<logical RDS> hostaddr=127.0.0.1` conn string.
+**2026-11-20 Gate 2 DONE:** **77/77** migrate on **`doctornect`**, head **`20261119000005`**, bootstrap **04**, harness **210/0**, readiness **OK**, pg_cron **4** jobs. Post backup `...\2026-11-19-post`. Snapshot user-confirmed **`<REAL SNAPSHOT ID>`** **`<REAL UTC TIME>`**.
 
 **2026-11-18 evening (tasks 1–4):** Tunnel **5434** OK. Inventory **PARTIAL**; pg_cron preload OK; **2026-11-18-v2** logical dump **3703 B** / **15** TOC (non-superuser roles stub).
 
