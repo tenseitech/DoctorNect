@@ -1,7 +1,8 @@
 # DoctorNect migration status
 
 **Branch:** `migration-cutover-fixes` (local, **not pushed**)  
-**Updated:** 2026-11-20 — **Prod cutover complete**
+**Updated:** 2026-11-20 — **Prod cutover complete**  
+**Staging:** 2026-11-20 — Supabase demo reset (6 users: super admin + 5× `rev_fb_*_001` on `9999900001`–`5`).
 
 ---
 
