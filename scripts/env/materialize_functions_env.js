@@ -10,6 +10,10 @@ const path = require('path');
 const { findRepoRoot } = require('../lib/repo_root');
 const { parseEnvFile } = require('../lib/parse_env_file');
 const { loadRootEnv } = require('../lib/bootstrap_root_env');
+const {
+  filterBaselineRuntimeEnv,
+  assertFunctionsEnvFilePassesFirebaseValidation,
+} = require('../lib/firebase_tools_reserved_env');
 
 const FUNCTIONS_KEYS = new Set([
   'APP_ENV',
@@ -94,6 +98,41 @@ const FUNCTIONS_KEYS = new Set([
   'SKIP_APP_ENV_DB_ASSERT',
 ]);
 
+const REVIEWER_OVERLAY_KEYS = new Set([
+  'REVIEWER_OTP_ENABLED',
+  'REVIEW_ACCESS_UNTIL',
+  'REVIEW_FIXED_OTP',
+  'REVIEW_PATIENT_PHONES',
+  'REVIEW_DOCTOR_PHONES',
+  'REVIEW_LAB_PHONES',
+  'REVIEW_MEDICAL_STORE_PHONES',
+  'REVIEW_MEDICALSTORE_PHONES',
+  'REVIEW_AMBULANCE_PHONES',
+]);
+
+function materializeNarrowOtpDeploy(root, parsed, lines) {
+  const baselinePath =
+    process.env.DEPLOYED_ENV_BASELINE ||
+    path.join(root, '.artifacts', 'baselines', 'sendUserRegistrationOtp.deployed.json');
+  if (!fs.existsSync(baselinePath)) {
+    throw new Error(`NARROW_OTP_DEPLOY: missing deployed baseline at ${baselinePath}`);
+  }
+  const raw = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
+  const base = filterBaselineRuntimeEnv(raw.serviceConfig?.environmentVariables || raw);
+  for (const key of REVIEWER_OVERLAY_KEYS) {
+    const val = process.env[key] ?? parsed[key] ?? '';
+    if (val !== '') {
+      base[key] = val;
+    }
+  }
+  for (const key of Object.keys(base).sort()) {
+    const val = base[key];
+    if (val === undefined || val === null || String(val) === '') continue;
+    lines.push(`${key}=${String(val)}`);
+  }
+  lines.splice(2, 0, '# NARROW_OTP_DEPLOY=1 — baseline + reviewer overlay only');
+}
+
 function main() {
   const root = findRepoRoot(path.join(__dirname, '../..'));
   loadRootEnv({ startDir: root, force: true });
@@ -103,13 +142,22 @@ function main() {
     `# Source: ${path.join(root, '.env')}`,
     '',
   ];
-  for (const key of [...FUNCTIONS_KEYS].sort()) {
-    const val = process.env[key] ?? parsed[key] ?? '';
-    if (val === '') continue;
-    lines.push(`${key}=${val}`);
+  const narrowOtp = String(process.env.NARROW_OTP_DEPLOY || '').trim() === '1';
+  if (narrowOtp) {
+    materializeNarrowOtpDeploy(root, parsed, lines);
+  } else {
+    for (const key of [...FUNCTIONS_KEYS].sort()) {
+      const val = process.env[key] ?? parsed[key] ?? '';
+      if (val === '') continue;
+      lines.push(`${key}=${val}`);
+    }
   }
   const out = path.join(root, 'backend', 'functions', '.env');
   fs.writeFileSync(out, `${lines.join('\n')}\n`);
+  if (narrowOtp) {
+    assertFunctionsEnvFilePassesFirebaseValidation(out);
+    console.log('NARROW_OTP_DEPLOY: firebase-tools .env validation passed (no reserved keys).');
+  }
   console.log(`Materialized ${path.relative(root, out)} (${lines.length - 3} keys, values not logged).`);
 }
 
