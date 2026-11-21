@@ -11,6 +11,33 @@ function normalizeBaseUrl(url) {
   return String(url || '').trim().replace(/\/+$/, '').toLowerCase();
 }
 
+function isTruthyOne(value) {
+  const v = String(value || '').trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
+
+/**
+ * Live OTP deploy on medibond-45fad: doctor/patient data still Firestore-primary
+ * (USE_SUPABASE_DB_DOCTOR_PATIENT=0, FIRESTORE_FORBIDDEN unset).
+ */
+function isLegacyFirestoreDoctorPatientDeploy(env = process.env) {
+  if (isTruthyOne(env.FIRESTORE_FORBIDDEN)) return false;
+  if (isTruthyOne(env.USE_SUPABASE_DB_DOCTOR_PATIENT)) return false;
+  return true;
+}
+
+/** Cutover / Postgres-primary boot asserts — skip for legacy Firestore OTP deploy mode. */
+function shouldRunCutoverBootAsserts(env = process.env) {
+  if (String(env.SKIP_APP_ENV_DB_ASSERT || '').trim().toLowerCase() === 'true') {
+    return false;
+  }
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  if (appEnv === 'test') return false;
+  if (String(env.NODE_ENV || '').trim().toLowerCase() === 'test') return false;
+  if (isLegacyFirestoreDoctorPatientDeploy(env)) return false;
+  return true;
+}
+
 function assertAppEnvDatabaseRouting(options = {}) {
   const appEnv = String(process.env.APP_ENV || 'staging').trim().toLowerCase();
   const isProduction = appEnv === 'production';
@@ -252,11 +279,6 @@ function assertProductionNoPlaceholderSecrets(env = process.env) {
   }
 }
 
-function isTruthyOne(value) {
-  const v = String(value || '').trim().toLowerCase();
-  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
-}
-
 /**
  * Production boot: cutover env must be complete before serving traffic.
  */
@@ -316,6 +338,8 @@ function assertProductionReviewOtpDisabled(env = process.env) {
 
 module.exports = {
   assertAppEnvDatabaseRouting,
+  isLegacyFirestoreDoctorPatientDeploy,
+  shouldRunCutoverBootAsserts,
   assertStagingProductionResourceIsolation,
   assertProductionRedisTls,
   isRedisTlsExplicitlyDisabled,

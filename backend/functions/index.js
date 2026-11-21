@@ -125,12 +125,9 @@ const {
 assertProductionSecrets();
 assertProductionOtpSafety();
 {
-  const appEnvBoot = String(process.env.APP_ENV || 'staging').trim().toLowerCase();
-  const skipDbAssert =
-    String(process.env.SKIP_APP_ENV_DB_ASSERT || '').trim().toLowerCase() === 'true' ||
-    appEnvBoot === 'test' ||
-    String(process.env.NODE_ENV || '').toLowerCase() === 'test';
-  if (!skipDbAssert) {
+  const { shouldRunCutoverBootAsserts } = require('./src/db/assert_app_env');
+  if (shouldRunCutoverBootAsserts()) {
+    const appEnvBoot = String(process.env.APP_ENV || 'staging').trim().toLowerCase();
     assertAppEnvDatabaseRouting({
       requireStagingDb: appEnvBoot === 'staging',
     });

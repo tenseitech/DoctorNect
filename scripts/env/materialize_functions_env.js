@@ -23,6 +23,10 @@ const {
   collectNarrowOtpBoundSecretKeys,
   assertNoOverlapWithBoundSecrets,
 } = require('../lib/functions_bound_secrets');
+const {
+  buildFunctionsSmokeChildEnv,
+  maskSmokeErrorText,
+} = require('../lib/functions_smoke_env');
 
 const FUNCTIONS_KEYS = new Set([
   'APP_ENV',
@@ -167,42 +171,40 @@ function assertGeneratedEnvPolicy(envPath, { narrowOtp = false } = {}) {
   }
 }
 
-function tryFunctionsIndexBootSmoke(functionsDir, { timeoutMs = 25000 } = {}) {
+function tryFunctionsIndexBootSmoke(functionsDir, { timeoutMs = 120000, boundSecretKeys = [] } = {}) {
   const { spawnSync } = require('child_process');
-  const envFile = path.join(functionsDir, '.env').replace(/\\/g, '/');
+  const childEnv = buildFunctionsSmokeChildEnv({ functionsDir, boundSecretKeys });
   const script = `
-    const fs = require('fs');
-    const envPath = '${envFile}';
-    if (fs.existsSync(envPath)) {
-      for (const line of fs.readFileSync(envPath, 'utf8').split(/\\r?\\n/)) {
-        const t = line.trim();
-        if (!t || t.startsWith('#')) continue;
-        const eq = t.indexOf('=');
-        if (eq <= 0) continue;
-        const k = t.slice(0, eq);
-        let v = t.slice(eq + 1);
-        if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
-          v = v.slice(1, -1);
-        }
-        if (process.env[k] === undefined) process.env[k] = v;
-      }
-    }
-    process.env.K_SERVICE = 'senduserregistrationotp';
-    process.env.FUNCTION_TARGET = 'sendUserRegistrationOtp';
-    process.env.GCLOUD_PROJECT = process.env.GCLOUD_PROJECT || 'medibond-45fad';
     const t0 = Date.now();
-    require('./index.js');
-    console.log('FUNCTIONS_INDEX_LOAD_MS=' + (Date.now() - t0));
+    try {
+      require('./index.js');
+      console.log('FUNCTIONS_INDEX_LOAD_MS=' + (Date.now() - t0));
+    } catch (e) {
+      console.error('SMOKE_ERR_CODE=' + (e && e.code ? e.code : e.name || 'Error'));
+      console.error('SMOKE_ERR_MSG=' + (e && e.message ? e.message : String(e)));
+      const stack = (e && e.stack ? e.stack : '').split('\\n').slice(0, 5).join('\\n');
+      console.error('SMOKE_ERR_STACK=' + stack);
+      process.exit(1);
+    }
   `;
   const res = spawnSync(process.execPath, ['-e', script], {
     cwd: functionsDir,
     encoding: 'utf8',
     timeout: timeoutMs,
-    env: { ...process.env, NODE_ENV: 'production' },
+    env: childEnv,
   });
   if (res.status !== 0) {
-    const err = (res.stderr || res.stdout || '').trim().split('\n').slice(-8).join('\n');
-    throw new Error(`functions index.js load failed:\n${err}`);
+    const raw = `${res.stdout || ''}\n${res.stderr || ''}`.trim();
+    const code = raw.match(/^SMOKE_ERR_CODE=(.+)$/m);
+    const msg = raw.match(/^SMOKE_ERR_MSG=(.+)$/m);
+    const stack = raw.match(/^SMOKE_ERR_STACK=([\s\S]*?)(?:\nSMOKE_|$)/m);
+    const parts = [
+      'functions index.js load failed:',
+      code ? `code=${maskSmokeErrorText(code[1].trim())}` : 'code=(missing)',
+      msg ? `message=${maskSmokeErrorText(msg[1].trim())}` : 'message=(missing)',
+      stack ? `stack:\n${maskSmokeErrorText(stack[1].trim())}` : '',
+    ].filter(Boolean);
+    throw new Error(parts.join('\n'));
   }
   const msLine = (res.stdout || '').split('\n').find((l) => l.startsWith('FUNCTIONS_INDEX_LOAD_MS='));
   return msLine ? Number(msLine.split('=')[1]) : null;
@@ -237,10 +239,12 @@ function main() {
       ? 'Materialize policy OK: no reserved keys, no OTP-bound secret overlaps in .env.'
       : 'Materialize policy OK: no reserved keys, no defineSecret overlaps in .env.',
   );
-  if (String(process.env.MATERIALIZE_SKIP_INDEX_SMOKE || '').trim() !== '1') {
-    const loadMs = tryFunctionsIndexBootSmoke(path.join(root, 'backend', 'functions'));
-    console.log(`functions index.js load smoke OK (${loadMs != null ? `${loadMs}ms` : 'timing n/a'}).`);
-  }
+  const functionsDir = path.join(root, 'backend', 'functions');
+  const boundKeys = narrowOtp
+    ? [...collectNarrowOtpBoundSecretKeys(functionsDir)]
+    : [...collectDefineSecretNames(functionsDir)];
+  const loadMs = tryFunctionsIndexBootSmoke(functionsDir, { boundSecretKeys: boundKeys });
+  console.log(`functions index.js load smoke OK (${loadMs != null ? `${loadMs}ms` : 'timing n/a'}).`);
   console.log(`Materialized ${path.relative(root, out)} (${lines.length - 3} keys, values not logged).`);
 }
 

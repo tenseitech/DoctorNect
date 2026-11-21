@@ -7,9 +7,9 @@
       "source": "backend/functions",
       "codebase": "default",
       "predeploy": [
-        "node scripts/env/materialize_functions_env.js",
-        "node scripts/ops/functions_deploy_bundle_verify.js",
-        "node scripts/ops/predeploy_notification_outbox_guard.js"
+        "npm run materialize:functions-env",
+        "npm run bundle:verify",
+        "npm run predeploy:outbox-guard"
       ],
       "postdeploy": [
         "node scripts/env/cleanup_functions_env.js"

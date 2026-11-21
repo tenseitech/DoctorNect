@@ -10,6 +10,8 @@ const {
   assertProductionReviewOtpDisabled,
   assertProductionNoPlaceholderSecrets,
   assertProductionCutoverBoot,
+  shouldRunCutoverBootAsserts,
+  isLegacyFirestoreDoctorPatientDeploy,
 } = require('../src/db/assert_app_env');
 
 describe('assertAppEnvDatabaseRouting', () => {
@@ -186,6 +188,36 @@ describe('assertProductionReviewOtpDisabled', () => {
     process.env.REVIEWER_OTP_ENABLED = 'true';
     process.env.REVIEW_FIXED_OTP = '123456';
     assert.doesNotThrow(() => assertProductionReviewOtpDisabled());
+  });
+});
+
+describe('legacy Firestore deploy boot', () => {
+  const original = { ...process.env };
+
+  beforeEach(() => {
+    process.env = { ...original };
+  });
+
+  afterEach(() => {
+    process.env = original;
+  });
+
+  it('USE_SUPABASE_DB_DOCTOR_PATIENT=0 skips cutover boot asserts', () => {
+    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+    delete process.env.FIRESTORE_FORBIDDEN;
+    delete process.env.APP_ENV;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    assert.equal(isLegacyFirestoreDoctorPatientDeploy(process.env), true);
+    assert.equal(shouldRunCutoverBootAsserts(process.env), false);
+  });
+
+  it('FIRESTORE_FORBIDDEN=1 requires cutover boot asserts', () => {
+    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+    process.env.FIRESTORE_FORBIDDEN = '1';
+    delete process.env.APP_ENV;
+    delete process.env.NODE_ENV;
+    delete process.env.SKIP_APP_ENV_DB_ASSERT;
+    assert.equal(shouldRunCutoverBootAsserts(process.env), true);
   });
 });
 
