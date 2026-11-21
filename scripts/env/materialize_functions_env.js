@@ -14,6 +14,11 @@ const {
   filterBaselineRuntimeEnv,
   assertFunctionsEnvFilePassesFirebaseValidation,
 } = require('../lib/firebase_tools_reserved_env');
+const {
+  filterSecretBoundEnv,
+  assertNoSecretBoundEnvKeys,
+  collectDefineSecretNames,
+} = require('../lib/functions_define_secrets');
 
 const FUNCTIONS_KEYS = new Set([
   'APP_ENV',
@@ -118,19 +123,77 @@ function materializeNarrowOtpDeploy(root, parsed, lines) {
     throw new Error(`NARROW_OTP_DEPLOY: missing deployed baseline at ${baselinePath}`);
   }
   const raw = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
-  const base = filterBaselineRuntimeEnv(raw.serviceConfig?.environmentVariables || raw);
+  let base = filterBaselineRuntimeEnv(raw.serviceConfig?.environmentVariables || raw);
+  base = filterSecretBoundEnv(base);
   for (const key of REVIEWER_OVERLAY_KEYS) {
     const val = process.env[key] ?? parsed[key] ?? '';
     if (val !== '') {
       base[key] = val;
     }
   }
+  const secretNames = collectDefineSecretNames(path.join(root, 'backend', 'functions'));
   for (const key of Object.keys(base).sort()) {
+    if (secretNames.has(key)) continue;
     const val = base[key];
     if (val === undefined || val === null || String(val) === '') continue;
     lines.push(`${key}=${String(val)}`);
   }
   lines.splice(2, 0, '# NARROW_OTP_DEPLOY=1 — baseline + reviewer overlay only');
+}
+
+function assertGeneratedEnvPolicy(envPath) {
+  assertFunctionsEnvFilePassesFirebaseValidation(envPath);
+  const body = fs.readFileSync(envPath, 'utf8');
+  const parsed = {};
+  for (const line of body.split('\n')) {
+    const t = line.trim();
+    if (!t || t.startsWith('#')) continue;
+    const eq = t.indexOf('=');
+    if (eq <= 0) continue;
+    parsed[t.slice(0, eq)] = t.slice(eq + 1);
+  }
+  assertNoSecretBoundEnvKeys(parsed);
+}
+
+function tryFunctionsIndexBootSmoke(functionsDir, { timeoutMs = 25000 } = {}) {
+  const { spawnSync } = require('child_process');
+  const envFile = path.join(functionsDir, '.env').replace(/\\/g, '/');
+  const script = `
+    const fs = require('fs');
+    const envPath = '${envFile}';
+    if (fs.existsSync(envPath)) {
+      for (const line of fs.readFileSync(envPath, 'utf8').split(/\\r?\\n/)) {
+        const t = line.trim();
+        if (!t || t.startsWith('#')) continue;
+        const eq = t.indexOf('=');
+        if (eq <= 0) continue;
+        const k = t.slice(0, eq);
+        let v = t.slice(eq + 1);
+        if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+          v = v.slice(1, -1);
+        }
+        if (process.env[k] === undefined) process.env[k] = v;
+      }
+    }
+    process.env.K_SERVICE = 'senduserregistrationotp';
+    process.env.FUNCTION_TARGET = 'sendUserRegistrationOtp';
+    process.env.GCLOUD_PROJECT = process.env.GCLOUD_PROJECT || 'medibond-45fad';
+    const t0 = Date.now();
+    require('./index.js');
+    console.log('FUNCTIONS_INDEX_LOAD_MS=' + (Date.now() - t0));
+  `;
+  const res = spawnSync(process.execPath, ['-e', script], {
+    cwd: functionsDir,
+    encoding: 'utf8',
+    timeout: timeoutMs,
+    env: { ...process.env, NODE_ENV: 'production' },
+  });
+  if (res.status !== 0) {
+    const err = (res.stderr || res.stdout || '').trim().split('\n').slice(-8).join('\n');
+    throw new Error(`functions index.js load failed:\n${err}`);
+  }
+  const msLine = (res.stdout || '').split('\n').find((l) => l.startsWith('FUNCTIONS_INDEX_LOAD_MS='));
+  return msLine ? Number(msLine.split('=')[1]) : null;
 }
 
 function main() {
@@ -146,7 +209,9 @@ function main() {
   if (narrowOtp) {
     materializeNarrowOtpDeploy(root, parsed, lines);
   } else {
+    const secretNames = collectDefineSecretNames(path.join(root, 'backend', 'functions'));
     for (const key of [...FUNCTIONS_KEYS].sort()) {
+      if (secretNames.has(key)) continue;
       const val = process.env[key] ?? parsed[key] ?? '';
       if (val === '') continue;
       lines.push(`${key}=${val}`);
@@ -154,9 +219,11 @@ function main() {
   }
   const out = path.join(root, 'backend', 'functions', '.env');
   fs.writeFileSync(out, `${lines.join('\n')}\n`);
-  if (narrowOtp) {
-    assertFunctionsEnvFilePassesFirebaseValidation(out);
-    console.log('NARROW_OTP_DEPLOY: firebase-tools .env validation passed (no reserved keys).');
+  assertGeneratedEnvPolicy(out);
+  console.log('Materialize policy OK: no reserved keys, no defineSecret overlaps in .env.');
+  if (String(process.env.MATERIALIZE_SKIP_INDEX_SMOKE || '').trim() !== '1') {
+    const loadMs = tryFunctionsIndexBootSmoke(path.join(root, 'backend', 'functions'));
+    console.log(`functions index.js load smoke OK (${loadMs != null ? `${loadMs}ms` : 'timing n/a'}).`);
   }
   console.log(`Materialized ${path.relative(root, out)} (${lines.length - 3} keys, values not logged).`);
 }

@@ -7,6 +7,7 @@ const { findRepoRoot } = require('../lib/repo_root');
 const { parseEnvFile } = require('../lib/parse_env_file');
 const { loadRootEnv } = require('../lib/bootstrap_root_env');
 const { filterBaselineRuntimeEnv } = require('../lib/firebase_tools_reserved_env');
+const { filterSecretBoundEnv } = require('../lib/functions_define_secrets');
 
 const root = findRepoRoot(path.join(__dirname, '../..'));
 const matSrc = fs.readFileSync(path.join(root, 'scripts/env/materialize_functions_env.js'), 'utf8');
@@ -34,7 +35,8 @@ function wouldMaterialize() {
       process.env.DEPLOYED_ENV_BASELINE ||
       path.join(root, '.artifacts', 'baselines', 'sendUserRegistrationOtp.deployed.json');
     const raw = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
-    const out = filterBaselineRuntimeEnv(raw.serviceConfig?.environmentVariables || raw);
+    let out = filterBaselineRuntimeEnv(raw.serviceConfig?.environmentVariables || raw);
+    out = filterSecretBoundEnv(out);
     for (const key of REVIEWER_OVERLAY_KEYS) {
       const val = process.env[key] ?? parsed[key] ?? '';
       if (val !== '') out[key] = String(val);
@@ -78,7 +80,7 @@ const deployedPath =
   'C:/Users/khije/AppData/Local/Temp/fn-sendUserRegistrationOtp.json';
 const deployedRaw =
   JSON.parse(fs.readFileSync(deployedPath, 'utf8')).serviceConfig?.environmentVariables || {};
-const deployed = filterBaselineRuntimeEnv(deployedRaw);
+const deployed = filterSecretBoundEnv(filterBaselineRuntimeEnv(deployedRaw));
 const would = wouldMaterialize();
 
 const allowedReviewer = new Set([

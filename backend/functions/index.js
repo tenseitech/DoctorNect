@@ -1,4 +1,9 @@
-require('../../scripts/lib/bootstrap_root_env').loadRootEnv();
+const fs = require('fs');
+const path = require('path');
+const _repoBootstrap = path.resolve(__dirname, '../../scripts/lib/bootstrap_root_env.js');
+if (!process.env.K_SERVICE && !process.env.FUNCTION_TARGET && fs.existsSync(_repoBootstrap)) {
+  require(_repoBootstrap).loadRootEnv();
+}
 const { resolveCallerIdentity } = require('./caller_identity');
 // Deploy: disable OTP App Check until reCAPTCHA is configured.
 require('./firestore_forbidden_guard');
