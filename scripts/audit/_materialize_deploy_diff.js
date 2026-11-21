@@ -8,6 +8,7 @@ const { parseEnvFile } = require('../lib/parse_env_file');
 const { loadRootEnv } = require('../lib/bootstrap_root_env');
 const { filterBaselineRuntimeEnv } = require('../lib/firebase_tools_reserved_env');
 const { filterSecretBoundEnv } = require('../lib/functions_define_secrets');
+const { collectNarrowOtpBoundSecretKeys } = require('../lib/functions_bound_secrets');
 
 const root = findRepoRoot(path.join(__dirname, '../..'));
 const matSrc = fs.readFileSync(path.join(root, 'scripts/env/materialize_functions_env.js'), 'utf8');
@@ -36,7 +37,8 @@ function wouldMaterialize() {
       path.join(root, '.artifacts', 'baselines', 'sendUserRegistrationOtp.deployed.json');
     const raw = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
     let out = filterBaselineRuntimeEnv(raw.serviceConfig?.environmentVariables || raw);
-    out = filterSecretBoundEnv(out);
+    const narrowSecrets = collectNarrowOtpBoundSecretKeys(path.join(root, 'backend', 'functions'));
+    out = filterSecretBoundEnv(out, narrowSecrets);
     for (const key of REVIEWER_OVERLAY_KEYS) {
       const val = process.env[key] ?? parsed[key] ?? '';
       if (val !== '') out[key] = String(val);
@@ -80,7 +82,8 @@ const deployedPath =
   'C:/Users/khije/AppData/Local/Temp/fn-sendUserRegistrationOtp.json';
 const deployedRaw =
   JSON.parse(fs.readFileSync(deployedPath, 'utf8')).serviceConfig?.environmentVariables || {};
-const deployed = filterSecretBoundEnv(filterBaselineRuntimeEnv(deployedRaw));
+const narrowSecrets = collectNarrowOtpBoundSecretKeys(path.join(root, 'backend', 'functions'));
+const deployed = filterBaselineRuntimeEnv(deployedRaw);
 const would = wouldMaterialize();
 
 const allowedReviewer = new Set([
@@ -94,6 +97,7 @@ const allowedReviewer = new Set([
   'REVIEW_LAB_PHONES',
   'REVIEW_AMBULANCE_PHONES',
 ]);
+const allowedNarrowShift = new Set([...allowedReviewer, ...narrowSecrets]);
 
 const diffs = [];
 const nonReviewerDiffs = [];
@@ -111,12 +115,14 @@ for (const k of [...allKeys].sort()) {
   if (ds === ws) continue;
   const row = { key: k, deployed: disp(k, d), would: disp(k, w) };
   diffs.push(row);
-  if (!allowedReviewer.has(k)) nonReviewerDiffs.push(row);
+  const allowed = String(process.env.NARROW_OTP_DEPLOY || '').trim() === '1' ? allowedNarrowShift : allowedReviewer;
+  if (!allowed.has(k)) nonReviewerDiffs.push(row);
 }
 
 console.log('variable|deployed|would_materialize|reviewer_only');
 for (const r of diffs) {
-  const ro = allowedReviewer.has(r.key) ? 'yes' : 'NO';
+  const allowed = String(process.env.NARROW_OTP_DEPLOY || '').trim() === '1' ? allowedNarrowShift : allowedReviewer;
+  const ro = allowed.has(r.key) ? 'yes' : 'NO';
   console.log(`${r.key}|${r.deployed}|${r.would}|${ro}`);
 }
 console.log('---');

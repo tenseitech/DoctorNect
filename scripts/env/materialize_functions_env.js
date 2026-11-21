@@ -19,6 +19,10 @@ const {
   assertNoSecretBoundEnvKeys,
   collectDefineSecretNames,
 } = require('../lib/functions_define_secrets');
+const {
+  collectNarrowOtpBoundSecretKeys,
+  assertNoOverlapWithBoundSecrets,
+} = require('../lib/functions_bound_secrets');
 
 const FUNCTIONS_KEYS = new Set([
   'APP_ENV',
@@ -124,16 +128,16 @@ function materializeNarrowOtpDeploy(root, parsed, lines) {
   }
   const raw = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
   let base = filterBaselineRuntimeEnv(raw.serviceConfig?.environmentVariables || raw);
-  base = filterSecretBoundEnv(base);
+  const narrowSecrets = collectNarrowOtpBoundSecretKeys(path.join(root, 'backend', 'functions'));
+  base = filterSecretBoundEnv(base, narrowSecrets);
   for (const key of REVIEWER_OVERLAY_KEYS) {
     const val = process.env[key] ?? parsed[key] ?? '';
     if (val !== '') {
       base[key] = val;
     }
   }
-  const secretNames = collectDefineSecretNames(path.join(root, 'backend', 'functions'));
   for (const key of Object.keys(base).sort()) {
-    if (secretNames.has(key)) continue;
+    if (narrowSecrets.has(key)) continue;
     const val = base[key];
     if (val === undefined || val === null || String(val) === '') continue;
     lines.push(`${key}=${String(val)}`);
@@ -141,7 +145,7 @@ function materializeNarrowOtpDeploy(root, parsed, lines) {
   lines.splice(2, 0, '# NARROW_OTP_DEPLOY=1 — baseline + reviewer overlay only');
 }
 
-function assertGeneratedEnvPolicy(envPath) {
+function assertGeneratedEnvPolicy(envPath, { narrowOtp = false } = {}) {
   assertFunctionsEnvFilePassesFirebaseValidation(envPath);
   const body = fs.readFileSync(envPath, 'utf8');
   const parsed = {};
@@ -152,7 +156,15 @@ function assertGeneratedEnvPolicy(envPath) {
     if (eq <= 0) continue;
     parsed[t.slice(0, eq)] = t.slice(eq + 1);
   }
-  assertNoSecretBoundEnvKeys(parsed);
+  if (narrowOtp) {
+    const root = findRepoRoot(path.join(__dirname, '../..'));
+    assertNoOverlapWithBoundSecrets(
+      parsed,
+      collectNarrowOtpBoundSecretKeys(path.join(root, 'backend', 'functions')),
+    );
+  } else {
+    assertNoSecretBoundEnvKeys(parsed);
+  }
 }
 
 function tryFunctionsIndexBootSmoke(functionsDir, { timeoutMs = 25000 } = {}) {
@@ -219,8 +231,12 @@ function main() {
   }
   const out = path.join(root, 'backend', 'functions', '.env');
   fs.writeFileSync(out, `${lines.join('\n')}\n`);
-  assertGeneratedEnvPolicy(out);
-  console.log('Materialize policy OK: no reserved keys, no defineSecret overlaps in .env.');
+  assertGeneratedEnvPolicy(out, { narrowOtp });
+  console.log(
+    narrowOtp
+      ? 'Materialize policy OK: no reserved keys, no OTP-bound secret overlaps in .env.'
+      : 'Materialize policy OK: no reserved keys, no defineSecret overlaps in .env.',
+  );
   if (String(process.env.MATERIALIZE_SKIP_INDEX_SMOKE || '').trim() !== '1') {
     const loadMs = tryFunctionsIndexBootSmoke(path.join(root, 'backend', 'functions'));
     console.log(`functions index.js load smoke OK (${loadMs != null ? `${loadMs}ms` : 'timing n/a'}).`);

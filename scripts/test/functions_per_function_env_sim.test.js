@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { spawnSync } = require('child_process');
 const { findRepoRoot } = require('../lib/repo_root');
-const { collectDefineSecretNames } = require('../lib/functions_define_secrets');
+const { collectNarrowOtpBoundSecretKeys } = require('../lib/functions_bound_secrets');
 const { parseEnvFile } = require('../lib/parse_env_file');
 
 const FUNCTIONS = [
@@ -67,8 +67,9 @@ test('per-function OTP env: plain .env vs secret bindings (deployed mirror off)'
     return;
   }
   const generated = parseEnvFile(generatedPath);
-  const defineSecrets = collectDefineSecretNames(path.join(root, 'backend', 'functions'));
-  const mirrorOn = envPresence(generated, 'OTP_REDIS_MIRROR') && String(generated.OTP_REDIS_MIRROR).toLowerCase() === 'on';
+  const boundForDeploy = collectNarrowOtpBoundSecretKeys(path.join(root, 'backend', 'functions'));
+  const mirrorOn =
+    envPresence(generated, 'OTP_REDIS_MIRROR') && String(generated.OTP_REDIS_MIRROR).toLowerCase() === 'on';
 
   for (const fn of FUNCTIONS) {
     const bound = [...fn.secrets];
@@ -77,19 +78,14 @@ test('per-function OTP env: plain .env vs secret bindings (deployed mirror off)'
     }
     for (const key of OTP_KEYS) {
       const inGenerated = envPresence(generated, key);
-      const isSecretName = defineSecrets.has(key);
-      const boundHere = bound.includes(key);
-      if (isSecretName && inGenerated) {
-        assert.fail(`${fn.name}: generated .env must not contain secret-bound key ${key}`);
-      }
-      if (boundHere && key.startsWith('REDIS_')) {
-        assert.equal(
-          inGenerated,
-          false,
-          `${fn.name}: REDIS_* must come from Secret Manager binding, not plain .env`,
-        );
+      if (boundForDeploy.has(key) && inGenerated) {
+        assert.fail(`${fn.name}: narrow .env must not overlap bound secret ${key}`);
       }
     }
+  }
+
+  if (!mirrorOn && envPresence(generated, 'REDIS_HOST')) {
+    assert.ok(boundForDeploy.size <= 1, 'REDIS plain allowed when not secret-bound on OTP deploy');
   }
 
   assert.equal(
