@@ -8,6 +8,7 @@
       "codebase": "default",
       "predeploy": [
         "node scripts/env/materialize_functions_env.js",
+        "node scripts/ops/functions_deploy_bundle_verify.js",
         "node scripts/ops/predeploy_notification_outbox_guard.js"
       ],
       "postdeploy": [

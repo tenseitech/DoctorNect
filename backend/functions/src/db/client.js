@@ -5,7 +5,7 @@ const {
   resolveDataPlane,
   redisKeyNamespace,
   objectStoragePrefix,
-} = require('../../../../scripts/lib/demo_routing');
+} = require('../../lib/demo_routing');
 
 let cachedClient = null;
 let cachedKey = null;
