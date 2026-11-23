@@ -335,7 +335,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
     });
 
     assert.strictEqual(res.statusCode, 401);
-    assert.match(res.json.message, /expired/i);
+    assert.strictEqual(res.json.message, 'Authentication failed.');
     assert.strictEqual(receivedPostgrestRequests.length, 0);
   });
 
@@ -351,7 +351,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
     });
 
     assert.strictEqual(res.statusCode, 401);
-    assert.match(res.json.message, /issuer/i);
+    assert.strictEqual(res.json.message, 'Authentication failed.');
   });
 
   it('rejects token with invalid audience', async () => {
@@ -366,7 +366,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
     });
 
     assert.strictEqual(res.statusCode, 401);
-    assert.match(res.json.message, /audience/i);
+    assert.strictEqual(res.json.message, 'Authentication failed.');
   });
 
   it('rejects token with alg: none', async () => {
@@ -381,7 +381,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
     });
 
     assert.strictEqual(res.statusCode, 401);
-    assert.match(res.json.message, /algorithm/i);
+    assert.strictEqual(res.json.message, 'Authentication failed.');
   });
 
   it('rejects tampered token signature', async () => {
@@ -396,7 +396,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
     });
 
     assert.strictEqual(res.statusCode, 401);
-    assert.match(res.json.message, /signature/i);
+    assert.strictEqual(res.json.message, 'Authentication failed.');
   });
 
   it('enforces payload size limits with 413 Payload Too Large', async () => {
@@ -439,7 +439,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
     });
 
     assert.strictEqual(res.statusCode, 401);
-    assert.match(res.json.message, /signature verification failed/i);
+    assert.strictEqual(res.json.message, 'Authentication failed.');
     assert.strictEqual(receivedPostgrestRequests.length, 0);
   });
 
@@ -491,43 +491,45 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
       ])
     );
 
-    // Token signed with newly rotated key succeeds
-    const rotatedToken = createTestFirebaseToken({
-      kid: rotatedKid,
-      privateKey: rotatedKeyPair.privateKey,
-      sub: 'rotated_user_789',
-    });
+    try {
+      // Token signed with newly rotated key succeeds
+      const rotatedToken = createTestFirebaseToken({
+        kid: rotatedKid,
+        privateKey: rotatedKeyPair.privateKey,
+        sub: 'rotated_user_789',
+      });
 
-    const res1 = await makeRequest({
-      method: 'GET',
-      path: '/rest/v1/appointments',
-      headers: { authorization: `Bearer ${rotatedToken}` },
-    });
-    assert.strictEqual(res1.statusCode, 200);
+      const res1 = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments',
+        headers: { authorization: `Bearer ${rotatedToken}` },
+      });
+      assert.strictEqual(res1.statusCode, 200);
 
-    // Now retire the old key from JWKS
-    mockJwksClient.setMockKeys(
-      new Map([
-        [rotatedKid, rotatedKeyPair.publicKey],
-      ])
-    );
+      // Now retire the old key from JWKS
+      mockJwksClient.setMockKeys(
+        new Map([
+          [rotatedKid, rotatedKeyPair.publicKey],
+        ])
+      );
 
-    // Token signed with old retired key is now rejected
-    const oldKeyToken = createTestFirebaseToken({
-      kid: testKid,
-      sub: 'old_key_user',
-    });
+      // Token signed with old retired key is now rejected (generic client message per SEC-012)
+      const oldKeyToken = createTestFirebaseToken({
+        kid: testKid,
+        sub: 'old_key_user',
+      });
 
-    const res2 = await makeRequest({
-      method: 'GET',
-      path: '/rest/v1/appointments',
-      headers: { authorization: `Bearer ${oldKeyToken}` },
-    });
-    assert.strictEqual(res2.statusCode, 401);
-    assert.match(res2.json.message, /unable to find public key/i);
-
-    // Restore original mock key state for subsequent tests
-    mockJwksClient.setMockKeys(new Map([[testKid, testPublicKey]]));
+      const res2 = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments',
+        headers: { authorization: `Bearer ${oldKeyToken}` },
+      });
+      assert.strictEqual(res2.statusCode, 401);
+      assert.strictEqual(res2.json.message, 'Authentication failed.');
+    } finally {
+      // Always restore — other tests share this mock JWKS client
+      mockJwksClient.setMockKeys(new Map([[testKid, testPublicKey]]));
+    }
   });
 
   it('forwards only allowlisted headers and drops forbidden/untrusted headers', async () => {

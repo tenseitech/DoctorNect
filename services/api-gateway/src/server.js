@@ -12,6 +12,7 @@ const { secureCompare, hashUid, RateLimiter, emitAuditLog } = require('./securit
 const { proxyToPostgrest } = require('./proxy');
 const { defaultJwksClient } = require('./jwks');
 const { resolveDataPlane, assertClientRoutingHintIgnored } = require('../../../scripts/lib/demo_routing');
+const { assertRdsPathAllowed } = require('../../../scripts/lib/rds_demo_uid_guard');
 
 function extractEmbeddedRelations(queryString) {
   if (!queryString) return [];
@@ -326,6 +327,12 @@ function createGatewayServer(overrides = {}) {
           });
         }
       } catch (err) {
+        // Server-side only — never log Authorization / apikey values (SEC-012).
+        const authFailDetail = {
+          code: err && err.code ? String(err.code) : 'auth_verify_failed',
+          reason: err && err.message ? String(err.message).slice(0, 240) : 'unknown',
+        };
+        console.warn('[Auth Gateway] Firebase token verification failed', authFailDetail);
         // Unauthenticated due to invalid token: apply per-IP rate limit before error
         if (!rateLimiter.isAllowed(`ip:${clientIp}`)) {
           return sendJson(429, {
@@ -335,7 +342,7 @@ function createGatewayServer(overrides = {}) {
         }
         return sendJson(401, {
           error: 'Unauthorized',
-          message: `Authentication failed: ${err.message}`,
+          message: 'Authentication failed.',
         });
       }
     } else {
@@ -426,12 +433,13 @@ function createGatewayServer(overrides = {}) {
     let targetBaseUrl = cfg.postgrestUrl;
     let jwtSecret = cfg.postgrestJwtSecret;
     let jwtAud = cfg.postgrestJwtAud;
+    let dataPlane = 'rds';
     if (appEnv === 'production' && cfg.demoRealRoutingEnabled && clientRole !== 'service_role') {
-      const plane = resolveDataPlane({
+      dataPlane = resolveDataPlane({
         appEnv,
         firebaseUid: authenticatedPayload?.uid || null,
       });
-      if (plane === 'supabase') {
+      if (dataPlane === 'supabase') {
         if (!cfg.demoPostgrestUrl || !cfg.demoPostgrestJwtSecret) {
           return sendJson(503, {
             error: 'Service Unavailable',
@@ -442,6 +450,28 @@ function createGatewayServer(overrides = {}) {
         jwtSecret = cfg.demoPostgrestJwtSecret;
         jwtAud = cfg.demoPostgrestJwtAud;
       }
+    }
+
+    try {
+      if (appEnv === 'production') {
+        const onRdsUpstream = dataPlane === 'rds' || clientRole === 'service_role';
+        if (onRdsUpstream) {
+          assertRdsPathAllowed({
+            firebaseUid: authenticatedPayload?.uid || null,
+            clientRole,
+            subPath: cleanPath,
+            queryString: queryString || '',
+          });
+        }
+      }
+    } catch (guardErr) {
+      if (guardErr.code === 'demo_uid_rds_forbidden') {
+        return sendJson(guardErr.httpStatus || 403, {
+          error: 'Forbidden',
+          message: 'Demo accounts cannot use the production database.',
+        });
+      }
+      throw guardErr;
     }
 
     // Mint appropriate PostgREST JWT and proxy
@@ -501,6 +531,8 @@ function createGatewayServer(overrides = {}) {
 }
 
 if (require.main === module) {
+  const { assertProductionGatewayConfig } = require('./assert_production_config');
+  assertProductionGatewayConfig();
   const { server } = createGatewayServer();
   server.listen(config.port, config.host, () => {
     console.log(`[DoctorNect Auth Gateway] Listening on http://${config.host}:${config.port}`);

@@ -316,24 +316,94 @@ function assertProductionCutoverBoot(env = process.env) {
   }
 }
 
-function assertProductionReviewOtpDisabled(env = process.env) {
-  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
-  if (appEnv !== 'production') return;
+/**
+ * Production Play Store reviewer OTP: allowed when fully configured (secret-bound fixed OTP, demo routing).
+ * Plain-text REVIEW_FIXED_OTP in env is rejected when reviewer mode is off (use Firebase Secret Manager).
+ */
+function assertProductionAppCheckEnforcement(env = process.env) {
+  const { isProductionFirebaseProject } = require('../../production_otp_guard');
+  if (!isProductionFirebaseProject(env)) return;
 
-  const violations = [];
-  if (isTruthyEnvFlag(env.REVIEWER_OTP_ENABLED)) {
-    violations.push('REVIEWER_OTP_ENABLED=true');
-  }
-  if (String(env.REVIEW_FIXED_OTP || '').trim()) {
-    violations.push('REVIEW_FIXED_OTP is set');
-  }
-  if (violations.length) {
+  const otpOff = ['false', '0', 'no', 'off'].includes(
+    String(env.ENFORCE_OTP_APP_CHECK || '').trim().toLowerCase(),
+  );
+  const abuseOff = ['false', '0', 'no', 'off'].includes(
+    String(env.ENFORCE_ABUSE_APP_CHECK || '').trim().toLowerCase(),
+  );
+  if (otpOff || abuseOff) {
     const err = new Error(
-      `[AppEnv] APP_ENV=production must not enable reviewer OTP bypass (${violations.join(', ')}).`,
+      '[AppEnv] APP_ENV=production requires ENFORCE_OTP_APP_CHECK and ENFORCE_ABUSE_APP_CHECK enabled (not false/0/off).',
     );
     err.code = 'failed-precondition';
     throw err;
   }
+}
+
+function assertProductionReviewerOtpPolicy(env = process.env) {
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  if (appEnv !== 'production') return;
+
+  const reviewerOn = isTruthyEnvFlag(env.REVIEWER_OTP_ENABLED);
+  if (!reviewerOn) {
+    if (String(env.REVIEW_FIXED_OTP || '').trim()) {
+      const err = new Error(
+        '[AppEnv] APP_ENV=production: REVIEW_FIXED_OTP must be a Firebase secret (reviewer OTP is disabled).',
+      );
+      err.code = 'failed-precondition';
+      throw err;
+    }
+    return;
+  }
+
+  const missing = [];
+  const accessUntil = String(env.REVIEW_ACCESS_UNTIL || '').trim();
+  if (!accessUntil) {
+    missing.push('REVIEW_ACCESS_UNTIL');
+  } else {
+    const expiry = new Date(accessUntil);
+    if (Number.isNaN(expiry.getTime()) || Date.now() > expiry.getTime()) {
+      missing.push('REVIEW_ACCESS_UNTIL (future ISO timestamp)');
+    }
+  }
+
+  const phoneKeys = [
+    'REVIEW_PATIENT_PHONES',
+    'REVIEW_DOCTOR_PHONES',
+    'REVIEW_LAB_PHONES',
+    'REVIEW_MEDICAL_STORE_PHONES',
+    'REVIEW_MEDICALSTORE_PHONES',
+    'REVIEW_AMBULANCE_PHONES',
+    'REVIEW_TEST_NUMBERS',
+  ];
+  const hasPhones = phoneKeys.some((key) => String(env[key] || '').trim());
+  if (!hasPhones) {
+    missing.push('REVIEW_*_PHONES or REVIEW_TEST_NUMBERS');
+  }
+
+  if (String(env.DEMO_REAL_ROUTING_ENABLED || '').trim() !== '1') {
+    missing.push('DEMO_REAL_ROUTING_ENABLED=1');
+  }
+  if (!String(env.DEMO_FIREBASE_UID_ALLOWLIST || '').trim()) {
+    missing.push('DEMO_FIREBASE_UID_ALLOWLIST');
+  }
+  if (!normalizeBaseUrl(env.DEMO_SUPABASE_URL || '')) {
+    missing.push('DEMO_SUPABASE_URL');
+  }
+  // DEMO_SUPABASE_SERVICE_ROLE_KEY and PROD_GATEWAY_SERVICE_KEY are Firebase defineSecret
+  // (injected at runtime). DEMO_PGRST_* is auth-gateway (ECS) only.
+
+  if (missing.length) {
+    const err = new Error(
+      `[AppEnv] APP_ENV=production reviewer OTP enabled but misconfigured: ${missing.join(', ')}`,
+    );
+    err.code = 'failed-precondition';
+    throw err;
+  }
+}
+
+/** @deprecated use assertProductionReviewerOtpPolicy */
+function assertProductionReviewOtpDisabled(env = process.env) {
+  return assertProductionReviewerOtpPolicy(env);
 }
 
 module.exports = {
@@ -349,6 +419,8 @@ module.exports = {
   assertRedisClientTlsVerificationEnabled,
   assertProductionOtpHmacOnly,
   warnProductionOtpHmacFallback,
+  assertProductionReviewerOtpPolicy,
+  assertProductionAppCheckEnforcement,
   assertProductionReviewOtpDisabled,
   assertProductionCutoverBoot,
   assertProductionNoPlaceholderSecrets,

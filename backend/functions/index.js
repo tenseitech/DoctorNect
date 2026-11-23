@@ -121,6 +121,18 @@ const {
   awsAccessKeyId,
   awsSecretAccessKey,
 } = require('./s3_storage');
+const { reviewFixedOtp } = require('./reviewer_secrets');
+const {
+  demoSupabaseServiceRoleKey,
+  prodGatewayServiceKey,
+} = require('./demo_plane_secrets');
+
+/** Demo/reviewer OTP + Postgres login lookup (secrets must not materialize to .env). */
+const OTP_DATA_PLANE_SECRETS = [
+  reviewFixedOtp,
+  demoSupabaseServiceRoleKey,
+  prodGatewayServiceKey,
+];
 
 assertProductionSecrets();
 assertProductionOtpSafety();
@@ -136,14 +148,16 @@ assertProductionOtpSafety();
       assertProductionRedisTls,
       assertProductionOtpHmacOnly,
       warnProductionOtpHmacFallback,
-      assertProductionReviewOtpDisabled,
+      assertProductionReviewerOtpPolicy,
+      assertProductionAppCheckEnforcement,
       assertProductionNoPlaceholderSecrets,
     } = require('./src/db/assert_app_env');
     assertStagingProductionResourceIsolation();
     assertProductionRedisTls();
     assertProductionOtpHmacOnly();
     warnProductionOtpHmacFallback();
-    assertProductionReviewOtpDisabled();
+    assertProductionAppCheckEnforcement();
+    assertProductionReviewerOtpPolicy();
     assertProductionNoPlaceholderSecrets();
   }
 }
@@ -486,7 +500,11 @@ exports.sendUserRegistrationOtp = onCall(
     ...MSG91_VPC_OPTIONS,
     ...OTP_REDIS_SECRET_OPTIONS,
     enforceAppCheck: ENFORCE_OTP_APP_CHECK,
-    secrets: [...(OTP_REDIS_SECRET_OPTIONS.secrets || []), supabaseServiceRoleKey],
+    secrets: [
+      ...(OTP_REDIS_SECRET_OPTIONS.secrets || []),
+      supabaseServiceRoleKey,
+      ...OTP_DATA_PLANE_SECRETS,
+    ],
   },
   withSecurityLogging('sendUserRegistrationOtp', async (request) => {
   try {
@@ -506,9 +524,13 @@ exports.sendUserRegistrationOtp = onCall(
       clientIp: getCallableClientIp(request),
     });
   } catch (err) {
-    console.error('sendUserRegistrationOtp failed', err);
+    const { logOtpCallableError } = require('./otp_callable_errors');
+    logOtpCallableError('sendUserRegistrationOtp', err, {
+      otpType: request.data?.otpType || 'registration',
+      mobileLast4: String(request.data?.mobile || '').replace(/\D/g, '').slice(-4),
+    });
     if (err instanceof HttpsError) throw err;
-    throw new HttpsError('internal', 'Could not send OTP. Please try again.');
+    throw new HttpsError('internal', 'Could not send OTP. Please try again.', { reason: 'internal' });
   }
 }),
 );
@@ -516,7 +538,11 @@ exports.enforceSendUserRegistrationOtpRateLimit = enforceSendUserRegistrationOtp
 
 /** Returns whether a mobile number conflicts with login/registration intent (no role disclosure). */
 exports.lookupMobileRegistration = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  {
+    region: CALLABLE_REGION,
+    enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
+    secrets: [supabaseServiceRoleKey, ...OTP_DATA_PLANE_SECRETS],
+  },
   withSecurityLogging('lookupMobileRegistration', async (request) => {
     try {
       assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
@@ -539,7 +565,11 @@ exports.verifyUserRegistrationOtp = onCall(
     ...MSG91_VPC_OPTIONS,
     ...OTP_REDIS_SECRET_OPTIONS,
     enforceAppCheck: ENFORCE_OTP_APP_CHECK,
-    secrets: [...(OTP_REDIS_SECRET_OPTIONS.secrets || []), supabaseServiceRoleKey],
+    secrets: [
+      ...(OTP_REDIS_SECRET_OPTIONS.secrets || []),
+      supabaseServiceRoleKey,
+      ...OTP_DATA_PLANE_SECRETS,
+    ],
   },
   withSecurityLogging('verifyUserRegistrationOtp', async (request) => {
     const mobileLast4 = String(request.data?.mobile || request.data?.identifier || '')
@@ -573,14 +603,13 @@ exports.verifyUserRegistrationOtp = onCall(
       });
       return result;
     } catch (err) {
-      console.error('[verifyUserRegistrationOtp] Callable request failed', {
+      const { logOtpCallableError } = require('./otp_callable_errors');
+      logOtpCallableError('verifyUserRegistrationOtp', err, {
         mobileLast4: mobileLast4 || 'unknown',
-        errorCode: err.code || 'unknown',
-        errorMessage: err.message,
-        details: err.details || null,
+        otpType: request.data?.otpType || 'registration',
       });
       if (err instanceof HttpsError) throw err;
-      throw new HttpsError('internal', 'Could not verify OTP. Please try again.');
+      throw new HttpsError('internal', 'Could not verify OTP. Please try again.', { reason: 'internal' });
     }
   }),
 );
@@ -665,7 +694,11 @@ exports.resetUserPasswordWithOtp = onCall(
 
 /** Exchanges a verified mobile OTP session for a Firebase custom auth token. */
 exports.completeMobileOtpLogin = onCall(
-  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  {
+    ...MSG91_VPC_OPTIONS,
+    enforceAppCheck: ENFORCE_OTP_APP_CHECK,
+    secrets: [supabaseServiceRoleKey, ...OTP_DATA_PLANE_SECRETS],
+  },
   withSecurityLogging('completeMobileOtpLogin', async (request) => {
     try {
       const firestore = db();
@@ -1077,7 +1110,12 @@ exports.verifyAmbulanceDriverLoginHttp = onRequest(
 
 /** Ambulance driver login via verified mobile OTP session (anonymous auth required). */
 exports.completeAmbulanceMobileOtpLogin = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public' },
+  {
+    region: CALLABLE_REGION,
+    enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
+    invoker: 'public',
+    secrets: [...OTP_DATA_PLANE_SECRETS],
+  },
   withSecurityLogging('completeAmbulanceMobileOtpLogin', async (request) => {
     try {
       const firestore = db();

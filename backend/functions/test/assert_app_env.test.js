@@ -8,6 +8,7 @@ const {
   assertProductionOtpHmacOnly,
   warnProductionOtpHmacFallback,
   assertProductionReviewOtpDisabled,
+  assertProductionAppCheckEnforcement,
   assertProductionNoPlaceholderSecrets,
   assertProductionCutoverBoot,
   shouldRunCutoverBootAsserts,
@@ -160,7 +161,7 @@ describe('warnProductionOtpHmacFallback', () => {
   });
 });
 
-describe('assertProductionReviewOtpDisabled', () => {
+describe('assertProductionAppCheckEnforcement', () => {
   const original = { ...process.env };
 
   beforeEach(() => {
@@ -171,16 +172,52 @@ describe('assertProductionReviewOtpDisabled', () => {
     process.env = original;
   });
 
-  it('production rejects REVIEWER_OTP_ENABLED', () => {
-    process.env.APP_ENV = 'production';
-    process.env.REVIEWER_OTP_ENABLED = 'true';
-    assert.throws(() => assertProductionReviewOtpDisabled(), /REVIEWER_OTP_ENABLED/);
+  it('medibond-45fad rejects ENFORCE_OTP_APP_CHECK=false', () => {
+    process.env.GCLOUD_PROJECT = 'medibond-45fad';
+    process.env.ENFORCE_OTP_APP_CHECK = 'false';
+    process.env.ENFORCE_ABUSE_APP_CHECK = 'true';
+    assert.throws(() => assertProductionAppCheckEnforcement(), /ENFORCE_OTP_APP_CHECK/);
   });
 
-  it('production rejects REVIEW_FIXED_OTP', () => {
+  it('medibond-45fad rejects ENFORCE_ABUSE_APP_CHECK=0', () => {
+    process.env.GCLOUD_PROJECT = 'medibond-45fad';
+    process.env.ENFORCE_OTP_APP_CHECK = 'true';
+    process.env.ENFORCE_ABUSE_APP_CHECK = '0';
+    assert.throws(() => assertProductionAppCheckEnforcement(), /ENFORCE_ABUSE_APP_CHECK/);
+  });
+
+  it('medibond-staging allows app check flags off', () => {
+    process.env.GCLOUD_PROJECT = 'medibond-staging';
+    process.env.APP_ENV = 'staging';
+    process.env.ENFORCE_OTP_APP_CHECK = 'false';
+    assert.doesNotThrow(() => assertProductionAppCheckEnforcement());
+  });
+});
+
+describe('assertProductionReviewerOtpPolicy', () => {
+  const original = { ...process.env };
+
+  beforeEach(() => {
+    process.env = { ...original };
+  });
+
+  afterEach(() => {
+    process.env = original;
+  });
+
+  it('production rejects plain REVIEW_FIXED_OTP when reviewer disabled', () => {
     process.env.APP_ENV = 'production';
+    process.env.REVIEWER_OTP_ENABLED = 'false';
     process.env.REVIEW_FIXED_OTP = '123456';
     assert.throws(() => assertProductionReviewOtpDisabled(), /REVIEW_FIXED_OTP/);
+  });
+
+  it('production requires demo routing when reviewer enabled', () => {
+    process.env.APP_ENV = 'production';
+    process.env.REVIEWER_OTP_ENABLED = 'true';
+    process.env.REVIEW_ACCESS_UNTIL = '2099-01-01T00:00:00.000Z';
+    process.env.REVIEW_PATIENT_PHONES = '9999900001';
+    assert.throws(() => assertProductionReviewOtpDisabled(), /DEMO_REAL_ROUTING_ENABLED/);
   });
 
   it('staging allows reviewer OTP flags', () => {
