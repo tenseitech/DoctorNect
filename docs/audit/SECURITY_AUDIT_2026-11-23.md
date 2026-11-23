@@ -450,35 +450,53 @@ Automated scanners **gitleaks/trufflehog/trivy/osv-scanner** were **not** availa
 
 ---
 
-## 9. Fix status (Part F — 2026-11-23)
+## 9. Fix status (Part F — auto-generated from §2)
 
-| ID / artefact | Severity | Status | Evidence / next step |
-|---------------|----------|--------|----------------------|
-| **Part B — SEC-004, SEC-029** | High / Low | **Done (committed, not deployed)** | `assert_production_config.js`; tests 4/4 |
-| **Part B — SEC-012** | Medium | **Done (committed, not deployed)** | Generic `Authentication failed.`; gateway `npm test` **96/0** |
-| **Part B — SEC-016** | Medium | **Done (committed, not deployed)** | `assertProductionAppCheckEnforcement` + Firebase project guard; tests 28/28 |
-| **Part B — SEC-025** | Medium | **Done (committed, not deployed)** | Source manifest: `allowBackup=false` + XML rules; release `flutter build apk` blocked by Gradle 8.14 vs Flutter 9.3.1 (re-verify after wrapper upgrade) |
-| **Part D — SEC-009 runbook** | High | **Docs only** | [`docs/ops/REVIEWER_OTP_DISABLE.md`](../ops/REVIEWER_OTP_DISABLE.md) |
-| **Part D — SEC-017 design** | Medium | **Docs only** | [`docs/ops/MSG91_SMS_BUDGET_DESIGN.md`](../ops/MSG91_SMS_BUDGET_DESIGN.md) |
-| **PC-01 — FORCE RLS 9 tables** | Medium | **Deferred (Phase 2)** | SQL in `db/migrations/deferred/`; apply after **staging harness pass** |
-| **SEC-001** | Critical | Open | Bastion SG SSH `0.0.0.0/0` |
-| **SEC-002** | High | Open | IAM wildcard trim post-rollout |
-| **SEC-003** | High | Open | Empty AWS secrets (no `AWSCURRENT`) |
-| **SEC-005** | High | Open | ECS `desiredCount=0` |
-| **SEC-006** | High | Open | `enable_waf=false` |
-| **SEC-007** | High | Open | Service role key blast radius |
-| **SEC-008** | High | Open | Firestore OTP plane |
-| **SEC-009** | High | Open (ops) | Runbook ready; disable after Play review |
-| **SEC-010** | Medium | Open | Per-task rate limits |
-| **SEC-011** | Info | Verified | No change |
-| **SEC-013** | Info | Verified | Anon `system_config` keys scoped |
-| **SEC-014–015** | Medium | Open | ALB redirect; public callables |
-| **SEC-017 impl** | Medium | Open | Layer 3 Redis budget (design only) |
-| **SEC-018–020** | Medium | Open | npm audit; workspace hygiene; history scan |
-| **SEC-021–022** | Medium | Part C catalog done | FORCE migration deferred (PC-01) |
-| **SEC-023–024** | Medium | Open | DPDP docs; cert pinning |
-| **SEC-026–034** | Low / Info | Open or maintain | See §2 table |
-| **SEC-035–040** | Info | Verified / maintain | Good-practice controls |
+| ID | Severity | Status | Notes (from §2 fix summary) |
+|----|----------|--------|---------------------------|
+| **PC-01** | Medium | **Deferred (Phase 2)** | `20261123101500` in `db/migrations/deferred/` — apply after staging `rls_sql_harness` pass |
+| **Part D — SEC-009** | High | **Docs only** | [REVIEWER_OTP_DISABLE.md](../ops/REVIEWER_OTP_DISABLE.md) |
+| **Part D — SEC-017** | Medium | **Design only** | [MSG91_SMS_BUDGET_DESIGN.md](../ops/MSG91_SMS_BUDGET_DESIGN.md) |
+| SEC-001 | Critical | Open | Restrict SSH to admin IP / SSM Session Manager only |
+| SEC-002 | High | Open | Remove `*` admin actions post-rollout; split preflight |
+| SEC-003 | High | Open | Run secret fill scripts before scale-up |
+| SEC-004 | High | Done (committed, not deployed) | Production startup guard — fixed (Part B approved) |
+| SEC-005 | High | Open | Complete secrets + ECR + scale after verify |
+| SEC-006 | High | Open | Enable WAF + managed rule sets after smoke test |
+| SEC-007 | High | Open | Strong key rotation, IP allowlist for service_role, audit logs |
+| SEC-008 | High | Open | Complete Postgres-only OTP path; retire Firestore OTP collections |
+| SEC-009 | High | Open (ops) — runbook in docs/ops/REVIEWER_OTP_DISABLE.md | Short `REVIEW_ACCESS_UNTIL`, rotate `REVIEW_FIXED_OTP`, disable after Play review |
+| SEC-010 | Medium | Open | Redis/ElastiCache or WAF rate-based rules when scaling >1 task |
+| SEC-011 | Info | Verified | No change — ALB append mode; rightmost hop = connecting client; matches rate limiter |
+| SEC-012 | Medium | Done (committed, not deployed) | Generic 401 message — fixed (Part B approved) |
+| SEC-013 | Info | Verified | Verified 2026-11-23: anon SELECT only `patient_module_status`, `promoted_ads`; no `demo_accounts` |
+| SEC-014 | Medium | Open | Add HTTP listener → 301 to HTTPS (defense in depth) |
+| SEC-015 | Medium | Open | Require App Check + auth where possible |
+| SEC-016 | Medium | Done (committed, not deployed) | `assertProductionAppCheckEnforcement` — fixed (Part B approved) |
+| SEC-017 | Medium | Open — Part D design in docs/ops/MSG91_SMS_BUDGET_DESIGN.md | MSG91 dashboard cap + billing alarm + server-side daily SMS budget |
+| SEC-018 | Medium | Open | Bump `fast-xml-parser` / Firebase SDK chain |
+| SEC-019 | Medium | Open | Verify `.gitignore`, pre-commit secret scan, remove duplicates from workspace |
+| SEC-020 | Medium | Open | Run secret scanner on history; rotate if ever leaked |
+| SEC-021 | Medium | Open — FORCE RLS deferred (Phase 2; staging harness) | Catalog: 0 unpinned `search_path` / 51 definer; FORCE-RLS audit 0 hits. Part C: EXECUTE to PUBLIC/anon |
+| SEC-022 | Medium | Open | Catalog 2026-11-23: no app-table PUBLIC ALL; only `cron.*` (see §3). Part C: `USING (true)` scan |
+| SEC-023 | Medium | Open | Privacy policy, consent logs, deletion SLA doc |
+| SEC-024 | Medium | Open | Document risk acceptance or add pinning for prod gateway |
+| SEC-025 | Medium | Done (committed, not deployed) | `allowBackup=false` + backup XML rules — fixed (Part B approved) |
+| SEC-026 | Low | Open | Routine `npm audit fix` |
+| SEC-027 | Low | Open | Pin actions to commit SHA |
+| SEC-028 | Low | Open | Expected; ensure release not distributed from CI artifact |
+| SEC-029 | Low | Done (committed, not deployed) | Same production startup guard as SEC-004 — fixed (Part B approved) |
+| SEC-030 | Low | Open | Acceptable; avoid full mobile in logs |
+| SEC-031 | Low | Maintain | Keep `false` in production |
+| SEC-032 | Low | Open | Optional: enable IAM auth for operators |
+| SEC-033 | Low | Open | Enable rotation for DB/JWT keys post-launch |
+| SEC-034 | Info | Maintain | Keep enabled; add integration tests |
+| SEC-035 | Info | Maintain | Maintain lockdown |
+| SEC-036 | Info | Maintain | Maintain; PHI on S3 presigned only |
+| SEC-037 | Info | Maintain | Keep |
+| SEC-038 | Info | Maintain | Keep |
+| SEC-039 | Info | Maintain | Maintain backups/MFA on restore |
+| SEC-040 | Info | Open | Authenticator OK; RLS 68/69; health-table grant matrix not verified (Part C) |
 
 ---
 
