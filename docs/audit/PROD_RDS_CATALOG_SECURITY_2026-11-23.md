@@ -1,7 +1,7 @@
 # Production RDS catalog security (read-only)
 
 Generated: 2026-11-23T10:10:05.554Z
-Host fingerprint: doctornect-prod.c92k0uqgqekv.ap-south-1.rds.amazonaws.com
+Host fingerprint: example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com
 
 ## Policies involving PUBLIC role
 
