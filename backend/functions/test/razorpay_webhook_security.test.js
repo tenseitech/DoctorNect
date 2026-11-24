@@ -152,14 +152,34 @@ function createMockSupabaseStore(initialAds = [], initialUsers = []) {
               return { data: [] };
             },
           }),
-          update: (data) => ({
-            eq: async (col, val) => {
-              if (col === 'ad_id' && ads.has(val)) {
-                ads.set(val, { ...ads.get(val), ...data });
+          update: (data) => {
+            // Chainable compare-and-set: applies only when every .eq() filter matches.
+            const filters = [];
+            const run = () => {
+              const matched = [];
+              for (const [id, row] of ads.entries()) {
+                if (filters.every(([c, v]) => row[c] === v)) {
+                  ads.set(id, { ...row, ...data });
+                  matched.push({ ad_id: id });
+                }
               }
-              return { error: null };
-            },
-          }),
+              return matched;
+            };
+            const builder = {
+              eq(col, val) {
+                filters.push([col, val]);
+                return builder;
+              },
+              async select() {
+                return { data: run(), error: null };
+              },
+              then(resolve) {
+                run();
+                resolve({ error: null });
+              },
+            };
+            return builder;
+          },
         };
       }
       if (table === 'users') {

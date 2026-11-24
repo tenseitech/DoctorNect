@@ -33,6 +33,39 @@ function createPromotedAdsSupabaseMock(initial = {}) {
     users.set(uid, { ...row });
   }
 
+  /** Chainable update builder: .update(patch).eq(..).eq(..).select() — applies only on full match. */
+  function chainableAdsUpdate(patch) {
+    const filters = [];
+    const run = () => {
+      const matched = [];
+      for (const [id, row] of ads.entries()) {
+        if (filters.every(([c, v]) => row[c] === v)) {
+          ads.set(id, { ...row, ...patch });
+          matched.push({ ad_id: id });
+        }
+      }
+      return matched;
+    };
+    const builder = {
+      eq(col, val) {
+        filters.push([col, val]);
+        return builder;
+      },
+      async select() {
+        return { data: run(), error: null };
+      },
+      then(resolve, reject) {
+        try {
+          run();
+          resolve({ error: null });
+        } catch (err) {
+          if (reject) reject(err);
+        }
+      },
+    };
+    return builder;
+  }
+
   function buildAdsEqResult(col, val) {
     return {
       async maybeSingle() {
@@ -77,14 +110,7 @@ function createPromotedAdsSupabaseMock(initial = {}) {
         };
       },
       update(patch) {
-        return {
-          eq: async (col, val) => {
-            if (col === 'ad_id' && ads.has(val)) {
-              ads.set(val, { ...ads.get(val), ...patch });
-            }
-            return { error: null };
-          },
-        };
+        return chainableAdsUpdate(patch);
       },
     };
   }

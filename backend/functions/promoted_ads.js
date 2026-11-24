@@ -12,14 +12,58 @@ function setSupabaseClientForTesting(client) {
   _testingSupabaseClient = client;
 }
 
-function getSupabaseAdmin() {
+/**
+ * Server-side DB client. Pass the ad owner's Firebase UID so production demo accounts route to the
+ * staging plane and real users to RDS (never mix planes for one payment).
+ */
+function getSupabaseAdmin(firebaseUid = null) {
   if (_testingSupabaseClient) return _testingSupabaseClient;
   try {
     const { getDatabaseClient } = require('./src/db/client');
-    return getDatabaseClient();
+    return getDatabaseClient(firebaseUid ? { firebaseUid } : {});
   } catch (_) {
     return null;
   }
+}
+
+const SAFE_UID_RE = /^[A-Za-z0-9_\-:.]{1,128}$/;
+
+/**
+ * Postgres path: loads promoted_ads row and enforces caller ownership + non-patient role.
+ * Fails closed when the caller profile cannot be resolved.
+ */
+async function loadOwnedPromotedAdRow(supabase, adId, uid) {
+  if (!SAFE_UID_RE.test(String(uid || ''))) {
+    throw new HttpsError('unauthenticated', 'Authentication required.');
+  }
+  const { data: adRows, error: adErr } = await supabase
+    .from('promoted_ads')
+    .select('*')
+    .eq('ad_id', adId);
+  if (adErr) {
+    throw new HttpsError('unavailable', 'Database service temporarily unavailable.');
+  }
+  const ad = Array.isArray(adRows) ? adRows[0] : null;
+  if (!ad) {
+    throw new HttpsError('not-found', 'Promoted ad document not found.');
+  }
+  let caller = null;
+  try {
+    caller = await resolveCallerIdentity({ uid, supabaseClient: supabase, forceSupabase: true });
+  } catch (_) {
+    caller = null;
+  }
+  if (!caller) {
+    throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
+  }
+  if (String(caller.role || '').toLowerCase() === 'patient') {
+    throw new HttpsError('permission-denied', 'Patients are not permitted to create promotions.');
+  }
+  const profileId = caller.profileId || caller.profile_id || null;
+  if (ad.provider_id !== uid && !(profileId && ad.provider_id === profileId)) {
+    throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
+  }
+  return ad;
 }
 const https = require('https');
 const { enforceAbuseLimit, assertAppCheck } = require('./abuse_rate_limit');
@@ -136,17 +180,112 @@ function makeRazorpayRequest(path, method = 'GET', payload = null, keyId, keySec
             reject(new Error(parsed.error?.description || `Razorpay error HTTP ${res.statusCode}`));
           }
         } catch (err) {
-          reject(new Error(`Failed to parse Razorpay response: ${body}`));
+          // Never echo the gateway body (may contain payment details) into logs/errors.
+          reject(new Error(`Failed to parse Razorpay response (HTTP ${res.statusCode})`));
         }
       });
     });
 
     req.on('error', (e) => reject(e));
+    if (typeof req.setTimeout === 'function') {
+      req.setTimeout(10000, () => req.destroy(new Error('Razorpay request timed out')));
+    }
     if (postData) {
       req.write(postData);
     }
     req.end();
   });
+}
+
+/**
+ * Postgres (Supabase staging / RDS production) order creation. Amount always comes from
+ * AD_PRICING_TABLE on the server; client-sent amounts are never read.
+ */
+async function createRazorpayOrderPostgres(uid, safeAdId, hours, amountINR) {
+  const supabase = getSupabaseAdmin(uid);
+  if (!supabase) {
+    throw new HttpsError('unavailable', 'Database service temporarily unavailable.');
+  }
+  const ad = await loadOwnedPromotedAdRow(supabase, safeAdId, uid);
+  if (ad.status !== 'draft' && ad.status !== 'pending_payment') {
+    throw new HttpsError(
+      'failed-precondition',
+      `Cannot create payment order for ad with status '${ad.status}'.`,
+    );
+  }
+
+  const { keyId, keySecret } = getRazorpayCredentials();
+  const amountPaise = amountINR * 100;
+
+  if (ad.status === 'pending_payment' && ad.razorpay_order_id && Number(ad.duration_hours) === hours) {
+    const existingOrderId = String(ad.razorpay_order_id).trim();
+    try {
+      const existingOrder = await makeRazorpayRequest(`/v1/orders/${encodeURIComponent(existingOrderId)}`, 'GET', null, keyId, keySecret);
+      const notes = existingOrder.notes || {};
+      if (
+        existingOrder.id === existingOrderId &&
+        existingOrder.amount === amountPaise &&
+        existingOrder.currency === 'INR' &&
+        existingOrder.status !== 'paid' &&
+        notes.adId === safeAdId &&
+        notes.providerUid === uid &&
+        parseInt(notes.durationHours, 10) === hours
+      ) {
+        return { orderId: existingOrder.id, keyId, amount: amountINR, currency: 'INR' };
+      }
+    } catch (err) {
+      console.warn('[createRazorpayOrder] Could not reuse existing order; creating new one.');
+    }
+  }
+
+  let razorpayOrder;
+  try {
+    razorpayOrder = await makeRazorpayRequest(
+      '/v1/orders',
+      'POST',
+      {
+        amount: amountPaise,
+        currency: 'INR',
+        receipt: safeAdId.slice(0, 40),
+        notes: { adId: safeAdId, providerUid: uid, durationHours: String(hours) },
+      },
+      keyId,
+      keySecret,
+    );
+  } catch (err) {
+    console.error('[createRazorpayOrder] Razorpay order creation failed:', err?.message || 'unknown');
+    throw new HttpsError('internal', 'Failed to create Razorpay order.');
+  }
+
+  const nowIso = new Date().toISOString();
+  const { error: updErr } = await supabase
+    .from('promoted_ads')
+    .update({
+      razorpay_order_id: razorpayOrder.id,
+      duration_hours: hours,
+      status: 'pending_payment',
+      payment_status: 'pending',
+      updated_at: nowIso,
+    })
+    .eq('ad_id', safeAdId);
+  if (updErr) {
+    throw new HttpsError('internal', 'Failed to create Razorpay order.');
+  }
+  const { error: orderErr } = await supabase.from('razorpay_orders').upsert({
+    order_id: razorpayOrder.id,
+    user_uid: uid,
+    ad_id: safeAdId,
+    amount_paise: amountPaise,
+    currency: 'INR',
+    receipt: safeAdId.slice(0, 40),
+    status: 'created',
+    updated_at: nowIso,
+  }, { onConflict: 'order_id' });
+  if (orderErr) {
+    console.warn('[createRazorpayOrder] razorpay_orders ledger write failed');
+  }
+
+  return { orderId: razorpayOrder.id, keyId, amount: amountINR, currency: 'INR' };
 }
 
 /**
@@ -172,6 +311,10 @@ const createRazorpayOrder = onCall(
     Object.keys(AD_PRICING_TABLE).map(Number),
   );
   const amountINR = AD_PRICING_TABLE[hours];
+
+  if (await isDoctorPatientSupabasePrimary()) {
+    return createRazorpayOrderPostgres(request.auth.uid, safeAdId, hours, amountINR);
+  }
 
   const db = require('./legacy_db').getLegacyFirestoreDb();
   const adRef = db.collection('promotedAds').doc(safeAdId);
@@ -311,19 +454,22 @@ async function activatePromotedAdPayment(db, {
   const isCutover = await isDoctorPatientSupabasePrimary();
   const useFirestoreDb = db && typeof db.collection === 'function';
   if (isCutover && !useFirestoreDb) {
-    const supabase = getSupabaseAdmin();
+    const supabase = getSupabaseAdmin(callerUid || providerUid);
     if (!supabase) {
       throw new HttpsError('unavailable', 'Database service temporarily unavailable.');
     }
 
     const safeEventId = eventId ? requireDocId(eventId, 'eventId') : null;
+    // Fail closed: a DB read error must never be treated as "not processed yet".
+    const dbUnavailable = () => new HttpsError('unavailable', 'Database service temporarily unavailable.');
 
     // 1. Check event idempotency
     if (safeEventId) {
-      const { data: eventRows } = await supabase
+      const { data: eventRows, error: eventErr } = await supabase
         .from('razorpay_webhook_events')
         .select('*')
         .eq('event_id', safeEventId);
+      if (eventErr) throw dbUnavailable();
       if (eventRows && eventRows.length > 0) {
         return {
           success: true,
@@ -335,10 +481,11 @@ async function activatePromotedAdPayment(db, {
     }
 
     // 2. Check existing payment in razorpay_payments
-    const { data: existingPayments } = await supabase
+    const { data: existingPayments, error: payErr } = await supabase
       .from('razorpay_payments')
       .select('*')
       .eq('payment_id', safePaymentId);
+    if (payErr) throw dbUnavailable();
 
     if (existingPayments && existingPayments.length > 0) {
       const prevPay = existingPayments[0];
@@ -354,10 +501,11 @@ async function activatePromotedAdPayment(db, {
     }
 
     // 3. Query promoted_ads row
-    const { data: adRows } = await supabase
+    const { data: adRows, error: adErr } = await supabase
       .from('promoted_ads')
       .select('*')
       .eq('ad_id', safeAdId);
+    if (adErr) throw dbUnavailable();
 
     if (!adRows || adRows.length === 0) {
       throw new HttpsError('not-found', 'Promoted ad document not found.');
@@ -365,9 +513,12 @@ async function activatePromotedAdPayment(db, {
 
     const currentAd = adRows[0];
 
-    // Verify ownership
+    // Verify ownership (order notes / caller must identify the ad owner; never skip).
     const ownerUid = callerUid || providerUid;
-    if (ownerUid) {
+    if (!ownerUid) {
+      throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
+    }
+    {
       if (currentAd.provider_id !== ownerUid) {
         const { data: userRows } = await supabase
           .from('users')
@@ -397,15 +548,32 @@ async function activatePromotedAdPayment(db, {
       );
     }
 
-    // 4. Record webhook event, orders, payments, and update ad
+    // 4. Transition the ad first with a compare-and-set (status + order id) so concurrent
+    //    verify/webhook deliveries cannot double-activate; then write ledgers; record the
+    //    webhook event last so a failed run is retried by Razorpay instead of being skipped.
     const nowIso = new Date().toISOString();
-    if (safeEventId) {
-      await supabase.from('razorpay_webhook_events').upsert({
-        event_id: safeEventId,
-        event_type: 'payment.captured',
-        payload: { adId: safeAdId, orderId: safeOrderId, paymentId: safePaymentId },
-        processed_at: nowIso,
-      }, { onConflict: 'event_id' });
+    const { data: transitioned, error: adUpdErr } = await supabase.from('promoted_ads').update({
+      payment_status: 'verified',
+      status: 'pending_approval',
+      razorpay_order_id: safeOrderId,
+      razorpay_payment_id: safePaymentId,
+      duration_hours: noteDurationHours,
+      amount_paid: expectedPriceINR,
+      updated_at: nowIso,
+    })
+      .eq('ad_id', safeAdId)
+      .eq('status', 'pending_payment')
+      .eq('razorpay_order_id', safeOrderId)
+      .select('ad_id');
+    if (adUpdErr) throw dbUnavailable();
+    if (!Array.isArray(transitioned) || transitioned.length === 0) {
+      // Lost the race to a concurrent activation of the same order.
+      return {
+        success: true,
+        idempotent: true,
+        message: 'Payment already processed (idempotent)',
+        adId: safeAdId,
+      };
     }
 
     await supabase.from('razorpay_orders').upsert({
@@ -426,18 +594,17 @@ async function activatePromotedAdPayment(db, {
       amount_paise: expectedPriceINR * 100,
       currency: currency || 'INR',
       status: 'captured',
-      method: 'webhook',
+      method: safeEventId ? 'webhook' : 'client_verify',
     }, { onConflict: 'payment_id' });
 
-    await supabase.from('promoted_ads').update({
-      payment_status: 'verified',
-      status: 'pending_approval',
-      razorpay_order_id: safeOrderId,
-      razorpay_payment_id: safePaymentId,
-      duration_hours: noteDurationHours,
-      amount_paid: expectedPriceINR,
-      updated_at: nowIso,
-    }).eq('ad_id', safeAdId);
+    if (safeEventId) {
+      await supabase.from('razorpay_webhook_events').upsert({
+        event_id: safeEventId,
+        event_type: 'payment.captured',
+        payload: { adId: safeAdId, orderId: safeOrderId, paymentId: safePaymentId },
+        processed_at: nowIso,
+      }, { onConflict: 'event_id' });
+    }
 
     return {
       success: true,
@@ -601,18 +768,30 @@ const verifyRazorpayPayment = onCall(
     pattern: /^[a-fA-F0-9]+$/,
   });
 
-  const db = require('./legacy_db').getLegacyFirestoreDb();
-  const adRef = db.collection('promotedAds').doc(safeAdId);
-  const adSnap = await adRef.get();
+  const usePostgres = await isDoctorPatientSupabasePrimary();
+  let db = null;
+  let adData;
+  if (usePostgres) {
+    const supabase = getSupabaseAdmin(request.auth.uid);
+    if (!supabase) {
+      throw new HttpsError('unavailable', 'Database service temporarily unavailable.');
+    }
+    const row = await loadOwnedPromotedAdRow(supabase, safeAdId, request.auth.uid);
+    adData = { razorpayOrderId: row.razorpay_order_id };
+  } else {
+    db = require('./legacy_db').getLegacyFirestoreDb();
+    const adRef = db.collection('promotedAds').doc(safeAdId);
+    const adSnap = await adRef.get();
 
-  if (!adSnap.exists) {
-    throw new HttpsError('not-found', 'Promoted ad document not found.');
-  }
+    if (!adSnap.exists) {
+      throw new HttpsError('not-found', 'Promoted ad document not found.');
+    }
 
-  const adData = adSnap.data();
-  const isOwner = await isAdOwner(db, adData, request.auth.uid);
-  if (!isOwner) {
-    throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
+    adData = adSnap.data();
+    const isOwner = await isAdOwner(db, adData, request.auth.uid);
+    if (!isOwner) {
+      throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
+    }
   }
 
   const expectedOrderId = String(adData.razorpayOrderId || '').trim();
@@ -787,7 +966,11 @@ async function razorpayWebhookHandler(req, res, db) {
   const isCutover = await isDoctorPatientSupabasePrimary();
   const useFirestoreDb = db && typeof db.collection === 'function';
   if (isCutover && !useFirestoreDb) {
-    const supabase = getSupabaseAdmin();
+    if (providerUid && !SAFE_UID_RE.test(providerUid)) {
+      res.status(200).json({ status: 'rejected', reason: 'order_notes_invalid' });
+      return;
+    }
+    const supabase = getSupabaseAdmin(providerUid);
     if (!supabase) {
       res.status(503).json({ error: { message: 'Database service unavailable' } });
       return;
@@ -818,7 +1001,12 @@ async function razorpayWebhookHandler(req, res, db) {
       return;
     }
 
-    const { data: adRows } = await supabase.from('promoted_ads').select('*').eq('ad_id', adId);
+    const { data: adRows, error: adReadErr } = await supabase.from('promoted_ads').select('*').eq('ad_id', adId);
+    if (adReadErr) {
+      // 5xx so Razorpay retries delivery instead of dropping a real payment.
+      res.status(503).json({ error: { message: 'Database service unavailable' } });
+      return;
+    }
     if (!adRows || adRows.length === 0) {
       console.warn('[razorpayWebhook] ad_not_found');
       res.status(200).json({ status: 'rejected', reason: 'ad_not_found' });
@@ -854,6 +1042,10 @@ async function razorpayWebhookHandler(req, res, db) {
       return;
     } catch (err) {
       if (err instanceof HttpsError) {
+        if (err.code === 'unavailable') {
+          res.status(503).json({ error: { message: 'Database service unavailable' } });
+          return;
+        }
         if (err.code === 'already-exists') {
           res.status(200).json({ status: 'rejected', reason: 'payment_already_used' });
           return;
@@ -1103,7 +1295,11 @@ const razorpayWebhook = onRequest(
     invoker: 'public',
   },
   async (req, res) => {
-    return razorpayWebhookHandler(req, res, require('./legacy_db').getLegacyFirestoreDb());
+    // Postgres is the system of record; Firestore is only used by legacy test harnesses.
+    const db = (await isDoctorPatientSupabasePrimary())
+      ? null
+      : require('./legacy_db').getLegacyFirestoreDb();
+    return razorpayWebhookHandler(req, res, db);
   }
 );
 
