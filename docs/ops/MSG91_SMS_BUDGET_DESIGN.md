@@ -93,6 +93,25 @@ Align with existing send rate limits (`abuse_rate_limit` / production Redis requ
 | Rationale | A bypass when Redis is down would remove both rate limits and daily ceiling during the exact window attackers probe. |
 | Ops signal | Log/metric `sms_budget_redis_fail_closed` (count only); correlate with ElastiCache / MemoryDB health and OTP error rate. |
 
+**Alarm (when budget code ships):**
+
+| Signal | Threshold (suggested) | Route |
+|--------|------------------------|-------|
+| `sms_budget_redis_fail_closed` (or existing OTP rate-limit Redis errors) | ≥ 10 in 5 min **per** `APP_ENV=production` | P2 → on-call chat + email |
+| Same metric sustained | ≥ 50 in 15 min production | P1 page on-call |
+| Cloud Functions `unavailable` on OTP send + Redis timeout log pattern | Spike vs 7-day baseline | Pair with Redis/ElastiCache health alarm |
+
+Implement via log-based metric (Cloud Monitoring / equivalent) on structured `security_logger` reason — **no mobile numbers, no IPs in alert body**.
+
+**On-call steps (Redis fail-closed → users cannot receive OTP SMS):**
+
+1. Confirm **ElastiCache / MemoryDB** cluster health (CPU, evictions, connections, failover events) in the same region as Functions.
+2. Check **VPC / security group** changes and recent deploys (`REDIS_HOST`, TLS, auth secret rotation).
+3. If Redis is degraded: **scale/restart** per AWS runbook; fail-closed remains correct — do **not** disable budget or rate limits to “unblock” OTP.
+4. If Redis is healthy but Functions cannot connect: inspect Functions VPC connector / NAT; Redis client timeout logs (`Redis OTP mirror operation timed out`, `Redis rate limit operation timed out`).
+5. Communicate **internal status**: OTP SMS temporarily unavailable; reviewer/test bypass unaffected; **App Check** and MSG91 provider caps still apply.
+6. After recovery: verify OTP send success rate; post-incident note if fail-closed lasted > 15 min production.
+
 ### Budget exhausted — real-user lockout risk
 
 When the daily cap is reached, **every** non-bypass send fails until the **next IST calendar day** (or an operator raises the cap). That is intentional for spend protection but creates **product risk**:

@@ -53,7 +53,7 @@ _Counts computed from §2 table (SEC-001 … SEC-040): PowerShell regex parse �
 | SEC-008 | High | OTP / Firebase | Dual-plane OTP (Firestore + Postgres paths) | `backend/functions/registration_otp.js` | Complete Postgres-only OTP path; retire Firestore OTP collections | L |
 | SEC-009 | High | Demo/Review | Fixed reviewer OTP + time window | `backend/functions/reviewer_otp_config.js` | Short `REVIEW_ACCESS_UNTIL`, rotate `REVIEW_FIXED_OTP`, disable after Play review | S |
 | SEC-010 | Medium | Gateway | In-memory rate limits (per task) | `services/api-gateway/src/security.js:27-56` | Redis/ElastiCache or WAF rate-based rules when scaling >1 task | M |
-| SEC-011 | Info | Gateway | X-Forwarded-For client IP behind ALB | `services/api-gateway/src/server.js:103-110` | **No change** — ALB append mode; rightmost hop = connecting client; matches rate limiter | — |
+| SEC-011 | Info | Gateway | X-Forwarded-For client IP behind ALB | `services/api-gateway/src/server.js:103-110` | **No change** — **Verified live:** `routing.http.xff_header_processing.mode = append` (2026-11-24); rightmost hop = connecting client; matches rate limiter | — |
 | SEC-012 | Medium | Gateway | Auth errors echo verifier messages | `services/api-gateway/src/server.js:337-340` | Generic 401 message — **fixed (Part B approved)** | S |
 | SEC-013 | Info | Gateway | Anonymous `system_config` via gateway allowlist | `config.js:37-38` + RDS policy | **Verified 2026-11-23:** anon SELECT only `patient_module_status`, `promoted_ads`; no `demo_accounts` | — |
 | SEC-014 | Medium | AWS ALB | No port-80 redirect listener | `infra/aws/alb.tf` | Add HTTP listener → 301 to HTTPS (defense in depth) | S |
@@ -172,7 +172,7 @@ _Counts computed from §2 table (SEC-001 … SEC-040): PowerShell regex parse �
 
 - **Location:** `services/api-gateway/src/server.js:103-110` (rightmost XFF hop used as `clientIp`).
 - **Terraform ALB:** `infra/aws/alb.tf:2-15` (`resource "aws_lb" "api"`) — **`xff_header_processing_mode` not set** (no repo match for `xff_header_processing_mode` / `enable_xff_client_port`). AWS provider default = **`append`** (ALB appends client IP; spoofed client values stay to the left).
-- **Verification:** With **append** mode, **rightmost** XFF hop = TCP client of the ALB → matches gateway rate-limit key. **No code change.** If TF ever sets `preserve` or `remove`, revisit IP extraction (would be wrong for rightmost-hop logic).
+- **Verification:** With **append** mode, **rightmost** XFF hop = TCP client of the ALB → matches gateway rate-limit key. **Verified live:** `routing.http.xff_header_processing.mode = append` (2026-11-24). **No code change.** If TF ever sets `preserve` or `remove`, revisit IP extraction (would be wrong for rightmost-hop logic).
 - **Effort:** —
 
 ### SEC-012 — Verbose auth errors (Medium)
@@ -377,7 +377,7 @@ Details align with locations in §2; fixes are hygiene and operational hardening
 
 - **PC-01 / SEC-021 (FORCE RLS):** `db/migrations/deferred/20261123101500_security_hardening_force_rls.sql` — staging harness **210/0** + definer re-home (`users`/`admin_users` per `20261103000007`) then `approved prod`
 - SEC-010 gateway rate limits (distributed store / WAF); **SEC-012 fixed (Part B)** — optional Part E log redaction follow-up  
-- SEC-011 verified correct (ALB default `append`; `infra/aws/alb.tf` — no `xff_header_processing_mode`)  
+- SEC-011 verified correct — **Verified live:** `routing.http.xff_header_processing.mode = append` (2026-11-24); `infra/aws/alb.tf` — no `xff_header_processing_mode` override  
 - **SEC-009 / SEC-017 (Part D, 2026-11-23):** Operator runbooks only — [`docs/ops/REVIEWER_OTP_DISABLE.md`](../ops/REVIEWER_OTP_DISABLE.md), [`docs/ops/MSG91_SMS_BUDGET_DESIGN.md`](../ops/MSG91_SMS_BUDGET_DESIGN.md) (no code)  
 - SEC-017 MSG91 billing caps (implement Layer 3 when approved)  
 - SEC-018 dependency patches  
@@ -467,7 +467,7 @@ Automated scanners **gitleaks/trufflehog/trivy/osv-scanner** were **not** availa
 | SEC-008 | High | Open | Complete Postgres-only OTP path; retire Firestore OTP collections |
 | SEC-009 | High | Open (ops) — runbook in docs/ops/REVIEWER_OTP_DISABLE.md | Short `REVIEW_ACCESS_UNTIL`, rotate `REVIEW_FIXED_OTP`, disable after Play review |
 | SEC-010 | Medium | Open | Redis/ElastiCache or WAF rate-based rules when scaling >1 task |
-| SEC-011 | Info | Verified | No change — ALB append mode; rightmost hop = connecting client; matches rate limiter |
+| SEC-011 | Info | Verified | Verified live: routing.http.xff_header_processing.mode = append (2026-11-24) |
 | SEC-012 | Medium | Done (committed, not deployed) | Generic 401 message — fixed (Part B approved) |
 | SEC-013 | Info | Verified | Verified 2026-11-23: anon SELECT only `patient_module_status`, `promoted_ads`; no `demo_accounts` |
 | SEC-014 | Medium | Open | Add HTTP listener → 301 to HTTPS (defense in depth) |
