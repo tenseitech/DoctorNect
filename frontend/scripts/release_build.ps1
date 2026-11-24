@@ -334,7 +334,10 @@ Push-Location $projectRoot
 
 try {
     $repoRoot = Get-RepoRoot
-    Import-ClientReleaseDotEnv -Path (Join-Path $repoRoot '.env')
+    # RELEASE_BUILD_NO_DOTENV=1: hermetic test runs only (shell env is the sole input).
+    if ($env:RELEASE_BUILD_NO_DOTENV -ne '1') {
+        Import-ClientReleaseDotEnv -Path (Join-Path $repoRoot '.env')
+    }
     if ($Launch) {
         $env:ENABLE_SUPABASE = '1'
         $env:USE_SUPABASE_DB_DOCTOR_PATIENT = 'true'

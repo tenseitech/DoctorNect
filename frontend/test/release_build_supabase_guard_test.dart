@@ -135,6 +135,9 @@ void main() {
 
       final pwshCmd = Platform.isWindows ? 'powershell' : 'pwsh';
       final baseEnv = {
+        // Hermetic: never read the developer's repo-root .env (empty values are
+        // treated as unset on Windows, so .env defaults would leak in).
+        'RELEASE_BUILD_NO_DOTENV': '1',
         'FIREBASE_API_KEY_ANDROID': 'dummy_android_key_123',
         'ENABLE_SUPABASE': '',
         'SUPABASE_URL': '',
@@ -234,6 +237,9 @@ void main() {
       }
 
       final baseEnv = {
+        // Hermetic: never read the developer's repo-root .env (empty values are
+        // treated as unset on Windows, so .env defaults would leak in).
+        'RELEASE_BUILD_NO_DOTENV': '1',
         'FIREBASE_API_KEY_ANDROID': 'dummy_android_key_123',
         'ENABLE_SUPABASE': '',
         'SUPABASE_URL': '',
