@@ -1,0 +1,161 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "TerraformEc2NetworkRead",
+      "Effect": "Allow",
+      "Action": "ec2:Describe*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "TerraformLogsDescribe",
+      "Effect": "Allow",
+      "Action": ["logs:DescribeLogGroups", "logs:ListTagsForResource"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "TerraformEc2SecurityGroups",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateSecurityGroup",
+        "ec2:DeleteSecurityGroup",
+        "ec2:AuthorizeSecurityGroupIngress",
+        "ec2:RevokeSecurityGroupIngress",
+        "ec2:AuthorizeSecurityGroupEgress",
+        "ec2:RevokeSecurityGroupEgress",
+        "ec2:CreateTags",
+        "ec2:DeleteTags",
+        "ec2:UpdateSecurityGroupRuleDescriptionsEgress",
+        "ec2:UpdateSecurityGroupRuleDescriptionsIngress"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "ap-south-1"
+        }
+      }
+    },
+    {
+      "Sid": "TerraformElasticLoadBalancing",
+      "Effect": "Allow",
+      "Action": "elasticloadbalancing:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "TerraformEcs",
+      "Effect": "Allow",
+      "Action": "ecs:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "TerraformCloudWatchLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:DeleteLogGroup",
+        "logs:ListTagsLogGroup",
+        "logs:ListTagsForResource",
+        "logs:PutRetentionPolicy",
+        "logs:TagLogGroup",
+        "logs:UntagLogGroup",
+        "logs:TagResource",
+        "logs:UntagResource"
+      ],
+      "Resource": "arn:aws:logs:ap-south-1:<AWS_ACCOUNT_ID>:log-group:/ecs/doctornect-production*"
+    },
+    {
+      "Sid": "TerraformCloudWatchAlarms",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:PutMetricAlarm",
+        "cloudwatch:DeleteAlarms",
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:ListTagsForResource",
+        "cloudwatch:TagResource",
+        "cloudwatch:UntagResource"
+      ],
+      "Resource": "arn:aws:cloudwatch:ap-south-1:<AWS_ACCOUNT_ID>:alarm:doctornect-production-*"
+    },
+    {
+      "Sid": "TerraformSecretsManagerList",
+      "Effect": "Allow",
+      "Action": "secretsmanager:ListSecrets",
+      "Resource": "*"
+    },
+    {
+      "Sid": "TerraformSecretsManagerProduction",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:CreateSecret",
+        "secretsmanager:DeleteSecret",
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:PutSecretValue",
+        "secretsmanager:ListSecretVersionIds",
+        "secretsmanager:GetResourcePolicy",
+        "secretsmanager:PutResourcePolicy",
+        "secretsmanager:DeleteResourcePolicy",
+        "secretsmanager:TagResource",
+        "secretsmanager:UntagResource",
+        "secretsmanager:UpdateSecret",
+        "secretsmanager:RestoreSecret"
+      ],
+      "Resource": "arn:aws:secretsmanager:ap-south-1:<AWS_ACCOUNT_ID>:secret:doctornect/production*"
+    },
+    {
+      "Sid": "TerraformRdsRead",
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBParameters",
+        "rds:DescribeDBParameterGroups",
+        "rds:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "TerraformRdsParameterGroupProduction",
+      "Effect": "Allow",
+      "Action": [
+        "rds:CreateDBParameterGroup",
+        "rds:DeleteDBParameterGroup",
+        "rds:ModifyDBParameterGroup",
+        "rds:AddTagsToResource",
+        "rds:RemoveTagsFromResource"
+      ],
+      "Resource": "arn:aws:rds:ap-south-1:<AWS_ACCOUNT_ID>:pg:doctornect-production-*"
+    },
+    {
+      "Sid": "TerraformWafV2Regional",
+      "Effect": "Allow",
+      "Action": "wafv2:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "TerraformEcrPushDoctornectAuthGateway",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:CompleteLayerUpload",
+        "ecr:InitiateLayerUpload",
+        "ecr:PutImage",
+        "ecr:UploadLayerPart",
+        "ecr:DescribeRepositories",
+        "ecr:DescribeImages",
+        "ecr:BatchGetImage"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "TerraformPlanPreflight",
+      "Effect": "Allow",
+      "Action": [
+        "acm:ListCertificates",
+        "acm:DescribeCertificate",
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

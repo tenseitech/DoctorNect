@@ -1,5 +1,6 @@
 # AWS RDS Parameter Group for DoctorNect PostgreSQL 18+
 # IMPORTANT: This stack does NOT create aws_db_instance, VPC, or subnets.
+# This rollout does NOT attach this parameter group to RDS (no modify-db-instance / reboot here).
 # Existing console-created RDS is referenced via variables + optional data.aws_db_instance.
 # Enables native pg_cron background worker and performance monitoring.
 #
@@ -40,14 +41,14 @@ resource "aws_db_parameter_group" "doctornect_pg18" {
   parameter {
     name         = "cron.max_running_jobs"
     value        = "8"
-    apply_method = "immediate"
+    apply_method = "pending-reboot"
   }
 
   # 4. Standard timezone
   parameter {
     name         = "cron.timezone"
     value        = "UTC"
-    apply_method = "immediate"
+    apply_method = "pending-reboot"
   }
 
   parameter {

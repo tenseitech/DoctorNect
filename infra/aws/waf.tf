@@ -1,6 +1,7 @@
-# AWS WAF v2 — attach to public ALB (apply manually after review; not applied from CI).
+# AWS WAF v2 — optional (enable_waf = true). Rules kept here for later enablement.
 
 resource "aws_wafv2_web_acl" "gateway" {
+  count = var.enable_waf ? 1 : 0
   name  = "${var.project_name}-${var.environment}-gateway-waf"
   scope = "REGIONAL"
 
@@ -129,6 +130,7 @@ resource "aws_wafv2_web_acl" "gateway" {
 }
 
 resource "aws_wafv2_web_acl_association" "alb" {
+  count        = var.enable_waf ? 1 : 0
   resource_arn = aws_lb.api.arn
-  web_acl_arn  = aws_wafv2_web_acl.gateway.arn
+  web_acl_arn  = aws_wafv2_web_acl.gateway[0].arn
 }

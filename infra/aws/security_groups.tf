@@ -25,7 +25,7 @@ resource "aws_security_group" "alb" {
   }
 }
 
-# ECS Security Group: Inbound HTTP (3000) from ALB only; Egress strictly 443 (HTTPS) and 5432 (RDS only)
+# ECS Security Group: Inbound TCP 3000 from ALB security group only (no CIDR ingress).
 resource "aws_security_group" "ecs" {
   name_prefix = "${var.project_name}-${var.environment}-ecs-sg-"
   description = "Isolates DoctorNect ECS Fargate Tasks (Egress: 443 to Web/NAT, 5432 to RDS SG only)"
@@ -40,7 +40,7 @@ resource "aws_security_group" "ecs" {
   }
 
   egress {
-    description = "Outbound HTTPS (443) to Google JWKS, AWS Secrets Manager, ECR, and CloudWatch via NAT/VPC endpoints"
+    description = "Outbound HTTPS (443) to Google JWKS, AWS Secrets Manager, ECR, and CloudWatch (public IP or NAT)"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"

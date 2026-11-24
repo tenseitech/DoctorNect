@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-15T15:31:06.517Z",
+  "at": "2026-11-18T08:44:49.533Z",
   "db": "doctornect_fresh_zero",
   "matrix": [
     {
@@ -490,7 +490,7 @@
       "rule": "(3) is_super_admin EXECUTE",
       "subject": "authenticated + service_role only",
       "verdict": "PASS",
-      "note": "authenticated,postgres,service_role"
+      "note": "authenticated,doctornect_admin,service_role"
     },
     {
       "module": "gateway",

@@ -7,6 +7,7 @@
 
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
+const { demoSupabaseServiceRoleKey } = require('./demo_plane_secrets');
 
 const KEEPALIVE_EVENT_FAIL = 'supabase_keepalive_failed';
 const KEEPALIVE_EVENT_OK = 'supabase_keepalive_ok';
@@ -15,7 +16,6 @@ const DEFAULT_MAX_ATTEMPTS = 3;
 const BACKOFF_BASE_MS = 1_000;
 
 const demoSupabaseUrl = defineSecret('DEMO_SUPABASE_URL');
-const demoSupabaseServiceRoleKey = defineSecret('DEMO_SUPABASE_SERVICE_ROLE_KEY');
 
 function normalizeBaseUrl(raw) {
   return String(raw || '').trim().replace(/\/+$/, '');

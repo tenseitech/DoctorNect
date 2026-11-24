@@ -39,7 +39,19 @@ function walkJsForVars(dir, root, map) {
   }
 }
 
-const SPREAD_IDENTIFIERS = ['OTP_REDIS_SECRET_OPTIONS'];
+const SPREAD_IDENTIFIERS = ['OTP_REDIS_SECRET_OPTIONS', 'OTP_DATA_PLANE_SECRETS'];
+
+function resolveSecretArraySpread(identifier, indexSrc, varToName) {
+  const re = new RegExp(`const\\s+${identifier}\\s*=\\s*\\[([\\s\\S]*?)\\];`, 'm');
+  const m = re.exec(indexSrc);
+  if (!m) return [];
+  const ids = m[1].match(/[A-Za-z_$][\w$]*/g) || [];
+  const keys = [];
+  for (const id of ids) {
+    if (varToName.has(id)) keys.push(varToName.get(id));
+  }
+  return keys;
+}
 
 /**
  * Secret env keys bound on specific index.js exports (parsed from source).
@@ -68,11 +80,15 @@ function collectBoundSecretEnvKeysForExports(exportNames, functionsDir) {
     const idents = list.match(/[A-Za-z_$][\w$]*/g) || [];
     for (const id of idents) {
       if (SPREAD_IDENTIFIERS.includes(id)) {
-        const mirrorOn =
-          /OTP_REDIS_MIRROR_ON\s*=\s*String\(process\.env\.OTP_REDIS_MIRROR/.test(src) &&
-          String(process.env.OTP_REDIS_MIRROR || '').trim().toLowerCase() === 'on';
-        if (mirrorOn) {
-          for (const k of ['REDIS_HOST', 'REDIS_PORT', 'REDIS_PASSWORD']) keys.add(k);
+        if (id === 'OTP_REDIS_SECRET_OPTIONS') {
+          const mirrorOn =
+            /OTP_REDIS_MIRROR_ON\s*=\s*String\(process\.env\.OTP_REDIS_MIRROR/.test(src) &&
+            String(process.env.OTP_REDIS_MIRROR || '').trim().toLowerCase() === 'on';
+          if (mirrorOn) {
+            for (const k of ['REDIS_HOST', 'REDIS_PORT', 'REDIS_PASSWORD']) keys.add(k);
+          }
+        } else if (id === 'OTP_DATA_PLANE_SECRETS') {
+          for (const k of resolveSecretArraySpread(id, src, varToName)) keys.add(k);
         }
         continue;
       }

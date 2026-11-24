@@ -468,12 +468,44 @@ class RegistrationOtpService {
       'resource-exhausted' => _resourceExhaustedMessage(rawMessage),
       'invalid-argument' =>
         rawMessage.isNotEmpty ? rawMessage : 'Invalid OTP request.',
-      'unavailable' => rawMessage.isNotEmpty
-          ? rawMessage
-          : 'SMS service is temporarily unavailable. Please try again shortly.',
-      'internal' || 'unknown' => _serviceUnavailable,
+      'unavailable' => _unavailableCallableMessage(e, rawMessage),
+      'internal' || 'unknown' => _internalCallableMessage(e, rawMessage),
       _ => rawMessage.isNotEmpty ? rawMessage : _serviceUnavailable,
     };
+  }
+
+  static String? _detailsReason(FirebaseFunctionsException e) {
+    final details = e.details;
+    if (details is Map) {
+      final reason = details['reason'];
+      if (reason is String && reason.isNotEmpty) return reason;
+    }
+    return null;
+  }
+
+  static String _unavailableCallableMessage(
+    FirebaseFunctionsException e,
+    String rawMessage,
+  ) {
+    if (_detailsReason(e) == 'msg91') {
+      return rawMessage.isNotEmpty
+          ? rawMessage
+          : 'SMS service is temporarily unavailable. Please try again shortly.';
+    }
+    return rawMessage.isNotEmpty ? rawMessage : _serviceUnavailable;
+  }
+
+  static String _internalCallableMessage(
+    FirebaseFunctionsException e,
+    String rawMessage,
+  ) {
+    if (_detailsReason(e) == 'internal') {
+      return _serviceUnavailable;
+    }
+    if (kDebugMode && rawMessage.isNotEmpty) {
+      return 'OTP failed (${e.code}): $rawMessage';
+    }
+    return _serviceUnavailable;
   }
 
   static String _failedPreconditionMessage(String rawMessage) {

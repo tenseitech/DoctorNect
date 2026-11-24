@@ -19,6 +19,11 @@ resource "aws_secretsmanager_secret" "postgrest_jwt_secret" {
   }
 }
 
+resource "aws_secretsmanager_secret" "demo_routing" {
+  name        = "${var.project_name}/${var.environment}/demo-routing"
+  description = "Demo UID allowlist + Supabase PostgREST upstream for auth-gateway"
+}
+
 resource "aws_secretsmanager_secret" "gateway_service_key" {
   name_prefix             = "${var.project_name}/${var.environment}/gateway_service_key_"
   description             = "Service role key for internal Cloud Functions to Gateway"

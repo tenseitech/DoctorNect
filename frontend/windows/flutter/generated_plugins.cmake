@@ -5,16 +5,16 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   file_selector_windows
+  firebase_core
   firebase_app_check
   firebase_auth
-  firebase_core
   firebase_remote_config
   firebase_storage
   flutter_secure_storage_windows
   geolocator_windows
   printing
-  share_plus
   url_launcher_windows
+  share_plus
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

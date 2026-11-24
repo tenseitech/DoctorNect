@@ -9,6 +9,11 @@ vpc_id = "vpc-xxxxxxxx"
 public_subnet_ids  = ["subnet-public-a", "subnet-public-b"]
 private_subnet_ids = ["subnet-private-a", "subnet-private-b"]
 
+# Public-subnet Fargate (no NAT): ECS uses public_subnet_ids + public IP
+ecs_assign_public_ip = true
+ecs_desired_count    = 0
+enable_waf           = false
+
 # --- DNS / TLS (manual ACM + optional Route53) ---
 domain_name           = "api.doctornect.com"
 acm_certificate_arn   = "arn:aws:acm:ap-south-1:ACCOUNT_ID:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"

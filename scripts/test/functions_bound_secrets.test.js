@@ -12,8 +12,11 @@ test('narrow OTP deploy binds only SUPABASE_SERVICE_ROLE_KEY when OTP_REDIS_MIRR
   delete process.env.OTP_REDIS_MIRROR;
   try {
     const keys = collectNarrowOtpBoundSecretKeys(path.join(root, 'backend', 'functions'));
-    assert.equal(keys.size, 1);
-    assert.ok(keys.has('SUPABASE_SERVICE_ROLE_KEY'));
+    assert.equal(keys.size, 4, `expected 4 bound keys, got ${[...keys].join(',')}`);
+    assert.equal(keys.has('SUPABASE_SERVICE_ROLE_KEY'), true);
+    assert.equal(keys.has('REVIEW_FIXED_OTP'), true);
+    assert.equal(keys.has('DEMO_SUPABASE_SERVICE_ROLE_KEY'), true);
+    assert.equal(keys.has('PROD_GATEWAY_SERVICE_KEY'), true);
     assert.equal(keys.has('REDIS_HOST'), false);
   } finally {
     if (prev === undefined) delete process.env.OTP_REDIS_MIRROR;

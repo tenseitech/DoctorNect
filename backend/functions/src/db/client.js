@@ -6,6 +6,7 @@ const {
   redisKeyNamespace,
   objectStoragePrefix,
 } = require('../../lib/demo_routing');
+const { assertDemoUidNotOnRds } = require('../../../../scripts/lib/rds_demo_uid_guard');
 
 let cachedClient = null;
 let cachedKey = null;
@@ -26,7 +27,13 @@ let cachedDemoKey = null;
 function getDatabaseClient(options = {}) {
   const appEnv = (process.env.APP_ENV || 'staging').toLowerCase();
   const uid = options.firebaseUid || options.uid || null;
-  const plane = resolveDataPlane({ appEnv, firebaseUid: uid });
+  const plane = options.loginLookupPlane
+    ? options.loginLookupPlane
+    : resolveDataPlane({ appEnv, firebaseUid: uid });
+
+  if (plane === 'rds') {
+    assertDemoUidNotOnRds(uid);
+  }
 
   let url;
   let serviceKey;
