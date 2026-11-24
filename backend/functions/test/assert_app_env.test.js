@@ -12,7 +12,7 @@ const {
   assertProductionNoPlaceholderSecrets,
   assertProductionCutoverBoot,
   shouldRunCutoverBootAsserts,
-  isLegacyFirestoreDoctorPatientDeploy,
+  assertProductionFirestoreForbidden,
 } = require('../src/db/assert_app_env');
 
 describe('assertAppEnvDatabaseRouting', () => {
@@ -250,12 +250,33 @@ describe('legacy Firestore deploy boot', () => {
     process.env = original;
   });
 
-  it('USE_SUPABASE_DB_DOCTOR_PATIENT=0 skips cutover boot asserts', () => {
+  it('legacy Firestore env (flags unset) no longer skips production boot asserts', () => {
     process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
     delete process.env.FIRESTORE_FORBIDDEN;
-    delete process.env.APP_ENV;
-    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
-    assert.equal(isLegacyFirestoreDoctorPatientDeploy(process.env), true);
+    process.env.APP_ENV = 'production';
+    delete process.env.NODE_ENV;
+    delete process.env.SKIP_APP_ENV_DB_ASSERT;
+    assert.equal(shouldRunCutoverBootAsserts(process.env), true);
+  });
+
+  it('production requires FIRESTORE_FORBIDDEN=1', () => {
+    process.env.APP_ENV = 'production';
+    delete process.env.FIRESTORE_FORBIDDEN;
+    assert.throws(() => assertProductionFirestoreForbidden(process.env), /FIRESTORE_FORBIDDEN=1/);
+    process.env.FIRESTORE_FORBIDDEN = '1';
+    assert.doesNotThrow(() => assertProductionFirestoreForbidden(process.env));
+    process.env.APP_ENV = 'staging';
+    delete process.env.FIRESTORE_FORBIDDEN;
+    assert.doesNotThrow(() => assertProductionFirestoreForbidden(process.env));
+  });
+
+  it('SKIP_APP_ENV_DB_ASSERT cannot disable asserts on a deployed production runtime', () => {
+    process.env.APP_ENV = 'production';
+    delete process.env.NODE_ENV;
+    process.env.SKIP_APP_ENV_DB_ASSERT = 'true';
+    process.env.K_SERVICE = 'unit-test-service';
+    assert.equal(shouldRunCutoverBootAsserts(process.env), true);
+    delete process.env.K_SERVICE;
     assert.equal(shouldRunCutoverBootAsserts(process.env), false);
   });
 

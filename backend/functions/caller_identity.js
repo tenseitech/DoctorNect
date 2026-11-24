@@ -1,7 +1,6 @@
 'use strict';
 
 const { HttpsError } = require('firebase-functions/v2/https');
-const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
 
 let _testingSupabaseClient = null;
 
@@ -9,92 +8,67 @@ function setSupabaseClientForTesting(client) {
   _testingSupabaseClient = client;
 }
 
-function getSupabaseAdminClient() {
+/**
+ * Server-side Postgres client (service role). Pass the Firebase UID so production demo
+ * accounts route to the staging plane and real users to RDS.
+ */
+function getSupabaseAdminClient(firebaseUid = null) {
   if (_testingSupabaseClient) return _testingSupabaseClient;
   try {
     const { getDatabaseClient } = require('./src/db/client');
-    return getDatabaseClient();
+    return getDatabaseClient(firebaseUid ? { firebaseUid } : {});
   } catch (_) {
     return null;
   }
 }
 
+/** Firebase UIDs are server-issued; anything else must never reach a PostgREST filter string. */
+const SAFE_UID_RE = /^[A-Za-z0-9_\-:.]{1,128}$/;
+
 /**
- * Resolves caller identity (role, profileId, verified, status, etc.)
- * from Supabase `users` when cutover flag is ON, or from Firestore `users/{uid}` when OFF.
+ * Resolves caller identity (role, profileId, verified, status, …) from Postgres public.users.
  *
  * @param {object} params
- * @param {object} [params.db] Firestore instance (used when cutover is OFF)
- * @param {string} params.uid Caller's Firebase UID / Auth ID
- * @param {object} [params.supabaseClient] Optional Supabase client override
- * @param {boolean} [params.forceSupabase] Force Supabase query regardless of flag
+ * @param {string} params.uid Caller's Firebase UID (from a verified ID token)
+ * @param {object} [params.supabaseClient] Optional client override (tests / pre-routed plane)
  * @returns {Promise<object>} Resolved user record
  */
-async function resolveCallerIdentity({ db, uid, supabaseClient = null, forceSupabase = false } = {}) {
-  if (!uid || typeof uid !== 'string') {
+async function resolveCallerIdentity({ uid, supabaseClient = null } = {}) {
+  if (!uid || typeof uid !== 'string' || !SAFE_UID_RE.test(uid)) {
     throw new HttpsError('unauthenticated', 'User profile document not found.');
   }
 
-  const useSupabase =
-    forceSupabase === true
-      ? true
-      : forceSupabase === false
-        ? false
-        : await isDoctorPatientSupabasePrimary();
-
-  if (useSupabase) {
-    const sb = supabaseClient || getSupabaseAdminClient();
-    if (!sb) {
-      throw new HttpsError('internal', 'Supabase admin client not configured.');
-    }
-
-    const { data, error } = await sb
-      .from('users')
-      .select('*')
-      .or(`id.eq.${uid},firebase_uid.eq.${uid}`)
-      .maybeSingle();
-
-    if (error || !data) {
-      throw new HttpsError('unauthenticated', 'User profile document not found.');
-    }
-
-    return {
-      id: data.id,
-      uid: data.id,
-      role: data.role,
-      profileId: data.profile_id,
-      profile_id: data.profile_id,
-      profileCompleted: data.profile_completed,
-      profile_completed: data.profile_completed,
-      verified: data.verified,
-      deactivated: data.deactivated,
-      email: data.email,
-      phone: data.mobile,
-      mobile: data.mobile,
-      displayName: data.display_name,
-      display_name: data.display_name,
-      status: data.status,
-      ...data,
-    };
+  const sb = supabaseClient || getSupabaseAdminClient(uid);
+  if (!sb) {
+    throw new HttpsError('unavailable', 'Database service temporarily unavailable.');
   }
 
-  if (!db) {
-    const { getLegacyFirestoreDb } = require('./legacy_db');
-    db = getLegacyFirestoreDb();
-    if (!db) {
-      throw new HttpsError('failed-precondition', 'Firestore profile lookup is disabled (Postgres-only).');
-    }
-  }
+  const { data, error } = await sb
+    .from('users')
+    .select('*')
+    .or(`id.eq.${uid},firebase_uid.eq.${uid}`)
+    .maybeSingle();
 
-  const userSnap = await db.collection('users').doc(uid).get();
-  if (!userSnap.exists) {
+  if (error || !data) {
     throw new HttpsError('unauthenticated', 'User profile document not found.');
   }
 
-  const data = userSnap.data() || {};
   return {
-    id: userSnap.id,
-    uid: userSnap.id,
+    id: data.id,
+    uid: data.id,
+    role: data.role,
+    profileId: data.profile_id,
+    profile_id: data.profile_id,
+    profileCompleted: data.profile_completed,
+    profile_completed: data.profile_completed,
+    verified: data.verified,
+    deactivated: data.deactivated,
+    email: data.email,
+    phone: data.mobile,
+    mobile: data.mobile,
+    displayName: data.display_name,
+    display_name: data.display_name,
+    status: data.status,
     ...data,
   };
 }

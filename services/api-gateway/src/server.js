@@ -100,17 +100,11 @@ function createGatewayServer(overrides = {}) {
     let clientRole = 'anon';
     let clientUidHash = null;
 
-    // Resolve client IP using rightmost trusted hop behind reverse proxy / ALB
-    let clientIp = 'unknown';
-    const xff = req.headers['x-forwarded-for'];
-    if (typeof xff === 'string' && xff.trim()) {
-      const hops = xff.split(',').map((h) => h.trim()).filter(Boolean);
-      if (hops.length > 0) {
-        clientIp = hops[hops.length - 1]; // rightmost trusted hop behind ALB
-      }
-    } else if (req.socket && req.socket.remoteAddress) {
-      clientIp = req.socket.remoteAddress;
-    }
+    // Client IP = TRUSTED_PROXY_HOPS-th X-Forwarded-For entry from the right (ALB appends: 1).
+    const clientIp = require('./client_ip').clientIpFromForwardedFor(
+      req.headers['x-forwarded-for'],
+      req.socket?.remoteAddress,
+    );
 
     // Helper to send response and log
     const corsOrigin = resolveCorsOrigin(req, cfg.corsAllowedOrigins || []);

@@ -1,4 +1,6 @@
 'use strict';
+// Exercises real getDatabaseClient routing: drop the harness's in-memory DB double.
+require('../src/db/client').setDatabaseClientForTesting(null);
 
 const { test, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');

@@ -156,6 +156,8 @@ module.exports = {
   // RPCs callable strictly by service_role (in addition to client RPCs)
   serviceRoleOnlyRpcs: [
     'delete_my_account',
+    // Cloud Functions submitAmbulanceRating (Firebase-authenticated booker only).
+    'submit_ambulance_rating',
   ],
   get serviceRoleAllowedRpcs() {
     return [...this.clientAllowedRpcs, ...this.serviceRoleOnlyRpcs];

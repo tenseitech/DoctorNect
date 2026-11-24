@@ -13,6 +13,16 @@ let cachedKey = null;
 let cachedDemoClient = null;
 let cachedDemoKey = null;
 
+/** Unit tests only: inject an in-memory PostgREST-compatible client for every plane. */
+let _testingDatabaseClient = null;
+function setDatabaseClientForTesting(client) {
+  if (client && String(process.env.APP_ENV || '').trim().toLowerCase() === 'production'
+      && (process.env.K_SERVICE || process.env.FUNCTION_TARGET)) {
+    throw new Error('[DatabaseClient] test client injection is not allowed in a deployed runtime');
+  }
+  _testingDatabaseClient = client || null;
+}
+
 /**
  * Returns a configured database client (Supabase-compatible) based on APP_ENV and optional Firebase UID.
  * - Staging: Supabase staging only.
@@ -25,6 +35,7 @@ let cachedDemoKey = null;
  * @returns {import('@supabase/supabase-js').SupabaseClient}
  */
 function getDatabaseClient(options = {}) {
+  if (_testingDatabaseClient) return _testingDatabaseClient;
   const appEnv = (process.env.APP_ENV || 'staging').toLowerCase();
   const uid = options.firebaseUid || options.uid || null;
   const plane = options.loginLookupPlane
@@ -134,4 +145,5 @@ module.exports = {
   getRedisNamespaceForCallable,
   getObjectStoragePrefixForCallable,
   resetDatabaseClientForTesting,
+  setDatabaseClientForTesting,
 };

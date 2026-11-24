@@ -17,24 +17,36 @@ function isTruthyOne(value) {
 }
 
 /**
- * Live OTP deploy on medibond-45fad: doctor/patient data still Firestore-primary
- * (USE_SUPABASE_DB_DOCTOR_PATIENT=0, FIRESTORE_FORBIDDEN unset).
+ * Firestore was removed. Production must declare FIRESTORE_FORBIDDEN=1 so no deployment can
+ * silently run with a stale config that predates the Postgres-only backend.
  */
-function isLegacyFirestoreDoctorPatientDeploy(env = process.env) {
-  if (isTruthyOne(env.FIRESTORE_FORBIDDEN)) return false;
-  if (isTruthyOne(env.USE_SUPABASE_DB_DOCTOR_PATIENT)) return false;
-  return true;
+function assertProductionFirestoreForbidden(env = process.env) {
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  if (appEnv !== 'production') return;
+  if (!isTruthyOne(env.FIRESTORE_FORBIDDEN)) {
+    const err = new Error(
+      '[AppEnv] APP_ENV=production requires FIRESTORE_FORBIDDEN=1 (Firestore is no longer used).',
+    );
+    err.code = 'failed-precondition';
+    throw err;
+  }
 }
 
-/** Cutover / Postgres-primary boot asserts — skip for legacy Firestore OTP deploy mode. */
+/**
+ * Postgres-primary boot asserts. Previously skipped in a "legacy Firestore deploy" mode
+ * (FIRESTORE_FORBIDDEN + USE_SUPABASE_DB_DOCTOR_PATIENT unset), which disabled every production
+ * safety check (Redis TLS, App Check, reviewer OTP policy, placeholder secrets). Now always on
+ * outside tests unless an operator explicitly sets SKIP_APP_ENV_DB_ASSERT=true.
+ */
 function shouldRunCutoverBootAsserts(env = process.env) {
-  if (String(env.SKIP_APP_ENV_DB_ASSERT || '').trim().toLowerCase() === 'true') {
+  const isDeployedProduction = String(env.APP_ENV || '').trim().toLowerCase() === 'production'
+    && Boolean(env.K_SERVICE || env.FUNCTION_TARGET);
+  if (String(env.SKIP_APP_ENV_DB_ASSERT || '').trim().toLowerCase() === 'true' && !isDeployedProduction) {
     return false;
   }
   const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
   if (appEnv === 'test') return false;
   if (String(env.NODE_ENV || '').trim().toLowerCase() === 'test') return false;
-  if (isLegacyFirestoreDoctorPatientDeploy(env)) return false;
   return true;
 }
 
@@ -407,8 +419,8 @@ function assertProductionReviewOtpDisabled(env = process.env) {
 }
 
 module.exports = {
+  assertProductionFirestoreForbidden,
   assertAppEnvDatabaseRouting,
-  isLegacyFirestoreDoctorPatientDeploy,
   shouldRunCutoverBootAsserts,
   assertStagingProductionResourceIsolation,
   assertProductionRedisTls,

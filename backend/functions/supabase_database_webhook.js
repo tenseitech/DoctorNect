@@ -30,21 +30,7 @@ async function markWebhookEventOnce(dedupeKey, options = {}) {
     return false;
   }
 
-  const db = options.db;
-  if (db && typeof db.runTransaction === 'function' && typeof db.collection === 'function') {
-    const ref = db.collection('_webhook_processed_events').doc(dedupeKey);
-    let duplicate = false;
-    await db.runTransaction(async (tx) => {
-      const snap = await tx.get(ref);
-      if (snap.exists) {
-        duplicate = true;
-        return;
-      }
-      tx.set(ref, { processedAt: new Date().toISOString() });
-    });
-    return duplicate;
-  }
-
+  // Redis SET NX (24h). On Redis failure we proceed: notification_outbox also dedupes on dedupe_key.
   try {
     const { redis } = require('./redis');
     const key = redisKey(`webhook:dedupe:${dedupeKey}`);
