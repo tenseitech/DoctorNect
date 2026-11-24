@@ -1118,8 +1118,11 @@ async function getS3DownloadUrlHandler(data, auth, dbOrOptions) {
     throw new HttpsError('permission-denied', 'You do not have permission to access this file.');
   }
 
+  // PHI / KYC objects: always a fresh 5-minute URL, never cached (cache is for public media only).
+  const isSensitiveObject = !isPublicMediaKey(objectKey);
+
   // Only after authorization passes, check the download URL cache
-  if (getS3UrlCacheConfig() === 'on') {
+  if (!isSensitiveObject && getS3UrlCacheConfig() === 'on') {
     const cached = await getCachedDownloadUrl(objectKey, auth.uid);
     if (cached) {
       return {
@@ -1136,7 +1139,7 @@ async function getS3DownloadUrlHandler(data, auth, dbOrOptions) {
     Key: objectKey,
   });
 
-  const isCacheOn = getS3UrlCacheConfig() === 'on';
+  const isCacheOn = !isSensitiveObject && getS3UrlCacheConfig() === 'on';
   const expiresIn = isCacheOn ? 3600 : 300;
   const url = await getSignedUrl(s3, command, { expiresIn });
 
@@ -1290,6 +1293,57 @@ async function deleteS3ObjectHandler(data, auth, dbOrOptions) {
   };
 }
 
+const FILE_SIGNATURES = Object.freeze({
+  'image/jpeg': (b) => b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
+  'image/png': (b) => b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47
+    && b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a,
+  'image/webp': (b) => b.length >= 12 && b.slice(0, 4).toString('latin1') === 'RIFF'
+    && b.slice(8, 12).toString('latin1') === 'WEBP',
+  'application/pdf': (b) => b.length >= 5 && b.slice(0, 5).toString('latin1') === '%PDF-',
+});
+
+/**
+ * Reads the first 16 bytes of an object and checks them against the declared content type.
+ * @returns {Promise<boolean|null>} true/false when verified; null when the client returned no body.
+ */
+async function sniffObjectSignature(s3, objectKey, contentType) {
+  const check = FILE_SIGNATURES[contentType];
+  if (!check) return false;
+  let res;
+  try {
+    res = await s3.send(new GetObjectCommand({ Bucket: s3Bucket(), Key: objectKey, Range: 'bytes=0-15' }));
+  } catch (_) {
+    return false;
+  }
+  const body = res && res.Body;
+  if (!body) return null;
+  let bytes;
+  try {
+    if (typeof body.transformToByteArray === 'function') {
+      bytes = Buffer.from(await body.transformToByteArray());
+    } else if (Buffer.isBuffer(body) || body instanceof Uint8Array) {
+      bytes = Buffer.from(body);
+    } else {
+      return null;
+    }
+  } catch (_) {
+    return false;
+  }
+  return check(bytes);
+}
+
+/** purpose -> object key prefix produced by getS3UploadUrlHandler. */
+const CONFIRM_PURPOSE_PREFIX = Object.freeze({
+  health_records: 'health_records',
+  lab_reports: 'lab_reports',
+  patient_profile: 'patients',
+  doctor_profile: 'doctor_profiles',
+  promoted_ads: 'promoted_ads',
+  pharmacy_kyc: 'pharmacies',
+  lab_kyc: 'labs',
+  ambulance_kyc: 'ambulances',
+});
+
 /**
  * 5. confirmS3Upload core handler.
  * Verifies object existence, Content-Length, and Content-Type via S3 HEAD before linking s3_key in DB.
@@ -1316,31 +1370,21 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
   }
 
   const caller = await resolveCallerUser(ctx.db, auth.uid, ctx);
-  const isAdmin = isSuperAdmin(auth, caller);
 
-  // Authorize upload confirmation: caller must own the target prefix
+  // Authorize upload confirmation BEFORE any S3 call (this handler can delete objects).
+  // 1) purpose must match the key prefix (blocks image-size limits being applied to
+  //    someone else's documents to trigger deletion);
+  // 2) caller must own the key exactly as for delete (lab must own the booking, etc.).
+  //    Unknown prefixes (e.g. prescriptions/) are denied by default.
   const parts = objectKey.split('/');
   const prefix = parts[0];
-
-  if (prefix === 'health_records') {
-    const patientId = parts[1];
-    if (!isAdmin && (caller.role !== 'patient' || caller.profileId !== patientId)) {
-      throw new HttpsError('permission-denied', 'You do not have permission to confirm this upload.');
-    }
-  } else if (prefix === 'lab_reports') {
-    if (!isAdmin && caller.role !== 'lab') {
-      throw new HttpsError('permission-denied', 'Only diagnostic labs can confirm lab reports.');
-    }
-  } else if (prefix === 'patients') {
-    const patientId = parts[1];
-    if (!isAdmin && (caller.role !== 'patient' || caller.profileId !== patientId)) {
-      throw new HttpsError('permission-denied', 'You can only confirm your own profile photo.');
-    }
-  } else if (prefix === 'doctor_profiles') {
-    const doctorId = parts[1];
-    if (!isAdmin && (caller.role !== 'doctor' || caller.profileId !== doctorId)) {
-      throw new HttpsError('permission-denied', 'You can only confirm your own doctor profile photo.');
-    }
+  const expectedPrefix = CONFIRM_PURPOSE_PREFIX[purpose];
+  if (!expectedPrefix || expectedPrefix !== prefix) {
+    throw new HttpsError('permission-denied', 'You do not have permission to confirm this upload.');
+  }
+  const confirmAllowed = await authorizeDelete(objectKey, caller, auth, ctx.db, ctx);
+  if (!confirmAllowed) {
+    throw new HttpsError('permission-denied', 'You do not have permission to confirm this upload.');
   }
 
   // Verify object in S3 via HeadObjectCommand
@@ -1401,6 +1445,21 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
       metadata: { contentLength, maxAllowedBytes },
     }, ctx);
     throw new HttpsError('failed-precondition', `S3 object size ${contentLength} bytes exceeds limit of ${maxAllowedBytes} bytes.`);
+  }
+
+  // Content-Type is client-declared at PUT time: verify the real file signature (magic bytes).
+  const sniff = await sniffObjectSignature(s3, objectKey, contentType);
+  if (sniff === false) {
+    await s3.send(new DeleteObjectCommand({ Bucket: s3Bucket(), Key: objectKey })).catch(() => {});
+    await logStorageAccess(ctx.db, {
+      who: auth.uid,
+      role: caller.role,
+      what: objectKey,
+      action: 'upload_confirm_failed',
+      status: 'magic_bytes_mismatch',
+      metadata: { contentType },
+    }, ctx);
+    throw new HttpsError('failed-precondition', 'Uploaded file content does not match its declared type.');
   }
 
   // Update DB row if recordId is provided

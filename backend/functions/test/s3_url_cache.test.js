@@ -244,7 +244,8 @@ test('Cache hit returns cached URL with enough remaining life (>= 15 mins)', asy
     users: { p_1: { role: 'patient', profileId: 'p_1' } },
   });
   const auth = { uid: 'p_1' };
-  const objectKey = 'health_records/p_1/rec_1/rec_1.pdf';
+  // Cache applies to public media only (PHI keys always get a fresh 300s URL).
+  const objectKey = 'patients/p_1/profile/avatar.jpg';
   const cacheKey = s3DownloadUrlCacheKey(objectKey, auth.uid);
 
   // 1. Initial request misses cache, signs fresh URL and sets Redis cache with TTL 2700s
@@ -342,14 +343,32 @@ test('Fail-open policy: Redis error or down generates fresh presigned URL', asyn
   setRedisClientForTesting(mockRedis);
 
   const db = createMockDb({
-    users: { p_1: { role: 'patient' } },
+    users: { p_1: { role: 'patient', profileId: 'p_1' } },
   });
   const auth = { uid: 'p_1' };
-  const objectKey = 'patients/p_1/health_records/rec_1.pdf';
+  const objectKey = 'patients/p_1/profile/avatar.jpg';
 
   // Must not throw; must fail open and generate fresh presigned URL
   const res = await getS3DownloadUrlHandler({ objectKey }, auth, db);
   assert.ok(res.url);
   assert.equal(res.cached, undefined);
   assert.equal(res.expiresIn, 3600);
+});
+
+test('PHI objects are never cached and always get a 300s URL even with cache on', async () => {
+  process.env.S3_URL_CACHE = 'on';
+  const mockRedis = createTrackingRedis();
+  setRedisClientForTesting(mockRedis);
+
+  const db = createMockDb({
+    users: { p_1: { role: 'patient', profileId: 'p_1' } },
+  });
+  const auth = { uid: 'p_1' };
+  const objectKey = 'health_records/p_1/rec_1/rec_1.pdf';
+
+  const res = await getS3DownloadUrlHandler({ objectKey }, auth, db);
+  assert.ok(res.url);
+  assert.equal(res.expiresIn, 300);
+  assert.equal(mockRedis.calls.get.length, 0);
+  assert.equal(mockRedis.calls.set.length, 0);
 });
