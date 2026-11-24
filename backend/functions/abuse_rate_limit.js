@@ -22,6 +22,11 @@ const LIMITS = {
     ip: { windowMs: 60 * 60 * 1000, max: 5 },
     id: { windowMs: 24 * 60 * 60 * 1000, max: 3 },
   },
+  // Account-existence lookups (enumeration oracle): tight per-IP and per-number limits.
+  account_lookup: {
+    ip: { windowMs: 15 * 60 * 1000, max: 20 },
+    id: { windowMs: 15 * 60 * 1000, max: 10 },
+  },
   otp_send: {
     ip: { windowMs: 15 * 60 * 1000, max: 30 },
     id: { windowMs: 15 * 60 * 1000, max: 6 },
@@ -49,12 +54,23 @@ function hashKey(value) {
   return crypto.createHash('sha256').update(String(value || '')).digest('hex');
 }
 
-function clientIpFromRequest(request) {
-  const raw = request?.rawRequest;
+/**
+ * Client IP from a raw HTTP request. Uses the RIGHTMOST X-Forwarded-For hop (appended by the
+ * Google front end / ALB). The leftmost value is attacker-controlled; trusting it let callers
+ * rotate fake IPs and bypass every per-IP OTP / SMS / login rate limit.
+ */
+function clientIpFromRawRequest(raw) {
   if (!raw) return 'unknown';
   const forwarded = raw.headers?.['x-forwarded-for'];
-  if (forwarded) return String(forwarded).split(',')[0].trim();
+  if (forwarded) {
+    const hops = String(forwarded).split(',').map((h) => h.trim()).filter(Boolean);
+    if (hops.length) return hops[hops.length - 1];
+  }
   return raw.ip || raw.socket?.remoteAddress || 'unknown';
+}
+
+function clientIpFromRequest(request) {
+  return clientIpFromRawRequest(request?.rawRequest);
 }
 
 async function assertBucket(db, { bucket, windowMs, maxAttempts, message }) {
@@ -288,6 +304,7 @@ module.exports = {
   LIMITS,
   hashKey,
   clientIpFromRequest,
+  clientIpFromRawRequest,
   assertBucket,
   assertBucketRedis,
   assertBucketUnified,

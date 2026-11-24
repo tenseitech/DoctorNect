@@ -232,15 +232,8 @@ function requireAuth(request) {
 }
 
 function getCallableClientIp(request) {
-  const raw = request.rawRequest;
-  if (!raw) return 'unknown';
-
-  const forwarded = raw.headers?.['x-forwarded-for'];
-  if (forwarded) {
-    return String(forwarded).split(',')[0].trim();
-  }
-
-  return raw.ip || raw.socket?.remoteAddress || 'unknown';
+  // Rightmost X-Forwarded-For hop only; the leftmost value is client-controlled.
+  return require('./abuse_rate_limit').clientIpFromRawRequest(request?.rawRequest);
 }
 
 function isAmbulancePinHash(storedPin) {
@@ -547,7 +540,12 @@ exports.lookupMobileRegistration = onCall(
     try {
       assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
       const firestore = db();
-      await enforceAbuseLimit(firestore, request, 'api', {
+      // Existence lookup is an enumeration oracle: dedicated tight per-IP + per-number bucket.
+      const lookupDigits = String(request.data?.mobile || request.data?.identifier || '')
+        .replace(/\D/g, '')
+        .slice(-10);
+      await enforceAbuseLimit(firestore, request, 'account_lookup', {
+        identifier: lookupDigits || undefined,
         message: 'Too many requests. Please try again later.',
       });
       return await lookupMobileRegistration(firestore, request.data || {});
@@ -1071,9 +1069,7 @@ exports.verifyAmbulanceDriverLoginHttp = onRequest(
       return;
     }
 
-    const clientIp = String(req.headers['x-forwarded-for'] || req.ip || 'unknown')
-      .split(',')[0]
-      .trim();
+    const clientIp = require('./abuse_rate_limit').clientIpFromRawRequest(req);
     const requestForLimits = { auth: null, rawRequest: req, app: null };
 
     try {

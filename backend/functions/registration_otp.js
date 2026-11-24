@@ -20,7 +20,8 @@ const {
 } = require('./public_error_messages');
 const { emit, SEVERITY, hashIdentifier } = require('./security_logger');
 
-const OTP_EXPIRY_MS = 10 * 60 * 1000;
+// 5-minute OTP lifetime (Redis TTL matches); single-use, deleted on successful verify.
+const OTP_EXPIRY_MS = 5 * 60 * 1000;
 const SESSION_EXPIRY_MS = 30 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 // Demo bypass removed: Play Store reviewer login in reviewer_login.js is the only fixed-OTP path.
@@ -31,6 +32,10 @@ const SEND_MOBILE_WINDOW_MS = 60 * 60 * 1000;
 const SEND_MOBILE_MAX = 5;
 const VERIFY_IP_WINDOW_MS = 60 * 60 * 1000;
 const VERIFY_IP_MAX = 15;
+// Daily caps (SMS-pumping / cost-abuse guard), independent of role.
+const SEND_DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
+const SEND_MOBILE_DAILY_MAX = 10;
+const SEND_IP_DAILY_MAX = 50;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_IP_MAX = 20;
 const LOGIN_IDENTIFIER_MAX = 5;
@@ -156,64 +161,69 @@ const REVIEW_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const REVIEW_RATE_LIMIT_MAX = 5;
 let _testingReviewerRedis = null;
 
-function parseReviewerPhoneList(raw, maxCount = 2) {
-  if (!raw) return [];
-  const list = String(raw)
+const {
+  getReviewerConfig,
+  isReviewerPhone,
+} = require('./reviewer_otp_config');
+
+const MSG91_UNAVAILABLE_DETAILS = { reason: 'msg91' };
+
+function msg91UnavailableError(message, meta = {}) {
+  const err = new HttpsError(
+    'unavailable',
+    message || 'SMS service is temporarily unavailable. Please try again later.',
+    MSG91_UNAVAILABLE_DETAILS,
+  );
+  if (meta.httpStatus != null) err.httpStatus = meta.httpStatus;
+  if (meta.responseBody != null) err.responseBody = meta.responseBody;
+  return err;
+}
+
+function parseEnvPhoneCsv(envKey) {
+  return String(process.env[envKey] || '')
     .split(',')
     .map((n) => normalizeMobileDigits(n))
     .filter(Boolean);
-  return list.slice(0, maxCount);
 }
 
-function getReviewerConfig(role) {
-  const enabled =
-    String(process.env.REVIEWER_OTP_ENABLED || '')
-      .trim()
-      .toLowerCase() === 'true';
-  if (!enabled) {
-    return null;
-  }
-
-  const fixedOtp = String(process.env.REVIEW_FIXED_OTP || '').trim();
-  const accessUntil = String(process.env.REVIEW_ACCESS_UNTIL || '').trim();
-  if (!fixedOtp || !accessUntil) {
-    return null;
-  }
-
-  const expiryDate = new Date(accessUntil);
-  if (isNaN(expiryDate.getTime()) || Date.now() > expiryDate.getTime()) {
-    return null;
-  }
-
-  if (!role) {
-    return null;
-  }
-
-  const roleKey = normalizeRole(role);
-  const envKey = `REVIEW_${roleKey.toUpperCase()}_PHONES`;
-  const testNumbers = parseReviewerPhoneList(process.env[envKey], 2);
-  if (testNumbers.length === 0) {
-    return null;
-  }
-
-  return {
-    testNumbers,
-    fixedOtp,
-    accessUntil: expiryDate,
-    role: roleKey,
-  };
+/** Staging-only demo list (DEMO_PHONE_NUMBERS). Disabled when APP_ENV=production. */
+function isStagingDemoOtpEnabled() {
+  const appEnv = String(process.env.APP_ENV || 'staging').trim().toLowerCase();
+  if (appEnv === 'production') return false;
+  return parseEnvPhoneCsv('DEMO_PHONE_NUMBERS').length > 0;
 }
 
-function isReviewerPhone(digits, role) {
-  if (!role) return false;
-  const config = getReviewerConfig(role);
-  if (!config) return false;
+function isStagingDemoPhone(digits) {
+  if (!isStagingDemoOtpEnabled()) return false;
   const d = normalizeMobileDigits(digits);
-  if (!d) return false;
-  if (normalizeRole(role) !== config.role) {
-    return false;
+  return parseEnvPhoneCsv('DEMO_PHONE_NUMBERS').includes(d);
+}
+
+function readStagingDemoFixedOtp() {
+  const otp = String(process.env.DEMO_FIXED_OTP || process.env.REVIEW_FIXED_OTP || '').trim();
+  return /^\d{6}$/.test(otp) ? otp : null;
+}
+
+function shouldSkipMsg91ForPhone(digits, role) {
+  return isReviewerPhone(digits, role) || isStagingDemoPhone(digits);
+}
+
+function resolveOutboundOtpCode(digits, role) {
+  if (isReviewerPhone(digits, role)) {
+    const cfg = getReviewerConfig(role);
+    if (cfg?.fixedOtp) return cfg.fixedOtp;
   }
-  return config.testNumbers.includes(d);
+  if (isStagingDemoPhone(digits)) {
+    const fixed = readStagingDemoFixedOtp();
+    if (!fixed) {
+      throw new HttpsError(
+        'failed-precondition',
+        'Demo fixed OTP is not configured (DEMO_FIXED_OTP or REVIEW_FIXED_OTP).',
+      );
+    }
+    return fixed;
+  }
+  return generateOtpCode();
 }
 
 function setReviewerRedisClientForTesting(client) {
@@ -235,31 +245,54 @@ function getReviewerRedisClient() {
   }
   return null;
 }
-async function checkReviewerRateLimit(digits, { redisClient = null } = {}) {
-  const client = redisClient || getReviewerRedisClient();
-  if (!client) {
-    throw new HttpsError("unavailable", "Rate limit service temporarily unavailable.");
-  }
-
+async function checkReviewerRateLimit(digits, { redisClient = null, db = null } = {}) {
   const d = normalizeMobileDigits(digits);
-  const hash = crypto.createHash("sha256").update(`reviewer:${d}`).digest("hex");
-  const redisKey = `ratelimit:reviewer:${hash}`;
+  const bucket = `reviewer_send_${hashRateLimitKey(d)}`;
 
-  try {
-    const { assertBucketRedis } = require("./abuse_rate_limit");
-    await assertBucketRedis(client, {
-      key: redisKey,
-      windowMs: REVIEW_RATE_LIMIT_WINDOW_MS,
-      maxAttempts: REVIEW_RATE_LIMIT_MAX,
-      message: "Reviewer verification rate limit exceeded. Please try again later.",
-    });
-    return true;
-  } catch (err) {
-    if (err instanceof HttpsError && err.code === "resource-exhausted") {
-      return false;
+  const client = redisClient || getReviewerRedisClient();
+  if (client) {
+    const hash = crypto.createHash('sha256').update(`reviewer:${d}`).digest('hex');
+    const redisKey = `ratelimit:reviewer:${hash}`;
+    try {
+      const { assertBucketRedis } = require('./abuse_rate_limit');
+      await assertBucketRedis(client, {
+        key: redisKey,
+        windowMs: REVIEW_RATE_LIMIT_WINDOW_MS,
+        maxAttempts: REVIEW_RATE_LIMIT_MAX,
+        message: 'Reviewer verification rate limit exceeded. Please try again later.',
+      });
+      return true;
+    } catch (err) {
+      if (err instanceof HttpsError && err.code === 'resource-exhausted') {
+        return false;
+      }
+      if (db && typeof db.collection === 'function') {
+        /* fall through to Firestore */
+      } else {
+        throw err instanceof HttpsError
+          ? err
+          : new HttpsError('unavailable', 'Rate limit service temporarily unavailable.');
+      }
     }
-    throw new HttpsError("unavailable", "Rate limit service temporarily unavailable.");
   }
+
+  if (db && typeof db.collection === 'function') {
+    try {
+      await assertOtpRateLimit(db, {
+        bucket,
+        windowMs: REVIEW_RATE_LIMIT_WINDOW_MS,
+        maxAttempts: REVIEW_RATE_LIMIT_MAX,
+      });
+      return true;
+    } catch (err) {
+      if (err instanceof HttpsError && err.code === 'resource-exhausted') {
+        return false;
+      }
+      throw err;
+    }
+  }
+
+  throw new HttpsError('unavailable', 'Rate limit service temporarily unavailable.');
 }
 
 function resetReviewerRateLimitForTesting() {
@@ -535,6 +568,14 @@ async function assertOtpRateLimit(db, { bucket, windowMs, maxAttempts }) {
   });
 }
 
+/**
+ * Per-mobile buckets are keyed by the number only (not role); previously each of the 5 roles
+ * had its own bucket, so one number could receive 5x the intended SMS volume.
+ */
+function mobileRateKey(digits) {
+  return hashRateLimitKey(`mobile:${digits}`);
+}
+
 async function enforceSendOtpRateLimits(db, { clientIp, role, digits }) {
   await assertOtpRateLimit(db, {
     bucket: `send_ip_${hashRateLimitKey(clientIp)}`,
@@ -542,9 +583,19 @@ async function enforceSendOtpRateLimits(db, { clientIp, role, digits }) {
     maxAttempts: SEND_IP_MAX,
   });
   await assertOtpRateLimit(db, {
-    bucket: `send_mobile_${mobileHash(role, digits)}`,
+    bucket: `send_mobile_${mobileRateKey(digits)}`,
     windowMs: SEND_MOBILE_WINDOW_MS,
     maxAttempts: SEND_MOBILE_MAX,
+  });
+  await assertOtpRateLimit(db, {
+    bucket: `send_ip_daily_${hashRateLimitKey(clientIp)}`,
+    windowMs: SEND_DAILY_WINDOW_MS,
+    maxAttempts: SEND_IP_DAILY_MAX,
+  });
+  await assertOtpRateLimit(db, {
+    bucket: `send_mobile_daily_${mobileRateKey(digits)}`,
+    windowMs: SEND_DAILY_WINDOW_MS,
+    maxAttempts: SEND_MOBILE_DAILY_MAX,
   });
 }
 
@@ -555,7 +606,7 @@ async function enforceVerifyOtpRateLimits(db, { clientIp, role, digits }) {
     maxAttempts: VERIFY_IP_MAX,
   });
   await assertOtpRateLimit(db, {
-    bucket: `verify_mobile_${mobileHash(role, digits)}`,
+    bucket: `verify_mobile_${mobileRateKey(digits)}`,
     windowMs: VERIFY_IP_WINDOW_MS,
     maxAttempts: VERIFY_IP_MAX,
   });
@@ -881,12 +932,36 @@ function parseMsg91OtpSendResponse(statusCode, rawBody) {
   };
 }
 
+/** Keys that must never reach logs (provider config identifiers, secrets, raw OTP). */
+const MSG91_LOG_REDACT_KEYS = new Set([
+  'templateId', 'template_id', 'dltId', 'senderId', 'sender', 'otp', 'authkey', 'authKey', 'code',
+]);
+
+function redactMsg91LogFields(value, depth = 0) {
+  if (value === null || value === undefined || depth > 4) return value;
+  if (Array.isArray(value)) return value.map((v) => redactMsg91LogFields(v, depth + 1));
+  if (typeof value !== 'object') return value;
+  const out = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (MSG91_LOG_REDACT_KEYS.has(k)) {
+      out[k] = v ? '[REDACTED]' : v;
+    } else if (k === 'mobile' && typeof v === 'string') {
+      out[k] = maskMsg91Mobile(v.replace(/^\+?91/, ''));
+    } else if (k === 'responseBody') {
+      out[k] = sanitizeResponseBody(v);
+    } else {
+      out[k] = redactMsg91LogFields(v, depth + 1);
+    }
+  }
+  return out;
+}
+
 function logMsg91Otp(event, fields) {
   const payload = {
     severity: fields.severity || 'INFO',
     component: 'msg91_otp',
     event,
-    ...fields,
+    ...redactMsg91LogFields(fields),
   };
   const line = JSON.stringify(payload);
   if (payload.severity === 'ERROR') {
@@ -1094,13 +1169,10 @@ async function retryMsg91SmsOtp(mobileDigits) {
   const authKey = readMsg91AuthKey({ required: false });
   const normalizedMobile = normalizeMobileDigits(mobileDigits);
   if (!authKey) {
-    const err = new HttpsError(
-      'unavailable',
-      'SMS service is temporarily unavailable. Please try again later.',
-    );
-    err.httpStatus = null;
-    err.responseBody = 'Missing MSG91 auth key';
-    throw err;
+    throw msg91UnavailableError('SMS service is temporarily unavailable. Please try again later.', {
+      httpStatus: null,
+      responseBody: 'Missing MSG91 auth key',
+    });
   }
   if (!normalizedMobile) {
     throw new HttpsError('invalid-argument', 'Enter a valid 10-digit mobile number.');
@@ -1251,13 +1323,10 @@ async function sendMsg91SmsOtp(mobileDigits, code, otpType = 'registration') {
       templateId: templateId || null,
       senderId,
     });
-    const err = new HttpsError(
-      'unavailable',
-      'SMS service is temporarily unavailable. Please try again later.',
-    );
-    err.httpStatus = null;
-    err.responseBody = 'Missing MSG91 auth key';
-    throw err;
+    throw msg91UnavailableError('SMS service is temporarily unavailable. Please try again later.', {
+      httpStatus: null,
+      responseBody: 'Missing MSG91 auth key',
+    });
   }
 
   // India DLT: MSG91 may return type=success without template_id, but carriers
@@ -1340,9 +1409,11 @@ async function sendMsg91SmsOtp(mobileDigits, code, otpType = 'registration') {
         responseBody: body,
         parsed: parsed.parsed,
       });
-      const errorMsg = (parsed.parsed && (parsed.parsed.code === '418' || parsed.parsed.code === 418 || parsed.reason?.includes('AuthenticationFailure')))
-        ? 'SMS gateway authentication rejected: Server IP not whitelisted in MSG91. Please whitelist the outbound IP or route through the Cloud Run proxy.'
-        : 'Could not send OTP SMS right now. Please try again in a few minutes.';
+      if (parsed.parsed && (parsed.parsed.code === '418' || parsed.parsed.code === 418 || parsed.reason?.includes('AuthenticationFailure'))) {
+        // Operator-only detail; never expose infrastructure hints to end users.
+        logMsg91Otp('send_auth_rejected_ip_allowlist', { severity: 'ERROR', otpType, mobile: maskedMobile });
+      }
+      const errorMsg = 'Could not send OTP SMS right now. Please try again in a few minutes.';
       const sendErr = new HttpsError('unavailable', errorMsg);
       sendErr.httpStatus = statusCode;
       sendErr.responseBody = body;
@@ -1389,13 +1460,10 @@ async function sendMsg91SmsOtp(mobileDigits, code, otpType = 'registration') {
       senderId,
       error: err?.message || String(err),
     });
-    const networkErr = new HttpsError(
-      'unavailable',
-      'Could not reach SMS service. Please try again later.',
-    );
-    networkErr.httpStatus = err?.statusCode || null;
-    networkErr.responseBody = err?.message || String(err);
-    throw networkErr;
+    throw msg91UnavailableError('Could not reach SMS service. Please try again later.', {
+      httpStatus: err?.statusCode || null,
+      responseBody: err?.message || String(err),
+    });
   }
 }
 
@@ -1442,19 +1510,48 @@ async function resolveActiveAccountUid(db, role, doc) {
   return null;
 }
 
-async function findUserByMobileDigits(db, digits) {
-  const usePostgresLookup =
-    (await isDoctorPatientSupabasePrimary()) && !(db && typeof db.collection === 'function');
-  if (usePostgresLookup) {
+function mapLoginLookupRow(row) {
+  return {
+    found: true,
+    role: row.role,
+    uid: row.id,
+    doc: { id: row.id },
+    docId: row.id,
+    matchedField: 'mobile',
+    data: row,
+  };
+}
+
+async function findUserByMobileDigits(db, digits, roleHint = null) {
+  const appEnv = String(process.env.APP_ENV || 'staging').trim().toLowerCase();
+  const legacyFirestore =
+    appEnv !== 'production'
+    && (db && typeof db.collection === 'function')
+    && !(await isDoctorPatientSupabasePrimary());
+
+  if (!legacyFirestore) {
     try {
-      const { getDatabaseClient } = require('./src/db/client');
-      const client = getDatabaseClient();
-      const candidates = [digits, '+91' + digits, '+91 ' + digits, '+91-' + digits, '91' + digits, '0' + digits];
-      const { data } = await client.from('users').select('id, role, mobile, profile_id').in('mobile', candidates).limit(1);
-      if (data && data[0]) {
-        return { found: true, role: data[0].role, uid: data[0].id, data: data[0] };
+      const {
+        getLoginLookupClient,
+        queryUserByMobile,
+        resolveLoginLookupPlane,
+      } = require('./src/db/login_lookup');
+      const plane = resolveLoginLookupPlane(digits, roleHint);
+      const client = getLoginLookupClient(digits, roleHint);
+      const row = await queryUserByMobile(client, digits, { plane });
+      if (row) {
+        return mapLoginLookupRow(row);
       }
-    } catch (_) {}
+    } catch (err) {
+      console.error('[findUserByMobileDigits] Postgres login lookup failed', {
+        code: err.code || err.name,
+        message: err.message,
+        mobileLast4: String(digits || '').slice(-4),
+      });
+      if (err.code === 'demo_uid_rds_forbidden') {
+        throw err;
+      }
+    }
     return { found: false, role: null, uid: null, data: null };
   }
   const candidates = [digits, `+91${digits}`, `+91 ${digits}`, `+91-${digits}`, `91${digits}`, `0${digits}`];
@@ -1589,7 +1686,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   console.info('[sendUserRegistrationOtp] Request received', {
     role,
     otpType,
-    clientIp,
+    ipHash: hashRateLimitKey(clientIp).slice(0, 12),
     mobileLast4: initialMobileLast4,
   });
 
@@ -1632,8 +1729,24 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
 
   const mobileLast4 = digits.slice(-4);
 
+  // Rate limits run BEFORE the account-existence lookup so the distinct
+  // "already registered" / "no account" responses cannot be used for unlimited enumeration.
+  try {
+    await enforceSendOtpRateLimits(db, { clientIp, role, digits });
+  } catch (err) {
+    if (err instanceof HttpsError && err.code === 'resource-exhausted') {
+      console.warn('[sendUserRegistrationOtp] Early exit', {
+        reason: 'RATE_LIMIT',
+        ipHash: hashRateLimitKey(clientIp).slice(0, 12),
+        role,
+        mobileLast4,
+      });
+    }
+    throw err;
+  }
+
   if (otpType === 'registration') {
-    const search = await findUserByMobileDigits(db, digits);
+    const search = await findUserByMobileDigits(db, digits, role);
     const matchedField = search.matchedField
       || (search.data?.mobile ? 'mobile'
         : search.data?.phone ? 'phone'
@@ -1667,7 +1780,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   }
 
   if (otpType === 'login' || otpType === 'forgot_password') {
-    let search = await findUserByMobileDigits(db, digits);
+    let search = await findUserByMobileDigits(db, digits, role);
     let matchedField = search.matchedField
       || (search.data?.mobile ? 'mobile'
         : search.data?.phone ? 'phone'
@@ -1730,27 +1843,12 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     }
   }
 
-  try {
-    await enforceSendOtpRateLimits(db, { clientIp, role, digits });
-  } catch (err) {
-    if (err instanceof HttpsError && err.code === 'resource-exhausted') {
-      console.warn('[sendUserRegistrationOtp] Early exit', {
-        reason: 'RATE_LIMIT',
-        clientIp,
-        role,
-        mobileLast4,
-        error: err.message,
-      });
-    }
-    throw err;
-  }
-
   const isCutover = await isDoctorPatientSupabasePrimary();
   const hasFirestoreDb = db && typeof db.collection === 'function';
   if (isCutover && !hasFirestoreDb) {
-    const isReviewerAccount = isReviewerPhone(digits, role);
+    const isReviewerAccount = shouldSkipMsg91ForPhone(digits, role);
     if (isReviewerAccount) {
-      if (!(await checkReviewerRateLimit(digits))) {
+      if (!(await checkReviewerRateLimit(digits, { db }))) {
         emit(SEVERITY.WARNING, 'security', 'reviewer.rate_limited', {
           securityEvent: true,
           mobileHash: hashIdentifier(digits),
@@ -1784,8 +1882,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
       throw new HttpsError('resource-exhausted', 'Please wait a minute before requesting another OTP.');
     }
 
-    const reviewerConfig = getReviewerConfig(role);
-    const code = isReviewerAccount ? reviewerConfig.fixedOtp : generateOtpCode();
+    const code = isReviewerAccount ? resolveOutboundOtpCode(digits, role) : generateOtpCode();
     const expiryMs = OTP_EXPIRY_MS;
     const ttlSec = Math.max(1, Math.floor(expiryMs / 1000));
     const redisPayload = JSON.stringify({
@@ -1823,9 +1920,9 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
 
   const challengeRef = db.collection('otp_challenges').doc(mobileHash(role, digits));
   const existing = await challengeRef.get();
-  const isReviewerAccount = isReviewerPhone(digits, role);
+  const isReviewerAccount = shouldSkipMsg91ForPhone(digits, role);
   if (isReviewerAccount) {
-    if (!(await checkReviewerRateLimit(digits))) {
+    if (!(await checkReviewerRateLimit(digits, { db }))) {
       emit(SEVERITY.WARNING, 'security', 'reviewer.rate_limited', {
         securityEvent: true,
         mobileHash: hashIdentifier(digits),
@@ -1919,8 +2016,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     }
   }
 
-  const reviewerConfig = getReviewerConfig(role);
-  const code = isReviewerAccount ? reviewerConfig.fixedOtp : generateOtpCode();
+  const code = isReviewerAccount ? resolveOutboundOtpCode(digits, role) : generateOtpCode();
   const expiryMs = OTP_EXPIRY_MS;
   const expiresAt = Timestamp.fromDate(new Date(Date.now() + expiryMs));
 
@@ -1975,22 +2071,15 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
         mobileLast4,
       });
     } else {
-      const templateId = resolveMsg91TemplateId(otpType);
       console.info('[sendUserRegistrationOtp] Calling SMS provider', {
         provider: 'MSG91',
-        templateId,
-        dltId: templateId,
         otpType,
-        calling: true,
-        callInitiated: true,
         mobileLast4,
       });
       const smsResult = await sendMsg91SmsOtp(digits, code, otpType);
       console.info('[sendUserRegistrationOtp] SMS provider call completed', {
         provider: 'MSG91',
         requestId: smsResult?.requestId || null,
-        templateId: smsResult?.templateId || templateId || null,
-        senderId: smsResult?.senderId || null,
         httpStatus: smsResult?.httpStatus || 200,
         responseBody: sanitizeResponseBody(smsResult?.responseBody),
         mobileLast4,
@@ -2097,8 +2186,13 @@ async function consumeOtpChallengeAtomically(
     }
 
     const reviewerCfg = getReviewerConfig(normalizedRole || role);
+    const demoFixed = readStagingDemoFixedOtp();
     const isReviewerValid = reviewerCfg && isReviewerPhone(digits || challenge.mobileDigits, normalizedRole || role) && otp === reviewerCfg.fixedOtp;
-    const localMatch = isReviewerValid || verifyChallengeOtpHash(otp, challenge, role, digits);
+    const isStagingDemoValid =
+      demoFixed &&
+      isStagingDemoPhone(digits || challenge.mobileDigits) &&
+      otp === demoFixed;
+    const localMatch = isReviewerValid || isStagingDemoValid || verifyChallengeOtpHash(otp, challenge, role, digits);
 
     if (localMatch) {
       let delCount = 0;
@@ -2211,8 +2305,14 @@ async function consumeOtpChallengeAtomically(
     }
 
     const reviewerCfg = getReviewerConfig(normalizedRole || role);
+    const demoFixed = readStagingDemoFixedOtp();
     const isReviewerValid = reviewerCfg && isReviewerPhone(digits || challenge.mobileDigits, normalizedRole || role) && otp === reviewerCfg.fixedOtp;
+    const isStagingDemoValid =
+      demoFixed &&
+      isStagingDemoPhone(digits || challenge.mobileDigits) &&
+      otp === demoFixed;
     const localMatch = isReviewerValid
+      || isStagingDemoValid
       || verifyChallengeOtpHash(otp, challenge, role, digits)
       || (redisChallenge?.otpHash && verifyChallengeOtpHash(otp, {
            role: redisChallenge.role || challenge.role || role,
@@ -2490,7 +2590,7 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
     role,
   });
 
-  const accountSearch = await findUserByMobileDigits(db, digits);
+  const accountSearch = await findUserByMobileDigits(db, digits, role);
   const postOtpAccount = postOtpAccountFieldsFromSearch(accountSearch);
   const sessionRole =
     otpType === 'auth' && postOtpAccount.exists && postOtpAccount.role
@@ -3219,7 +3319,7 @@ async function resetUserPasswordWithOtp(db, data, { clientIp = 'unknown' } = {})
     }
   } else {
     const digits = normalizeMobileDigits(identifier);
-    const search = await findUserByMobileDigits(db, digits);
+    const search = await findUserByMobileDigits(db, digits, role);
     if (!search.found || !search.uid) {
       throw new HttpsError('not-found', 'No account found with this mobile number.');
     }
@@ -3285,7 +3385,7 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
     },
   });
 
-  const search = await findUserByMobileDigits(db, mobileDigits);
+  const search = await findUserByMobileDigits(db, mobileDigits, role);
   if (!search.found || !search.uid) {
     throw new HttpsError('not-found', 'No account found for this mobile number.');
   }
@@ -3408,7 +3508,7 @@ async function lookupMobileRegistration(db, data) {
     throw new HttpsError('invalid-argument', 'Invalid lookup intent.');
   }
   const requestedRole = normalizeRole(data?.role || '');
-  const search = await findUserByMobileDigits(db, digits);
+  const search = await findUserByMobileDigits(db, digits, requestedRole || null);
   const registeredRole = search.found ? normalizeRole(search.role) : null;
   const exists = Boolean(search.found);
   const conflict = resolveMobileLookupConflict({
@@ -3495,6 +3595,9 @@ module.exports = {
   enforceVerifyOtpRateLimits,
   getReviewerConfig,
   isReviewerPhone,
+  isStagingDemoPhone,
+  isStagingDemoOtpEnabled,
+  shouldSkipMsg91ForPhone,
   checkReviewerRateLimit,
   setReviewerRedisClientForTesting,
   resetReviewerRateLimitForTesting,

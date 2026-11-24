@@ -24,7 +24,7 @@ test('M-5: lookupMobileRegistration and Razorpay callables enforce App Check', (
   const indexSrc = fs.readFileSync(path.join(__dirname, '../index.js'), 'utf8');
   assert.match(
     indexSrc,
-    /exports\.lookupMobileRegistration = onCall\(\s*\{\s*region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK/,
+    /exports\.lookupMobileRegistration = onCall\(\s*\{\s*region: CALLABLE_REGION,\s*enforceAppCheck: ENFORCE_ABUSE_APP_CHECK/,
   );
 
   const adsSrc = fs.readFileSync(path.join(__dirname, '../promoted_ads.js'), 'utf8');

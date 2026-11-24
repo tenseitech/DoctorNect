@@ -26,7 +26,11 @@ function baseFields(request, extra = {}) {
       const raw = request?.rawRequest;
       if (!raw) return 'unknown';
       const forwarded = raw.headers?.['x-forwarded-for'];
-      if (forwarded) return String(forwarded).split(',')[0].trim();
+      if (forwarded) {
+        // Rightmost hop (proxy-appended); leftmost is client-controlled.
+        const hops = String(forwarded).split(',').map((h) => h.trim()).filter(Boolean);
+        if (hops.length) return hops[hops.length - 1];
+      }
       return raw.ip || raw.socket?.remoteAddress || 'unknown';
     } catch (_) {
       return 'unknown';
