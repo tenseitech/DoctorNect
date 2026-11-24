@@ -24,6 +24,11 @@ import 'features/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Release builds: silence debugPrint so error strings (which can contain phone numbers,
+  // profile ids or backend messages) never reach logcat / device console.
+  if (kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
   DemoAuthConfig.verifyReleaseBuildSafety();
 
   // Native splash is Android/iOS only (`web: false` in pubspec).

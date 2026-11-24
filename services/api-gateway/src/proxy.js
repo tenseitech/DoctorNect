@@ -6,6 +6,35 @@ const { URL } = require('node:url');
 
 const path = require('node:path');
 
+/** Applied to every proxied response (PHI must never be cached by intermediaries). */
+const SECURITY_RESPONSE_HEADERS = Object.freeze({
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'DENY',
+  'cache-control': 'no-store',
+  'strict-transport-security': 'max-age=63072000; includeSubDomains',
+  'referrer-policy': 'no-referrer',
+});
+
+/**
+ * Keeps only { code, message } from a PostgREST error body (drops SQL details / hints).
+ * @param {Buffer} buf
+ * @returns {string}
+ */
+function sanitizeUpstreamErrorBody(buf) {
+  try {
+    const parsed = JSON.parse(buf.toString('utf8'));
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const out = {};
+      if (parsed.code !== undefined) out.code = parsed.code;
+      if (typeof parsed.message === 'string') out.message = parsed.message.slice(0, 300);
+      return JSON.stringify(out);
+    }
+  } catch (_) {
+    /* non-JSON upstream error */
+  }
+  return JSON.stringify({ message: 'Request failed.' });
+}
+
 /**
  * Proxies an authenticated request to the backing PostgREST instance.
  *
@@ -88,9 +117,36 @@ function proxyToPostgrest(req, res, options) {
       timeout: 15000,
     },
     (proxyRes) => {
-      // Forward status and headers
-      res.writeHead(proxyRes.statusCode, proxyRes.headers);
-      proxyRes.pipe(res);
+      const headers = { ...proxyRes.headers, ...SECURITY_RESPONSE_HEADERS };
+      delete headers.server;
+      const status = proxyRes.statusCode || 502;
+      if (status < 400) {
+        res.writeHead(status, headers);
+        proxyRes.pipe(res);
+        return;
+      }
+      // Error responses: drop PostgreSQL internals (details / hint) before returning to clients.
+      const chunks = [];
+      let size = 0;
+      proxyRes.on('data', (c) => {
+        size += c.length;
+        if (size <= 64 * 1024) chunks.push(c);
+      });
+      proxyRes.on('end', () => {
+        const sanitized = sanitizeUpstreamErrorBody(Buffer.concat(chunks));
+        delete headers['content-length'];
+        delete headers['transfer-encoding'];
+        headers['content-type'] = 'application/json; charset=utf-8';
+        headers['content-length'] = Buffer.byteLength(sanitized);
+        res.writeHead(status, headers);
+        res.end(sanitized);
+      });
+      proxyRes.on('error', () => {
+        if (!res.headersSent) {
+          res.writeHead(502, { 'Content-Type': 'application/json', ...SECURITY_RESPONSE_HEADERS });
+        }
+        res.end(JSON.stringify({ error: 'Bad Gateway' }));
+      });
     }
   );
 
@@ -117,4 +173,6 @@ function proxyToPostgrest(req, res, options) {
 
 module.exports = {
   proxyToPostgrest,
+  sanitizeUpstreamErrorBody,
+  SECURITY_RESPONSE_HEADERS,
 };

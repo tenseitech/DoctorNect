@@ -90,12 +90,23 @@ describe('assertProductionRedisTls', () => {
 
   it('production allows rediss:// or TLS default with hostname', () => {
     process.env.APP_ENV = 'production';
+    process.env.REDIS_PASSWORD = 'unit-test-redis-auth';
     process.env.REDIS_HOST = 'rediss://cache.example:6380';
     assert.doesNotThrow(() => assertProductionRedisTls());
 
     process.env.REDIS_HOST = 'cache.internal';
     process.env.REDIS_TLS = 'true';
     assert.doesNotThrow(() => assertProductionRedisTls());
+    delete process.env.REDIS_PASSWORD;
+  });
+
+  it('production rejects Redis without AUTH password', () => {
+    process.env.APP_ENV = 'production';
+    process.env.REDIS_HOST = 'cache.internal';
+    process.env.REDIS_TLS = 'true';
+    delete process.env.REDIS_PASSWORD;
+    const { buildRedisOptions } = require('../src/config/redis');
+    assert.throws(() => buildRedisOptions(), (err) => err.code === 'REDIS_INSECURE_CONFIG');
   });
 
   it('staging skips Redis TLS enforcement', () => {

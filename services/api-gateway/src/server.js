@@ -121,6 +121,11 @@ function createGatewayServer(overrides = {}) {
 
       const responseHeaders = {
         'Content-Type': 'application/json',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Cache-Control': 'no-store',
+        'Strict-Transport-Security': 'max-age=63072000; includeSubDomains',
+        'Referrer-Policy': 'no-referrer',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type, apikey, Prefer, Range, x-client-info',
         ...headers,
@@ -193,7 +198,8 @@ function createGatewayServer(overrides = {}) {
             status: upstream.status,
           };
         } catch (err) {
-          postgrest = { ok: false, status: 'unreachable', message: err.message };
+          // Do not echo internal hostnames / network errors to unauthenticated callers.
+          postgrest = { ok: false, status: 'unreachable' };
         }
       }
       const healthy = postgrest.ok;
@@ -228,7 +234,7 @@ function createGatewayServer(overrides = {}) {
       if (err.message === 'Payload Too Large') {
         return sendJson(413, { error: 'Payload Too Large', message: `Request body exceeds ${cfg.maxBodySizeBytes} bytes.` });
       }
-      return sendJson(400, { error: 'Bad Request', message: `Error reading request body: ${err.message}` });
+      return sendJson(400, { error: 'Bad Request', message: 'Error reading request body.' });
     }
 
     const hintCheck = assertClientRoutingHintIgnored(req.headers);
