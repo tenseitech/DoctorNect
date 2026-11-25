@@ -1690,7 +1690,14 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     }
 
     if (!isReviewerAccount) {
-      await sendMsg91SmsOtp(digits, code);
+      try {
+        // Pass otpType so login / forgot-password use their own DLT templates.
+        await sendMsg91SmsOtp(digits, code, otpType);
+      } catch (err) {
+        // Undelivered OTP must not block the user behind the resend cooldown.
+        await deleteOtpRedisKeys(redis, role, digits).catch(() => {});
+        throw err;
+      }
     }
 
     return {
@@ -1739,8 +1746,9 @@ async function consumeOtpChallengeAtomically(
 
     let rawChallenge = null;
     try {
-      rawChallenge = (keyNull ? await withOtpRedisTimeout(redis.get(keyNull)) : null)
-        || (keyRole ? await withOtpRedisTimeout(redis.get(keyRole)) : null);
+      // Role-scoped key first; the shared key is only a fallback and must match the role.
+      rawChallenge = (keyRole ? await withOtpRedisTimeout(redis.get(keyRole)) : null)
+        || (keyNull ? await withOtpRedisTimeout(redis.get(keyNull)) : null);
     } catch (err) {
       throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
     }
@@ -1754,6 +1762,10 @@ async function consumeOtpChallengeAtomically(
       challenge = JSON.parse(rawChallenge);
     } catch (_) {
       challenge = {};
+    }
+    // A challenge issued for another role on the same number is never usable here.
+    if (normalizedRole && challenge.role && normalizeRole(challenge.role) !== normalizedRole) {
+      throw new HttpsError('failed-precondition', 'Send OTP first.');
     }
 
     if (challenge.expiresAt && Date.now() > challenge.expiresAt) {
@@ -1781,30 +1793,26 @@ async function consumeOtpChallengeAtomically(
 
     const reviewerCfg = getReviewerConfig(normalizedRole || role);
     const demoFixed = readStagingDemoFixedOtp();
-    const isReviewerValid = reviewerCfg && isReviewerPhone(digits || challenge.mobileDigits, normalizedRole || role) && otp === reviewerCfg.fixedOtp;
-    const isStagingDemoValid =
-      demoFixed &&
-      isStagingDemoPhone(digits || challenge.mobileDigits) &&
-      otp === demoFixed;
+    const isReviewerValid = Boolean(reviewerCfg)
+      && isReviewerPhone(digits || challenge.mobileDigits, normalizedRole || role)
+      && otpHashesEqual(otp, reviewerCfg.fixedOtp);
+    const isStagingDemoValid = Boolean(demoFixed)
+      && isStagingDemoPhone(digits || challenge.mobileDigits)
+      && otpHashesEqual(otp, demoFixed);
     const localMatch = isReviewerValid || isStagingDemoValid || verifyChallengeOtpHash(otp, challenge, role, digits);
 
     if (localMatch) {
+      // Single atomic multi-key DEL: exactly one concurrent verifier observes a deletion (single use).
       let delCount = 0;
       try {
-        if (keyNull && typeof redis.del === 'function') {
-          delCount = await withOtpRedisTimeout(redis.del(keyNull));
-        }
-        if (keyRole && typeof redis.del === 'function') {
-          await withOtpRedisTimeout(redis.del(keyRole)).catch(() => {});
-        }
-        if (typeof redis.del === 'function') {
-          await withOtpRedisTimeout(redis.del(attemptsKey)).catch(() => {});
-        }
+        const keys = [keyRole, keyNull].filter(Boolean);
+        delCount = Number(await withOtpRedisTimeout(redis.del(...keys))) || 0;
+        await withOtpRedisTimeout(redis.del(attemptsKey)).catch(() => {});
       } catch (err) {
         throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
       }
 
-      if (delCount === 0 && keyNull) {
+      if (delCount === 0) {
         throw new HttpsError('failed-precondition', 'Send OTP first.');
       }
 
@@ -1820,7 +1828,7 @@ async function consumeOtpChallengeAtomically(
       } catch (_) {}
       throw new HttpsError('resource-exhausted', 'Too many failed attempts. Request a new OTP.');
     }
-    throw new HttpsError('invalid-argument', 'Invalid OTP.');
+    throw new HttpsError('permission-denied', 'Invalid OTP.');
   }
 
 }
@@ -2951,6 +2959,7 @@ module.exports = {
   verifyMsg91Otp,
   otpRedisKey,
   otpAttemptsRedisKey,
+  otpSessionRedisKey,
   reserveOtpVerifyAttemptSlot,
   isOtpRedisMirrorEnabled,
   OTP_REDIS_TIMEOUT_MS,

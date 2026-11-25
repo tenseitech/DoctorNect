@@ -150,45 +150,12 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
     process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
     setReviewerRedisClientForTesting(createTestRedisMock());
 
-    const challenges = new Map();
-    const mockDb = {
-      collection: (colName) => ({
-        doc: (docId) => ({
-          get: async () => ({
-            exists: challenges.has(`${colName}/${docId}`),
-            data: () => challenges.get(`${colName}/${docId}`),
-          }),
-          set: async (data, opts) => {
-            const key = `${colName}/${docId}`;
-            if (opts && opts.merge) {
-              challenges.set(key, { ...(challenges.get(key) || {}), ...data });
-            } else {
-              challenges.set(key, data);
-            }
-          },
-          delete: async () => {
-            challenges.delete(`${colName}/${docId}`);
-          },
-        }),
-      }),
-      runTransaction: async (fn) => {
-        const tx = {
-          get: async (ref) => ref.get(),
-          set: async (ref, data, opts) => ref.set(data, opts),
-          delete: async (ref) => ref.delete(),
-        };
-        return fn(tx);
-      },
-    };
-
-    const challengeKey = 'test_reviewer_challenge';
-    await mockDb.collection('otp_challenges').doc(challengeKey).set({
-      role: 'patient',
-      mobileDigits: '9999900001',
-      attempts: 0,
-      reviewerAccount: true,
-      expiresAt: { toDate: () => new Date(Date.now() + 600000) },
-    });
+    // Reviewer challenge in Redis (no document DB); the stored hash is for a different code.
+    const { enableOtpRedisTestEnv, seedOtpChallenge } = require('./helpers/otp_test_redis');
+    const otpRedis = enableOtpRedisTestEnv();
+    seedOtpChallenge(otpRedis, { otpCode: '999999', role: 'patient', mobileDigits: '9999900001', extra: { reviewerAccount: true } });
+    const mockDb = null;
+    const challengeKey = 'unused_with_redis';
 
     await assert.rejects(
       consumeOtpChallengeAtomically(mockDb, {

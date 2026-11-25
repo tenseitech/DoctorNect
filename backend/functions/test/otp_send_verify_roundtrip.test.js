@@ -18,9 +18,12 @@ const {
   sendUserRegistrationOtp,
   verifyUserRegistrationOtp,
   hashOtp,
+  otpRedisKey,
   setReviewerRedisClientForTesting,
   resetReviewerRateLimitForTesting,
 } = require('../registration_otp');
+const { setRedisClientForTesting } = require('../redis');
+const { createMemoryRedis } = require('./helpers/memory_redis');
 
 function createTestRedisMock() {
   const store = new Map();
@@ -46,21 +49,12 @@ function createTestRedisMock() {
 let origLegacyCutover;
 test.beforeEach(() => {
   origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
-  process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
-  try {
-    const { _resetRemoteConfigCache } = require('../sync_flags');
-    _resetRemoteConfigCache();
-  } catch (_) {}
 });
 
 test.afterEach(() => {
   delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
   if (origLegacyCutover === undefined) delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
   else process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacyCutover;
-  try {
-    const { _resetRemoteConfigCache } = require('../sync_flags');
-    _resetRemoteConfigCache();
-  } catch (_) {}
 });
 
 function mobileHash(role, digits) {
@@ -166,7 +160,11 @@ function stubSms(onCode) {
 }
 
 async function roundTrip({ role, mobile, demo }) {
-  const db = createMockFirestore();
+  // OTP challenges live only in Redis (env-prefixed, HMAC-keyed); no document database.
+  const db = null;
+  const redis = createMemoryRedis();
+  setRedisClientForTesting(redis);
+  const readChallenge = async () => JSON.parse((await redis.get(otpRedisKey(role, mobile))) || 'null');
   let sentCode = null;
   const restoreSms = stubSms((code) => {
     sentCode = code;
@@ -188,9 +186,9 @@ async function roundTrip({ role, mobile, demo }) {
     }, { clientIp: '127.0.0.1' });
     assert.equal(sent.ok, true);
 
-    const challengeKey = `otp_challenges/${mobileHash(role, mobile)}`;
-    const stored = db.docs.get(challengeKey);
-    assert.ok(stored, 'send must store an otp_challenges document');
+    const stored = await readChallenge();
+    assert.ok(stored, 'send must store a Redis OTP challenge');
+    assert.ok((await redis.pttl(otpRedisKey(role, mobile))) <= 5 * 60 * 1000, 'challenge TTL <= 5 minutes');
     assert.equal(stored.role, role);
     assert.equal(stored.mobileDigits, mobile);
     const expectedCode = demo ? '111111' : sentCode;
@@ -210,7 +208,7 @@ async function roundTrip({ role, mobile, demo }) {
       }, null, { clientIp: '127.0.0.1' }),
       { code: 'permission-denied' },
     );
-    assert.ok(db.docs.get(challengeKey), 'a wrong code must leave the challenge in place');
+    assert.ok(await readChallenge(), 'a wrong code must leave the challenge in place');
 
     const verified = await verifyUserRegistrationOtp(db, {
       mobile,
@@ -222,7 +220,11 @@ async function roundTrip({ role, mobile, demo }) {
     assert.equal(verified.mobileVerified, true);
     assert.equal(verified.exists, false);
     assert.equal(verified.role, null);
-    assert.equal(db.docs.get(challengeKey), undefined);
+    assert.equal(await readChallenge(), null, 'challenge is single-use');
+    await assert.rejects(
+      () => verifyUserRegistrationOtp(db, { mobile, role, otp: expectedCode, otpType: 'registration' }, null, { clientIp: '127.0.0.1' }),
+      { code: 'failed-precondition' },
+    );
   } finally {
     restoreSms();
     delete process.env.REVIEWER_OTP_ENABLED;

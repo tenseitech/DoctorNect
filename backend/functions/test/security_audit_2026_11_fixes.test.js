@@ -28,29 +28,8 @@ test('client IP uses the rightmost X-Forwarded-For hop, not the spoofable leftmo
 // ---------------------------------------------------------------------------
 const { _test: s3 } = require('../s3_storage');
 
-function legacyDb(initial = {}) {
-  const store = new Map();
-  for (const [coll, docs] of Object.entries(initial)) {
-    for (const [id, data] of Object.entries(docs)) store.set(`${coll}/${id}`, data);
-  }
-  return {
-    collection(name) {
-      return {
-        async add() { return { id: 'x' }; },
-        doc(id) {
-          return {
-            async get() {
-              const data = store.get(`${name}/${id}`);
-              return { id, exists: data !== undefined, data: () => data || null };
-            },
-            async set() {},
-            async update() {},
-          };
-        },
-      };
-    },
-  };
-}
+const { createPgFromLegacySeed } = require('./helpers/legacy_seed_to_pg');
+const legacyDb = (initial = {}) => createPgFromLegacySeed(initial);
 
 function s3ClientRecorder({ head, body } = {}) {
   const calls = [];

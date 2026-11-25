@@ -13,36 +13,12 @@ test('fixed REVIEW OTP rejected when OTP_TEST_MODE is off and REVIEW_ACCESS_UNTI
   process.env.REVIEW_FIXED_OTP = '112233';
   process.env.REVIEW_ACCESS_UNTIL = '2020-01-01T00:00:00Z';
 
-  const mockDb = {
-    collection: () => ({
-      doc: () => ({
-        get: async () => ({
-          exists: true,
-          data: () => ({
-            role: 'patient',
-            mobileDigits: '9999900001',
-            otpHash: 'stored_hmac_hash',
-            expiresAt: { toDate: () => new Date(Date.now() + 600000) },
-            attempts: 0,
-          }),
-        }),
-      }),
-    }),
-    runTransaction: async (fn) => fn({
-      get: async () => ({
-        exists: true,
-        data: () => ({
-          role: 'patient',
-          mobileDigits: '9999900001',
-          otpHash: 'stored_hmac_hash',
-          expiresAt: { toDate: () => new Date(Date.now() + 600000) },
-          attempts: 0,
-        }),
-      }),
-      set: () => {},
-      delete: () => {},
-    }),
-  };
+  // Challenge in Redis with a different real code; the expired reviewer window must not accept the fixed OTP.
+  const { enableOtpRedisTestEnv, seedOtpChallenge, disableOtpRedisTestEnv } = require('./helpers/otp_test_redis');
+  const otpRedis = enableOtpRedisTestEnv();
+  seedOtpChallenge(otpRedis, { otpCode: '654321', role: 'patient', mobileDigits: '9999900001' });
+  const mockDb = null;
+  test.after(() => disableOtpRedisTestEnv());
 
   await assert.rejects(
     () => consumeOtpChallengeAtomically(mockDb, {

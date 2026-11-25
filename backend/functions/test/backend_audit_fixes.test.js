@@ -41,6 +41,7 @@ test('H-4: deleteMyAccount binds Supabase service-role secrets', () => {
 test('H-7: paid ads go to pending_approval and live queries use status == active', () => {
   const src = fs.readFileSync(path.join(__dirname, '../promoted_ads.js'), 'utf8');
   assert.match(src, /status: 'pending_approval'/);
-  assert.match(src, /where\('status', '==', 'active'\)/);
+  // Postgres expiry sweep only touches live ads (status = 'active').
+  assert.match(src, /\.eq\('status', 'active'\)/);
   assert.match(src, /async function reviewPromotedAdHandler/);
 });

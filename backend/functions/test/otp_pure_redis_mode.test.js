@@ -280,7 +280,7 @@ test('5. 5 failed attempts lockout: wrong OTP 5 times locks out and deletes chal
         },
         (err) => {
           assert.ok(err instanceof HttpsError);
-          assert.equal(err.code, 'invalid-argument');
+          assert.equal(err.code, 'permission-denied');
           return true;
         }
       );

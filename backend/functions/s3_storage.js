@@ -241,7 +241,47 @@ function assertValidObjectKey(key, paramName = 'objectKey') {
  * - doctor_profiles/{id}/profile/...
  * - promoted_ads/...
  */
-function isPublicMediaKey(key) {
+/**
+ * Data-plane key prefixes (production only). One production bucket serves both planes, so
+ * objects are namespaced: demo/ (reviewer / demo accounts on the staging Supabase plane) and
+ * prod/ (real users on RDS). Keys created before prefixing (no prefix) belong to prod/.
+ * Staging uses its own bucket and no prefix.
+ */
+const PLANE_PREFIXES = ['demo/', 'prod/'];
+
+function isProductionStorage() {
+  return String(process.env.APP_ENV || '').trim().toLowerCase() === 'production';
+}
+
+function planePrefixFor(uid) {
+  if (!isProductionStorage()) return '';
+  const { objectStoragePrefix } = require('./lib/demo_routing');
+  return objectStoragePrefix({ appEnv: 'production', firebaseUid: uid || null });
+}
+
+function stripPlanePrefix(key) {
+  const k = String(key || '');
+  for (const p of PLANE_PREFIXES) if (k.startsWith(p)) return k.slice(p.length);
+  return k;
+}
+
+/**
+ * Maps a client-supplied physical key to its logical layout (health_records/..., lab_reports/...)
+ * and rejects keys that belong to another data plane.
+ */
+function toLogicalKey(objectKey, uid) {
+  const key = String(objectKey || '');
+  if (!isProductionStorage()) return key;
+  const explicit = PLANE_PREFIXES.find((p) => key.startsWith(p));
+  const keyPlane = explicit || 'prod/';
+  if (keyPlane !== planePrefixFor(uid)) {
+    throw new HttpsError('permission-denied', 'You do not have permission to access this file.');
+  }
+  return explicit ? key.slice(explicit.length) : key;
+}
+
+function isPublicMediaKey(rawKey) {
+  const key = stripPlanePrefix(rawKey);
   if (!isValidObjectKey(key)) return false;
   const parts = key.split('/');
   if (parts[0] === 'patients') {
@@ -532,6 +572,7 @@ async function getS3UploadUrlHandler(data, auth, dbOrOptions) {
       throw new HttpsError('invalid-argument', `Unknown storage purpose: '${purpose}'.`);
   }
 
+  objectKey = planePrefixFor(auth?.uid) + objectKey;
   assertValidObjectKey(objectKey, 'objectKey');
 
   const s3 = getS3Client();
@@ -573,7 +614,8 @@ async function getS3UploadUrlHandler(data, auth, dbOrOptions) {
 /**
  * Ensures lab_reports/{patientId}/{recordId}/… matches the booking/order row.
  */
-async function labReportObjectKeyMatchesRecord(objectKey, supabase) {
+async function labReportObjectKeyMatchesRecord(physicalKey, supabase) {
+  const objectKey = stripPlanePrefix(physicalKey);
   const parts = objectKey.split('/');
   if (parts.length < 4 || parts[0] !== 'lab_reports') return false;
   const patientIdInKey = parts[1];
@@ -589,7 +631,7 @@ async function labReportObjectKeyMatchesRecord(objectKey, supabase) {
   if (booking) {
     if (booking.patient_id !== patientIdInKey) return false;
     const stored = booking.report_storage_key || booking.report_s3_key;
-    if (stored && stored !== objectKey) return false;
+    if (stored && stored !== physicalKey && stored !== objectKey) return false;
     return true;
   }
 
@@ -601,7 +643,7 @@ async function labReportObjectKeyMatchesRecord(objectKey, supabase) {
   if (order) {
     if (order.patient_id !== patientIdInKey) return false;
     const stored = order.report_storage_key || order.report_s3_key;
-    if (stored && stored !== objectKey) return false;
+    if (stored && stored !== physicalKey && stored !== objectKey) return false;
     return true;
   }
 
@@ -611,7 +653,8 @@ async function labReportObjectKeyMatchesRecord(objectKey, supabase) {
 /**
  * Authorizes read access to a given objectKey.
  */
-async function authorizeRead(objectKey, caller, auth, db, ctx = {}) {
+async function authorizeRead(physicalKey, caller, auth, db, ctx = {}) {
+  const objectKey = toLogicalKey(physicalKey, auth?.uid);
   if (isSuperAdmin(auth, caller)) return true;
 
   const parts = objectKey.split('/');
@@ -704,7 +747,7 @@ async function authorizeRead(objectKey, caller, auth, db, ctx = {}) {
     const bookingId = parts[2];
 
     if (caller.role === 'patient' && caller.profileId === patientId) {
-      return labReportObjectKeyMatchesRecord(objectKey, supabase);
+      return labReportObjectKeyMatchesRecord(physicalKey, supabase);
     }
 
     if (caller.role === 'lab') {
@@ -714,7 +757,7 @@ async function authorizeRead(objectKey, caller, auth, db, ctx = {}) {
         .eq('booking_id', bookingId)
         .maybeSingle();
       if (booking && booking.lab_id === caller.profileId && booking.status !== 'cancelled') {
-        return labReportObjectKeyMatchesRecord(objectKey, supabase);
+        return labReportObjectKeyMatchesRecord(physicalKey, supabase);
       }
       const { data: order } = await supabase
         .from('lab_orders')
@@ -722,7 +765,7 @@ async function authorizeRead(objectKey, caller, auth, db, ctx = {}) {
         .eq('order_id', bookingId)
         .maybeSingle();
       if (order && order.lab_id === caller.profileId && order.status !== 'cancelled') {
-        return labReportObjectKeyMatchesRecord(objectKey, supabase);
+        return labReportObjectKeyMatchesRecord(physicalKey, supabase);
       }
       return false;
     }
@@ -770,7 +813,8 @@ async function authorizeRead(objectKey, caller, auth, db, ctx = {}) {
 /**
  * Authorizes delete access to a given objectKey (owner-only or super admin).
  */
-async function authorizeDelete(objectKey, caller, auth, db, ctx = {}) {
+async function authorizeDelete(physicalKey, caller, auth, db, ctx = {}) {
+  const objectKey = toLogicalKey(physicalKey, auth?.uid);
   if (isSuperAdmin(auth, caller)) return true;
 
   const parts = objectKey.split('/');
@@ -1222,7 +1266,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
   //    someone else's documents to trigger deletion);
   // 2) caller must own the key exactly as for delete (lab must own the booking, etc.).
   //    Unknown prefixes (e.g. prescriptions/) are denied by default.
-  const parts = objectKey.split('/');
+  const parts = toLogicalKey(objectKey, auth?.uid).split('/');
   const prefix = parts[0];
   const expectedPrefix = CONFIRM_PURPOSE_PREFIX[purpose];
   if (!expectedPrefix || expectedPrefix !== prefix) {
@@ -1308,7 +1352,13 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
     throw new HttpsError('failed-precondition', 'Uploaded file content does not match its declared type.');
   }
 
-  // Update DB row if recordId is provided
+  // Update DB row if recordId is provided. The row is bound to the AUTHORIZED key, never to the
+  // client-supplied recordId alone: health_records/{patientId}/{recordId}/..., lab_reports/{patientId}/{bookingId}/...
+  // (previously any recordId was accepted, letting a caller re-point another patient's record at its file).
+  const keyParts = toLogicalKey(objectKey, auth?.uid).split('/');
+  if (recordId && (purpose === 'health_records' || purpose === 'lab_reports') && keyParts[2] !== recordId) {
+    throw new HttpsError('permission-denied', 'recordId does not match the uploaded object.');
+  }
   if (recordId) {
     if (purpose === 'health_records') {
       await ctx.supabase
@@ -1323,7 +1373,8 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
           upload_confirmed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
-        .eq('record_id', recordId);
+        .eq('record_id', recordId)
+        .eq('patient_id', keyParts[1]);
     } else if (purpose === 'lab_reports') {
       await ctx.supabase
         .from('lab_bookings')
@@ -1337,7 +1388,8 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
           report_uploaded_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
-        .eq('booking_id', recordId);
+        .eq('booking_id', recordId)
+        .eq('patient_id', keyParts[1]);
     } else if (purpose === 'patient_profile') {
       const targetId = caller.profileId || recordId;
       await ctx.supabase
@@ -1451,6 +1503,9 @@ exports._test = {
   setS3ClientForTesting,
   setSupabaseClientForTesting,
   validateContentTypeAndSize,
+  toLogicalKey,
+  planePrefixFor,
+  stripPlanePrefix,
   extractExtension,
   authorizeRead,
   authorizeDelete,

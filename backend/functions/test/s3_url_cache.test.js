@@ -20,7 +20,7 @@ const {
   getS3UrlCacheConfig,
 } = _test;
 
-const { _resetRemoteConfigCache } = require('../sync_flags');
+const { createPgFromLegacySeed } = require('./helpers/legacy_seed_to_pg');
 
 let origLegacyCutover;
 let origServiceKey;
@@ -29,12 +29,10 @@ test.beforeEach(() => {
   origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
   origServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   origS3Bucket = process.env.S3_BUCKET_STAGING;
-  process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'dummy-service-role-key-for-test';
   }
   process.env.S3_BUCKET_STAGING = process.env.S3_BUCKET_STAGING || 'doctornect-test-bucket';
-  _resetRemoteConfigCache();
 });
 
 test.afterEach(() => {
@@ -46,8 +44,6 @@ test.afterEach(() => {
 
   if (origS3Bucket === undefined) delete process.env.S3_BUCKET_STAGING;
   else process.env.S3_BUCKET_STAGING = origS3Bucket;
-
-  _resetRemoteConfigCache();
 });
 
 function hashKey(value) {
@@ -68,46 +64,9 @@ function createMockS3Client() {
   return client;
 }
 
+/** Firestore-shaped seed -> in-memory Postgres (see helpers/legacy_seed_to_pg.js). */
 function createMockDb(initialData = {}) {
-  const store = new Map();
-  for (const [coll, docs] of Object.entries(initialData)) {
-    for (const [id, data] of Object.entries(docs)) {
-      store.set(`${coll}/${id}`, data);
-    }
-  }
-
-  return {
-    collection(collName) {
-      return {
-        async add(data) {
-          const autoId = `auto_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-          store.set(`${collName}/${autoId}`, data);
-          return { id: autoId };
-        },
-        doc(docId) {
-          const key = `${collName}/${docId}`;
-          return {
-            async get() {
-              const data = store.get(key);
-              return {
-                id: docId,
-                exists: data !== undefined,
-                data: () => data || null,
-              };
-            },
-            async set(data, options = {}) {
-              if (options.merge) {
-                const existing = store.get(key) || {};
-                store.set(key, { ...existing, ...data });
-              } else {
-                store.set(key, { ...data });
-              }
-            },
-          };
-        },
-      };
-    },
-  };
+  return createPgFromLegacySeed(initialData);
 }
 
 function createTrackingRedis() {
