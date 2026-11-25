@@ -139,6 +139,7 @@ void main() {
         // treated as unset on Windows, so .env defaults would leak in).
         'RELEASE_BUILD_NO_DOTENV': '1',
         'FIREBASE_API_KEY_ANDROID': 'dummy_android_key_123',
+        'FIREBASE_PROJECT_ID': 'medibond-45fad',
         'ENABLE_SUPABASE': '',
         'SUPABASE_URL': '',
         'SUPABASE_ANON_KEY': '',
@@ -241,6 +242,7 @@ void main() {
         // treated as unset on Windows, so .env defaults would leak in).
         'RELEASE_BUILD_NO_DOTENV': '1',
         'FIREBASE_API_KEY_ANDROID': 'dummy_android_key_123',
+        'FIREBASE_PROJECT_ID': 'medibond-45fad',
         'ENABLE_SUPABASE': '',
         'SUPABASE_URL': '',
         'SUPABASE_ANON_KEY': '',

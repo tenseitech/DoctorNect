@@ -17,7 +17,17 @@ import 'firebase_error_messages.dart';
 abstract final class FirebaseBootstrap {
   static bool isReady = false;
   static bool appCheckReady = false;
+
+  /// User-facing reason the last [initialize] failed (short, non-technical).
   static String? lastInitError;
+
+  /// Non-sensitive machine reason for the last failure (for logs / support), or null.
+  static String? lastInitReasonCode;
+
+  static const configMissingReasonCode = 'firebase_config_missing';
+  static const configMissingUserMessage =
+      'This version of the app is not set up correctly. Please install the latest '
+      'version and try again.';
 
   static Future<bool>? _initFuture;
 
@@ -27,6 +37,7 @@ abstract final class FirebaseBootstrap {
     isReady = false;
     appCheckReady = false;
     lastInitError = null;
+    lastInitReasonCode = null;
   }
 
   static Future<void> activateAppCheck() => _activateAppCheck();
@@ -43,6 +54,7 @@ abstract final class FirebaseBootstrap {
   static Future<bool> _initializeOnce() async {
     try {
       lastInitError = null;
+      lastInitReasonCode = null;
 
       if (Firebase.apps.isNotEmpty) {
         await _onFirebaseAppReady();
@@ -50,8 +62,16 @@ abstract final class FirebaseBootstrap {
       }
 
       if (!DefaultFirebaseOptions.isConfigured) {
+        // Build was produced without the Firebase client config (missing dart-define such as
+        // FIREBASE_API_KEY_ANDROID). Users get a short message; logs get a reason code and
+        // the missing define NAMES only (never values).
         isReady = false;
-        lastInitError = 'Firebase API keys not configured.';
+        lastInitReasonCode = configMissingReasonCode;
+        lastInitError = configMissingUserMessage;
+        debugPrint(
+          '[FirebaseBootstrap] init_failed reason=$configMissingReasonCode '
+          'missing=${DefaultFirebaseOptions.requiredClientDefines.join(',')}',
+        );
         return false;
       }
 

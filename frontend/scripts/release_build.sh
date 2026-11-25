@@ -113,7 +113,24 @@ EOF
     exit 1
   fi
 
+  # Firebase client config: report every missing name together, before any build step.
+  local firebase_missing=()
+  [[ -z "${FIREBASE_PROJECT_ID:-}" ]] && firebase_missing+=(FIREBASE_PROJECT_ID)
+  if (( ${#firebase_missing[@]} > 0 )); then
+    echo "Missing required variables (repo root .env or shell); nothing was built: ${firebase_missing[*]}" >&2
+    exit 1
+  fi
+  local gs_json="$PROJECT_ROOT/android/app/google-services.json"
+  if [[ -f "$gs_json" ]]; then
+    local gs_project
+    gs_project="$(sed -n 's/.*"project_id": *"\([^"]*\)".*/\1/p' "$gs_json" | head -1)"
+    if [[ "$FIREBASE_PROJECT_ID" != "$gs_project" ]]; then
+      echo "FIREBASE_PROJECT_ID does not match android/app/google-services.json (project_id); nothing was built." >&2
+      exit 1
+    fi
+  fi
   DART_DEFINES+=(--dart-define=FIREBASE_API_KEY_ANDROID="$FIREBASE_API_KEY_ANDROID")
+  DART_DEFINES+=(--dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID")
   DART_DEFINES+=(--dart-define=FIRESTORE_FORBIDDEN=true)
 
   if [[ -n "${GOOGLE_MAPS_API_KEY:-}" ]]; then
@@ -159,7 +176,7 @@ EOF
   done
 
   # Strict allowlist: confirm only intended keys reach dart-defines
-  local allowed_keys=("FIREBASE_API_KEY_ANDROID" "FIRESTORE_FORBIDDEN" "GOOGLE_MAPS_API_KEY" "RECAPTCHA_SITE_KEY" "SUPABASE_URL" "SUPABASE_ANON_KEY" "USE_SUPABASE_DB_DOCTOR_PATIENT")
+  local allowed_keys=("FIREBASE_API_KEY_ANDROID" "FIREBASE_PROJECT_ID" "FIRESTORE_FORBIDDEN" "GOOGLE_MAPS_API_KEY" "RECAPTCHA_SITE_KEY" "SUPABASE_URL" "SUPABASE_ANON_KEY" "USE_SUPABASE_DB_DOCTOR_PATIENT")
   for define in "${all_defines[@]}"; do
     local key="${define#--dart-define=}"
     key="${key%%=*}"
