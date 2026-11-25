@@ -2,36 +2,44 @@
 'use strict';
 
 /**
- * Seed the Play Store reviewer / demo accounts into the STAGING Supabase database ONLY.
+ * Seed (or reset) the five DoctorNect demo / store-reviewer accounts in the STAGING
+ * Supabase database ONLY.
  *
- * Demo phones must be pre-registered users so reviewers take the normal LOGIN path (OTP ->
- * existing user), never signup. This script creates, if missing, one public.users row per demo
- * role (id = firebase_uid = the demo Firebase UID, mobile = +91<digits>) plus the matching profile
- * row. It is create-only: existing rows are never updated or deleted.
+ *   9999900001 doctor   9999900002 patient   9999900003 pharmacy
+ *   9999900004 lab      9999900005 ambulance
+ * (numbers, roles and Firebase UIDs come from scripts/lib/demo_accounts.js)
  *
- *   node scripts/db/seed_staging_demo_accounts.js            # dry run: prints the plan
+ * Demo numbers are pre-registered users: reviewers take the normal unified phone step
+ * (OTP -> existing account -> signed in), never registration. Every account gets a fully
+ * populated, verified profile plus a little module data so each home screen works.
+ * Only fictitious names, addresses and identifiers; e-mails use the reserved .invalid TLD.
+ *
+ *   node scripts/db/seed_staging_demo_accounts.js                    # dry run: prints the plan
  *   DEMO_SEED_TARGET=staging node scripts/db/seed_staging_demo_accounts.js --execute
+ *   DEMO_SEED_TARGET=staging node scripts/db/seed_staging_demo_accounts.js --reset
  *
- * Connection: STAGING_SUPABASE_DB_URL (or --db-url=...). Phones: REVIEW_<ROLE>_PHONES (first number)
- * or the defaults below. Firebase Auth users are created separately by
- * scripts/audit/staging_demo_firebase_create.js (same UIDs). Every demo UID must also be listed in
- * DEMO_FIREBASE_UID_ALLOWLIST on Functions and gateway so production routes them to staging.
+ * --execute is create-only and idempotent (existing rows are left alone).
+ * --reset deletes ONLY the demo accounts' rows (demo UIDs, demo profile ids, rows that use a
+ * demo number, demo_* sample rows) and seeds them again: use it to restore a clean state.
  *
- * Hard refusals (no flag overrides them): APP_ENV=production, any *.rds.amazonaws.com host, the
- * PROD_RDS_HOST / PROD_RDS_CONNECT_HOST / PROD_GATEWAY_URL hosts, any URL equal to DATABASE_URL /
- * PROD_RDS_DATABASE_URL, and any host that is not a Supabase host (loopback is allowed only with
- * --allow-local for scratch testing).
+ * Connection: STAGING_SUPABASE_DB_URL (or --db-url=...), read from the environment or the
+ * repo-root .env; it is never printed.
+ *
+ * Hard refusals (no flag overrides them): APP_ENV=production, any *.rds.amazonaws.com host,
+ * the PROD_RDS_HOST / PROD_RDS_CONNECT_HOST / PROD_GATEWAY_URL hosts, a URL equal to
+ * DATABASE_URL / PROD_RDS_DATABASE_URL, and any host that is not a Supabase host (loopback is
+ * allowed only with --allow-local, for scratch databases).
  */
 
+const crypto = require('crypto');
 const { URL } = require('url');
+const { DEMO_ACCOUNTS } = require('../lib/demo_accounts');
 
-const DEMOS = [
-  { role: 'patient', uid: 'rev_fb_pat_001', digits: '9999900001', phonesEnv: 'REVIEW_PATIENT_PHONES', name: 'Demo Patient' },
-  { role: 'doctor', uid: 'rev_fb_doc_001', digits: '9999900002', phonesEnv: 'REVIEW_DOCTOR_PHONES', name: 'Demo Doctor' },
-  { role: 'medicalStore', uid: 'rev_fb_store_001', digits: '9999900003', phonesEnv: 'REVIEW_MEDICAL_STORE_PHONES', name: 'Demo Pharmacy' },
-  { role: 'lab', uid: 'rev_fb_lab_001', digits: '9999900004', phonesEnv: 'REVIEW_LAB_PHONES', name: 'Demo Lab' },
-  { role: 'ambulance', uid: 'rev_fb_amb_001', digits: '9999900005', phonesEnv: 'REVIEW_AMBULANCE_PHONES', name: 'Demo Ambulance' },
-];
+const EMAIL_DOMAIN = 'demo.doctornect.invalid';
+const IDS = {
+  doctor: DEMO_ACCOUNTS.find((a) => a.role === 'doctor').profileId,
+  patient: DEMO_ACCOUNTS.find((a) => a.role === 'patient').profileId,
+};
 
 function hostOf(value) {
   const s = String(value || '').trim();
@@ -68,121 +76,280 @@ function assertStagingOnlyTarget(dbUrl, env = process.env, { allowLocal = false 
   return host;
 }
 
-function demoPhone(demo, env = process.env) {
-  const first = String(env[demo.phonesEnv] || '').split(',').map((s) => s.replace(/\D/g, '')).find((d) => d.length >= 10);
-  return `+91${(first || demo.digits).slice(-10)}`;
+const now = () => new Date().toISOString();
+const inDays = (d, hour = 10) => {
+  const t = new Date();
+  t.setUTCDate(t.getUTCDate() + d);
+  t.setUTCHours(hour - 5, 30, 0, 0); // hour:00 IST
+  return t.toISOString();
+};
+
+/** An unusable random PIN hash in the backend's pbkdf2 format (ambulance login uses OTP). */
+function unusablePinHash() {
+  const salt = crypto.randomBytes(16);
+  const pin = crypto.randomBytes(24).toString('hex');
+  const hash = crypto.pbkdf2Sync(pin, salt, 120000, 32, 'sha256');
+  return `pbkdf2$sha256$120000$${salt.toString('hex')}$${hash.toString('hex')}`;
 }
 
-function profileFor(demo, mobile) {
-  const id = `demo_${demo.role.toLowerCase()}_001`;
-  switch (demo.role) {
-    case 'patient':
-      return { table: 'patients', key: 'patient_id', id, row: { patient_id: id, owner_uid: demo.uid, name: demo.name, phone: mobile, mobile } };
-    case 'doctor':
-      return { table: 'doctors', key: 'doctor_id', id, row: { doctor_id: id, owner_uid: demo.uid, name: demo.name, mobile, phone: mobile, specialization: 'General Physician', verified: true, deactivated: false } };
-    case 'medicalStore':
-      return { table: 'medical_stores', key: 'store_id', id, row: { store_id: id, owner_uid: demo.uid, store_name: demo.name, owner_name: demo.name, phone: mobile, verified: true, deactivated: false } };
-    case 'lab':
-      return { table: 'labs', key: 'lab_id', id, row: { lab_id: id, owner_uid: demo.uid, lab_name: demo.name, phone: mobile, verified: true, deactivated: false } };
-    case 'ambulance':
-      return { table: 'ambulances', key: 'ambulance_id', id, row: { ambulance_id: id, auth_uid: demo.uid, owner_uid: demo.uid, service_name: demo.name, driver_name: demo.name, phone: mobile, ambulance_type: 'bls', verified: true, is_available: false } };
-    default:
-      throw new Error(`unknown role ${demo.role}`);
+/**
+ * Ordered list of rows to create: { table, pk: [...], row }.
+ * Pure (no DB access) so it can be tested and printed in a dry run.
+ */
+function buildSeedRows() {
+  const rows = [];
+  const add = (table, pk, row) => rows.push({ table, pk, row });
+  const ts = now();
+  const common = { created_at: ts, updated_at: ts };
+
+  for (const a of DEMO_ACCOUNTS) {
+    const names = {
+      doctor: 'Dr. Asha Demo',
+      patient: 'Ravi Demo',
+      medicalStore: 'DoctorNect Demo Pharmacy',
+      lab: 'DoctorNect Demo Diagnostics',
+      ambulance: 'DoctorNect Demo Ambulance',
+    };
+    add('users', ['id'], {
+      id: a.uid,
+      firebase_uid: a.uid,
+      role: a.role,
+      profile_id: a.profileId,
+      display_name: names[a.role],
+      email: `${a.uid}@${EMAIL_DOMAIN}`,
+      mobile: `+91${a.digits}`,
+      profile_completed: true,
+      verified: true,
+      verified_at: ts,
+      deactivated: false,
+      status: 'active',
+      is_system_admin: false,
+      ...common,
+    });
   }
-}
 
-async function columnsOf(client, table) {
-  const { rows } = await client.query(
-    `SELECT column_name, is_nullable, column_default, data_type, udt_name
-       FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1`,
-    [table],
-  );
+  const acct = (role) => DEMO_ACCOUNTS.find((a) => a.role === role);
+  const address = { city: 'Pune', state: 'Maharashtra', country: 'India', pincode: '411001' };
+
+  const d = acct('doctor');
+  add('doctors', ['doctor_id'], {
+    doctor_id: d.profileId, owner_uid: d.uid, name: 'Dr. Asha Demo',
+    email: `${d.uid}@${EMAIL_DOMAIN}`, mobile: `+91${d.digits}`,
+    specialization: 'General Physician', qualification: 'MBBS, MD (Demo)', experience_years: 8,
+    consultation_fee: 300, clinic_name: 'DoctorNect Demo Clinic', area: 'Demo Nagar',
+    address_line1: '1 Demo Street', state_council: 'Demo Medical Council', council_number: 'DEMO-0001',
+    about: 'Fictitious demo doctor for app review. Not a real person.', languages: ['English', 'Hindi'],
+    rating: 4.6, review_count: 0, profile_completed: true, verified: true, verified_at: ts,
+    deactivated: false, ...address, ...common,
+  });
+  add('doctor_availability', ['doctor_id'], {
+    doctor_id: d.profileId, working_days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    morning_start: '09:00', morning_end: '13:00', evening_enabled: true, evening_start: '17:00',
+    evening_end: '20:00', slot_duration_mins: 15, max_patients_per_day: 30,
+    break_enabled: false, updated_at: ts,
+  });
+
+  const p = acct('patient');
+  add('patients', ['patient_id'], {
+    patient_id: p.profileId, owner_uid: p.uid, name: 'Ravi Demo', email: `${p.uid}@${EMAIL_DOMAIN}`,
+    mobile: `+91${p.digits}`, age: 34, gender: 'Male', blood_group: 'O+', height: '172', weight: '70',
+    address: '2 Demo Street, Pune 411001', share_records_with_doctors: true,
+    primary_doctor_id: d.profileId, care_team_doctor_ids: [d.profileId],
+    profile_completed: true, verified: true, ...common,
+  });
+  add('patient_doctor_links', ['patient_id', 'doctor_id'], {
+    patient_id: p.profileId, doctor_id: d.profileId, source: 'manual', created_at: ts,
+  });
+  const records = [
+    ['demo_hr_001', 'Annual health check (sample)', 'labReport', 'labGenerated', -40],
+    ['demo_hr_002', 'Fever prescription (sample)', 'prescription', 'doctorPrescribed', -12],
+    ['demo_hr_003', 'Vaccination certificate (sample)', 'vaccination', 'selfUploaded', -90],
+  ];
+  for (const [id, title, type, source, day] of records) {
+    add('health_records', ['record_id'], {
+      record_id: id, patient_id: p.profileId, title, type, date: inDays(day), source,
+      file_name: `${id}.pdf`, doctor_name: 'Dr. Asha Demo', is_image: false,
+      notes: 'Sample record for the demo account. No real patient data.',
+      shared_with_doctors: true, file_storage: 'none', ...common,
+    });
+  }
+  add('appointments', ['appointment_id'], {
+    appointment_id: 'demo_appt_001', doctor_id: d.profileId, patient_id: p.profileId,
+    doctor_name: 'Dr. Asha Demo', specialization: 'General Physician', patient_name: 'Ravi Demo',
+    patient_age: 34, patient_gender: 'Male', date_time: inDays(2), slot_label: '10:00 AM',
+    token_number: 1, visit_type: 'newVisit', patient_status: 'confirmed', doctor_status: 'confirmed',
+    clinic_name: 'DoctorNect Demo Clinic', clinic_address: '1 Demo Street, Pune', source: 'app',
+    booked_by_uid: p.uid, ...common,
+  });
+  add('appointments', ['appointment_id'], {
+    appointment_id: 'demo_appt_002', doctor_id: d.profileId, patient_id: p.profileId,
+    doctor_name: 'Dr. Asha Demo', specialization: 'General Physician', patient_name: 'Ravi Demo',
+    patient_age: 34, patient_gender: 'Male', date_time: inDays(-12), slot_label: '10:00 AM',
+    token_number: 1, visit_type: 'newVisit', patient_status: 'completed', doctor_status: 'completed',
+    clinic_name: 'DoctorNect Demo Clinic', clinic_address: '1 Demo Street, Pune', source: 'app',
+    diagnosis: 'Viral fever (sample)', booked_by_uid: p.uid, ...common,
+  });
+
+  const m = acct('medicalStore');
+  add('medical_stores', ['store_id'], {
+    store_id: m.profileId, owner_uid: m.uid, store_name: 'DoctorNect Demo Pharmacy',
+    owner_name: 'Meera Demo', drug_license_number: 'DEMO-DL-0003', phone: `+91${m.digits}`,
+    email: `${m.uid}@${EMAIL_DOMAIN}`, address_line1: '3 Demo Street', profile_completed: true,
+    verified: true, verified_at: ts, deactivated: false, ...address, ...common,
+  });
+
+  const l = acct('lab');
+  add('labs', ['lab_id'], {
+    lab_id: l.profileId, owner_uid: l.uid, lab_name: 'DoctorNect Demo Diagnostics',
+    license_number: 'DEMO-LAB-0004', phone: `+91${l.digits}`, email: `${l.uid}@${EMAIL_DOMAIN}`,
+    rating: 4.5, area: 'Demo Nagar', address_line1: '4 Demo Street', profile_completed: true,
+    verified: true, verified_at: ts, deactivated: false, ...address, ...common,
+  });
+  for (const [id, name, sample, hours, category] of [
+    ['demo_test_cbc', 'Complete Blood Count (demo)', 'blood', 12, 'Haematology'],
+    ['demo_test_lft', 'Liver Function Test (demo)', 'blood', 24, 'Biochemistry'],
+    ['demo_test_urine', 'Urine Routine (demo)', 'urine', 8, 'Pathology'],
+  ]) {
+    add('lab_catalog_tests', ['test_id'], {
+      test_id: id, name, parameters: ['Sample parameter'], fasting_required: false,
+      sample_type: sample, report_hours: hours, popular: true, category,
+    });
+  }
+
+  const am = acct('ambulance');
+  add('ambulances', ['ambulance_id'], {
+    ambulance_id: am.profileId, auth_uid: am.uid, service_name: 'DoctorNect Demo Ambulance',
+    owner_name: 'Kiran Demo', driver_name: 'Kiran Demo', phone: `+91${am.digits}`,
+    vehicle_number: 'MH12DM0005', ambulance_type: 'bls', username: 'demo_ambulance',
+    city: 'Pune', base_address: '5 Demo Street, Pune', has_oxygen: true, has_ventilator: false,
+    has_stretcher: true, is_24x7: true, rate_per_km: 20, total_rating: 0, rating_count: 0,
+    is_available: true, profile_completed: true, verified: true, address_line1: '5 Demo Street',
+    state: 'Maharashtra', country: 'India', pincode: '411001', service_areas: ['Pune'], ...common,
+  });
+  add('ambulance_private_settings', ['ambulance_id'], {
+    ambulance_id: am.profileId, pin_hash: unusablePinHash(), updated_at: ts,
+  });
   return rows;
 }
 
-function dummyFor(col) {
-  const t = col.data_type;
-  if (t === 'uuid') return null; // let the DB fail loudly rather than invent identity values
-  if (t === 'ARRAY') return '{}';
-  if (t === 'boolean') return false;
-  if (/int|numeric|double|real/.test(t)) return 0;
-  if (/timestamp|date/.test(t)) return new Date().toISOString();
-  if (/json/.test(t)) return '{}';
-  return 'demo';
+/** Deletes demo-owned rows only, children first. */
+const RESET_SQL = [
+  ['ambulance_private_settings', 'ambulance_id = ANY($1)'],
+  ['ambulance_broadcasts', 'patient_id = ANY($1) OR accepted_driver_id = ANY($1)'],
+  ['ambulances', 'ambulance_id = ANY($1) OR auth_uid = ANY($2)'],
+  ['appointments', "appointment_id LIKE 'demo\\_appt\\_%' OR doctor_id = ANY($1) OR patient_id = ANY($1)"],
+  ['health_records', 'patient_id = ANY($1)'],
+  ['prescriptions', 'patient_id = ANY($1) OR doctor_id = ANY($1)'],
+  ['lab_bookings', 'patient_id = ANY($1) OR lab_id = ANY($1)'],
+  ['lab_orders', 'patient_id = ANY($1) OR lab_id = ANY($1) OR doctor_id = ANY($1)'],
+  ['pharmacy_deliveries', 'patient_id = ANY($1) OR doctor_id = ANY($1) OR store_id = ANY($1)'],
+  ['patient_doctor_links', 'patient_id = ANY($1) OR doctor_id = ANY($1)'],
+  ['doctor_availability', 'doctor_id = ANY($1)'],
+  ['lab_catalog_tests', "test_id LIKE 'demo\\_test\\_%'"],
+  ['patients', 'patient_id = ANY($1) OR owner_uid = ANY($2)'],
+  ['doctors', 'doctor_id = ANY($1) OR owner_uid = ANY($2)'],
+  ['medical_stores', 'store_id = ANY($1) OR owner_uid = ANY($2)'],
+  ['labs', 'lab_id = ANY($1) OR owner_uid = ANY($2)'],
+  ['users', 'id = ANY($2) OR mobile = ANY($3)'],
+];
+
+function mobileVariants() {
+  return DEMO_ACCOUNTS.flatMap((a) => [a.digits, `+91${a.digits}`, `91${a.digits}`, `0${a.digits}`]);
 }
 
-/** Insert only columns that exist; fill other NOT NULL columns without defaults; never overwrite. */
-async function insertIfMissing(client, table, keyCol, row) {
-  const cols = await columnsOf(client, table);
-  if (!cols.length) throw new Error(`table public.${table} not found`);
-  const names = new Set(cols.map((c) => c.column_name));
-  const data = {};
-  for (const [k, v] of Object.entries(row)) if (names.has(k)) data[k] = v;
-  for (const c of cols) {
-    if (c.is_nullable === 'NO' && c.column_default == null && !(c.column_name in data)) {
-      const v = dummyFor(c);
-      if (v !== null) data[c.column_name] = v;
-    }
+async function tableExists(client, table) {
+  const { rows } = await client.query('SELECT to_regclass($1) AS t', [`public.${table}`]);
+  return rows[0].t !== null;
+}
+
+async function resetDemoData(client) {
+  // Profile ids owned by any user row that is a demo UID or uses a demo number.
+  const { rows } = await client.query(
+    'SELECT profile_id FROM public.users WHERE id = ANY($1) OR mobile = ANY($2)',
+    [DEMO_ACCOUNTS.map((a) => a.uid), mobileVariants()],
+  );
+  const profileIds = [...new Set([...DEMO_ACCOUNTS.map((a) => a.profileId), ...rows.map((r) => r.profile_id).filter(Boolean)])];
+  const uids = DEMO_ACCOUNTS.map((a) => a.uid);
+  const counts = {};
+  for (const [table, where] of RESET_SQL) {
+    if (!(await tableExists(client, table))) continue;
+    const all = [profileIds, uids, mobileVariants()];
+    // Pass only the arrays this statement uses, renumbered $1..$n (Postgres cannot type unused params).
+    const used = [1, 2, 3].filter((n) => where.includes(`$${n}`));
+    const sqlWhere = used.reduce((w, n, i) => w.split(`$${n}`).join(`$__${i + 1}`), where).replace(/\$__/g, '$');
+    const res = await client.query(`DELETE FROM public.${table} WHERE ${sqlWhere}`, used.map((n) => all[n - 1]));
+    counts[table] = res.rowCount;
   }
-  const keys = Object.keys(data);
+  return counts;
+}
+
+async function insertIfMissing(client, { table, pk, row }) {
+  const keys = Object.keys(row);
   const sql = `INSERT INTO public.${table} (${keys.map((k) => `"${k}"`).join(', ')})
                VALUES (${keys.map((_, i) => `$${i + 1}`).join(', ')})
-               ON CONFLICT ("${keyCol}") DO NOTHING`;
-  const res = await client.query(sql, keys.map((k) => data[k]));
+               ON CONFLICT (${pk.map((k) => `"${k}"`).join(', ')}) DO NOTHING`;
+  const res = await client.query(sql, keys.map((k) => row[k]));
   return res.rowCount;
 }
 
-function buildPlan(env = process.env) {
-  return DEMOS.map((d) => {
-    const mobile = demoPhone(d, env);
-    const profile = profileFor(d, mobile);
-    return {
-      role: d.role,
-      uid: d.uid,
-      mobileMasked: `${mobile.slice(0, 5)}*****${mobile.slice(-2)}`,
-      mobile,
-      profile,
-      user: { id: d.uid, firebase_uid: d.uid, role: d.role, profile_id: profile.id, mobile, name: d.name, email: `${d.uid}@demo.doctornect.invalid` },
-    };
-  });
+async function seedDemoData(client) {
+  // Refuse to touch a demo number that already belongs to a non-demo user.
+  const { rows } = await client.query('SELECT id FROM public.users WHERE mobile = ANY($1)', [mobileVariants()]);
+  const uids = new Set(DEMO_ACCOUNTS.map((a) => a.uid));
+  const foreign = rows.filter((r) => !uids.has(r.id));
+  if (foreign.length) {
+    throw new Error(`${foreign.length} non-demo user row(s) use a demo number; run --reset to clean them up.`);
+  }
+  // A demo UID that holds another demo number (old mapping) also needs --reset.
+  const { rows: mismatched } = await client.query(
+    'SELECT id, mobile, role FROM public.users WHERE id = ANY($1)', [[...uids]],
+  );
+  for (const r of mismatched) {
+    const a = DEMO_ACCOUNTS.find((x) => x.uid === r.id);
+    if (String(r.mobile || '').replace(/\D/g, '').slice(-10) !== a.digits || r.role !== a.role) {
+      throw new Error(`demo user ${r.id} has an outdated number/role mapping; run --reset.`);
+    }
+  }
+  const created = {};
+  for (const item of buildSeedRows()) {
+    created[item.table] = (created[item.table] || 0) + (await insertIfMissing(client, item));
+  }
+  return created;
 }
 
 async function main() {
   const args = process.argv.slice(2);
-  const execute = args.includes('--execute');
+  const reset = args.includes('--reset');
+  const execute = args.includes('--execute') || reset;
   const allowLocal = args.includes('--allow-local');
   const urlArg = (args.find((a) => a.startsWith('--db-url=')) || '').slice('--db-url='.length);
   try { require('../lib/bootstrap_root_env').loadRootEnv(); } catch (_) {}
   const dbUrl = urlArg || process.env.STAGING_SUPABASE_DB_URL || '';
 
   const host = assertStagingOnlyTarget(dbUrl, process.env, { allowLocal });
-  const plan = buildPlan();
   console.log(`Target host: ${host}`);
-  for (const p of plan) console.log(`  ${p.role.padEnd(13)} uid=${p.uid} mobile=${p.mobileMasked} profile=${p.profile.table}/${p.profile.id}`);
+  for (const a of DEMO_ACCOUNTS) {
+    console.log(`  ${a.role.padEnd(13)} +91${a.digits.slice(0, 3)}*****${a.digits.slice(-2)}  uid=${a.uid}  profile=${a.profileId}`);
+  }
+  const plan = buildSeedRows();
+  const byTable = plan.reduce((m, r) => ({ ...m, [r.table]: (m[r.table] || 0) + 1 }), {});
+  console.log('Rows:', JSON.stringify(byTable));
   if (!execute) {
-    console.log('\nDry run. Re-run with DEMO_SEED_TARGET=staging and --execute to create missing rows.');
+    console.log('\nDry run. Add --execute (create-only) or --reset (restore clean demo data) with DEMO_SEED_TARGET=staging.');
     return;
   }
   if (String(process.env.DEMO_SEED_TARGET || '') !== 'staging') {
-    throw new Error('[seed_staging_demo_accounts] REFUSED: set DEMO_SEED_TARGET=staging to execute.');
+    throw new Error('[seed_staging_demo_accounts] REFUSED: set DEMO_SEED_TARGET=staging to write.');
   }
 
   const { Client } = require('pg');
-  const client = new Client({ connectionString: dbUrl, ssl: allowLocal && ['127.0.0.1', 'localhost', '::1'].includes(host) ? false : { rejectUnauthorized: true } });
+  const local = allowLocal && ['127.0.0.1', 'localhost', '::1'].includes(host);
+  const client = new Client({ connectionString: dbUrl, ssl: local ? false : { rejectUnauthorized: true } });
   await client.connect();
   try {
     await client.query('BEGIN');
-    for (const p of plan) {
-      const existing = await client.query('SELECT id, role FROM public.users WHERE mobile = ANY($1) OR id = $2', [
-        [p.mobile, p.mobile.slice(3), p.mobile.slice(1)], p.uid,
-      ]);
-      if (existing.rows.some((r) => r.id !== p.uid)) {
-        throw new Error(`demo phone for ${p.role} already belongs to another user; refusing to touch it.`);
-      }
-      const usr = await insertIfMissing(client, 'users', 'id', p.user);
-      const prof = await insertIfMissing(client, p.profile.table, p.profile.key, p.profile.row);
-      console.log(`  ${p.role.padEnd(13)} profile ${prof ? 'created' : 'exists'}, user ${usr ? 'created' : 'exists'}`);
-    }
+    if (reset) console.log('Deleted:', JSON.stringify(await resetDemoData(client)));
+    console.log('Created:', JSON.stringify(await seedDemoData(client)));
     await client.query('COMMIT');
   } catch (e) {
     await client.query('ROLLBACK').catch(() => {});
@@ -196,4 +363,4 @@ if (require.main === module) {
   main().catch((e) => { console.error(e.message); process.exit(1); });
 }
 
-module.exports = { assertStagingOnlyTarget, buildPlan, DEMOS };
+module.exports = { assertStagingOnlyTarget, buildSeedRows, resetDemoData, seedDemoData, DEMO_ACCOUNTS };
