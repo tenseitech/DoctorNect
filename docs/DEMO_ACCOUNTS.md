@@ -122,3 +122,12 @@ The connection string is read from `STAGING_SUPABASE_DB_URL` in the repo-root `.
 printed). `--execute` is create-only; `--reset` deletes only demo-owned rows and seeds again.
 
 End-to-end check on a throwaway database (Docker): `npm run test:demo-login`.
+
+## Test APK for the demo accounts
+
+`frontend/scripts/build_staging_demo_apk.ps1` builds a release-signed APK with the App Check
+debug provider (`APP_ENV=staging`, `APP_CHECK_DEBUG_PROVIDER=true`) and the staging Supabase
+data plane (`STAGING_SUPABASE_URL` / `STAGING_SUPABASE_ANON_KEY` from the repo-root `.env`,
+never printed). A plain `flutter build apk` has no data plane compiled in: OTP login then
+succeeds but the app cannot read the profile and shows "Account profile not found for this
+mobile number." Real users must use the production build (`scripts/release_build.ps1`).
