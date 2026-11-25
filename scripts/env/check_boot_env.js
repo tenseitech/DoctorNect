@@ -141,21 +141,60 @@ function checklistFunctions(env, appEnv) {
     need(['S3_BUCKET_PRODUCTION', 'S3_BUCKET'], 'S3 production bucket');
     need(['OTP_HMAC_SECRET'], 'OTP_HMAC_SECRET (dedicated OTP pepper)', 'WARN');
     need(['SUPER_ADMIN_EMAILS'], 'SUPER_ADMIN_EMAILS (super-admin allow-list; empty = no email super admins)', 'WARN');
-    if (String(env.DEMO_REAL_ROUTING_ENABLED || '').trim() === '1') {
-      need(['DEMO_FIREBASE_UID_ALLOWLIST'], 'DEMO_FIREBASE_UID_ALLOWLIST (demo routing on)');
-      need(['DEMO_SUPABASE_URL'], 'DEMO_SUPABASE_URL (demo routing on)');
-    }
     const hops = String(env.TRUSTED_PROXY_HOPS || '').trim();
     if (hops && !/^(10|[1-9])$/.test(hops)) r.push({ name: 'TRUSTED_PROXY_HOPS', status: 'FAIL', message: 'must be an integer 1-10' });
   } else {
     need(['S3_BUCKET_STAGING', 'S3_BUCKET'], 'S3 staging bucket');
   }
+  r.push(...checklistDemoAccounts(env, prod));
   const inFile = FUNCTIONS_SECRET_MANAGER_KEYS.filter((k) => has(env, k));
   r.push({
     name: 'Secret Manager secrets not stored in the env file',
     status: inFile.length ? 'WARN' : 'PASS',
     message: inFile.length ? `move to Firebase Secret Manager: ${inFile.join(', ')}` : undefined,
   });
+  return r;
+}
+
+/**
+ * Demo / reviewer accounts (docs/DEMO_ACCOUNTS.md). Numbers and roles are fixed in code; these
+ * variables only switch the demo OTP on and point at the staging plane.
+ */
+function checklistDemoAccounts(env, prod) {
+  const r = [];
+  const on = String(env.REVIEWER_OTP_ENABLED || '').trim().toLowerCase() === 'true';
+  const obsolete = ['REVIEW_PATIENT_PHONES', 'REVIEW_DOCTOR_PHONES', 'REVIEW_MEDICAL_STORE_PHONES',
+    'REVIEW_MEDICALSTORE_PHONES', 'REVIEW_LAB_PHONES', 'REVIEW_AMBULANCE_PHONES', 'REVIEW_TEST_NUMBERS',
+    'DEMO_PHONE_NUMBERS', 'DEMO_FIXED_OTP'].filter((k) => has(env, k));
+  if (obsolete.length) {
+    r.push({ name: 'obsolete demo variables', status: 'WARN', message: `ignored now (numbers are fixed in code), remove: ${obsolete.join(', ')}` });
+  }
+  if (!on) {
+    r.push({ name: 'demo OTP (REVIEWER_OTP_ENABLED)', status: 'PASS', message: 'off: demo numbers cannot log in' });
+    return r;
+  }
+  const until = String(env.REVIEW_ACCESS_UNTIL || '').trim();
+  const t = new Date(until).getTime();
+  r.push({
+    name: 'REVIEW_ACCESS_UNTIL (demo OTP on)',
+    status: until && !Number.isNaN(t) && t > Date.now() ? 'PASS' : 'FAIL',
+    message: !until ? 'missing' : (Number.isNaN(t) ? 'not an ISO 8601 date' : (t <= Date.now() ? 'in the past' : undefined)),
+  });
+  if (prod) {
+    r.push({ name: 'DEMO_SUPABASE_URL (demo OTP on)', status: has(env, 'DEMO_SUPABASE_URL') ? 'PASS' : 'FAIL',
+      message: has(env, 'DEMO_SUPABASE_URL') ? undefined : 'missing: demo logins have no staging plane' });
+    r.push({ name: 'DEMO_SUPABASE_SERVICE_ROLE_KEY secret (demo OTP on)', status: 'WARN',
+      message: 'must be set in Secret Manager: firebase functions:secrets:get DEMO_SUPABASE_SERVICE_ROLE_KEY (cannot be checked from a file)' });
+  }
+  const fixed = String(env.REVIEW_FIXED_OTP || '').trim();
+  if (fixed) {
+    r.push({ name: 'REVIEW_FIXED_OTP location', status: prod ? 'FAIL' : 'WARN',
+      message: 'must be a Firebase secret, not a plain env value (firebase functions:secrets:set REVIEW_FIXED_OTP)' });
+    if (!/^\d{6}$/.test(fixed)) r.push({ name: 'REVIEW_FIXED_OTP format', status: 'FAIL', message: 'must be exactly 6 digits' });
+  } else {
+    r.push({ name: 'REVIEW_FIXED_OTP secret (demo OTP on)', status: 'WARN',
+      message: 'must be set in Secret Manager (6 digits); the OTP functions refuse to start without it' });
+  }
   return r;
 }
 
@@ -170,10 +209,11 @@ function checklistGateway(env, appEnv) {
   if (prod && String(env.FIREBASE_REVOCATION_CHECK || '').trim().toLowerCase() === 'false') {
     r.push({ name: 'FIREBASE_REVOCATION_CHECK', status: 'FAIL', message: 'must not be false in production' });
   }
-  if (String(env.DEMO_REAL_ROUTING_ENABLED || '').trim() === '1') {
-    need('DEMO_PGRST_URL', 'DEMO_PGRST_URL (demo routing on)');
-    need('DEMO_PGRST_JWT_SECRET', 'DEMO_PGRST_JWT_SECRET (demo routing on)');
-    need('DEMO_FIREBASE_UID_ALLOWLIST', 'DEMO_FIREBASE_UID_ALLOWLIST (demo routing on)');
+  if (prod) {
+    // The five demo UIDs always route to the demo upstream in production.
+    const sev = String(env.DEMO_REAL_ROUTING_ENABLED || '').trim() === '1' ? 'FAIL' : 'WARN';
+    need('DEMO_PGRST_URL', 'DEMO_PGRST_URL (demo accounts get 503 without it)', sev);
+    need('DEMO_PGRST_JWT_SECRET', 'DEMO_PGRST_JWT_SECRET (demo accounts get 503 without it)', sev);
   }
   if (has(env, 'PGRST_URL') && prod && /\.supabase\.co/i.test(env.PGRST_URL)) {
     r.push({ name: 'PGRST_URL target', status: 'FAIL', message: 'production gateway must not point at supabase.co' });

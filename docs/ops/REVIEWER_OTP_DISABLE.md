@@ -1,3 +1,5 @@
+> **Superseded (2026-11-25):** demo numbers, roles and routing are now fixed in code. The current reference is [docs/DEMO_ACCOUNTS.md](../DEMO_ACCOUNTS.md). REVIEW_*_PHONES / DEMO_PHONE_NUMBERS are ignored.
+
 # Runbook: Disable Play Store reviewer fixed OTP (SEC-009)
 
 **Purpose:** Close the **known-OTP + allowlisted phone** window used for Google Play / App Store review without deploying application code.  

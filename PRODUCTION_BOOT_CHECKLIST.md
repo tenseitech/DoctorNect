@@ -37,16 +37,21 @@ reported by `check:boot-env` only.
 | `DATABASE_URL` / `PROD_RDS_DATABASE_URL` | unset | only when the Functions use the direct pg pool | `postgresql://...?sslmode=verify-full` | SM | check | `cutover completeness ... DATABASE_URL` (checker WARN) |
 | `SKIP_APP_ENV_DB_ASSERT` | unset | **must be unset** (ignored in deployed production) | `true` | ENV | - | skips the boot asserts outside deployed production |
 
-### Demo / reviewer plane (production only, optional)
+### Demo / reviewer accounts (optional; see docs/DEMO_ACCOUNTS.md)
+
+The five demo numbers, roles and Firebase UIDs are fixed in code (`scripts/lib/demo_accounts.js`).
+They always use the staging plane; real numbers always use RDS.
 
 | Variable | Production | Format | Where | Boot | Error |
 |---|---|---|---|---|---|
-| `DEMO_REAL_ROUTING_ENABLED` | `1` only when demo accounts are served | `1` | ENV | yes if reviewer on | `reviewer OTP enabled but misconfigured: DEMO_REAL_ROUTING_ENABLED=1` |
-| `DEMO_FIREBASE_UID_ALLOWLIST` | demo Firebase UIDs | comma list | ENV | yes if reviewer on | `... DEMO_FIREBASE_UID_ALLOWLIST` |
-| `DEMO_SUPABASE_URL` | staging Supabase URL used for demo users | URL | SM/ENV | yes if reviewer on | `... DEMO_SUPABASE_URL` |
-| `DEMO_SUPABASE_SERVICE_ROLE_KEY` | staging service key | secret | SM | call | demo logins fail (`unavailable`) |
-| `REVIEWER_OTP_ENABLED` | `false` unless a store review is running | bool | ENV | yes | if on: needs `REVIEW_ACCESS_UNTIL` (future ISO date), `REVIEW_*_PHONES` / `REVIEW_TEST_NUMBERS`, demo routing |
-| `REVIEW_FIXED_OTP` | only as a secret | 6 digits | SM | yes | `REVIEW_FIXED_OTP must be a Firebase secret (reviewer OTP is disabled).` when set as plain env |
+| `REVIEWER_OTP_ENABLED` | `true` only while a store review runs | bool | ENV | yes | if on: needs a future `REVIEW_ACCESS_UNTIL` and `DEMO_SUPABASE_URL`: `reviewer OTP enabled but misconfigured: ...` |
+| `REVIEW_ACCESS_UNTIL` | future ISO 8601 instant | `2026-12-31T23:59:59Z` | ENV | yes if reviewer on | `... REVIEW_ACCESS_UNTIL (future ISO timestamp)` |
+| `REVIEW_FIXED_OTP` | the demo OTP (`000000`) | 6 digits | **SM** | yes (OTP functions) | `REVIEWER_OTP_ENABLED=true but the REVIEW_FIXED_OTP secret is missing in verifyUserRegistrationOtp`; as plain env with reviewer off: `REVIEW_FIXED_OTP must be a Firebase secret` |
+| `DEMO_SUPABASE_URL` | staging Supabase URL used for demo users | URL | ENV | yes if reviewer on | `... DEMO_SUPABASE_URL` |
+| `DEMO_SUPABASE_SERVICE_ROLE_KEY` | staging service key | secret | **SM** | call | demo logins fail (`unavailable`) |
+| `RAZORPAY_TEST_KEY_ID` / `RAZORPAY_TEST_KEY_SECRET` | optional Razorpay test keys for demo accounts | `rzp_test_...` / secret | ENV / **SM** | call | demo payment: `Payments are disabled for demo accounts.` (live keys are never used for demo accounts) |
+| `DEMO_REAL_ROUTING_ENABLED`, `DEMO_FIREBASE_UID_ALLOWLIST` | optional: only for EXTRA demo UIDs | `1` / list | ENV | - | the five built-in demo UIDs route to staging without them |
+| `REVIEW_*_PHONES`, `REVIEW_TEST_NUMBERS`, `DEMO_PHONE_NUMBERS`, `DEMO_FIXED_OTP` | obsolete, ignored | - | - | - | `check:boot-env` warns; remove them |
 | `OTP_TEST_MODE`, `DEMO_PHONE_*`, `GOOGLE_PLAY_REVIEW_PHONE`, `TEST_PHONE_NUMBER` | **must be unset** | - | - | yes | `Production OTP safety check failed for medibond-45fad: OTP_TEST_MODE is enabled; demo phone env configured (...)` |
 
 ### Redis (OTP state, rate limits, login lockout; fail-closed)
@@ -102,7 +107,7 @@ reported by `check:boot-env` only.
 | `CORS_ALLOWED_ORIGINS` | staging origins | prod origins | comma list | ECS env | check | defaults to doctornect.com origins |
 | `TRUSTED_PROXY_HOPS` | 1 | 1 (ALB) | int | ECS env | check | spoofable client IP |
 | `DEMO_REAL_ROUTING_ENABLED` | - | `1` only with demo plane | `1` | ECS env | call | - |
-| `DEMO_PGRST_URL`, `DEMO_PGRST_JWT_SECRET`, `DEMO_PGRST_JWT_AUD`, `DEMO_FIREBASE_UID_ALLOWLIST` | - | required when demo routing is on | URL / secret / list | ECS | call | demo users get `503 Demo data plane is not configured.` |
+| `DEMO_PGRST_URL`, `DEMO_PGRST_JWT_SECRET`, `DEMO_PGRST_JWT_AUD` | - | required whenever demo accounts are used (the five demo UIDs always route here) | URL / secret / list | ECS | call | demo users get `503 Demo data plane is not configured.` |
 | `RATE_LIMIT_*`, `ANON_RATE_LIMIT_*`, `ANON_MAX_ROWS`, `MAX_BODY_SIZE_BYTES`, `FAILED_SERVICE_KEY_*` | defaults | defaults | int | ECS env | - | defaults apply |
 
 ## 3. Images to rebuild before production boot
