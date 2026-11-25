@@ -47,8 +47,8 @@ abstract final class DemoAuthConfig {
     return enabled || kDebugMode;
   }
 
-  static const String demoDoctorPhone = '9999900002';
-  static const String demoPatientPhone = '9999900001';
+  static const String demoDoctorPhone = '9999900001';
+  static const String demoPatientPhone = '9999900002';
   static const String demoPharmacyPhone = '9999900003';
   static const String demoLabPhone = '9999900004';
   static const String demoAmbulancePhone = '9999900005';

@@ -19,7 +19,6 @@ import '../session/ambulance_session.dart';
 import '../session/app_session.dart';
 import '../validators/form_validators.dart';
 import '../validators/name_validator.dart';
-import 'demo_auth_config.dart';
 import 'registration_otp_service.dart';
 import 'unified_auth_coordinator.dart';
 import 'unified_auth_navigation.dart';
@@ -141,47 +140,14 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     _sendingOtp = true;
     _notify();
     try {
-      UnifiedAuthPath? path;
-      String otpType;
-      UserType effectiveRole;
-
-      if (role != null) {
-        path = await UnifiedAuthCoordinator.resolvePath(
-          mobile: digits,
-          role: role!,
-        );
-        _matchedRole = role;
-        effectiveRole = role!;
-        otpType = UnifiedAuthCoordinator.otpTypeForPath(path);
-      } else if (DemoAuthConfig.isAnyDemoPhone(digits)) {
-        final demoRole =
-            DemoAuthConfig.roleForDemoPhone(digits) ?? UserType.patient;
-        path = UnifiedAuthPath.login;
-        _matchedRole = demoRole;
-        effectiveRole = demoRole;
-        otpType = 'login';
-      } else {
-        // Unknown role for new/standard mobile entry:
-        // Do NOT probe registration lookup before OTP send to avoid leaking account existence.
-        _matchedRole = null;
-        effectiveRole = UserType.patient;
-        otpType = 'auth';
-      }
-      if (!context.mounted) return;
-
-      if (path == UnifiedAuthPath.blockedWrongRole) {
-        AppToast.error(context, UnifiedAuthCoordinator.wrongRoleMessage);
-        return;
-      }
-      if (path == UnifiedAuthPath.lookupUnavailable) {
-        AppToast.error(context, UnifiedAuthCoordinator.lookupUnavailableMessage);
-        return;
-      }
-
+      // ONE phone step for login and registration (otpType 'auth'): no account lookup and
+      // no client-side demo/role mapping before the OTP is verified. The server decides the
+      // role, the data plane and whether a demo number may use the fixed OTP.
+      _matchedRole = null;
       final res = await RegistrationOtpService.sendOtp(
         digits,
-        role: effectiveRole,
-        otpType: otpType,
+        role: UserType.patient,
+        otpType: 'auth',
       );
       if (!context.mounted) return;
       if (res.error != null) {
@@ -189,7 +155,7 @@ class UnifiedAuthFlowController extends ChangeNotifier {
         return;
       }
 
-      _authPath = path;
+      _authPath = null;
       _mobileDigits = digits;
       _step = UnifiedAuthStep.otp;
       _otp = '';
@@ -214,11 +180,10 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     await sendOtp(context, digits);
   }
 
-  /// LOGIN vs REGISTER (transparent to user):
-  /// - If role is already known (or demo account): log in or register directly.
-  /// - If role is unknown: checks whether number is registered after OTP is verified.
-  ///   - Registered: routes straight to that user's own role. No role selection screen.
-  ///   - Unregistered: routes to WelcomeScreen (role selection) for the new user.
+  /// LOGIN vs REGISTER (transparent to user), decided only after the OTP is verified:
+  /// - Registered number (including the five demo numbers): signs in with the role the
+  ///   server returns for that account. No role selection screen.
+  /// - Unknown number: continues to registration (role selection, or the invited role).
   Future<void> verifyOtp(BuildContext context) async {
     final digits = _mobileDigits;
     if (_verifying || digits == null) return;
@@ -230,17 +195,6 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     _verifying = true;
     _notify();
     try {
-      if (_matchedRole != null || role != null) {
-        final target = _matchedRole ?? role!;
-        if (_authPath == UnifiedAuthPath.login ||
-            DemoAuthConfig.isAnyDemoPhone(digits)) {
-          await _completeLogin(context, digits, _otp, targetRole: target);
-        } else {
-          await _completeRegistration(context, digits, _otp);
-        }
-        return;
-      }
-
       final verifyError = await RegistrationOtpService.verify(
         digits,
         _otp,
@@ -281,42 +235,6 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     }
   }
 
-  Future<void> _completeLogin(
-    BuildContext context,
-    String digits,
-    String otp, {
-    UserType? targetRole,
-  }) async {
-    final effectiveRole =
-        targetRole ?? _matchedRole ?? role ?? UserType.patient;
-    AppSession.clear();
-
-    if (effectiveRole == UserType.ambulance) {
-      if (!AmbulanceEnabled.isOn) {
-        if (!context.mounted) return;
-        AppToast.error(
-          context,
-          'Ambulance sign-in is not available in this build.',
-        );
-        return;
-      }
-      await completeAmbulanceLogin(context, digits, otp);
-      return;
-    }
-
-    final result = await FirebaseAuthService.instance.signInWithMobileOtp(
-      expectedRole: effectiveRole,
-      mobile: digits,
-      otpCode: otp,
-    );
-    if (!context.mounted) return;
-    await UnifiedAuthNavigation.handleSignInResult(
-      context,
-      role: effectiveRole,
-      result: result,
-    );
-  }
-
   static Future<void> completeAmbulanceLogin(
     BuildContext context,
     String digits,
@@ -349,7 +267,15 @@ class UnifiedAuthFlowController extends ChangeNotifier {
       AppToast.error(context, 'OTP session expired. Please request a new OTP.');
       return;
     }
+    await finishAmbulanceLogin(context, digits, sessionId);
+  }
 
+  /// Completes an ambulance driver login with an already verified OTP session.
+  static Future<void> finishAmbulanceLogin(
+    BuildContext context,
+    String digits,
+    String sessionId,
+  ) async {
     final login = await AmbulanceRepository.instance
         .verifyDriverMobileLogin(mobile: digits, sessionId: sessionId);
     RegistrationOtpService.clearVerificationSession();
@@ -406,60 +332,6 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     );
   }
 
-  Future<void> _completeRegistration(
-    BuildContext context,
-    String digits,
-    String otp,
-  ) async {
-    // Sign out any stale Firebase Auth session so a previous login (e.g. a demo
-    // patient account) is not auto-restored via restoreSession() on the next
-    // app launch.  This is safe because we are about to create a new account.
-    if (FirebaseAuthService.instance.isSignedIn) {
-      try {
-        await FirebaseAuthService.instance.signOut();
-      } catch (_) {
-        // Non-fatal — proceed with registration even if sign-out fails.
-      }
-    }
-
-    final targetRole = _matchedRole ?? role ?? UserType.patient;
-    final verifyError = await RegistrationOtpService.verify(
-      digits,
-      otp,
-      role: targetRole,
-      otpType: 'registration',
-    );
-    if (!context.mounted) return;
-    if (verifyError != null) {
-      AppToast.error(context, verifyError);
-      return;
-    }
-
-    if (RegistrationOtpService.verificationSessionId == null) {
-      AppToast.error(context, 'OTP session expired. Please request a new OTP.');
-      return;
-    }
-
-    // LOGIN vs REGISTER: registration path — OTP session is valid.
-    if (role != null) {
-      UnifiedAuthNavigation.openRegistrationForm(
-        context,
-        role: role!,
-        mobileDigits: digits,
-      );
-    } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => WelcomeScreen(
-            verifiedMobile: digits,
-            verifiedOtp: otp,
-            isNewUser: true,
-          ),
-        ),
-      );
-    }
-  }
-
   Future<void> _completeLoginAfterVerifiedOtp(
     BuildContext context,
     String digits, {
@@ -476,7 +348,24 @@ class UnifiedAuthFlowController extends ChangeNotifier {
         );
         return;
       }
-      await completeAmbulanceLogin(context, digits, _otp);
+      // The OTP was already consumed by the unified verify step: finish with its session.
+      final sessionId = RegistrationOtpService.verificationSessionId;
+      if (sessionId == null || sessionId.isEmpty) {
+        if (!context.mounted) return;
+        AppToast.error(context, 'OTP session expired. Please request a new OTP.');
+        return;
+      }
+      final signedIn = await AmbulanceAuthHelper.ensureSignedIn();
+      if (!signedIn) {
+        if (!context.mounted) return;
+        AppToast.error(
+          context,
+          'Could not start a secure session. Please try again.',
+        );
+        return;
+      }
+      if (!context.mounted) return;
+      await finishAmbulanceLogin(context, digits, sessionId);
       return;
     }
 

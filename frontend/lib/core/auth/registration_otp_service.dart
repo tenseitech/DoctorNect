@@ -34,11 +34,23 @@ class RegistrationOtpService {
   static FirebaseFunctions get _functions =>
       FirebaseFunctions.instanceFor(region: 'asia-south1');
 
+  /// Test seam for [sendOtp] (never set in production code).
+  @visibleForTesting
+  static Future<({String? error, String? debugOtp})> Function(
+    String identifier, {
+    required UserType role,
+    required String otpType,
+  })? debugSendOtpOverride;
+
   static Future<({String? error, String? debugOtp})> sendOtp(
     String identifier, {
     UserType role = UserType.patient,
     String otpType = 'registration',
   }) async {
+    final sendOverride = debugSendOtpOverride;
+    if (sendOverride != null) {
+      return sendOverride(identifier, role: role, otpType: otpType);
+    }
     final trimmed = identifier.trim();
     final isEmail = trimmed.contains('@');
     String? digits;
