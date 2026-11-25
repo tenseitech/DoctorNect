@@ -72,18 +72,8 @@ const ENFORCE_ABUSE_APP_CHECK = String(
   .trim()
   .toLowerCase() !== 'false';
 
-const SUPER_ADMIN_EMAILS = ['admin@doctornect.com'];
-
-function isSuperAdmin(auth, userDoc) {
-  const email = String(auth?.token?.email || '').trim().toLowerCase();
-  const emailVerified = auth?.token?.email_verified === true;
-  const allowListed = Boolean(email && emailVerified && SUPER_ADMIN_EMAILS.includes(email));
-  // Allow-listed verified email still passes, including a user doc whose role is admin.
-  if (allowListed) return true;
-  const role = userDoc?.role || '';
-  // Role "admin" alone is not a super admin. super_admin / superAdmin stay.
-  return role === 'super_admin' || role === 'superAdmin';
-}
+// Super admin = verified email in SUPER_ADMIN_EMAILS + admin custom claim (lib/super_admin.js).
+const { isSuperAdmin } = require('./lib/super_admin');
 
 const razorpayWebhookSecret = defineSecret('RAZORPAY_WEBHOOK_SECRET');
 const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');

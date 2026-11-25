@@ -78,6 +78,9 @@ test.beforeEach(() => {
 // ----------------------------------------------------------------------------
 // 1. EXTENSION & CONTENT-TYPE EXTRACTION
 // ----------------------------------------------------------------------------
+function t_cleanupSuperAdminEnv() {}
+test.afterEach(() => { delete process.env.SUPER_ADMIN_EMAILS; });
+
 test('extractExtension normalizes correctly', () => {
   assert.equal(extractExtension('test.pdf', 'application/pdf'), 'pdf');
   assert.equal(extractExtension('photo.JPEG', 'image/jpeg'), 'jpg');
@@ -487,14 +490,16 @@ test('different patient blocked from downloading health record', async () => {
   );
 });
 
-test('super admin bypass allows downloading any file', async () => {
+test('super admin (SUPER_ADMIN_EMAILS + verified + admin claim) can download any file', async () => {
+  process.env.SUPER_ADMIN_EMAILS = 'ops-admin@example.org';
+  t_cleanupSuperAdminEnv();
   const db = createMockDb({
     users: {
       uid_admin: { role: 'super_admin', profileId: 'admin_1' },
     },
   });
 
-  const auth = { uid: 'uid_admin', token: { email: 'admin@doctornect.com', email_verified: true } };
+  const auth = { uid: 'uid_admin', token: { email: 'Ops-Admin@example.org', email_verified: true, app_role: 'super_admin' } };
   const data = { objectKey: 'health_records/p_99/hr_99/secret.pdf' };
 
   const res = await getS3DownloadUrlHandler(data, auth, db);
@@ -508,7 +513,9 @@ test('super admin allowlisted email with email_verified=false is denied admin by
     },
   });
 
-  const auth = { uid: 'uid_unverified', token: { email: 'admin@doctornect.com', email_verified: false } };
+  process.env.SUPER_ADMIN_EMAILS = 'ops-admin@example.org';
+  t_cleanupSuperAdminEnv();
+  const auth = { uid: 'uid_unverified', token: { email: 'ops-admin@example.org', email_verified: false, app_role: 'super_admin' } };
   const data = { objectKey: 'health_records/p_99/hr_99/secret.pdf' };
 
   await assert.rejects(
@@ -517,7 +524,9 @@ test('super admin allowlisted email with email_verified=false is denied admin by
   );
 });
 
-test('claim-based admin bypass allows download regardless of non-allowlisted email when email_verified=true', async () => {
+test('admin claim alone (email not in SUPER_ADMIN_EMAILS) is denied', async () => {
+  process.env.SUPER_ADMIN_EMAILS = 'ops-admin@example.org';
+  t_cleanupSuperAdminEnv();
   const db = createMockDb({
     users: {
       uid_claim_admin: { role: 'admin', profileId: 'adm_001' },
@@ -534,8 +543,10 @@ test('claim-based admin bypass allows download regardless of non-allowlisted ema
   };
   const data = { objectKey: 'health_records/p_99/hr_99/secret.pdf' };
 
-  const res = await getS3DownloadUrlHandler(data, auth, db);
-  assert.ok(res.url);
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler(data, auth, db),
+    /You do not have permission to access this file/,
+  );
 });
 
 test('claim-based admin bypass is denied when email_verified=false', async () => {

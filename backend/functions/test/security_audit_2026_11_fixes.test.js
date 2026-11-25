@@ -249,3 +249,21 @@ test('activatePromotedAdPayment (Postgres): tampered amount is rejected', withRa
   );
   assert.equal(sb.ads.get('ad_1').status, 'pending_payment');
 }));
+
+test('getS3UploadUrl: no client flow may obtain an upload URL under prescriptions/', withLegacy(async () => {
+  const client = s3ClientRecorder();
+  s3.setS3ClientForTesting(client);
+  const db = legacyDb({ users: { doc_1: { role: 'doctor', profileId: 'd_1' } } });
+  for (const purpose of ['prescriptions', 'prescription', 'prescription_pdf']) {
+    await assert.rejects(
+      s3.getS3UploadUrlHandler(
+        { purpose, parentId: 'p_1', fileName: 'rx.pdf', contentType: 'application/pdf', sizeBytes: 1000 },
+        { uid: 'doc_1' },
+        db,
+      ),
+      (err) => ['invalid-argument', 'permission-denied'].includes(err.code),
+      purpose,
+    );
+  }
+  assert.deepEqual(client.calls, []);
+}));

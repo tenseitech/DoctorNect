@@ -33,12 +33,8 @@ const ENFORCE_ABUSE_APP_CHECK = String(
   .trim()
   .toLowerCase() !== 'false';
 
-const envAdminEmails = String(process.env.ACCOUNT_APPROVAL_ADMIN_EMAILS || '')
-  .split(',')
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean);
-const SUPER_ADMIN_EMAILS = Array.from(new Set(['admin@doctornect.com', ...envAdminEmails]));
-
+// Super admin = verified email in SUPER_ADMIN_EMAILS + admin custom claim (lib/super_admin.js).
+const { isSuperAdmin } = require('./lib/super_admin');
 
 const ALLOWED_CONTENT_TYPES = new Set([
   'image/jpeg',
@@ -129,28 +125,6 @@ function requireAuth(request) {
   if (!request?.auth?.uid) {
     throw new HttpsError('unauthenticated', 'Authentication required.');
   }
-}
-
-function isSuperAdmin(auth, userDoc) {
-  const emailVerified = auth?.token?.email_verified === true;
-  const roleClaim = String(
-    auth?.token?.user_role || auth?.token?.app_role || auth?.token?.role || '',
-  ).trim().toLowerCase();
-
-  // 1. Primary: Claim-based admin check (role=admin/super_admin, email_verified required)
-  if (emailVerified && (roleClaim === 'admin' || roleClaim === 'super_admin' || roleClaim === 'superadmin')) {
-    return true;
-  }
-
-  // 2. Documented Bootstrap Fallback: Email allowlist with email_verified
-  const email = String(auth?.token?.email || '').trim().toLowerCase();
-  if (email && emailVerified && SUPER_ADMIN_EMAILS.includes(email)) {
-    return true;
-  }
-
-  // 3. Document fallback: userDoc role if caller document is resolved
-  const role = userDoc?.role || '';
-  return emailVerified && (role === 'super_admin' || role === 'superAdmin' || role === 'admin');
 }
 
 function extractExtension(fileName, contentType) {
