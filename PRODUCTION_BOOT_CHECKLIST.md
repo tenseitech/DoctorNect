@@ -110,7 +110,22 @@ They always use the staging plane; real numbers always use RDS.
 | `DEMO_PGRST_URL`, `DEMO_PGRST_JWT_SECRET`, `DEMO_PGRST_JWT_AUD` | - | required whenever demo accounts are used (the five demo UIDs always route here) | URL / secret / list | ECS | call | demo users get `503 Demo data plane is not configured.` |
 | `RATE_LIMIT_*`, `ANON_RATE_LIMIT_*`, `ANON_MAX_ROWS`, `MAX_BODY_SIZE_BYTES`, `FAILED_SERVICE_KEY_*` | defaults | defaults | int | ECS env | - | defaults apply |
 
-## 3. Images to rebuild before production boot
+## 3. Flutter client build variables
+
+The build scripts read these from the repo-root `.env` (or the shell) and pass them as
+`--dart-define`. A missing name stops the build with a list of every missing name, so an APK
+without Firebase config cannot be produced (in the app it would show "This version of the app is
+not set up correctly." and log `reason=firebase_config_missing`).
+
+| Variable | Needed by | Where to find it | Notes |
+|---|---|---|---|
+| `FIREBASE_API_KEY_ANDROID` | every Android build | Firebase console > Project settings > General > Your apps > Android app, or `current_key` in `google-services.json` | restrict in Google Cloud console > Credentials to package `com.tenseitech.doctornect` + SHA-256 |
+| `FIREBASE_PROJECT_ID` | every build | Firebase console > Project settings > General (`medibond-45fad`) | must equal `project_id` in `frontend/android/app/google-services.json` |
+| `FIREBASE_API_KEY_IOS` / `FIREBASE_API_KEY_WEB` | iOS / web builds | same page, iOS / web app | restrict to bundle id / HTTP referrers |
+| `STAGING_SUPABASE_URL`, `STAGING_SUPABASE_ANON_KEY` | staging demo APK | Supabase > Project settings > API | anon key is public; never use the service-role key |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY` | production APK | production API gateway base URL + gateway `ANON_KEY` | must not be `*.supabase.co` in production |
+
+## 4. Images to rebuild before production boot
 
 1. API gateway image (current `services/api-gateway`).
 2. PostgREST image with the RDS CA bundle baked in and `PGRST_DB_URI=...?sslmode=verify-full&sslrootcert=/etc/ssl/rds/global-bundle.pem`.

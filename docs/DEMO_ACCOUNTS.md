@@ -126,8 +126,15 @@ End-to-end check on a throwaway database (Docker): `npm run test:demo-login`.
 ## Test APK for the demo accounts
 
 `frontend/scripts/build_staging_demo_apk.ps1` builds a release-signed APK with the App Check
-debug provider (`APP_ENV=staging`, `APP_CHECK_DEBUG_PROVIDER=true`) and the staging Supabase
-data plane (`STAGING_SUPABASE_URL` / `STAGING_SUPABASE_ANON_KEY` from the repo-root `.env`,
-never printed). A plain `flutter build apk` has no data plane compiled in: OTP login then
-succeeds but the app cannot read the profile and shows "Account profile not found for this
-mobile number." Real users must use the production build (`scripts/release_build.ps1`).
+debug provider (`APP_ENV=staging`, `APP_CHECK_DEBUG_PROVIDER=true`), the Firebase client
+config (`FIREBASE_API_KEY_ANDROID`, `FIREBASE_PROJECT_ID`) and the staging Supabase data plane
+(`STAGING_SUPABASE_URL` / `STAGING_SUPABASE_ANON_KEY`), all from the repo-root `.env` and never
+printed. It lists every missing name and stops before building. A plain `flutter build apk`
+has none of these compiled in: the phone screen then shows "This version of the app is not set
+up correctly." (no Firebase key) or, after OTP, "Account profile not found for this mobile
+number." (no data plane). Real users must use the production build (`scripts/release_build.ps1`).
+
+```powershell
+powershell -ExecutionPolicy Bypass -File frontend/scripts/build_staging_demo_apk.ps1
+adb install -r frontend/build/app/outputs/flutter-apk/app-staging-demo.apk
+```
