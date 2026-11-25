@@ -1,35 +1,29 @@
 import 'package:flutter/material.dart';
 
-/// Visual constants from [design/Splash Screen.svg] (1242×2208).
+import '../../core/theme/app_colors.dart';
+
+/// Visual constants shared with the native splash (see pubspec.yaml
+/// `flutter_native_splash` and tools/generate_brand_assets.js).
+///
+/// The native splash (pre-Android 12, Android 12+ and iOS) shows the mark at
+/// [logoWidthDp] on a solid [background], centred in the window. The Flutter
+/// splash draws exactly the same thing, so the hand-off is invisible: no colour
+/// jump, no resize and no white flash, in light and dark mode.
 abstract final class SplashDesign {
-  static const designCanvasWidth = 1242.0;
-  static const designCanvasHeight = 2208.0;
+  /// Same value as `color` / `color_dark` in the native splash config.
+  static const Color background = AppColors.doctorBlue;
 
-  static const gradientBegin = Alignment(-0.9449, -0.9771);
-  static const gradientEnd = Alignment(0.8771, 0.9070);
+  /// Mark width in logical pixels (dp). Must match SPLASH_MARK_DP in
+  /// tools/generate_brand_assets.js.
+  static const double logoWidthDp = 134;
 
-  static const gradientColors = <Color>[
-    Color(0xFF32A5FE),
-    Color(0xFF166EFC),
-    Color(0xFF0A51EC),
-    Color(0xFF001FB3),
-  ];
+  /// Width / height of the mark (from the vector master's bounding box).
+  static const double logoAspectRatio = 1.1079;
 
-  static const gradientStops = <double>[0.10, 0.31, 0.50, 0.95];
+  static double get logoHeightDp => logoWidthDp / logoAspectRatio;
 
-  /// Logo width as a fraction of screen width (612.4 / 1242).
-  static const logoWidthFraction = 0.493;
-
-  static const logoAspectWidth = 612.4;
-  static const logoAspectHeight = 596.4;
-
-  /// Design-space logo box (for tests).
-  static const designLogoLeft = 314.88;
-  static const designLogoTop = 806.25;
-  static const designLogoWidth = 612.4;
-  static const designLogoHeight = 596.4;
-
-  static const logoAssetPath = 'assets/splash/splash_logo.png';
+  /// Tight 4x raster of the vector mark (536 px wide).
+  static const logoAssetPath = 'assets/splash/splash_mark.png';
 }
 
 /// Splash visual only — no navigation or bootstrap logic.
@@ -40,30 +34,19 @@ class SplashDesignView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final logoWidth = screenWidth * SplashDesign.logoWidthFraction;
-    final logoHeight =
-        logoWidth * (SplashDesign.logoAspectHeight / SplashDesign.logoAspectWidth);
-
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: SplashDesign.gradientBegin,
-          end: SplashDesign.gradientEnd,
-          colors: SplashDesign.gradientColors,
-          stops: SplashDesign.gradientStops,
-        ),
-      ),
+    return ColoredBox(
+      color: SplashDesign.background,
       child: Center(
         child: SizedBox(
           key: logoKey,
-          width: logoWidth,
-          height: logoHeight,
+          width: SplashDesign.logoWidthDp,
+          height: SplashDesign.logoHeightDp,
           child: Image.asset(
             SplashDesign.logoAssetPath,
             fit: BoxFit.contain,
             filterQuality: FilterQuality.high,
             gaplessPlayback: true,
+            semanticLabel: 'DoctorNect',
           ),
         ),
       ),
