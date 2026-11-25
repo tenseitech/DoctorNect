@@ -166,3 +166,116 @@ git add -A .env.example .gitignore SECURITY_AUDIT_REPORT.md backend/functions/te
 git rm --cached -r --ignore-unmatch backend/functions/.secret.local.example backend/functions/seed_demo_accounts.js backend/functions/scripts/seed_demo_accounts.js backend/functions/src/config/redis.ts _smoke_fail.txt
 git commit -m "chore: env template parity, remove legacy seeds/debug files, audit report"
 ```
+
+---
+
+## Round 3 (2026-11-25) — branch `security/full-audit-fix`, not pushed
+
+### R3.1 Commits
+
+| Commit | Task | What |
+|---|---|---|
+| `5e95483` | A | Backend suite green on Postgres + Redis fakes; completes the WIP Firestore-removal commit `7824a2a` (left as is: rewording it would need a force-push). |
+| `3620879` | E | Account deletion retention: providers anonymised, patient data kept; patient deletion removes Postgres + S3 (plane prefixes) + Redis, Auth last and only on success. |
+| `6776c78` | B | `npm run test:db`: all migrations replayed on PG17 and PG18 + SQL tests + RLS/grant audits. |
+| `f061e38` | C | `PRODUCTION_BOOT_CHECKLIST.md` + `npm run check:boot-env`. |
+| `cfba040` | D | `SUPER_ADMIN_EMAILS` + verified email + admin claim; staging-only demo seed; prescriptions/ upload deny test. |
+| `7bae0d7` | F | Second-pass fixes (below). |
+| last | G | `release_build.sh` honours `RELEASE_BUILD_NO_DOTENV` (hermetic test); Flutter results; this report. |
+
+### R3.2 Security fixes found and fixed in round 3
+
+| # | Severity | Finding | Fix |
+|---|---|---|---|
+| 1 | High | `deleteMyAccount` aborted for **every** user on real Postgres: `admin_users` / `provisioning_errors` are in the `private` schema, PostgREST answers 404, and the round-2 fail-closed cleanup rethrows 404. The old code also had malformed `=eq=` filters. | Best-effort delete for those two private tables only; filters fixed; every table/column used by deletion checked against the replayed schema. |
+| 2 | High | 16 RLS policies called `public.is_super_admin(text)`, which `authenticated` cannot EXECUTE, so every authenticated query on `in_app_notifications`, `mail_queue`, `promoted_ads`, `razorpay_*`, `security_events`, `super_admins`, `support_ticket_messages` failed (this included the round-2 promoted_ads policies). | `20261125000002` rewrites them in place to `private.is_super_admin()`. `db/tests/50` checks that no policy calls a function its role cannot execute. |
+| 3 | High | Patients could INSERT `appointments` directly through PostgREST, bypassing `book_appointment_atomic` (capacity 3, one booking per slot, token number, `doctor_status`). | `20261125000003` guard trigger. Cancel via upsert still works; patient updates cannot move slot / doctor / token / doctor_status. |
+| 4 | High | Status locks only covered UPDATE. A patient could INSERT a trip that was already `completed` with any `accepted_driver_id` and then rate that ambulance (rating manipulation). Same for lab bookings created as `completed` with a foreign report pointer. | `20261125000004`: client INSERTs on ambulance_broadcasts / lab_bookings / lab_orders / pharmacy_deliveries start in the initial state, with accepted_*, rating and report_* cleared. |
+| 5 | High | Deleting a lab (or any provider) account deleted patients' lab bookings, orders, report files, appointments and prescriptions. | Provider rows are anonymised and detached; patient medical data is kept. This follows your lab decision and applies it to every provider role. |
+| 6 | Medium | `confirmS3Upload` trusted the client's `recordId` (IDOR: attach a file to another patient's record). | recordId must equal the key's record segment; the DB update is scoped to the key's patient. |
+| 7 | Medium | Demo and real users shared S3 keys in the production bucket; a demo account with a colliding profile id could read real objects. | `demo/` and `prod/` plane prefixes (legacy unprefixed keys = prod), enforced on upload, read, delete and account deletion. |
+| 8 | Medium | OTP consume accepted a role mismatch, compared the fixed review OTP in non-constant time and deleted non-atomically (replay window). An SMS failure left a live challenge. | Fixed in `registration_otp.js`, with tests. |
+| 9 | Medium | Super-admin fallback was hard-coded to `admin@doctornect.com`, and in s3_storage a DB role alone was enough. | `lib/super_admin.js`: verified email in `SUPER_ADMIN_EMAILS` AND the admin custom claim. |
+| 10 | Low | A client INSERT on promoted_ads could set `amount_paid`. | `20261125000001`. |
+| 11 | Low | MSG91 verify logged the raw response body in a plain warning. | Sanitised. |
+| 12 | Low | onRequest endpoints had no baseline security headers. | `withApiSecurityHeaders` (nosniff, frame deny, CSP, HSTS, no-store). |
+| 13 | Info | An S3 cleanup failure was soft: the Auth user was deleted while files remained. | Any S3 or Postgres cleanup failure now keeps the Auth user. |
+
+Checked and found correct (no change needed):
+- Gateway RPC allowlist: only allowlisted SECURITY DEFINER RPCs are reachable. The only anon-executable definer is the public `doctor_directory_rows` directory listing (no contact data).
+- Ambulance live location: the RPC returns it only to the trip's patient or driver while the trip is `accepted`; the table is deny-all for clients.
+- Ambulance PIN: PBKDF2-120k with salt, legacy hashes upgraded on login, limits of 10 per 15 min per id and 40 per 15 min per IP, plus failure lockout.
+- Lab and pharmacy status RPCs: state machines and cross-provider ownership checks are enforced; direct status UPDATEs are blocked by triggers.
+- Appointment column tampering is blocked by the UPDATE WITH CHECK. Appointments have no payments or refunds, so there is no refund-abuse surface.
+- No request payload or token logging.
+
+### R3.3 Test counts
+
+| Suite | Before round 3 | After round 3 |
+|---|---|---|
+| Backend `npm test` | WIP commit: 24 failing files, 1 hanging file (the suite never finished) | **426 tests: 420 pass, 0 fail, 6 skipped** (76 files; the per-file runner gives the same result). Skipped went down from 24 (round 1) to 6. |
+| Deleted Firestore-only test files | — | Listed with their Postgres replacements in `backend/functions/test/DELETED_TESTS.md`. New files: `otp_send_policy`, `promoted_ads_verify_postgres`, `submit_ambulance_rating`, `s3_plane_prefix`, `delete_account_retention`, `super_admin_allowlist`, `http_security_headers`. |
+| API gateway | 99 / 99 | 99 / 99 |
+| `npm audit` (functions, gateway) | 0 | 0 |
+| SQL (`npm run test:db`) | none | **PG 17.12 and PG 18.7: all 83 migrations replay, post-audit migrations re-apply idempotently, 6 files / 72 checks pass, `rls_coverage_audit` 0 issues, `grant_matrix_audit` 0 anon surprises** |
+| Scripts | — | `seed_staging_demo_accounts.test.js`: 4 / 4 |
+| Flutter | not run | pub get OK; analyze: 0 errors, 0 warnings, 336 deprecation infos; test: 677 / 677 pass (1 non-hermetic test fixed); `build apk --release` blocked by the JDK config (R3.5 step 7) |
+
+### R3.4 What remains
+
+- Historical migrations (before 2026-11-24) cannot be re-run (for example `CREATE INDEX` without `IF NOT EXISTS`). They are applied once through the checksum ledger, so I didn't edit them.
+- `assertProductionCutoverBoot` (DATABASE_URL / Redis / MSG91 completeness) exists but isn't called at cold start. `check:boot-env` reports it as a WARN.
+- `reschedule_appointment_atomic` ignores the slot time (always 10:00 IST) and can re-open a doctor-cancelled appointment (the doctor must then re-accept). Functional bug, low risk.
+- The Admin module (`admin_console_*`, `system_admin_*`) still hard-codes `admin@doctornect.com`. It is out of scope.
+- 336 `flutter analyze` infos: `package:flutter/material.dart` was deprecated in Flutter 3.47 (move to `material_ui`). There are no errors or warnings.
+
+### R3.5 MANUAL STEPS FOR ME
+
+**1. Migrations: staging Supabase first, then RDS.** Dry run, then execute with the usual `scripts/db/migrate.js`. All of these are idempotent and were replayed on PG17 and PG18:
+
+```
+20261119000003_rpc_rehome_force_rls_definer_to_service_role.sql   (if not yet applied)
+20261119000004_rpc_rehome_force_rls_signatures_fix.sql            (if not yet applied)
+20261119000005_system_admin_helper_execute_grants.sql             (if not yet applied)
+20261124000001_promoted_ads_payment_state_guard.sql
+20261124000002_prescriptions_require_care_relationship.sql
+20261124000003_submit_ambulance_rating_rpc.sql
+20261125000001_promoted_ads_guard_amount_paid.sql
+20261125000002_policies_use_private_is_super_admin.sql
+20261125000003_appointments_client_write_guard.sql
+20261125000004_provider_rows_client_insert_guard.sql
+```
+On RDS, re-apply `db/rds_bootstrap/04_rds_runtime_grants.sql` after the migrations. Then run `scripts/db/rls_coverage_audit.js` and `scripts/db/grant_matrix_audit.js` (read-only) against staging and RDS.
+
+**2. Images to rebuild**
+- API gateway (`services/api-gateway`).
+- PostgREST with the RDS CA bundle (`global-bundle.pem`) baked in and `PGRST_DB_URI=...?sslmode=verify-full&sslrootcert=<path>`.
+- Cloud Functions: `firebase deploy --only functions`, after `npm run materialize:functions-env` and `npm run check:boot-env -- <functions env file> --target=functions`.
+
+**3. Env vars to set** (full list in `PRODUCTION_BOOT_CHECKLIST.md`). Your local `.env` (APP_ENV=production) currently fails `check:boot-env` on these:
+- `DEMO_SUPABASE_URL` (reviewer OTP is on), and on the gateway `DEMO_PGRST_URL` and `DEMO_PGRST_JWT_SECRET` (demo routing is on).
+- Gateway `PGRST_JWT_SECRET`, `ANON_KEY` and `SERVICE_ROLE_KEY` are missing or still defaults.
+- Set `SUPER_ADMIN_EMAILS` (otherwise no email is a super admin), `OTP_HMAC_SECRET` (Secret Manager), `TRUSTED_PROXY_HOPS=1`, `CORS_ALLOWED_ORIGINS` and `FIRESTORE_FORBIDDEN=1`.
+- Super admins also need the admin custom claim (`app_role=super_admin`) on their Firebase user.
+- Move `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `RAZORPAY_WEBHOOK_SECRET`, `REDIS_PASSWORD` and `SUPABASE_SERVICE_ROLE_KEY` out of the env file into Secret Manager.
+
+**4. Demo / reviewer accounts (staging only)**
+```
+node scripts/db/seed_staging_demo_accounts.js
+DEMO_SEED_TARGET=staging node scripts/db/seed_staging_demo_accounts.js --execute
+node scripts/audit/staging_demo_firebase_create.js --phase=plan
+```
+Every demo UID must be in `DEMO_FIREBASE_UID_ALLOWLIST` on both Functions and the gateway. The script refuses production, RDS hosts and your loopback RDS tunnel (`PROD_RDS_CONNECT_HOST`).
+
+**5. Existing S3 objects.** Production objects created before this change are unprefixed and are treated as `prod/`. Old unprefixed objects that belong to demo accounts are no longer reachable for those accounts; re-upload them or copy them under `demo/` if needed.
+
+**6. Secrets still to rotate** (same as section 4.1): the Firebase Admin service-account key, the MSG91 key in `backend/functions/.secret.local`, and the RDS master credentials in `.env`. Move `upload-keystore.jks` and `frontend/android/key.properties` out of the repo folder.
+
+**7. Android release build (blocked by your machine setup, not the code).** `flutter build apk --release` stops with `ERROR: JAVA_HOME is set to an invalid directory: C:Program FilesEclipse Adoptiumjdk-17...`. Your global Flutter config has `jdk-dir` set to that literal, truncated path, and it overrides `JAVA_HOME`. The only JDK installed is 25, and the project's Gradle 8.14 / AGP 8.11 does not run on Java 25 (Gradle 8.14 supports up to 24). Install Temurin JDK 17 (the project targets Java 17) or 21, then:
+
+```powershell
+flutter config --jdk-dir "C:Program FilesEclipse Adoptiumjdk-17.<version>-hotspot"
+flutter build apk --release
+```
+
+Signing is configured: `android/key.properties` exists and `build.gradle.kts` fails fast if the keystore it names is missing.

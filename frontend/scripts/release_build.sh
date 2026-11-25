@@ -302,9 +302,12 @@ validate_production_build_config() {
 }
 
 cd "$PROJECT_ROOT"
-import_dotenv "$PROJECT_ROOT/.env"
-if [[ ! -f "$PROJECT_ROOT/.env" && -f "$PROJECT_ROOT/../.env" ]]; then
-  import_dotenv "$PROJECT_ROOT/../.env"
+# RELEASE_BUILD_NO_DOTENV=1: hermetic mode for tests (same contract as release_build.ps1).
+if [[ "${RELEASE_BUILD_NO_DOTENV:-}" != "1" ]]; then
+  import_dotenv "$PROJECT_ROOT/.env"
+  if [[ ! -f "$PROJECT_ROOT/.env" && -f "$PROJECT_ROOT/../.env" ]]; then
+    import_dotenv "$PROJECT_ROOT/../.env"
+  fi
 fi
 
 if [[ "$LAUNCH" -eq 1 ]]; then
