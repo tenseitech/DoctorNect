@@ -9,7 +9,8 @@
     "materialize:functions-env": "node scripts/env/materialize_functions_env.js",
     "bundle:verify": "node scripts/ops/functions_deploy_bundle_verify.js",
     "predeploy:outbox-guard": "node scripts/ops/predeploy_notification_outbox_guard.js",
-    "test:db": "node scripts/db/run_sql_tests.js"
+    "test:db": "node scripts/db/run_sql_tests.js",
+    "check:boot-env": "node scripts/env/check_boot_env.js"
   },
   "devDependencies": {
     "libpg-query": "^18.2.1"
