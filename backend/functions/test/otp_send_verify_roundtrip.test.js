@@ -241,9 +241,12 @@ test('patient send then verify accepts the stored HMAC and rejects a wrong code'
   await roundTrip({ role: 'patient', mobile: '9000000001', demo: false });
 });
 
-test('reviewer account send then verify accepts the configured code and rejects a wrong code', async () => {
+test('a non-allowlisted number configured as REVIEW_DOCTOR_PHONES gets a normal SMS OTP (no fixed code)', async () => {
+  // Demo/reviewer numbers are fixed in lib/demo_accounts.js; env phone lists no longer add
+  // bypass numbers. Full demo coverage: test/demo_otp_policy.test.js.
   assert.equal(process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH, undefined);
-  await roundTrip({ role: 'doctor', mobile: '9000000002', demo: true });
+  process.env.REVIEW_DOCTOR_PHONES = '9000000002';
+  await roundTrip({ role: 'doctor', mobile: '9000000002', demo: false });
 });
 
 test.after(() => {

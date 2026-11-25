@@ -223,12 +223,28 @@ describe('assertProductionReviewerOtpPolicy', () => {
     assert.throws(() => assertProductionReviewOtpDisabled(), /REVIEW_FIXED_OTP/);
   });
 
-  it('production requires demo routing when reviewer enabled', () => {
+  it('production requires the demo plane URL and a future expiry when reviewer enabled', () => {
     process.env.APP_ENV = 'production';
     process.env.REVIEWER_OTP_ENABLED = 'true';
     process.env.REVIEW_ACCESS_UNTIL = '2099-01-01T00:00:00.000Z';
-    process.env.REVIEW_PATIENT_PHONES = '9999900001';
-    assert.throws(() => assertProductionReviewOtpDisabled(), /DEMO_REAL_ROUTING_ENABLED/);
+    delete process.env.DEMO_SUPABASE_URL;
+    assert.throws(() => assertProductionReviewOtpDisabled(), /DEMO_SUPABASE_URL/);
+    process.env.DEMO_SUPABASE_URL = 'https://staging-ref.supabase.co';
+    assert.doesNotThrow(() => assertProductionReviewOtpDisabled());
+    process.env.REVIEW_ACCESS_UNTIL = '2020-01-01T00:00:00.000Z';
+    assert.throws(() => assertProductionReviewOtpDisabled(), /REVIEW_ACCESS_UNTIL/);
+  });
+
+  it('OTP functions refuse to boot when reviewer OTP is on without a 6-digit REVIEW_FIXED_OTP', () => {
+    const { assertDemoOtpSecretForOtpFunction } = require('../src/db/assert_app_env');
+    const base = { REVIEWER_OTP_ENABLED: 'true', FUNCTION_TARGET: 'verifyUserRegistrationOtp' };
+    assert.throws(() => assertDemoOtpSecretForOtpFunction({ ...base }), /REVIEW_FIXED_OTP secret is missing/);
+    assert.throws(() => assertDemoOtpSecretForOtpFunction({ ...base, REVIEW_FIXED_OTP: '0000' }), /not 6 digits/);
+    assert.doesNotThrow(() => assertDemoOtpSecretForOtpFunction({ ...base, REVIEW_FIXED_OTP: '000000' }));
+    assert.doesNotThrow(() => assertDemoOtpSecretForOtpFunction({ ...base, FUNCTION_TARGET: 'getS3UploadUrl' }),
+      'functions that do not bind the secret are not affected');
+    assert.doesNotThrow(() => assertDemoOtpSecretForOtpFunction({ FUNCTION_TARGET: 'verifyUserRegistrationOtp' }),
+      'reviewer OTP off: nothing required');
   });
 
   it('staging allows reviewer OTP flags', () => {

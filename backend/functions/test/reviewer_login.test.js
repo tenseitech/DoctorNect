@@ -95,28 +95,30 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
     assert.equal(isReviewerPhone('9999900001', 'patient'), false);
   });
 
-  test('Case 4: role required for match; undefined role never matches', () => {
+  test('Case 4: role comes from the fixed allowlist; a wrong client role never matches', () => {
     process.env.REVIEWER_OTP_ENABLED = 'true';
-    process.env.REVIEW_PATIENT_PHONES = '9999900001';
     process.env.REVIEW_FIXED_OTP = '112233';
     process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
 
     assert.equal(getReviewerConfig(undefined), null);
-    assert.equal(isReviewerPhone('9999900001'), false);
-    assert.equal(isReviewerPhone('9999900001', undefined), false);
-    assert.equal(isReviewerPhone('9999900001', 'patient'), true);
+    // 9999900001 is the demo DOCTOR.
+    assert.equal(isReviewerPhone('9999900001'), true, 'no role: allowlist decides');
+    assert.equal(isReviewerPhone('9999900001', 'doctor'), true);
+    assert.equal(isReviewerPhone('9999900001', 'patient'), false, 'client role cannot re-map a demo number');
+    assert.equal(isReviewerPhone('9999900002', 'patient'), true);
   });
 
-  test('Case 5: per-role phone lists max 2', () => {
+  test('Case 5: numbers are fixed in code; REVIEW_*_PHONES env lists cannot add numbers', () => {
     process.env.REVIEWER_OTP_ENABLED = 'true';
-    process.env.REVIEW_PATIENT_PHONES = '9999900001,9999900002,9999900003';
+    process.env.REVIEW_PATIENT_PHONES = '9876543210,9999900002';
     process.env.REVIEW_DOCTOR_PHONES = '9888800001';
     process.env.REVIEW_FIXED_OTP = '112233';
     process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
 
-    assert.deepEqual(getReviewerConfig('patient').testNumbers, ['9999900001', '9999900002']);
-    assert.equal(isReviewerPhone('9999900001', 'doctor'), false);
-    assert.equal(isReviewerPhone('9888800001', 'doctor'), true);
+    assert.deepEqual(getReviewerConfig('patient').testNumbers, ['9999900002']);
+    assert.deepEqual(getReviewerConfig('doctor').testNumbers, ['9999900001']);
+    assert.equal(isReviewerPhone('9876543210', 'patient'), false);
+    assert.equal(isReviewerPhone('9888800001', 'doctor'), false);
   });
 
   test('Case 6: ENABLE_REVIEW_DEMO alias removed (no effect)', () => {

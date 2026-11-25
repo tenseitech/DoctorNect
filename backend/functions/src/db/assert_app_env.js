@@ -367,6 +367,8 @@ function assertProductionReviewerOtpPolicy(env = process.env) {
     return;
   }
 
+  // The five demo numbers, roles and Firebase UIDs are fixed in lib/demo_accounts.js, so no
+  // REVIEW_*_PHONES / DEMO_FIREBASE_UID_ALLOWLIST is needed. The demo plane must be reachable.
   const missing = [];
   const accessUntil = String(env.REVIEW_ACCESS_UNTIL || '').trim();
   if (!accessUntil) {
@@ -377,36 +379,45 @@ function assertProductionReviewerOtpPolicy(env = process.env) {
       missing.push('REVIEW_ACCESS_UNTIL (future ISO timestamp)');
     }
   }
-
-  const phoneKeys = [
-    'REVIEW_PATIENT_PHONES',
-    'REVIEW_DOCTOR_PHONES',
-    'REVIEW_LAB_PHONES',
-    'REVIEW_MEDICAL_STORE_PHONES',
-    'REVIEW_MEDICALSTORE_PHONES',
-    'REVIEW_AMBULANCE_PHONES',
-    'REVIEW_TEST_NUMBERS',
-  ];
-  const hasPhones = phoneKeys.some((key) => String(env[key] || '').trim());
-  if (!hasPhones) {
-    missing.push('REVIEW_*_PHONES or REVIEW_TEST_NUMBERS');
-  }
-
-  if (String(env.DEMO_REAL_ROUTING_ENABLED || '').trim() !== '1') {
-    missing.push('DEMO_REAL_ROUTING_ENABLED=1');
-  }
-  if (!String(env.DEMO_FIREBASE_UID_ALLOWLIST || '').trim()) {
-    missing.push('DEMO_FIREBASE_UID_ALLOWLIST');
-  }
   if (!normalizeBaseUrl(env.DEMO_SUPABASE_URL || '')) {
     missing.push('DEMO_SUPABASE_URL');
   }
-  // DEMO_SUPABASE_SERVICE_ROLE_KEY and PROD_GATEWAY_SERVICE_KEY are Firebase defineSecret
-  // (injected at runtime). DEMO_PGRST_* is auth-gateway (ECS) only.
+  // DEMO_SUPABASE_SERVICE_ROLE_KEY and REVIEW_FIXED_OTP are Firebase defineSecret values
+  // (injected only into the functions that bind them): see assertDemoOtpSecretForOtpFunction.
 
   if (missing.length) {
     const err = new Error(
       `[AppEnv] APP_ENV=production reviewer OTP enabled but misconfigured: ${missing.join(', ')}`,
+    );
+    err.code = 'failed-precondition';
+    throw err;
+  }
+}
+
+/** Cloud Functions that bind REVIEW_FIXED_OTP and accept the demo OTP. */
+const DEMO_OTP_FUNCTIONS = new Set([
+  'sendUserRegistrationOtp',
+  'verifyUserRegistrationOtp',
+  'completeMobileOtpLogin',
+]);
+
+/**
+ * Boot-time (cold start) check inside the OTP functions: with REVIEWER_OTP_ENABLED=true the
+ * REVIEW_FIXED_OTP secret must be bound and be exactly 6 digits, otherwise the instance refuses
+ * to start with a clear message instead of failing every demo login later.
+ */
+function assertDemoOtpSecretForOtpFunction(env = process.env) {
+  if (!isTruthyEnvFlag(env.REVIEWER_OTP_ENABLED)) return;
+  const target = String(env.FUNCTION_TARGET || env.K_SERVICE || '').trim();
+  const isOtpFunction = [...DEMO_OTP_FUNCTIONS].some(
+    (name) => target === name || target.toLowerCase() === name.toLowerCase(),
+  );
+  if (!isOtpFunction) return;
+  const fixed = String(env.REVIEW_FIXED_OTP || '').trim();
+  if (!/^\d{6}$/.test(fixed)) {
+    const err = new Error(
+      `[AppEnv] REVIEWER_OTP_ENABLED=true but the REVIEW_FIXED_OTP secret is ${fixed ? 'not 6 digits' : 'missing'} ` +
+        `in ${target}. Set it with: firebase functions:secrets:set REVIEW_FIXED_OTP, then redeploy.`,
     );
     err.code = 'failed-precondition';
     throw err;
@@ -432,6 +443,8 @@ module.exports = {
   assertProductionOtpHmacOnly,
   warnProductionOtpHmacFallback,
   assertProductionReviewerOtpPolicy,
+  assertDemoOtpSecretForOtpFunction,
+  DEMO_OTP_FUNCTIONS,
   assertProductionAppCheckEnforcement,
   assertProductionReviewOtpDisabled,
   assertProductionCutoverBoot,

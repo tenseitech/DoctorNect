@@ -127,6 +127,7 @@ const OTP_DATA_PLANE_SECRETS = [
 assertProductionSecrets();
 assertProductionOtpSafety();
 require('./src/db/assert_app_env').assertProductionFirestoreForbidden();
+require('./src/db/assert_app_env').assertDemoOtpSecretForOtpFunction();
 {
   const { shouldRunCutoverBootAsserts } = require('./src/db/assert_app_env');
   if (shouldRunCutoverBootAsserts()) {

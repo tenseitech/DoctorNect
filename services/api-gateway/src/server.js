@@ -13,6 +13,7 @@ const { proxyToPostgrest } = require('./proxy');
 const { defaultJwksClient } = require('./jwks');
 const { resolveDataPlane, assertClientRoutingHintIgnored } = require('../../../scripts/lib/demo_routing');
 const { assertRdsPathAllowed } = require('../../../scripts/lib/rds_demo_uid_guard');
+const { writeContainsDemoMobile } = require('./demo_write_guard');
 
 function extractEmbeddedRelations(queryString) {
   if (!queryString) return [];
@@ -455,6 +456,13 @@ function createGatewayServer(overrides = {}) {
     try {
       if (appEnv === 'production') {
         const onRdsUpstream = dataPlane === 'rds' || clientRole === 'service_role';
+        const writeMethod = ['POST', 'PATCH', 'PUT'].includes(String(req.method || '').toUpperCase());
+        if (dataPlane === 'rds' && clientRole !== 'service_role' && writeMethod && writeContainsDemoMobile(bodyBuf)) {
+          return sendJson(403, {
+            error: 'Forbidden',
+            message: 'This mobile number is reserved and cannot be used here.',
+          });
+        }
         if (onRdsUpstream) {
           assertRdsPathAllowed({
             firebaseUid: authenticatedPayload?.uid || null,

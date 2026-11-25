@@ -161,9 +161,17 @@ let _testingReviewerRedis = null;
 const {
   getReviewerConfig,
   isReviewerPhone,
+  demoOtpPolicy,
+  canonicalMobileDigits,
+  demoAccountByMobile,
+  isDemoMobile,
 } = require('./reviewer_otp_config');
 
 const MSG91_UNAVAILABLE_DETAILS = { reason: 'msg91' };
+const DEMO_SIGNIN_UNAVAILABLE_MESSAGE = 'Demo sign-in is not available right now.';
+const DEMO_REGISTRATION_BLOCKED_MESSAGE = 'This number is reserved and cannot be used to register.';
+const DEMO_LOCKOUT_WINDOW_MS = 30 * 60 * 1000;
+const DEMO_LOCKOUT_MAX_FAILURES = 5;
 
 function msg91UnavailableError(message, meta = {}) {
   const err = new HttpsError(
@@ -176,49 +184,28 @@ function msg91UnavailableError(message, meta = {}) {
   return err;
 }
 
-function parseEnvPhoneCsv(envKey) {
-  return String(process.env[envKey] || '')
-    .split(',')
-    .map((n) => normalizeMobileDigits(n))
-    .filter(Boolean);
+/**
+ * The staging-only DEMO_PHONE_NUMBERS / DEMO_FIXED_OTP bypass was removed: the fixed demo OTP
+ * applies only to the five numbers in lib/demo_accounts.js (see reviewer_otp_config.js).
+ * Kept as a stub so older imports fail safe.
+ */
+function isStagingDemoPhone(_digits) {
+  return false;
 }
 
-/** Staging-only demo list (DEMO_PHONE_NUMBERS). Disabled when APP_ENV=production. */
-function isStagingDemoOtpEnabled() {
-  const appEnv = String(process.env.APP_ENV || 'staging').trim().toLowerCase();
-  if (appEnv === 'production') return false;
-  return parseEnvPhoneCsv('DEMO_PHONE_NUMBERS').length > 0;
+/** Demo numbers never receive an SMS, whether or not the demo OTP policy is active. */
+function shouldSkipMsg91ForPhone(digits, _role) {
+  return isDemoMobile(digits);
 }
 
-function isStagingDemoPhone(digits) {
-  if (!isStagingDemoOtpEnabled()) return false;
-  const d = normalizeMobileDigits(digits);
-  return parseEnvPhoneCsv('DEMO_PHONE_NUMBERS').includes(d);
-}
-
-function readStagingDemoFixedOtp() {
-  const otp = String(process.env.DEMO_FIXED_OTP || process.env.REVIEW_FIXED_OTP || '').trim();
-  return /^\d{6}$/.test(otp) ? otp : null;
-}
-
-function shouldSkipMsg91ForPhone(digits, role) {
-  return isReviewerPhone(digits, role) || isStagingDemoPhone(digits);
-}
-
-function resolveOutboundOtpCode(digits, role) {
-  if (isReviewerPhone(digits, role)) {
-    const cfg = getReviewerConfig(role);
-    if (cfg?.fixedOtp) return cfg.fixedOtp;
-  }
-  if (isStagingDemoPhone(digits)) {
-    const fixed = readStagingDemoFixedOtp();
-    if (!fixed) {
-      throw new HttpsError(
-        'failed-precondition',
-        'Demo fixed OTP is not configured (DEMO_FIXED_OTP or REVIEW_FIXED_OTP).',
-      );
+/** OTP for an outbound challenge: the fixed demo OTP for demo numbers, random otherwise. */
+function resolveOutboundOtpCode(digits, _role) {
+  if (isDemoMobile(digits)) {
+    const policy = demoOtpPolicy();
+    if (!policy.active) {
+      throw new HttpsError('failed-precondition', DEMO_SIGNIN_UNAVAILABLE_MESSAGE);
     }
-    return fixed;
+    return policy.fixedOtp;
   }
   return generateOtpCode();
 }
@@ -1467,9 +1454,23 @@ async function findUserByEmail(_db, email) {
   return { found: true, role: row.role, uid: row.firebase_uid || row.id, data: row };
 }
 
+/**
+ * Role used for the OTP challenge. Demo numbers always use their allowlisted role; the
+ * unified phone step (otpType 'auth') has no role yet, so the challenge is keyed on 'patient'
+ * for every real number (send and verify derive it the same way). Client roles never decide
+ * the data plane or the demo bypass.
+ */
+function resolveChallengeRole(digits, otpType, requestedRole) {
+  const demo = demoAccountByMobile(digits);
+  if (demo) return demo.role;
+  if (otpType === 'auth') return 'patient';
+  return normalizeRole(requestedRole || 'patient');
+}
+
 async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) {
-  const role = normalizeRole(data?.role || 'patient');
   const otpType = String(data?.otpType || 'registration').trim();
+  const canonicalDigits = canonicalMobileDigits(data?.mobile || data?.identifier);
+  const role = resolveChallengeRole(canonicalDigits, otpType, data?.role);
   const initialMobile = data?.mobile || data?.identifier;
   const initialMobileLast4 = initialMobile ? String(initialMobile).replace(/\D/g, '').slice(-4) : null;
 
@@ -1507,7 +1508,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     throw new HttpsError('invalid-argument', 'Email OTP is disabled. Please enter your 10-digit mobile number for phone SMS verification.');
   }
 
-  const digits = normalizeMobileDigits(data?.mobile || data?.identifier);
+  const digits = canonicalDigits;
   if (!digits) {
     console.warn('[sendUserRegistrationOtp] Early exit', {
       reason: 'INVALID_MOBILE',
@@ -1535,41 +1536,22 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     throw err;
   }
 
-  if (otpType === 'registration') {
-    const search = await findUserByMobileDigits(db, digits, role);
-    const matchedField = search.matchedField
-      || (search.data?.mobile ? 'mobile'
-        : search.data?.phone ? 'phone'
-        : search.data?.phoneNumber ? 'phoneNumber'
-        : search.data?.mobileNumber ? 'mobileNumber'
-        : null);
-    const docId = search.doc?.id || search.docId || search.uid || null;
-
-    console.info('[sendUserRegistrationOtp] findUserByMobileDigits result', {
-      found: Boolean(search.found),
-      matchedField: matchedField || null,
-      docId,
-      'doc.id': docId,
-      storedRole: search.role || null,
-      mobileLast4,
-    });
-
-    if (search.found) {
-      console.warn('[sendUserRegistrationOtp] Early exit', {
-        reason: 'USER_ALREADY_EXISTS',
-        existingRole: search.role || null,
-        docId,
-        mobileLast4,
-      });
-      console.warn('[sendUserRegistrationOtp] Registration blocked: mobile already registered', {
-        mobileSuffix: mobileLast4,
-        existingRole: search.role,
-      });
-      throw new HttpsError('already-exists', REGISTRATION_MOBILE_EXISTS_MESSAGE);
+  const demoAccount = demoAccountByMobile(digits);
+  if (demoAccount) {
+    // Demo numbers: never an SMS, never a registration, only while the demo policy is active.
+    if (otpType === 'registration') {
+      throw new HttpsError('permission-denied', DEMO_REGISTRATION_BLOCKED_MESSAGE);
+    }
+    const policy = demoOtpPolicy();
+    if (!policy.active) {
+      console.warn('[sendUserRegistrationOtp] Demo OTP unavailable', { reason: policy.reason, mobileLast4 });
+      throw new HttpsError('failed-precondition', DEMO_SIGNIN_UNAVAILABLE_MESSAGE);
     }
   }
 
-  if (otpType === 'login' || otpType === 'forgot_password') {
+  // Login, registration and the unified phone step ('auth') do NOT look the number up before
+  // the OTP is verified: existing and unknown numbers get the same response (no enumeration).
+  if (otpType === 'forgot_password') {
     let search = await findUserByMobileDigits(db, digits, role);
     let matchedField = search.matchedField
       || (search.data?.mobile ? 'mobile'
@@ -1636,7 +1618,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
           role,
           reason: 'exceeded_reviewer_send_rate_limit',
         });
-        throw new HttpsError('resource-exhausted', 'Reviewer verification rate limit exceeded. Please try again later.');
+        throw new HttpsError('resource-exhausted', 'Too many OTP requests. Please wait and try again.');
       }
     }
 
@@ -1791,15 +1773,13 @@ async function consumeOtpChallengeAtomically(
       throw new HttpsError('resource-exhausted', 'Too many failed attempts. Request a new OTP.');
     }
 
-    const reviewerCfg = getReviewerConfig(normalizedRole || role);
-    const demoFixed = readStagingDemoFixedOtp();
-    const isReviewerValid = Boolean(reviewerCfg)
-      && isReviewerPhone(digits || challenge.mobileDigits, normalizedRole || role)
-      && otpHashesEqual(otp, reviewerCfg.fixedOtp);
-    const isStagingDemoValid = Boolean(demoFixed)
-      && isStagingDemoPhone(digits || challenge.mobileDigits)
-      && otpHashesEqual(otp, demoFixed);
-    const localMatch = isReviewerValid || isStagingDemoValid || verifyChallengeOtpHash(otp, challenge, role, digits);
+    // Fixed demo OTP: only for the five allowlisted numbers (strict canonical match) while the
+    // demo policy is active; constant-time compare. Every other number needs its own challenge.
+    const demoPolicy = demoOtpPolicy();
+    const isReviewerValid = demoPolicy.active
+      && isDemoMobile(mobileDigits)
+      && otpHashesEqual(otp, demoPolicy.fixedOtp);
+    const localMatch = isReviewerValid || verifyChallengeOtpHash(otp, challenge, role, digits);
 
     if (localMatch) {
       // Single atomic multi-key DEL: exactly one concurrent verifier observes a deletion (single use).
@@ -1925,8 +1905,63 @@ function assertAmbulanceOtpSession(session, mobileDigits) {
   }
 }
 
+function demoLockoutKeys(digits) {
+  const h = crypto.createHash('sha256').update(`demo-otp:${digits}`).digest('hex').slice(0, 32);
+  return {
+    failures: envPrefixedRedisKey(`demo_otp_fail:${h}`),
+    lock: envPrefixedRedisKey(`demo_otp_lock:${h}`),
+  };
+}
+
+/** Per-number lockout for the fixed demo OTP: 5 failures within 30 min lock the number for 30 min. */
+async function assertDemoNotLockedOut(digits) {
+  const redis = getRateLimitRedis();
+  if (!redis || typeof redis.get !== 'function') {
+    throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+  }
+  let locked = null;
+  try {
+    locked = await withOtpRedisTimeout(redis.get(demoLockoutKeys(digits).lock));
+  } catch (_) {
+    throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+  }
+  if (locked) {
+    throw new HttpsError('resource-exhausted', 'Too many failed attempts. Try again later.');
+  }
+}
+
+async function recordDemoOtpFailure(digits) {
+  const redis = getRateLimitRedis();
+  if (!redis) return;
+  const keys = demoLockoutKeys(digits);
+  const ttlSec = Math.ceil(DEMO_LOCKOUT_WINDOW_MS / 1000);
+  try {
+    const n = Number(await withOtpRedisTimeout(redis.incr(keys.failures))) || 0;
+    if (n === 1 && typeof redis.pexpire === 'function') {
+      await withOtpRedisTimeout(redis.pexpire(keys.failures, DEMO_LOCKOUT_WINDOW_MS));
+    }
+    if (n >= DEMO_LOCKOUT_MAX_FAILURES) {
+      await withOtpRedisTimeout(redis.set(keys.lock, '1', 'EX', ttlSec));
+      emit(SEVERITY.WARNING, 'security', 'demo_otp.locked_out', {
+        securityEvent: true,
+        mobileHash: hashIdentifier(digits),
+      });
+    }
+  } catch (_) {
+    // Lockout bookkeeping is best effort; the per-challenge attempt limit still applies.
+  }
+}
+
+async function clearDemoOtpFailures(digits) {
+  const redis = getRateLimitRedis();
+  if (!redis || typeof redis.del !== 'function') return;
+  await withOtpRedisTimeout(redis.del(demoLockoutKeys(digits).failures)).catch(() => {});
+}
+
 async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' } = {}) {
-  const role = normalizeRole(data?.role || 'patient');
+  const otpTypeEarly = String(data?.otpType || 'registration').trim();
+  const canonicalDigits = canonicalMobileDigits(data?.mobile || data?.identifier);
+  const role = resolveChallengeRole(canonicalDigits, otpTypeEarly, data?.role);
   assertSupportedRole(role);
 
   const emailInput = String(data?.email || data?.identifier || '').trim().toLowerCase();
@@ -1935,9 +1970,10 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
     throw new HttpsError('invalid-argument', 'Email verification is disabled. Please verify via mobile phone SMS OTP.');
   }
 
-  const digits = normalizeMobileDigits(data?.mobile || data?.identifier);
+  const digits = canonicalDigits;
   const otp = String(data?.otp || '').trim();
-  const otpType = String(data?.otpType || 'registration').trim();
+  const otpType = otpTypeEarly;
+  const demoAccount = demoAccountByMobile(digits);
 
   if (!digits) {
     throw new HttpsError('invalid-argument', 'Enter a valid 10-digit mobile number.');
@@ -1954,23 +1990,61 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
     hasAuth: Boolean(auth?.uid),
   });
 
+  if (demoAccount && otpType === 'registration') {
+    throw new HttpsError('permission-denied', DEMO_REGISTRATION_BLOCKED_MESSAGE);
+  }
+
   await enforceVerifyOtpRateLimits(db, { clientIp, role, digits });
+  if (demoAccount) {
+    await assertDemoNotLockedOut(digits);
+  }
 
   const challengeKey = mobileHash(role, digits);
 
-  await consumeOtpChallengeAtomically(db, {
-    challengeKey,
-    otp,
-    mobileDigits: digits,
-    role,
-  });
+  try {
+    await consumeOtpChallengeAtomically(db, {
+      challengeKey,
+      otp,
+      mobileDigits: digits,
+      role,
+    });
+  } catch (err) {
+    if (demoAccount && err instanceof HttpsError
+      && (err.code === 'permission-denied' || err.code === 'resource-exhausted')) {
+      await recordDemoOtpFailure(digits);
+    }
+    throw err;
+  }
+  if (demoAccount) {
+    await clearDemoOtpFailures(digits);
+  }
 
   const accountSearch = await findUserByMobileDigits(db, digits, role);
   const postOtpAccount = postOtpAccountFieldsFromSearch(accountSearch);
-  const sessionRole =
-    otpType === 'auth' && postOtpAccount.exists && postOtpAccount.role
-      ? postOtpAccount.role
-      : role;
+
+  if (demoAccount) {
+    // A demo number only ever signs in to its pre-provisioned staging account with the
+    // allowlisted role and UID; it never gets a registration session.
+    if (!accountSearch.found || !accountSearch.uid) {
+      console.error('[verifyUserRegistrationOtp] Demo account missing on the staging plane', {
+        mobileLast4: digits.slice(-4),
+        role: demoAccount.role,
+      });
+      throw new HttpsError('failed-precondition', DEMO_SIGNIN_UNAVAILABLE_MESSAGE);
+    }
+    if (normalizeRole(accountSearch.role) !== demoAccount.role || accountSearch.uid !== demoAccount.uid) {
+      console.error('[verifyUserRegistrationOtp] Demo account does not match the allowlist', {
+        mobileLast4: digits.slice(-4),
+      });
+      throw new HttpsError('failed-precondition', DEMO_SIGNIN_UNAVAILABLE_MESSAGE);
+    }
+  }
+
+  // Unified phone step ('auth'): an unknown number gets a role-less session ('auth') that the
+  // registration step later binds to the role the user picks.
+  const sessionRole = otpType === 'auth'
+    ? (postOtpAccount.exists && postOtpAccount.role ? postOtpAccount.role : 'auth')
+    : role;
 
   const sessionId = crypto.randomBytes(16).toString('hex');
   const SESSION_TTL_SEC = 900;
@@ -2345,8 +2419,14 @@ async function finalizePatientOtpVerification(db, data, auth) {
 
     const session = await consumeOtpVerificationSessionAtomically(db, sessionId, {
       assertSession: (sessionData) => {
-        if (sessionData.role !== userRole || sessionData.mobileVerified !== true) {
+        // Unified phone step sessions are role-less ('auth') until the user picks a role.
+        const roleOk = sessionData.role === userRole || sessionData.role === 'auth';
+        if (!roleOk || sessionData.mobileVerified !== true) {
           throw new HttpsError('failed-precondition', 'OTP verification incomplete.');
+        }
+        // Demo numbers never register (they are pre-provisioned on the staging plane only).
+        if (isDemoMobile(sessionData.mobileDigits)) {
+          throw new HttpsError('permission-denied', DEMO_REGISTRATION_BLOCKED_MESSAGE);
         }
 
         const sessionMobile = normalizeMobileDigits(sessionData.mobileDigits);
@@ -2971,7 +3051,9 @@ module.exports = {
   getReviewerConfig,
   isReviewerPhone,
   isStagingDemoPhone,
-  isStagingDemoOtpEnabled,
+  resolveChallengeRole,
+  assertDemoNotLockedOut,
+  recordDemoOtpFailure,
   shouldSkipMsg91ForPhone,
   checkReviewerRateLimit,
   setReviewerRedisClientForTesting,

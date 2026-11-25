@@ -1,27 +1,24 @@
 'use strict';
 
-const { isReviewerPhone, isAnyReviewerPhone, normalizeRole } = require('../../reviewer_otp_config');
+const { isDemoMobile } = require('../../reviewer_otp_config');
 const { getDatabaseClient } = require('./client');
 const { assertDemoUidNotOnRds } = require('../../../../scripts/lib/rds_demo_uid_guard');
 
 /**
- * Phone-based login lookup plane (production):
- * - Reviewer / Play Store phones → staging Supabase public.users
- * - All others → RDS via PROD_GATEWAY_URL
+ * Phone-based login lookup plane (production), decided only by the server-side demo
+ * allowlist (lib/demo_accounts.js):
+ * - the five demo numbers -> staging Supabase public.users ('supabase' plane), always,
+ *   even when the demo OTP bypass is switched off (demo users never touch RDS)
+ * - every other number -> RDS via PROD_GATEWAY_URL
+ * The role argument is accepted for backward compatibility and ignored: a client-chosen
+ * role can never move a lookup to another database.
  */
-function resolveLoginLookupPlane(digits, role) {
+function resolveLoginLookupPlane(digits, _role) {
   const appEnv = String(process.env.APP_ENV || 'staging').trim().toLowerCase();
   if (appEnv !== 'production') {
     return 'staging';
   }
-  const normalizedRole = role ? normalizeRole(role) : null;
-  if (normalizedRole && isReviewerPhone(digits, normalizedRole)) {
-    return 'supabase';
-  }
-  if (!normalizedRole && isAnyReviewerPhone(digits)) {
-    return 'supabase';
-  }
-  return 'rds';
+  return isDemoMobile(digits) ? 'supabase' : 'rds';
 }
 
 function getLoginLookupClient(digits, role) {
