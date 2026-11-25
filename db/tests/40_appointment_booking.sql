@@ -66,3 +66,29 @@ SELECT tests.check('no double booking: one active row per patient per slot',
 SELECT tests.check('slot never exceeds capacity',
   NOT EXISTS (SELECT 1 FROM public.appointments WHERE doctor_id = 't_doc_1' AND patient_status <> 'cancelled'
               GROUP BY date_time HAVING count(*) > 3));
+
+-- 20261125000003: direct PostgREST writes cannot bypass the booking RPC.
+SELECT tests.as_user('t_p4_uid');
+SELECT tests.expect_error('patient cannot INSERT an appointment directly (capacity bypass)',
+  $q$INSERT INTO public.appointments (appointment_id, doctor_id, patient_id, date_time, patient_name, patient_age, patient_gender,
+       doctor_name, specialization, slot_label, token_number, visit_type, patient_status, doctor_status)
+     VALUES ('t_direct', 't_doc_1', 't_p4', '2031-01-15 10:00:00+05:30', 'x', 1, 'M', 'd', 's', '10:00 AM', 1, 'newVisit', 'confirmed', 'confirmed')$q$);
+SELECT tests.as_user('t_p2_uid');
+SELECT tests.check('patient cancel via upsert still works',
+  tests.affected($q$INSERT INTO public.appointments AS a (appointment_id, doctor_id, patient_id, date_time, patient_name, patient_age, patient_gender,
+       doctor_name, specialization, slot_label, token_number, visit_type, patient_status, doctor_status)
+     SELECT appointment_id, 't_doc_other', patient_id, date_time + interval '7 days', patient_name, patient_age, patient_gender,
+            doctor_name, specialization, slot_label, 1, visit_type, 'cancelled', 'completed'
+       FROM public.appointments WHERE appointment_id = 't_a2'
+     ON CONFLICT (appointment_id) DO UPDATE SET patient_status = EXCLUDED.patient_status, doctor_id = EXCLUDED.doctor_id,
+       date_time = EXCLUDED.date_time, token_number = EXCLUDED.token_number, doctor_status = EXCLUDED.doctor_status$q$) = 1);
+SELECT tests.as_owner();
+SELECT tests.check('cancel kept slot/doctor columns pinned',
+  (SELECT patient_status = 'cancelled' AND doctor_id = 't_doc_1' AND doctor_status <> 'completed' AND date_time = '2031-01-15 10:00:00+05:30'
+     FROM public.appointments WHERE appointment_id = 't_a2'));
+SELECT tests.as_user('t_doc_uid');
+SELECT tests.check('doctor can still add a walk-in',
+  tests.affected($q$INSERT INTO public.appointments (appointment_id, doctor_id, patient_id, date_time, patient_name, patient_age, patient_gender,
+       doctor_name, specialization, slot_label, token_number, visit_type, patient_status, doctor_status, source)
+     VALUES ('t_walkin', 't_doc_1', 't_p4', '2031-01-20 10:00:00+05:30', 'x', 1, 'M', 'd', 's', '10:00 AM', 1, 'newVisit', 'confirmed', 'confirmed', 'walkin')$q$) = 1);
+SELECT tests.as_owner();

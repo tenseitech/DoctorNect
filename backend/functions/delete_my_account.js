@@ -432,6 +432,18 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     }
   };
 
+  // Tables that live in the private schema on real Postgres (PostgREST answers 404 for them):
+  // best effort, never abort the deletion because of them.
+  const delOptional = async (table, query) => {
+    try {
+      await supabaseRequest(config, 'DELETE', `${table}?${query}`);
+    } catch (err) {
+      if (err?.status === 404) return;
+      if (err?.status === 403) throw err;
+      recordFailure(table, err);
+    }
+  };
+
   const getRows = async (table, query, field) => {
     try {
       return await supabaseRequest(config, 'GET', `${table}?${query}&select=${field}`);
@@ -712,11 +724,11 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
   }
   if (supabaseUserId) {
     await del('promoted_ads', `provider_id=eq.${encodeURIComponent(supabaseUserId)}`);
-    await del('admin_users', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
+    await delOptional('admin_users', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
   }
   await del('promoted_ads', `provider_id=eq.${encodeURIComponent(uid)}`);
   await del('super_admins', `user_uid=eq.${encodeURIComponent(uid)}`);
-  await del('provisioning_errors', `auth_user_id=eq.${encodeURIComponent(uid)}`);
+  await delOptional('provisioning_errors', `auth_user_id=eq.${encodeURIComponent(uid)}`);
 
   // Anonymize payment records (PII minimization while retaining accounting audit history)
   try {

@@ -176,3 +176,24 @@ test('production S3 prefixes follow the data plane: demo/ for demo accounts, pro
   process.env.APP_ENV = 'staging';
   assert.deepEqual(del.planeKeyPrefixes('real_uid'), ['']);
 });
+
+test('private-schema tables answering 404 do not abort deletion; a 404 on a real table still does', async () => {
+  identity('pat_uid', 'patient', 'pat_1');
+  s3();
+  const respond = (missing) => del.setSupabaseFetchForTesting(async (url, options) => {
+    const table = url.split('/rest/v1/')[1].split('?')[0];
+    events.push({ kind: 'pg', method: options.method, table });
+    if (missing.has(table)) return { ok: false, status: 404, text: async () => '{"code":"PGRST205"}' };
+    return { ok: true, status: 200, text: async () => (options.method === 'GET' && table === 'users' ? '[{"id":"pat_uid","profile_id":"pat_1"}]' : '[]') };
+  });
+
+  respond(new Set(['admin_users', 'provisioning_errors']));
+  const ok = await del.deleteMyAccountHandler('pat_uid');
+  assert.equal(ok.ok, true);
+  assert.equal(events[events.length - 1].kind, 'auth');
+
+  events = [];
+  respond(new Set(['health_records']));
+  await assert.rejects(del.deleteMyAccountHandler('pat_uid'));
+  assert.ok(!events.some((e) => e.kind === 'auth'), 'Auth kept when a real table is unreachable');
+});

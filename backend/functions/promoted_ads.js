@@ -787,7 +787,7 @@ const razorpayWebhook = onRequest(
     secrets: [razorpayWebhookSecret, supabaseServiceRoleKey],
     invoker: 'public',
   },
-  async (req, res) => razorpayWebhookHandler(req, res, null),
+  require('./http_endpoint_security').withApiSecurityHeaders(async (req, res) => razorpayWebhookHandler(req, res, null)),
 );
 
 /**

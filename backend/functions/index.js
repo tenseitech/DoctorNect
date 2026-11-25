@@ -320,14 +320,14 @@ exports.getValidationRules = onCall(
  */
 exports.getValidationRulesHttp = onRequest(
   { region: CALLABLE_REGION },
-  (req, res) => {
+  require('./http_endpoint_security').withApiSecurityHeaders((req, res) => {
     if (req.method !== 'GET') {
       res.status(405).json({ error: { message: 'GET required.' } });
       return;
     }
     res.set('Cache-Control', 'public, max-age=300');
     res.json({ rules: RULES, vitalThresholds: VITAL_THRESHOLDS, version: 1 });
-  },
+  }, { cacheable: true }),
 );
 
 /** Validates a single field server-side. */
@@ -923,7 +923,7 @@ exports.verifyAmbulanceDriverLogin = onCall(
  */
 exports.verifyAmbulanceDriverLoginHttp = onRequest(
   { region: CALLABLE_REGION, cors: false, invoker: 'public', secrets: [supabaseServiceRoleKey] },
-  async (req, res) => {
+  require('./http_endpoint_security').withApiSecurityHeaders(async (req, res) => {
     const allowedOrigins = AMBULANCE_HTTP_ALLOWED_ORIGINS;
     if (handleAmbulanceHttpPreflight(req, res, allowedOrigins)) return;
 
@@ -972,7 +972,7 @@ exports.verifyAmbulanceDriverLoginHttp = onRequest(
         },
       });
     }
-  },
+  }),
 );
 
 /** Ambulance driver login via verified mobile OTP session (anonymous auth required). */
@@ -1234,7 +1234,7 @@ exports.supabaseDatabaseWebhook = onRequest(
     region: CALLABLE_REGION,
     secrets: [supabaseWebhookSecret, supabaseServiceRoleKey],
   },
-  supabaseDatabaseWebhookHandler,
+  require('./http_endpoint_security').withApiSecurityHeaders(supabaseDatabaseWebhookHandler),
 );
 
 // Helpers exported for unit testing

@@ -29,6 +29,17 @@ BEGIN
            AND NOT EXISTS (SELECT 1 FROM pg_attrdef d WHERE d.adrelid = a.attrelid AND d.adnum = a.attnum)
     LOOP
         CONTINUE WHEN v_data ? c.attname;
+        -- Single-column CHECK (col = ANY (ARRAY['a', 'b'])) / (col IN (...)): use its first literal.
+        SELECT to_jsonb((regexp_match(pg_get_constraintdef(k.oid), '''([^'']*)'''))[1]) INTO v_val
+          FROM pg_constraint k
+          JOIN pg_attribute a2 ON a2.attrelid = k.conrelid AND a2.attname = c.attname
+         WHERE k.conrelid = p_table AND k.contype = 'c' AND k.conkey = ARRAY[a2.attnum]::int2[]
+           AND pg_get_constraintdef(k.oid) ~ ''''
+         LIMIT 1;
+        IF v_val IS NOT NULL THEN
+            v_data := v_data || jsonb_build_object(c.attname, v_val);
+            CONTINUE;
+        END IF;
         v_val := CASE
             WHEN c.typname IN ('uuid') THEN to_jsonb(gen_random_uuid()::text)
             WHEN c.typname IN ('json', 'jsonb') THEN '{}'::jsonb

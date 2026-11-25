@@ -1062,7 +1062,7 @@ async function verifyMsg91Otp(mobileDigits, otp) {
         httpStatus: statusCode,
         responseBody: body,
       });
-      console.warn(`[verifyMsg91Otp] MSG91 rejected OTP for mobile ending ${normalizedMobile.slice(-4)}, httpStatus=${statusCode}, response=${body}`);
+      console.warn(`[verifyMsg91Otp] MSG91 rejected OTP for mobile ending ${normalizedMobile.slice(-4)}, httpStatus=${statusCode}, response=${JSON.stringify(sanitizeResponseBody(body))}`);
     } else {
       logMsg91Otp('verify_confirmed', {
         severity: 'INFO',
