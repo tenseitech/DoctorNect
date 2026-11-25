@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="200 230 625 565" width="625" height="565">
+  <!-- DoctorNect mark: rounded D with heartbeat line. Vector master redrawn from the 1024 px
+       launcher artwork (cubic contours fitted to the original edges). Colour comes from
+       currentColor: white on brand blue #1D4ED8. Regenerate rasters with
+       frontend/tools/generate_brand_assets.js. -->
+  <g fill="currentColor">
+    <path d="M206.5 236 H555.5 C695.3 236 818 383.3 818 512.3 C818 641.3 695.3 788.5 555.5 788.5 H206.5 V665.5 H559.5 C603.8 665.5 694 594 694 512.3 C694 430.5 603.8 358.5 559.5 358.5 H206.5 Z"/>
+    <path d="M211.5 537.5 L338 537.5 L360 507 L389 568 L421.5 459.5 L451 568 L479.5 513.5 L573 513.5" fill="none" stroke="currentColor" stroke-width="23.5" stroke-linejoin="miter" stroke-miterlimit="10"/>
+  </g>
+</svg>
