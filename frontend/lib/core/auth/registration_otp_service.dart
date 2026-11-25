@@ -438,10 +438,18 @@ class RegistrationOtpService {
                 'in Firebase App Check + reCAPTCHA admin.'
             : 'Security verification failed. Please use the official mobile app.';
       }
-      return kDebugMode
-          ? 'App Check rejected this OTP request. Register the debug token from '
-              'device logs in Firebase Console → App Check, then restart the app.'
-          : 'Security verification failed. Update the app and try again.';
+      final reason = appCheckRejectionReason(
+        hasToken: AppCheckService.hasToken,
+        tokenFailureReason: AppCheckService.lastFailureReason,
+      );
+      // Non-sensitive reason code only (no token, no phone number).
+      debugPrint('[RegistrationOtpService] app_check_rejected reason=$reason');
+      if (kDebugMode) {
+        return 'App Check rejected this OTP request ($reason). Register the debug '
+            'token from device logs in Firebase Console → App Check, then restart '
+            'the app.';
+      }
+      return appCheckRejectionMessage(reason);
     }
 
     final rawMessage = _cleanFunctionsMessage(e.message);
@@ -532,6 +540,36 @@ class RegistrationOtpService {
     if (rawMessage.isNotEmpty) return rawMessage;
     return 'Too many attempts. Wait and try again.';
   }
+
+  /// Why the server rejected the call for App Check.
+  /// * `app_check_token_missing`: this device never obtained a token (typical
+  ///   for sideloaded builds: Play Integrity cannot attest an app that was not
+  ///   installed from Google Play, and an unregistered debug provider fails).
+  /// * `app_check_rate_limited`: token requests were throttled after failures.
+  /// * `app_check_token_rejected`: a token was sent but the server refused it.
+  @visibleForTesting
+  static String appCheckRejectionReason({
+    required bool hasToken,
+    String? tokenFailureReason,
+  }) {
+    if (hasToken) return 'app_check_token_rejected';
+    if (tokenFailureReason == 'rate_limited') return 'app_check_rate_limited';
+    return 'app_check_token_missing';
+  }
+
+  @visibleForTesting
+  static String appCheckRejectionMessage(String reason) => switch (reason) {
+        'app_check_token_missing' =>
+          'This copy of the app could not be verified by Google Play, so login '
+              'is blocked for security. Install DoctorNect from Google Play and '
+              'try again. (code: app_check_token_missing)',
+        'app_check_rate_limited' =>
+          'Security verification is temporarily limited on this device. Close '
+              'the app, wait a minute and try again. (code: app_check_rate_limited)',
+        _ =>
+          'Security verification failed. Update the app from Google Play and try '
+              'again. (code: app_check_token_rejected)',
+      };
 
   static bool _isAppCheckRejection(FirebaseFunctionsException e) {
     final code = e.code.toLowerCase();

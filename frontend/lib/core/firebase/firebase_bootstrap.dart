@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../firebase_options.dart';
 import '../constants/app_constants.dart';
+import '../security/app_check_provider_policy.dart';
 import '../security/app_check_service.dart';
 import '../storage/storage_feature_flag.dart';
 import '../validation/server_validation_service.dart';
@@ -149,9 +150,18 @@ Future<void> _activateAppCheck() async {
     }
 
     // Release builds use Play Integrity when installed from Play Store.
-    // Pass --dart-define=APP_CHECK_DEBUG_TOKEN=uuid for sideloaded release testing.
-    final debugToken = AppConstants.resolvedAppCheckDebugToken;
-    final useDebugProvider = kDebugMode || debugToken.isNotEmpty;
+    // The debug provider is only for `flutter run` and explicit staging test
+    // builds (APP_ENV=staging + APP_CHECK_DEBUG_PROVIDER=true); see
+    // AppCheckProviderPolicy and docs/APP_CHECK_SETUP.md. Production never.
+    final useDebugProvider =
+        AppCheckProviderPolicy.current() == AppCheckProviderKind.debug;
+    final debugToken =
+        useDebugProvider ? AppConstants.resolvedAppCheckDebugToken : '';
+    debugPrint(
+      useDebugProvider
+          ? '[AppCheck] provider=debug (not for production)'
+          : '[AppCheck] provider=platform_attestation',
+    );
     await FirebaseAppCheck.instance.activate(
       providerAndroid: useDebugProvider
           ? AndroidDebugProvider(
@@ -166,14 +176,15 @@ Future<void> _activateAppCheck() async {
     );
     await FirebaseAppCheck.instance.setTokenAutoRefreshEnabled(true);
 
-    if (kDebugMode && debugToken.isNotEmpty) {
+    if (useDebugProvider && debugToken.isNotEmpty) {
       debugPrint(
-        'App Check using APP_CHECK_DEBUG_TOKEN. Register "$debugToken" in '
+        'App Check using a fixed APP_CHECK_DEBUG_TOKEN. Register it in '
         'Firebase Console → App Check → Manage debug tokens if not done yet.',
       );
-    } else if (!kDebugMode && debugToken.isNotEmpty) {
+    } else if (useDebugProvider) {
       debugPrint(
-        'Release build using APP_CHECK_DEBUG_TOKEN for App Check (local testing only).',
+        'App Check debug provider: copy the "debug secret" printed by '
+        'DebugAppCheckProvider in logcat and register it in Firebase Console.',
       );
     }
 
