@@ -8,6 +8,7 @@ const { createGatewayServer } = require('../src/server');
 const { JwksClient } = require('../src/jwks');
 const { base64UrlEncode } = require('../src/jwt_minter');
 const { base64UrlDecode } = require('../src/token_verifier');
+const { resetFirebaseAdminForTesting } = require('../src/firebase_revocation');
 
 describe('DoctorNect Auth Gateway & Token Security Suite', () => {
   let mockPostgrestServer;
@@ -116,6 +117,7 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
   }
 
   before(async () => {
+    resetFirebaseAdminForTesting();
     // 1. Generate RSA key pair for testing
     const keyPair = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
     testPrivateKey = keyPair.privateKey;
@@ -483,51 +485,52 @@ describe('DoctorNect Auth Gateway & Token Security Suite', () => {
     const rotatedKeyPair = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
     const rotatedKid = 'test-key-id-002-rotated';
 
-    // Simulate key rotation in JWKS: both old and new keys active
-    mockJwksClient.setMockKeys(
-      new Map([
-        [testKid, testPublicKey],
-        [rotatedKid, rotatedKeyPair.publicKey],
-      ])
-    );
+    try {
+      // Simulate key rotation in JWKS: both old and new keys active
+      mockJwksClient.setMockKeys(
+        new Map([
+          [testKid, testPublicKey],
+          [rotatedKid, rotatedKeyPair.publicKey],
+        ]),
+      );
 
-    // Token signed with newly rotated key succeeds
-    const rotatedToken = createTestFirebaseToken({
-      kid: rotatedKid,
-      privateKey: rotatedKeyPair.privateKey,
-      sub: 'rotated_user_789',
-    });
+      // Token signed with newly rotated key succeeds
+      const rotatedToken = createTestFirebaseToken({
+        kid: rotatedKid,
+        privateKey: rotatedKeyPair.privateKey,
+        sub: 'rotated_user_789',
+      });
 
-    const res1 = await makeRequest({
-      method: 'GET',
-      path: '/rest/v1/appointments',
-      headers: { authorization: `Bearer ${rotatedToken}` },
-    });
-    assert.strictEqual(res1.statusCode, 200);
+      const res1 = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments',
+        headers: { authorization: `Bearer ${rotatedToken}` },
+      });
+      assert.strictEqual(res1.statusCode, 200);
 
-    // Now retire the old key from JWKS
-    mockJwksClient.setMockKeys(
-      new Map([
-        [rotatedKid, rotatedKeyPair.publicKey],
-      ])
-    );
+      // Now retire the old key from JWKS
+      mockJwksClient.setMockKeys(
+        new Map([
+          [rotatedKid, rotatedKeyPair.publicKey],
+        ]),
+      );
 
-    // Token signed with old retired key is now rejected
-    const oldKeyToken = createTestFirebaseToken({
-      kid: testKid,
-      sub: 'old_key_user',
-    });
+      // Token signed with old retired key is now rejected
+      const oldKeyToken = createTestFirebaseToken({
+        kid: testKid,
+        sub: 'old_key_user',
+      });
 
-    const res2 = await makeRequest({
-      method: 'GET',
-      path: '/rest/v1/appointments',
-      headers: { authorization: `Bearer ${oldKeyToken}` },
-    });
-    assert.strictEqual(res2.statusCode, 401);
-    assert.match(res2.json.message, /unable to find public key/i);
-
-    // Restore original mock key state for subsequent tests
-    mockJwksClient.setMockKeys(new Map([[testKid, testPublicKey]]));
+      const res2 = await makeRequest({
+        method: 'GET',
+        path: '/rest/v1/appointments',
+        headers: { authorization: `Bearer ${oldKeyToken}` },
+      });
+      assert.strictEqual(res2.statusCode, 401);
+      assert.match(res2.json.message, /unable to find public key/i);
+    } finally {
+      mockJwksClient.setMockKeys(new Map([[testKid, testPublicKey]]));
+    }
   });
 
   it('forwards only allowlisted headers and drops forbidden/untrusted headers', async () => {

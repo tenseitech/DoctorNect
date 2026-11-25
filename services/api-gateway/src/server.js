@@ -9,9 +9,29 @@ const { assertFirebaseTokenNotRevoked } = require('./firebase_revocation');
 const { resolveCorsOrigin } = require('./cors');
 const { mintPostgrestJwt } = require('./jwt_minter');
 const { secureCompare, hashUid, RateLimiter, emitAuditLog } = require('./security');
+const { createRateLimiter } = require('./rate_limit_factory');
+const { buildApiSecurityHeaders } = require('./api_security_headers');
+const { assertGatewayProductionConfig } = require('./validate_production_config');
 const { proxyToPostgrest } = require('./proxy');
 const { defaultJwksClient } = require('./jwks');
 const { resolveDataPlane, assertClientRoutingHintIgnored } = require('../../../scripts/lib/demo_routing');
+const { resolveClientIpFromRequest } = require('../../../scripts/lib/trusted_client_ip');
+const { clientAuthErrorMessage } = require('./client_auth_errors');
+
+async function limiterAllows(limiter, key) {
+  const result = limiter.isAllowed(key);
+  return typeof result?.then === 'function' ? result : result;
+}
+
+async function limiterBlocked(limiter, key) {
+  const result = limiter.isBlocked(key);
+  return typeof result?.then === 'function' ? result : result;
+}
+
+async function limiterRecordFailure(limiter, key) {
+  const result = limiter.recordFailure(key);
+  return typeof result?.then === 'function' ? result : result;
+}
 
 function extractEmbeddedRelations(queryString) {
   if (!queryString) return [];
@@ -68,11 +88,12 @@ function extractEmbeddedRelations(queryString) {
 
 function createGatewayServer(overrides = {}) {
   const cfg = { ...config, ...overrides };
-  const rateLimiter = new RateLimiter({
+  const rateLimiter = overrides.rateLimiter || createRateLimiter({
     windowMs: cfg.rateLimitWindowMs,
     maxRequests: cfg.rateLimitMaxRequests,
+    redisUrl: cfg.rateLimitRedisUrl,
   });
-  const failedServiceKeyLimiter = new RateLimiter({
+  const failedServiceKeyLimiter = overrides.failedServiceKeyLimiter || new RateLimiter({
     windowMs: cfg.failedServiceKeyWindowMs,
     maxRequests: cfg.failedServiceKeyMaxAttempts,
   });
@@ -82,9 +103,11 @@ function createGatewayServer(overrides = {}) {
         ? overrides.rateLimitMaxRequests
         : (cfg.anonRateLimitMaxRequests || 60));
 
-  const anonRateLimiter = new RateLimiter({
+  const anonRateLimiter = overrides.anonRateLimiter || createRateLimiter({
     windowMs: cfg.anonRateLimitWindowMs || cfg.rateLimitWindowMs,
     maxRequests: effectiveAnonLimit,
+    redisUrl: cfg.rateLimitRedisUrl,
+    keyPrefix: 'gw:anon:',
   });
   const jwksClient = cfg.jwksClient || defaultJwksClient;
   const allowedMethodsSet = new Set((cfg.allowedMethods || []).map((m) => m.toUpperCase()));
@@ -99,17 +122,7 @@ function createGatewayServer(overrides = {}) {
     let clientRole = 'anon';
     let clientUidHash = null;
 
-    // Resolve client IP using rightmost trusted hop behind reverse proxy / ALB
-    let clientIp = 'unknown';
-    const xff = req.headers['x-forwarded-for'];
-    if (typeof xff === 'string' && xff.trim()) {
-      const hops = xff.split(',').map((h) => h.trim()).filter(Boolean);
-      if (hops.length > 0) {
-        clientIp = hops[hops.length - 1]; // rightmost trusted hop behind ALB
-      }
-    } else if (req.socket && req.socket.remoteAddress) {
-      clientIp = req.socket.remoteAddress;
-    }
+    const clientIp = resolveClientIpFromRequest(req);
 
     // Helper to send response and log
     const corsOrigin = resolveCorsOrigin(req, cfg.corsAllowedOrigins || []);
@@ -118,12 +131,12 @@ function createGatewayServer(overrides = {}) {
       const diff = process.hrtime(startTime);
       const latencyMs = diff[0] * 1000 + diff[1] / 1e6;
 
-      const responseHeaders = {
+      const responseHeaders = buildApiSecurityHeaders({
         'Content-Type': 'application/json',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type, apikey, Prefer, Range, x-client-info',
         ...headers,
-      };
+      });
       if (corsOrigin) {
         responseHeaders['Access-Control-Allow-Origin'] = corsOrigin;
         responseHeaders.Vary = 'Origin';
@@ -261,7 +274,7 @@ function createGatewayServer(overrides = {}) {
     }
 
     // Check if this IP is blocked due to excessive failed service-key attempts
-    if (failedServiceKeyLimiter.isBlocked(`ip:${clientIp}`)) {
+    if (await limiterBlocked(failedServiceKeyLimiter, `ip:${clientIp}`)) {
       return sendJson(429, {
         error: 'Too Many Requests',
         message: 'Too many failed service key attempts. Please try again later.',
@@ -293,7 +306,7 @@ function createGatewayServer(overrides = {}) {
       // Service role callers bypass rate limiting
     } else if (isServiceKeyCandidate) {
       // Failed service key attempt: record failure and rate-limit per IP
-      const blockedNow = failedServiceKeyLimiter.recordFailure(`ip:${clientIp}`);
+      const blockedNow = await limiterRecordFailure(failedServiceKeyLimiter, `ip:${clientIp}`);
       if (blockedNow) {
         return sendJson(429, {
           error: 'Too Many Requests',
@@ -319,7 +332,7 @@ function createGatewayServer(overrides = {}) {
         clientRole = 'authenticated';
         clientUidHash = hashUid(authenticatedPayload.uid);
         // Per-UID rate limit for authenticated callers
-        if (authenticatedPayload.uid && !rateLimiter.isAllowed(`uid:${authenticatedPayload.uid}`)) {
+        if (authenticatedPayload.uid && !(await limiterAllows(rateLimiter, `uid:${authenticatedPayload.uid}`))) {
           return sendJson(429, {
             error: 'Too Many Requests',
             message: 'Rate limit exceeded for user. Please try again shortly.',
@@ -327,7 +340,7 @@ function createGatewayServer(overrides = {}) {
         }
       } catch (err) {
         // Unauthenticated due to invalid token: apply per-IP rate limit before error
-        if (!rateLimiter.isAllowed(`ip:${clientIp}`)) {
+        if (!(await limiterAllows(rateLimiter, `ip:${clientIp}`))) {
           return sendJson(429, {
             error: 'Too Many Requests',
             message: 'Rate limit exceeded. Please try again shortly.',
@@ -335,7 +348,7 @@ function createGatewayServer(overrides = {}) {
         }
         return sendJson(401, {
           error: 'Unauthorized',
-          message: `Authentication failed: ${err.message}`,
+          message: clientAuthErrorMessage(err),
         });
       }
     } else {
@@ -345,7 +358,7 @@ function createGatewayServer(overrides = {}) {
         lowerCleanPath.startsWith(allowed.toLowerCase())
       );
       if (isAllowlisted) {
-        if (!anonRateLimiter.isAllowed(`anon:${clientIp}`)) {
+        if (!(await limiterAllows(anonRateLimiter, `anon:${clientIp}`))) {
           return sendJson(429, {
             error: 'Too Many Requests',
             message: 'Rate limit exceeded. Please try again shortly.',
@@ -353,7 +366,7 @@ function createGatewayServer(overrides = {}) {
         }
         clientRole = 'anon';
       } else {
-        if (!rateLimiter.isAllowed(`ip:${clientIp}`)) {
+        if (!(await limiterAllows(rateLimiter, `ip:${clientIp}`))) {
           return sendJson(429, {
             error: 'Too Many Requests',
             message: 'Rate limit exceeded. Please try again shortly.',
@@ -501,11 +514,20 @@ function createGatewayServer(overrides = {}) {
 }
 
 if (require.main === module) {
-  const { server } = createGatewayServer();
-  server.listen(config.port, config.host, () => {
-    console.log(`[DoctorNect Auth Gateway] Listening on http://${config.host}:${config.port}`);
-    console.log(`[DoctorNect Auth Gateway] Proxying to PostgREST at ${config.postgrestUrl}`);
-  });
+  const { assertGatewayProductionRuntime } = require('./assert_gateway_production_runtime');
+  assertGatewayProductionConfig();
+  void assertGatewayProductionRuntime()
+    .then(() => {
+      const { server } = createGatewayServer();
+      server.listen(config.port, config.host, () => {
+        console.log(`[DoctorNect Auth Gateway] Listening on http://${config.host}:${config.port}`);
+        console.log(`[DoctorNect Auth Gateway] Proxying to PostgREST at ${config.postgrestUrl}`);
+      });
+    })
+    .catch((err) => {
+      console.error('[DoctorNect Auth Gateway] Production runtime checks failed:', err.message);
+      process.exit(1);
+    });
 }
 
 module.exports = {

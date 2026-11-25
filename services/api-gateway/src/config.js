@@ -13,7 +13,11 @@ module.exports = {
   // After JWKS crypto verify, call Firebase Admin verifyIdToken(..., checkRevoked=true).
   // Set FIREBASE_REVOCATION_CHECK=false only for local gateway dev without ADC.
   firebaseRevocationCheck: String(process.env.FIREBASE_REVOCATION_CHECK || 'true').trim().toLowerCase() !== 'false',
-  requireFirebaseRevocationCheck: String(process.env.APP_ENV || '').trim().toLowerCase() === 'production',
+  requireFirebaseRevocationCheck: (() => {
+    const app = String(process.env.APP_ENV || '').trim().toLowerCase();
+    const node = String(process.env.NODE_ENV || '').trim().toLowerCase();
+    return app === 'production' || node === 'production';
+  })(),
   corsAllowedOrigins: String(process.env.CORS_ALLOWED_ORIGINS || 'https://doctornect.com,https://www.doctornect.com,https://app.doctornect.com')
     .split(',')
     .map((s) => s.trim())
@@ -29,6 +33,7 @@ module.exports = {
   failedServiceKeyWindowMs: parseInt(process.env.FAILED_SERVICE_KEY_WINDOW_MS || '900000', 10), // 15 mins
   anonRateLimitMaxRequests: parseInt(process.env.ANON_RATE_LIMIT_MAX_REQUESTS || '60', 10), // 60 req/min for unauthenticated callers
   anonRateLimitWindowMs: parseInt(process.env.ANON_RATE_LIMIT_WINDOW_MS || '60000', 10), // 1 min window
+  rateLimitRedisUrl: String(process.env.RATE_LIMIT_REDIS_URL || process.env.REDIS_URL || '').trim(),
   anonMaxRows: parseInt(process.env.ANON_MAX_ROWS || '100', 10), // Max query limit for anonymous queries
   // Public endpoints accessible without an authenticated user token
   anonPublicAllowlist: [

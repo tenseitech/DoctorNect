@@ -7,8 +7,23 @@
 
 let adminAuth = null;
 let initAttempted = false;
+let adminAuthOverride = null;
+
+/** @visibleForTesting */
+function setAdminAuthForTesting(auth) {
+  adminAuthOverride = auth;
+  adminAuth = auth;
+  initAttempted = true;
+}
 
 function resolveAdminAuth() {
+  if (adminAuthOverride !== null && adminAuthOverride !== undefined) {
+    return adminAuthOverride;
+  }
+  if (String(process.env.DISABLE_FIREBASE_ADMIN_INIT || '').trim() === '1') {
+    initAttempted = true;
+    return null;
+  }
   if (initAttempted) {
     return adminAuth;
   }
@@ -55,10 +70,19 @@ async function assertFirebaseTokenNotRevoked(idToken, options = {}) {
 /** @visibleForTesting */
 function resetFirebaseAdminForTesting() {
   adminAuth = null;
+  adminAuthOverride = null;
   initAttempted = false;
+}
+
+/** Returns whether Firebase Admin Auth is available (ADC / credentials). Never logs secrets. */
+async function probeFirebaseAdminAvailable() {
+  const auth = resolveAdminAuth();
+  return Boolean(auth);
 }
 
 module.exports = {
   assertFirebaseTokenNotRevoked,
+  probeFirebaseAdminAvailable,
   resetFirebaseAdminForTesting,
+  setAdminAuthForTesting,
 };

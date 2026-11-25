@@ -62,12 +62,22 @@ function isDemoFirebaseUid(uid, env = process.env) {
   if (!id) return false;
   const allow = parseFirebaseUidAllowlist(env);
   if (allow.has(id)) return true;
+  const appEnv = String(env.APP_ENV || '').trim().toLowerCase();
   const prefixRouting =
     String(env.DEMO_UID_PREFIX_ROUTING || '').trim() === '1';
-  if (prefixRouting && (id.startsWith('demo_') || id.startsWith('demo_user_'))) {
+  if (prefixRouting && appEnv !== 'production'
+    && (id.startsWith('demo_') || id.startsWith('demo_user_'))) {
     return true;
   }
   return false;
+}
+
+function assertDemoPrefixRoutingSafeForProduction(env = process.env) {
+  const appEnv = String(env.APP_ENV || '').trim().toLowerCase();
+  if (appEnv !== 'production') return;
+  if (String(env.DEMO_UID_PREFIX_ROUTING || '').trim() === '1') {
+    throw new Error('DEMO_UID_PREFIX_ROUTING must not be enabled when APP_ENV=production');
+  }
 }
 
 function isDemoPhoneDigits(digits, env = process.env) {
@@ -158,6 +168,7 @@ module.exports = {
   parseFirebaseUidAllowlist,
   collectDemoPhonesFromEnv,
   assertClientRoutingHintIgnored,
+  assertDemoPrefixRoutingSafeForProduction,
   redisKeyNamespace,
   objectStoragePrefix,
   hashUidForLog,
