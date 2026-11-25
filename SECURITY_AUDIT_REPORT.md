@@ -271,10 +271,10 @@ Every demo UID must be in `DEMO_FIREBASE_UID_ALLOWLIST` on both Functions and th
 
 **6. Secrets still to rotate** (same as section 4.1): the Firebase Admin service-account key, the MSG91 key in `backend/functions/.secret.local`, and the RDS master credentials in `.env`. Move `upload-keystore.jks` and `frontend/android/key.properties` out of the repo folder.
 
-**7. Android release build (blocked by your machine setup, not the code).** `flutter build apk --release` stops with `ERROR: JAVA_HOME is set to an invalid directory: C:Program FilesEclipse Adoptiumjdk-17...`. Your global Flutter config has `jdk-dir` set to that literal, truncated path, and it overrides `JAVA_HOME`. The only JDK installed is 25, and the project's Gradle 8.14 / AGP 8.11 does not run on Java 25 (Gradle 8.14 supports up to 24). Install Temurin JDK 17 (the project targets Java 17) or 21, then:
+**7. Android release build (blocked by your machine setup, not the code).** `flutter build apk --release` stops with `ERROR: JAVA_HOME is set to an invalid directory: C:\Program Files\Eclipse Adoptium\jdk-17...`. Your global Flutter config has `jdk-dir` set to that literal, truncated path, and it overrides `JAVA_HOME`. The only JDK installed is 25, and the project's Gradle 8.14 / AGP 8.11 does not run on Java 25 (Gradle 8.14 supports up to 24). Install Temurin JDK 17 (the project targets Java 17) or 21, then:
 
 ```powershell
-flutter config --jdk-dir "C:Program FilesEclipse Adoptiumjdk-17.<version>-hotspot"
+flutter config --jdk-dir "C:\Program Files\Eclipse Adoptium\jdk-17.<version>-hotspot"
 flutter build apk --release
 ```
 
