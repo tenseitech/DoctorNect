@@ -34,6 +34,14 @@ async function processMailQueue({ supabase, sendEmail = sendMsg91Email, limit = 
   let failedCount = 0;
 
   for (const mail of pendingMails) {
+    // Reserved test addresses (demo accounts use *.invalid) are never sent anywhere.
+    if (/\.invalid$/i.test(String(mail.to_address || '').trim())) {
+      await supabase
+        .from('mail_queue')
+        .update({ status: 'failed', error_message: 'skipped: reserved .invalid address' })
+        .eq('mail_id', mail.mail_id);
+      continue;
+    }
     try {
       const result = await sendEmail({
         toEmail: mail.to_address,

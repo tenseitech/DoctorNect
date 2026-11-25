@@ -1126,6 +1126,9 @@ exports.sendMsg91EmailCallable = onCall(
   { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
   protectCallable('sendMsg91EmailCallable', { category: 'api' }, async (request) => {
   requireAuth(request);
+  if (require('./lib/demo_accounts').isDemoUid(request.auth.uid)) {
+    throw new HttpsError('permission-denied', 'Not authorized to send email.');
+  }
   const allowedEmails = (
     process.env.ACCOUNT_APPROVAL_ADMIN_EMAILS
     || process.env.BACKFILL_ADMIN_EMAILS

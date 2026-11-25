@@ -74,6 +74,7 @@ const ENFORCE_ABUSE_APP_CHECK = String(
 
 // Super admin = verified email in SUPER_ADMIN_EMAILS + admin custom claim (lib/super_admin.js).
 const { isSuperAdmin } = require('./lib/super_admin');
+const { isDemoUid } = require('./lib/demo_accounts');
 
 const razorpayWebhookSecret = defineSecret('RAZORPAY_WEBHOOK_SECRET');
 const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');
@@ -95,13 +96,32 @@ const AD_PRICING_TABLE = {
   720: 5000,
 };
 
-function getRazorpayCredentials() {
+const DEMO_PAYMENTS_DISABLED_MESSAGE = 'Payments are disabled for demo accounts.';
+
+/**
+ * Razorpay credentials for a caller. Demo accounts (lib/demo_accounts.js) may only ever use
+ * Razorpay TEST mode: RAZORPAY_TEST_KEY_ID / RAZORPAY_TEST_KEY_SECRET, or the main keys when
+ * they are themselves test keys (staging). A live key is never returned for a demo UID, so a
+ * demo account cannot create a real charge.
+ */
+function getRazorpayCredentials(uid = null) {
+  if (uid && isDemoUid(uid)) {
+    const mainId = (process.env.RAZORPAY_KEY_ID || '').trim();
+    const testId = (process.env.RAZORPAY_TEST_KEY_ID || '').trim()
+      || (mainId.startsWith('rzp_test_') ? mainId : '');
+    const testSecret = (process.env.RAZORPAY_TEST_KEY_SECRET || '').trim()
+      || (mainId.startsWith('rzp_test_') ? (process.env.RAZORPAY_KEY_SECRET || '').trim() : '');
+    if (!testId.startsWith('rzp_test_') || !testSecret) {
+      throw new HttpsError('failed-precondition', DEMO_PAYMENTS_DISABLED_MESSAGE);
+    }
+    return { keyId: testId, keySecret: testSecret, testMode: true };
+  }
   const keyId = (process.env.RAZORPAY_KEY_ID || '').trim();
   const keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
   if (!keyId || !keySecret) {
     throw new HttpsError('failed-precondition', 'Razorpay credentials not configured');
   }
-  return { keyId, keySecret };
+  return { keyId, keySecret, testMode: keyId.startsWith('rzp_test_') };
 }
 
 /** Helper: Send HTTPS Request to Razorpay REST API */
@@ -172,7 +192,7 @@ async function createRazorpayOrderPostgres(uid, safeAdId, hours, amountINR) {
     );
   }
 
-  const { keyId, keySecret } = getRazorpayCredentials();
+  const { keyId, keySecret } = getRazorpayCredentials(uid);
   const amountPaise = amountINR * 100;
 
   if (ad.status === 'pending_payment' && ad.razorpay_order_id && Number(ad.duration_hours) === hours) {
@@ -514,7 +534,7 @@ const verifyRazorpayPayment = onCall(
     throw new HttpsError('invalid-argument', 'Order does not match this advertisement.');
   }
 
-  const { keyId, keySecret } = getRazorpayCredentials();
+  const { keyId, keySecret } = getRazorpayCredentials(request.auth.uid);
 
   // Server-side HMAC SHA256 signature verification per Razorpay spec
   const payload = `${safeOrderId}|${safePaymentId}`;
