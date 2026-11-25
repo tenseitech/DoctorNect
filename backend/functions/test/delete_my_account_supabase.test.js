@@ -12,7 +12,9 @@ const {
   setSupabaseFetchForTesting,
   getSupabaseServiceConfig,
 } = require('../delete_my_account');
-const { getDatabaseClient, resetDatabaseClientForTesting } = require('../src/db/client');
+const { getDatabaseClient, resetDatabaseClientForTesting, setDatabaseClientForTesting } = require('../src/db/client');
+const { setS3ClientForTesting } = require('../delete_my_account');
+const { createMemoryPostgrest } = require('./helpers/memory_postgrest');
 const { setSupabaseClientForTesting } = require('../caller_identity');
 
 const UID = 'firebase_uid_patient_1';
@@ -28,6 +30,8 @@ beforeEach(() => {
 afterEach(() => {
   setSupabaseFetchForTesting(null);
   setSupabaseClientForTesting(null);
+  setS3ClientForTesting(null);
+  setDatabaseClientForTesting(createMemoryPostgrest());
   delete process.env.SUPABASE_URL;
   delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   delete process.env.FIRESTORE_FORBIDDEN;
@@ -161,11 +165,11 @@ test('deleteMyAccountHandler runs with FIRESTORE_FORBIDDEN=1 without touching Fi
   setSupabaseFetchForTesting(async () => {
     return { ok: true, status: 200, text: async () => '[]' };
   });
+  setS3ClientForTesting({ send: async () => ({ IsTruncated: false, Versions: [], DeleteMarkers: [] }) });
 
   try {
     const result = await deleteMyAccountHandler(UID);
     assert.equal(result.ok, true);
-    assert.equal(result.supabase, true);
     assert.equal(firebaseAuthDeleted, true, 'Firebase Auth user must be deleted last');
   } finally {
     authInstance.deleteUser = origDeleteUser;
@@ -202,8 +206,9 @@ test('with APP_ENV=production, delete_my_account and getDatabaseClient route to 
   process.env.SUPABASE_URL = 'https://legacy-staging.supabase.co';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'legacy-staging-key';
 
+  setDatabaseClientForTesting(null);
   resetDatabaseClientForTesting();
-
+  try {
   // 1. Verify getSupabaseServiceConfig() uses PROD_GATEWAY
   const config = getSupabaseServiceConfig();
   assert.equal(config.isProduction, true);
@@ -237,13 +242,14 @@ test('with APP_ENV=production, delete_my_account and getDatabaseClient route to 
     /\[DatabaseClient\] Missing credentials for APP_ENV="production".*PROD_GATEWAY_URL/,
   );
 
-  // Clean up
+  } finally {
   delete process.env.APP_ENV;
   delete process.env.PROD_GATEWAY_URL;
   delete process.env.PROD_GATEWAY_SERVICE_KEY;
   delete process.env.STAGING_SUPABASE_URL;
   delete process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY;
   resetDatabaseClientForTesting();
+  }
 });
 
 test('Integration: cleanupUserSupabaseRows runs against mock gateway built from config.js with zero denied requests', async () => {

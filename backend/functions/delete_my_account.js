@@ -263,68 +263,46 @@ async function deleteS3SpecificKeysVersions(s3, bucketName, keys) {
 }
 
 /**
- * S3 prefixes owned by the deleting account (matches getS3UploadUrlHandler key layout):
- * - patients/{patientId}/, health_records/{patientId}/, lab_reports/{patientId}/ (user IS the patient)
- * - doctor_profiles/{doctorId}/
- * - labs/{labId}/ (KYC) — lab reports for patients are collected per key, never by prefix
- * - pharmacies/{storeId}/, ambulances/{ambulanceId}/ (KYC)
- * - promoted_ads/{uid|profileId}/
+ * Physical key prefix for the account's data plane (production only): demo/ or prod/.
+ * Objects created before plane prefixing are unprefixed and belong to prod/.
  */
-async function resolveUserS3Prefixes(_db, { uid, role, profileId }) {
-  const prefixes = new Set();
-  const ids = Array.from(new Set([profileId, uid].filter(Boolean)));
-  const isProvider = ['doctor', 'lab', 'pharmacy', 'medicalStore', 'medical', 'ambulance'].includes(role);
-  if (isProvider || uid) {
-    for (const id of ids) prefixes.add(`promoted_ads/${id}/`);
-  }
-  for (const id of ids) {
-    if (role === 'patient') {
-      prefixes.add(`patients/${id}/`);
-      prefixes.add(`health_records/${id}/`);
-      prefixes.add(`lab_reports/${id}/`);
-    } else if (role === 'doctor') {
-      prefixes.add(`doctor_profiles/${id}/`);
-    } else if (role === 'lab') {
-      prefixes.add(`labs/${id}/`);
-    } else if (role === 'medicalStore' || role === 'pharmacy' || role === 'medical') {
-      prefixes.add(`pharmacies/${id}/`);
-    } else if (role === 'ambulance') {
-      prefixes.add(`ambulances/${id}/`);
-    }
-  }
-  return Array.from(prefixes);
+function planeKeyPrefixes(uid) {
+  if (String(process.env.APP_ENV || '').trim().toLowerCase() !== 'production') return [''];
+  const { objectStoragePrefix } = require('./lib/demo_routing');
+  const plane = objectStoragePrefix({ appEnv: 'production', firebaseUid: uid || null });
+  return plane === 'prod/' ? ['prod/', ''] : [plane];
 }
 
 /**
- * Exact S3 report keys uploaded by a lab account (lab_bookings / lab_orders rows for this lab).
+ * S3 prefixes owned by the deleting account (matches getS3UploadUrlHandler key layout):
+ * - patient: patients/{id}/, health_records/{id}/, lab_reports/{id}/  (the patient's own records)
+ * - doctor_profiles/{id}/, labs/{id}/, pharmacies/{id}/, ambulances/{id}/  (provider media + KYC)
+ * - promoted_ads/{uid|profileId}/
+ * Lab report files uploaded by a LAB for patients are never deleted with the lab account:
+ * they belong to the patient's medical record.
  */
-async function collectRoleSpecificS3ReportKeys(_db, { role, profileId, uid }) {
-  if (role !== 'lab') return [];
-  const config = getSupabaseServiceConfig(uid);
-  if (!config) return [];
-  const keys = new Set();
-  for (const lid of Array.from(new Set([profileId, uid].filter(Boolean)))) {
-    for (const table of ['lab_bookings', 'lab_orders']) {
-      try {
-        const rows = await supabaseRequest(
-          config,
-          'GET',
-          `${table}?lab_id=eq.${encodeURIComponent(lid)}&select=report_storage_key,report_s3_key`,
-        );
-        for (const row of Array.isArray(rows) ? rows : []) {
-          for (const key of [row?.report_storage_key, row?.report_s3_key]) {
-            if (typeof key === 'string' && key.startsWith('lab_reports/')) keys.add(key.trim());
-          }
-        }
-      } catch (err) {
-        logger.warn('collectRoleSpecificS3ReportKeys query error', {
-          table,
-          status: err?.status || 'unknown',
-        });
-      }
+async function resolveUserS3Prefixes(_db, { uid, role, profileId }) {
+  const logical = new Set();
+  const ids = Array.from(new Set([profileId, uid].filter(Boolean)));
+  for (const id of ids) {
+    logical.add(`promoted_ads/${id}/`);
+    if (role === 'patient') {
+      logical.add(`patients/${id}/`);
+      logical.add(`health_records/${id}/`);
+      logical.add(`lab_reports/${id}/`);
+    } else if (role === 'doctor') {
+      logical.add(`doctor_profiles/${id}/`);
+    } else if (role === 'lab') {
+      logical.add(`labs/${id}/`);
+    } else if (role === 'medicalStore' || role === 'pharmacy' || role === 'medical') {
+      logical.add(`pharmacies/${id}/`);
+    } else if (role === 'ambulance') {
+      logical.add(`ambulances/${id}/`);
     }
   }
-  return Array.from(keys);
+  const out = [];
+  for (const plane of planeKeyPrefixes(uid)) for (const p of logical) out.push(plane + p);
+  return out;
 }
 
 /**
@@ -515,34 +493,44 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     addIds(ambulanceIds, await getRows('ambulances', `auth_uid=eq.${encodeURIComponent(supabaseUserId)}`, 'ambulance_id'), 'ambulance_id');
   }
 
-  // 1. Collect and delete deliveries and medicines (RESTRICT on prescriptions/patients/stores/doctors)
+  const patch = async (table, query, body) => {
+    try {
+      await supabaseRequest(config, 'PATCH', `${table}?${query}`, body);
+    } catch (err) {
+      if (err?.status === 403 || err?.status === 404) {
+        throw err;
+      }
+      recordFailure(table, err);
+    }
+  };
+
+  /*
+   * Retention policy: records that belong to a PATIENT's medical history (lab bookings/orders and
+   * their report files, prescriptions, appointments, referrals, pharmacy deliveries, ambulance trips)
+   * are deleted only when the PATIENT deletes their account. When a PROVIDER (lab, doctor, pharmacy,
+   * ambulance) deletes theirs, the provider is anonymised and detached instead, so patients keep
+   * access to their own records.
+   */
+
+  // 1. Patient-owned pharmacy deliveries
   const deliveryIds = new Set();
   for (const pid of patientIds) {
     addIds(deliveryIds, await getRows('pharmacy_deliveries', `patient_id=eq.${encodeURIComponent(pid)}`, 'delivery_id'), 'delivery_id');
-  }
-  for (const sid of storeIds) {
-    addIds(deliveryIds, await getRows('pharmacy_deliveries', `store_id=eq.${encodeURIComponent(sid)}`, 'delivery_id'), 'delivery_id');
-  }
-  for (const did of doctorIds) {
-    addIds(deliveryIds, await getRows('pharmacy_deliveries', `doctor_id=eq.${encodeURIComponent(did)}`, 'delivery_id'), 'delivery_id');
   }
   for (const delId of deliveryIds) {
     await del('pharmacy_delivery_medicines', `delivery_id=eq.${encodeURIComponent(delId)}`);
     await del('pharmacy_deliveries', `delivery_id=eq.${encodeURIComponent(delId)}`);
   }
 
-  // 2. Lab orders & Lab bookings & Lab connections (RESTRICT on patients/doctors/labs)
+  // 2. Patient-owned lab bookings/orders; provider relationship rows only
   for (const pid of patientIds) {
     await del('lab_orders', `patient_id=eq.${encodeURIComponent(pid)}`);
     await del('lab_bookings', `patient_id=eq.${encodeURIComponent(pid)}`);
   }
   for (const lid of labIds) {
-    await del('lab_orders', `lab_id=eq.${encodeURIComponent(lid)}`);
-    await del('lab_bookings', `lab_id=eq.${encodeURIComponent(lid)}`);
     await del('lab_connections', `lab_id=eq.${encodeURIComponent(lid)}`);
   }
   for (const did of doctorIds) {
-    await del('lab_orders', `doctor_id=eq.${encodeURIComponent(did)}`);
     await del('lab_connections', `doctor_id=eq.${encodeURIComponent(did)}`);
     await del('pharmacy_connections', `doctor_id=eq.${encodeURIComponent(did)}`);
   }
@@ -550,16 +538,12 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('pharmacy_connections', `medical_store_id=eq.${encodeURIComponent(sid)}`);
   }
 
-  // 3. Referrals (RESTRICT on patients/doctors)
+  // 3. Patient referrals
   for (const pid of patientIds) {
     await del('referrals', `patient_id=eq.${encodeURIComponent(pid)}`);
   }
-  for (const did of doctorIds) {
-    await del('referrals', `from_doctor_id=eq.${encodeURIComponent(did)}`);
-    await del('referrals', `to_doctor_id=eq.${encodeURIComponent(did)}`);
-  }
 
-  // 4. Prescriptions
+  // 4. Patient prescriptions
   const prescriptionIds = new Set();
   for (const patientId of patientIds) {
     addIds(
@@ -568,14 +552,6 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
       'prescription_id',
     );
   }
-  for (const doctorId of doctorIds) {
-    addIds(
-      prescriptionIds,
-      await getRows('prescriptions', `doctor_id=eq.${encodeURIComponent(doctorId)}`, 'prescription_id'),
-      'prescription_id',
-    );
-  }
-
   for (const prescriptionId of prescriptionIds) {
     const q = `prescription_id=eq.${encodeURIComponent(prescriptionId)}`;
     await del('prescription_medicines', q);
@@ -584,21 +560,17 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('prescriptions', q);
   }
 
-  // 4b. Ambulance trip contacts & location updates (linked to broadcasts/phones)
+  // 4b. Patient ambulance trips (contacts + location trail)
   const broadcastIds = new Set();
   for (const pid of patientIds) {
     addIds(broadcastIds, await getRows('ambulance_broadcasts', `patient_id=eq.${encodeURIComponent(pid)}`, 'broadcast_id'), 'broadcast_id');
-  }
-  for (const aid of ambulanceIds) {
-    addIds(broadcastIds, await getRows('ambulance_broadcasts', `accepted_driver_id=eq.${encodeURIComponent(aid)}`, 'broadcast_id'), 'broadcast_id');
   }
   for (const bid of broadcastIds) {
     await del('ambulance_trip_contacts', `broadcast_id=eq.${encodeURIComponent(bid)}`);
     await del('ambulance_location_updates', `broadcast_id=eq.${encodeURIComponent(bid)}`);
   }
-  if (supabaseMobile) {
+  if (supabaseMobile && patientIds.size > 0) {
     await del('ambulance_trip_contacts', `patient_phone=eq.${encodeURIComponent(supabaseMobile)}`);
-    await del('ambulance_trip_contacts', `driver_phone=eq.${encodeURIComponent(supabaseMobile)}`);
   }
 
   // 5. Patient records & relationships
@@ -617,7 +589,8 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('patients', q);
   }
 
-  // 6. Doctor records & relationships
+  // 6. Doctor: delete doctor-private data and care links; anonymise the doctor row
+  //    (appointments / prescriptions / referrals stay in the patients' history).
   for (const doctorId of doctorIds) {
     const q = `doctor_id=eq.${encodeURIComponent(doctorId)}`;
     await del('doctor_invites', q);
@@ -630,31 +603,77 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('patient_doctor_links', q);
     await del('patient_care_team', q);
     await del('medical_directory', q);
-    await del('reviews', q);
-    await del('appointments', q);
-    await del('doctors', q);
+    await patch('doctors', q, {
+      name: 'Deleted doctor',
+      email: `deleted+${doctorId}@deleted.invalid`,
+      mobile: 'deleted',
+      photo_url: null,
+      about: null,
+      owner_uid: null,
+      verified: false,
+      deactivated: true,
+    });
   }
 
-  // 7. Store records
+  // 7. Pharmacy: anonymise (deliveries remain on the patient side)
   for (const storeId of storeIds) {
     await del('pharmacy_doctor_invites', `store_id=eq.${encodeURIComponent(storeId)}`);
-    await del('medical_stores', `store_id=eq.${encodeURIComponent(storeId)}`);
+    await patch('medical_stores', `store_id=eq.${encodeURIComponent(storeId)}`, {
+      store_name: 'Deleted pharmacy',
+      owner_name: 'Deleted',
+      drug_license_number: 'deleted',
+      gst_number: null,
+      phone: 'deleted',
+      email: `deleted+${storeId}@deleted.invalid`,
+      owner_uid: null,
+      verified: false,
+      deactivated: true,
+    });
   }
 
-  // 8. Lab records
+  // 8. Lab: anonymise; lab_bookings / lab_orders / report files stay with the patient
   for (const labId of labIds) {
-    await del('labs', `lab_id=eq.${encodeURIComponent(labId)}`);
+    await patch('labs', `lab_id=eq.${encodeURIComponent(labId)}`, {
+      lab_name: 'Deleted lab',
+      license_number: 'deleted',
+      gst_number: null,
+      phone: 'deleted',
+      email: `deleted+${labId}@deleted.invalid`,
+      owner_uid: null,
+      verified: false,
+      deactivated: true,
+    });
   }
 
-  // 9. Ambulance records
+  // 9. Ambulance: delete PIN / invites / live location; anonymise the vehicle row and the driver
+  //    contact copied onto patients' past trips.
   for (const ambulanceId of ambulanceIds) {
     const q = `ambulance_id=eq.${encodeURIComponent(ambulanceId)}`;
     await del('ambulance_private_settings', q);
     await del('ambulance_invites', q);
     await del('ambulance_locations', `driver_id=eq.${encodeURIComponent(ambulanceId)}`);
     await del('ambulance_requests', `driver_id=eq.${encodeURIComponent(ambulanceId)}`);
-    await del('ambulance_broadcasts', `accepted_driver_id=eq.${encodeURIComponent(ambulanceId)}`);
-    await del('ambulances', q);
+    await patch('ambulance_broadcasts', `accepted_driver_id=eq.${encodeURIComponent(ambulanceId)}`, {
+      accepted_driver_name: 'Deleted driver',
+      accepted_driver_phone: null,
+      accepted_vehicle_number: null,
+    });
+    await patch('ambulances', q, {
+      service_name: 'Deleted ambulance',
+      owner_name: null,
+      driver_name: 'Deleted',
+      phone: 'deleted',
+      vehicle_number: 'deleted',
+      license_number: null,
+      insurance_number: null,
+      username: `deleted_${ambulanceId}`,
+      auth_uid: null,
+      is_available: false,
+      verified: false,
+    });
+  }
+  if (supabaseMobile && ambulanceIds.size > 0) {
+    await del('ambulance_trip_contacts', `driver_phone=eq.${encodeURIComponent(supabaseMobile)}`);
   }
 
   // 10. Support tickets & messages
@@ -685,19 +704,19 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
   if (supabaseUserId) {
     await del('user_devices', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
   }
-  await del('in_app_notifications', `recipient_uid=${encodeURIComponent(uid)}`);
+  await del('in_app_notifications', `recipient_uid=eq.${encodeURIComponent(uid)}`);
 
   // 11. Promoted ads & admin/provisioning records
   if (supabaseProfileId) {
-    await del('promoted_ads', `provider_id=eq=${encodeURIComponent(supabaseProfileId)}`);
+    await del('promoted_ads', `provider_id=eq.${encodeURIComponent(supabaseProfileId)}`);
   }
   if (supabaseUserId) {
-    await del('promoted_ads', `provider_id=eq=${encodeURIComponent(supabaseUserId)}`);
-    await del('admin_users', `user_id=eq=${encodeURIComponent(supabaseUserId)}`);
+    await del('promoted_ads', `provider_id=eq.${encodeURIComponent(supabaseUserId)}`);
+    await del('admin_users', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
   }
-  await del('promoted_ads', `provider_id=eq=${encodeURIComponent(uid)}`);
-  await del('super_admins', `user_uid=eq=${encodeURIComponent(uid)}`);
-  await del('provisioning_errors', `auth_user_id=eq=${encodeURIComponent(uid)}`);
+  await del('promoted_ads', `provider_id=eq.${encodeURIComponent(uid)}`);
+  await del('super_admins', `user_uid=eq.${encodeURIComponent(uid)}`);
+  await del('provisioning_errors', `auth_user_id=eq.${encodeURIComponent(uid)}`);
 
   // Anonymize payment records (PII minimization while retaining accounting audit history)
   try {
@@ -798,24 +817,21 @@ async function deleteMyAccountHandler(uid) {
   const profileId = String(profile.profileId || profile.profile_id || '').trim();
   const mobileDigits = normalizeMobileDigits(profile.mobile || profile.phone);
 
-  // 1. S3 objects (best-effort per prefix; reported back).
+  // 1. S3 objects (all versions). Any failure keeps the Auth user so the deletion can be retried.
   let failedS3Prefixes = [];
   try {
     const s3 = getS3Client();
     const prefixes = await resolveUserS3Prefixes(null, { uid: normalizedUid, role, profileId });
     failedS3Prefixes = await cleanupUserS3Prefixes(s3, s3Bucket(), prefixes);
-    const reportKeys = await collectRoleSpecificS3ReportKeys(null, { role, profileId, uid: normalizedUid });
-    if (reportKeys.length > 0) {
-      const keysRes = await deleteS3SpecificKeysVersions(s3, s3Bucket(), reportKeys);
-      if (!keysRes.success && keysRes.failedKeys) {
-        failedS3Prefixes = [...failedS3Prefixes, ...keysRes.failedKeys];
-      }
-    }
   } catch (s3Err) {
-    logger.warn('deleteMyAccount S3 cleanup unexpected failure (soft-fail)', {
+    failedS3Prefixes = ['*'];
+    logger.error('deleteMyAccount S3 cleanup failed', {
       uidHash: hashKey(normalizedUid).slice(0, 16),
       message: s3Err?.message || 'unknown',
     });
+  }
+  if (failedS3Prefixes.length > 0) {
+    throw new HttpsError('unavailable', 'Could not delete all account files. Please try again.');
   }
 
   // 2. Redis OTP / session state for the account's mobile number.
@@ -857,18 +873,15 @@ async function deleteMyAccountHandler(uid) {
   }
 
   logger.info('deleteMyAccount completed', { uidHash: hashKey(normalizedUid).slice(0, 16), role });
-  return {
-    ok: true,
-    ...(failedS3Prefixes.length > 0 ? { failedS3Prefixes } : {}),
-  };
+  return { ok: true };
 }
 
 module.exports = {
   deleteMyAccountHandler,
   deleteS3PrefixVersions,
   deleteS3SpecificKeysVersions,
-  collectRoleSpecificS3ReportKeys,
   resolveUserS3Prefixes,
+  planeKeyPrefixes,
   cleanupUserS3Prefixes,
   cleanupUserSupabaseRows,
   cleanupUserRedisKeys,

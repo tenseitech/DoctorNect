@@ -5,7 +5,6 @@ const assert = require('node:assert/strict');
 const {
   deleteS3PrefixVersions,
   deleteS3SpecificKeysVersions,
-  collectRoleSpecificS3ReportKeys,
   resolveUserS3Prefixes,
   cleanupUserS3Prefixes,
   setS3ClientForTesting,
@@ -144,54 +143,6 @@ test('deleteS3SpecificKeysVersions: deletes all versions of exact keys without t
   // Ensure prefix collision was NOT included
   const collisionFound = deletedObjects.some((o) => o.Key.endsWith('.bak'));
   assert.equal(collisionFound, false, 'Must not delete prefix collision keys');
-});
-
-test('collectRoleSpecificS3ReportKeys: queries lab_bookings and lab_orders for labId and collects reportStorageKey', async () => {
-  const bookingsData = [
-    { id: 'b1', labId: 'lab_target', reportStorageKey: 'lab_reports/pat_A/b1/uuid-a.pdf', reportStorageProvider: 's3' },
-    { id: 'b2', labId: 'lab_target', reportStorageKey: 'lab_reports/pat_B/b2/uuid-b.pdf', reportStorageProvider: 's3' },
-    { id: 'b3', labId: 'lab_OTHER', reportStorageKey: 'lab_reports/pat_C/b3/uuid-c.pdf', reportStorageProvider: 's3' },
-    { id: 'b4', labId: 'lab_target', reportStorageKey: 'legacy_url_no_s3', reportStorageProvider: 'firebase' },
-  ];
-
-  const ordersData = [
-    { id: 'o1', labId: 'lab_target', reportStorageKey: 'lab_reports/pat_D/o1/uuid-d.pdf', reportStorageProvider: 's3' },
-    { id: 'o2', labId: 'lab_OTHER', reportStorageKey: 'lab_reports/pat_E/o2/uuid-e.pdf', reportStorageProvider: 's3' },
-  ];
-
-  const mockDb = {
-    collection: (col) => ({
-      where: (field, op, val) => ({
-        get: async () => {
-          if (col === 'lab_bookings' && field === 'labId') {
-            const matches = bookingsData.filter((b) => b.labId === val);
-            return { docs: matches.map((m) => ({ id: m.id, data: () => m })) };
-          }
-          if (col === 'lab_orders' && field === 'labId') {
-            const matches = ordersData.filter((o) => o.labId === val);
-            return { docs: matches.map((m) => ({ id: m.id, data: () => m })) };
-          }
-          return { docs: [] };
-        },
-      }),
-    }),
-  };
-
-  const collected = await collectRoleSpecificS3ReportKeys(mockDb, {
-    role: 'lab',
-    profileId: 'lab_target',
-    uid: 'lab_user_uid',
-  });
-
-  // Must collect only target lab's s3 reportStorageKey values
-  assert.equal(collected.length, 3);
-  assert.ok(collected.includes('lab_reports/pat_A/b1/uuid-a.pdf'));
-  assert.ok(collected.includes('lab_reports/pat_B/b2/uuid-b.pdf'));
-  assert.ok(collected.includes('lab_reports/pat_D/o1/uuid-d.pdf'));
-
-  // Must NEVER collect reports belonging to other labs
-  assert.equal(collected.includes('lab_reports/pat_C/b3/uuid-c.pdf'), false);
-  assert.equal(collected.includes('lab_reports/pat_E/o2/uuid-e.pdf'), false);
 });
 
 test('resolveUserS3Prefixes: lab deletion deletes labs profile prefix and promoted ads prefix, but does NOT include lab_reports prefix', async () => {
