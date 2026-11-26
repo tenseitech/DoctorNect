@@ -4,6 +4,18 @@ function resolveAppEnv(env = process.env) {
   return String(env.APP_ENV || 'staging').trim().toLowerCase();
 }
 
+/** Human names + the fix, used in the isolation errors (names are not secret). */
+const RESOURCE_LABELS = {
+  S3_BUCKET_STAGING: {
+    what: 'S3 bucket',
+    fix: 'Create a separate production bucket (infra/aws/s3.tf, docs/GATEWAY_DEPLOY.md) and set S3_BUCKET_PRODUCTION to its name.',
+  },
+  REDIS_HOST_STAGING: {
+    what: 'Redis host',
+    fix: 'Set REDIS_HOST_PRODUCTION to the production Redis instance.',
+  },
+};
+
 function pickEnvSpecific(env, stagingKey, productionKey, legacyKey) {
   const appEnv = resolveAppEnv(env);
   const staging = String(env[stagingKey] || '').trim();
@@ -18,8 +30,10 @@ function pickEnvSpecific(env, stagingKey, productionKey, legacyKey) {
       throw err;
     }
     if (staging && value === staging) {
+      const label = RESOURCE_LABELS[stagingKey] || { what: stagingKey, fix: '' };
+      const source = production ? productionKey : `${legacyKey} (${productionKey} is not set)`;
       const err = new Error(
-        `[AppEnv] Production must not use staging ${stagingKey.replace('STAGING_', '').toLowerCase()} (${stagingKey}=${staging}).`,
+        `[AppEnv] Production must not use the staging ${label.what}: ${source} = "${value}" is the same as ${stagingKey}. ${label.fix}`.trim(),
       );
       err.code = 'failed-precondition';
       throw err;
@@ -34,8 +48,9 @@ function pickEnvSpecific(env, stagingKey, productionKey, legacyKey) {
     throw err;
   }
   if (production && value === production) {
+    const label = RESOURCE_LABELS[stagingKey] || { what: productionKey };
     const err = new Error(
-      `[AppEnv] Staging must not use production ${productionKey.replace('PRODUCTION_', '').toLowerCase()} (${productionKey}=${production}).`,
+      `[AppEnv] Staging must not use the production ${label.what}: ${staging ? stagingKey : legacyKey} = "${value}" is the same as ${productionKey}.`,
     );
     err.code = 'failed-precondition';
     throw err;

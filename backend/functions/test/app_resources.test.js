@@ -27,7 +27,7 @@ describe('app_resources env isolation', () => {
     process.env.S3_BUCKET_PRODUCTION = 'prod-vault';
     assert.equal(getS3BucketName(), 'staging-vault');
     process.env.S3_BUCKET_STAGING = 'prod-vault';
-    assert.throws(() => getS3BucketName(), /Staging must not use production/);
+    assert.throws(() => getS3BucketName(), /Staging must not use the production S3 bucket: S3_BUCKET_STAGING/);
   });
 
   it('production cannot use staging S3 bucket', () => {
@@ -36,7 +36,11 @@ describe('app_resources env isolation', () => {
     process.env.S3_BUCKET_PRODUCTION = 'prod-vault';
     assert.equal(getS3BucketName(), 'prod-vault');
     process.env.S3_BUCKET_PRODUCTION = 'staging-vault';
-    assert.throws(() => getS3BucketName(), /Production must not use staging/);
+    assert.throws(() => getS3BucketName(), /Production must not use the staging S3 bucket: S3_BUCKET_PRODUCTION .*set S3_BUCKET_PRODUCTION/);
+    // Legacy S3_BUCKET equal to staging names the real cause (S3_BUCKET_PRODUCTION missing).
+    delete process.env.S3_BUCKET_PRODUCTION;
+    process.env.S3_BUCKET = 'staging-vault';
+    assert.throws(() => getS3BucketName(), /S3_BUCKET \(S3_BUCKET_PRODUCTION is not set\)/);
   });
 
   it('redis host follows APP_ENV', () => {
