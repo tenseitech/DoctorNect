@@ -1,6 +1,6 @@
 'use strict';
 
-const { DEMO_ACCOUNTS } = require('../../../scripts/lib/demo_accounts');
+const { DEMO_ACCOUNTS } = require('./shared/demo_accounts');
 
 const DEMO_DIGITS = new Set(DEMO_ACCOUNTS.map((a) => a.digits));
 

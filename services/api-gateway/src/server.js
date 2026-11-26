@@ -1,6 +1,12 @@
 'use strict';
 
-require('../../../scripts/lib/bootstrap_root_env').loadRootEnv();
+// Local development only: load the repo-root .env when the repo is around. The container image
+// ships only src/ and gets its environment from ECS, so a missing loader is expected there.
+try {
+  require('../../../scripts/lib/bootstrap_root_env').loadRootEnv();
+} catch (err) {
+  if (err && err.code !== 'MODULE_NOT_FOUND') throw err;
+}
 const http = require('node:http');
 const path = require('node:path');
 const config = require('./config');
@@ -11,8 +17,8 @@ const { mintPostgrestJwt } = require('./jwt_minter');
 const { secureCompare, hashUid, RateLimiter, emitAuditLog } = require('./security');
 const { proxyToPostgrest } = require('./proxy');
 const { defaultJwksClient } = require('./jwks');
-const { resolveDataPlane, assertClientRoutingHintIgnored } = require('../../../scripts/lib/demo_routing');
-const { assertRdsPathAllowed } = require('../../../scripts/lib/rds_demo_uid_guard');
+const { resolveDataPlane, assertClientRoutingHintIgnored } = require('./shared/demo_routing');
+const { assertRdsPathAllowed } = require('./shared/rds_demo_uid_guard');
 const { writeContainsDemoMobile } = require('./demo_write_guard');
 
 function extractEmbeddedRelations(queryString) {
