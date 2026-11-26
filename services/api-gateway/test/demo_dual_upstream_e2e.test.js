@@ -119,6 +119,52 @@ describe('Demo vs real dual-upstream (local e2e)', () => {
     assert.equal(demoHits.length, 0);
   });
 
+  async function post(uid, table, body, extraHeaders = {}) {
+    rdsHits = [];
+    demoHits = [];
+    const res = await fetch(`http://127.0.0.1:${gatewayPort}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tokenForUid(uid)}`, 'Content-Type': 'application/json', ...extraHeaders },
+      body: JSON.stringify(body),
+    });
+    await res.text();
+    return res.status;
+  }
+
+  it('real user registration write goes to RDS only', async () => {
+    const status = await post('real_new_user_uid', 'users', { id: 'real_new_user_uid', role: 'doctor', mobile: '9876543210' });
+    assert.ok(status < 400, `status ${status}`);
+    assert.equal(rdsHits.length, 1);
+    assert.equal(demoHits.length, 0);
+  });
+
+  it('a client routing hint is rejected outright: the write reaches no upstream', async () => {
+    const status = await post('real_new_user_uid', 'users',
+      { id: 'real_new_user_uid', role: 'doctor', mobile: '9876543210' },
+      { 'x-data-plane': 'supabase', 'x-demo': '1' });
+    assert.equal(status, 400);
+    assert.equal(rdsHits.length, 0);
+    assert.equal(demoHits.length, 0);
+  });
+
+  it('a real uid can never register a demo number on RDS (nothing reaches either upstream)', async () => {
+    for (const mobile of ['9999900001', '+919999900003', '91 99999 00005']) {
+      const status = await post('real_new_user_uid', 'users', { id: 'real_new_user_uid', role: 'doctor', mobile });
+      assert.ok(status >= 400, `${mobile}: status ${status}`);
+      assert.equal(rdsHits.length, 0, mobile);
+      assert.equal(demoHits.length, 0, mobile);
+    }
+  });
+
+  it('the five built-in demo uids write only to the demo upstream (staging), never RDS', async () => {
+    for (const uid of ['rev_fb_doc_001', 'rev_fb_pat_001', 'rev_fb_store_001', 'rev_fb_lab_001', 'rev_fb_amb_001']) {
+      const status = await post(uid, 'users', { id: uid, display_name: 'Demo' });
+      assert.ok(status < 400, `${uid}: status ${status}`);
+      assert.equal(rdsHits.length, 0, uid);
+      assert.equal(demoHits.length, 1, uid);
+    }
+  });
+
   it('service role -> RDS upstream (Functions path)', async () => {
     rdsHits = [];
     demoHits = [];
