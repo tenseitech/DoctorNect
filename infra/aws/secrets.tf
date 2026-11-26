@@ -7,6 +7,11 @@ resource "aws_secretsmanager_secret" "database_credentials" {
   tags = {
     Name = "${var.project_name}-${var.environment}-db-credentials"
   }
+
+  # Existing production resource: never destroy or replace it from Terraform.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_secretsmanager_secret" "postgrest_jwt_secret" {
@@ -17,11 +22,21 @@ resource "aws_secretsmanager_secret" "postgrest_jwt_secret" {
   tags = {
     Name = "${var.project_name}-${var.environment}-jwt-secret"
   }
+
+  # Existing production resource: never destroy or replace it from Terraform.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_secretsmanager_secret" "demo_routing" {
   name        = "${var.project_name}/${var.environment}/demo-routing"
   description = "Demo UID allowlist + Supabase PostgREST upstream for auth-gateway"
+
+  # Existing production resource: never destroy or replace it from Terraform.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Firebase Admin service-account key for the gateway's token revocation check (ECS has no Google
@@ -46,5 +61,10 @@ resource "aws_secretsmanager_secret" "gateway_service_key" {
 
   tags = {
     Name = "${var.project_name}-${var.environment}-service-key"
+  }
+
+  # Existing production resource: never destroy or replace it from Terraform.
+  lifecycle {
+    prevent_destroy = true
   }
 }

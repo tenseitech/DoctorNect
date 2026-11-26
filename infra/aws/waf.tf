@@ -1,4 +1,4 @@
-# AWS WAF v2 — optional (enable_waf = true). Rules kept here for later enablement.
+# AWS WAF v2 - optional (enable_waf = true). Rules kept here for later enablement.
 
 resource "aws_wafv2_web_acl" "gateway" {
   count = var.enable_waf ? 1 : 0

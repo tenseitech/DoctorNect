@@ -67,6 +67,11 @@ resource "aws_db_parameter_group" "doctornect_pg18" {
     Environment = var.environment
     Project     = var.project_name
   }
+
+  # Existing production resource: never destroy or replace it from Terraform.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Optional Data Source: Queries existing RDS instance to verify engine version and parameter group family.

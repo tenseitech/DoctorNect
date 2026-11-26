@@ -122,10 +122,10 @@ variable "cors_allowed_origins" {
 
 variable "s3_production_bucket_name" {
   type        = string
-  description = "Name of the NEW production S3 bucket (globally unique). Must differ from the staging bucket. Suggested: doctornect-prod-<account-id>-ap-south-1 (set in terraform.tfvars)."
+  description = "Name of the NEW production S3 bucket (globally unique). Must differ from the staging bucket. Suggested: doctornect-prod-<account-id>-ap-south-1 (set in terraform.tfvars)."
 }
 
 variable "s3_staging_bucket_name" {
   type        = string
-  description = "Existing staging bucket (not managed here; used only for the staging IAM policy document)."
+  description = "Existing staging bucket (not managed here; used only for the staging IAM policy document)."
 }

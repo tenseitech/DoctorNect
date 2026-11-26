@@ -6,6 +6,11 @@ resource "aws_ecs_cluster" "main" {
     name  = "containerInsights"
     value = "enabled"
   }
+
+  # Existing production resource: never destroy or replace it from Terraform.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # IAM Role: Task Execution (Pulls from ECR and reads Secrets Manager)
@@ -20,6 +25,11 @@ resource "aws_iam_role" "ecs_execution_role" {
       Principal = { Service = "ecs-tasks.amazonaws.com" }
     }]
   })
+
+  # Existing production resource: never destroy or replace it from Terraform.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_execution_standard" {
