@@ -1,12 +1,8 @@
 'use strict';
 
 const { createClient } = require('@supabase/supabase-js');
-const {
-  resolveDataPlane,
-  redisKeyNamespace,
-  objectStoragePrefix,
-} = require('../../lib/demo_routing');
 const { assertDemoUidNotOnRds } = require('../../lib/rds_demo_uid_guard');
+const { resolveRequestPlane, requestRedisNamespace, requestObjectStoragePrefix } = require('./request_plane');
 
 /**
  * Every database request (gateway / Supabase PostgREST) gets a hard timeout so an outage fails
@@ -60,7 +56,7 @@ function getDatabaseClient(options = {}) {
   const uid = options.firebaseUid || options.uid || null;
   const plane = options.loginLookupPlane
     ? options.loginLookupPlane
-    : resolveDataPlane({ appEnv, firebaseUid: uid });
+    : resolveRequestPlane(uid, { appEnv });
 
   if (plane === 'rds') {
     assertDemoUidNotOnRds(uid);
@@ -145,12 +141,12 @@ function getDatabaseClientForCallable(request, options = {}) {
 
 function getRedisNamespaceForCallable(request) {
   const appEnv = (process.env.APP_ENV || 'staging').toLowerCase();
-  return redisKeyNamespace({ appEnv, firebaseUid: request?.auth?.uid || null });
+  return requestRedisNamespace(request?.auth?.uid || null, { appEnv });
 }
 
 function getObjectStoragePrefixForCallable(request) {
   const appEnv = (process.env.APP_ENV || 'staging').toLowerCase();
-  return objectStoragePrefix({ appEnv, firebaseUid: request?.auth?.uid || null });
+  return requestObjectStoragePrefix(request?.auth?.uid || null, { appEnv });
 }
 
 function resetDatabaseClientForTesting() {

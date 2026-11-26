@@ -166,6 +166,7 @@ const {
   demoAccountByMobile,
   isDemoMobile,
 } = require('./reviewer_otp_config');
+const { buildDemoPlaneClaims } = require('./lib/demo_plane_marker');
 
 const MSG91_UNAVAILABLE_DETAILS = { reason: 'msg91' };
 const DEMO_SIGNIN_UNAVAILABLE_MESSAGE = 'Demo sign-in is not available right now.';
@@ -2540,6 +2541,22 @@ async function findAmbulanceByPhone(_db, phone) {
 }
 
 /** Ambulance driver login after mobile OTP — same outcome as username/PIN verify. */
+/**
+ * Custom claims for a verified ambulance OTP login. The demo-plane marker is added only for the
+ * demo ambulance number of the FIXED allowlist on an anonymous session; nothing here reads
+ * request data (the phone digits were verified by the OTP session, auth comes from the token).
+ */
+function ambulanceLoginClaims({ mobileDigits, auth, now }) {
+  const demoAccount = demoAccountByMobile(mobileDigits);
+  const isAnonymousSession = auth?.token?.firebase?.sign_in_provider === 'anonymous';
+  const markDemoPlane = Boolean(demoAccount && demoAccount.role === 'ambulance' && isAnonymousSession && auth?.uid);
+  const base = supabaseCompatibleCustomClaims('ambulance');
+  return {
+    markDemoPlane,
+    claims: markDemoPlane ? { ...base, ...buildDemoPlaneClaims(auth.uid, now) } : base,
+  };
+}
+
 async function completeAmbulanceMobileOtpLogin(db, data, auth, { clientIp = 'unknown' } = {}) {
   if (!auth?.uid) {
     throw new HttpsError('unauthenticated', 'Anonymous sign-in required.');
@@ -2584,12 +2601,18 @@ async function completeAmbulanceMobileOtpLogin(db, data, auth, { clientIp = 'unk
     }
   }
 
+  // Demo ambulance (fixed allowlist in lib/demo_accounts.js, never a client value) on an
+  // anonymous session: add the server-set demo-plane marker so its later requests route to the
+  // staging plane (lib/demo_plane_marker.js). Any other login gets the plain role claims, which
+  // also clears a stale marker (setCustomUserClaims replaces all claims).
+  const { claims, markDemoPlane } = ambulanceLoginClaims({ mobileDigits, auth });
   try {
-    await getAuth().setCustomUserClaims(
-      auth.uid,
-      supabaseCompatibleCustomClaims('ambulance'),
-    );
+    await getAuth().setCustomUserClaims(auth.uid, claims);
   } catch (claimErr) {
+    if (markDemoPlane) {
+      // Without the marker the demo session would route to RDS: fail instead.
+      throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+    }
     console.warn('[completeAmbulanceMobileOtpLogin] Failed to set custom claims:', claimErr?.message || claimErr);
   }
 
@@ -2608,6 +2631,8 @@ async function completeAmbulanceMobileOtpLogin(db, data, auth, { clientIp = 'unk
     username: profile.username || username,
     city: profile.city || '',
     isAvailable: profile.isAvailable !== false,
+    // Claims changed: the client must force-refresh its ID token before its next request.
+    refreshIdToken: true,
   };
 }
 
@@ -3022,6 +3047,7 @@ module.exports = {
   approvePatientAccount,
   resetAmbulanceDriverPin,
   completeAmbulanceMobileOtpLogin,
+  ambulanceLoginClaims,
   resetUserPasswordWithOtp,
   completeMobileOtpLogin,
   assertLoginAllowed,

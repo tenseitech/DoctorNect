@@ -33,8 +33,8 @@ function resetS3BucketCacheForTesting() {
 function resolveS3BucketForUid(uid, env = process.env) {
   const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
   if (appEnv !== 'production') return resolveS3Bucket(env);
-  const { resolveDataPlane } = require('../../lib/demo_routing');
-  if (resolveDataPlane({ appEnv, firebaseUid: uid || null, env }) !== 'supabase') return resolveS3Bucket(env);
+  const { resolveRequestPlane } = require('../db/request_plane');
+  if (resolveRequestPlane(uid || null, { appEnv, env }) !== 'supabase') return resolveS3Bucket(env);
   const staging = String(env.S3_BUCKET_STAGING || '').trim();
   if (!staging) {
     const err = new Error('[S3] Demo accounts need S3_BUCKET_STAGING in production (their files never go to the production bucket).');

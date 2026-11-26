@@ -1,6 +1,7 @@
 const { safeErrorForLog } = require('./log_safe');
 const { resolveCallerIdentity } = require('./caller_identity');
-const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+// onCall runs handlers inside the verified-auth context (data-plane routing, demo ambulance).
+const { onCall, onRequest, HttpsError } = require('./callable_with_auth_context');
 const { withDataPlaneSecrets } = require('./demo_plane_secrets');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');

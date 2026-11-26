@@ -1,7 +1,8 @@
 'use strict';
 
 const crypto = require('crypto');
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
+// onCall runs handlers inside the verified-auth context (data-plane routing, demo ambulance).
+const { onCall, HttpsError } = require('./callable_with_auth_context');
 const { withDataPlaneSecrets } = require('./demo_plane_secrets');
 const { defineSecret } = require('firebase-functions/params');
 const {
@@ -231,8 +232,8 @@ function isProductionStorage() {
 
 function planePrefixFor(uid) {
   if (!isProductionStorage()) return '';
-  const { objectStoragePrefix } = require('./lib/demo_routing');
-  return objectStoragePrefix({ appEnv: 'production', firebaseUid: uid || null });
+  const { requestObjectStoragePrefix } = require('./src/db/request_plane');
+  return requestObjectStoragePrefix(uid || null, { appEnv: 'production' });
 }
 
 function stripPlanePrefix(key) {

@@ -7,7 +7,8 @@ if (!process.env.K_SERVICE && !process.env.FUNCTION_TARGET && fs.existsSync(_rep
 }
 const { resolveCallerIdentity } = require('./caller_identity');
 // Deploy: disable OTP App Check until reCAPTCHA is configured.
-const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+// onCall runs handlers inside the verified-auth context (data-plane routing, demo ambulance).
+const { onCall, onRequest, HttpsError } = require('./callable_with_auth_context');
 const { withDataPlaneSecrets } = require('./demo_plane_secrets');
 // Functions without their own secrets list still get the data-plane secrets (the production
 // cold-start assert needs PROD_GATEWAY_SERVICE_KEY in every function). Must run before any

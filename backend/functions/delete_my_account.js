@@ -269,8 +269,8 @@ async function deleteS3SpecificKeysVersions(s3, bucketName, keys) {
  */
 function planeKeyPrefixes(uid) {
   if (String(process.env.APP_ENV || '').trim().toLowerCase() !== 'production') return [''];
-  const { objectStoragePrefix } = require('./lib/demo_routing');
-  const plane = objectStoragePrefix({ appEnv: 'production', firebaseUid: uid || null });
+  const { requestObjectStoragePrefix } = require('./src/db/request_plane');
+  const plane = requestObjectStoragePrefix(uid || null, { appEnv: 'production' });
   return plane === 'prod/' ? ['prod/', ''] : [plane];
 }
 
@@ -339,9 +339,12 @@ function getSupabaseServiceConfig(uid = null) {
   let plane = isProduction ? 'rds' : 'staging';
   if (isProduction && uid) {
     try {
-      const { resolveDataPlane } = require('./lib/demo_routing');
-      if (resolveDataPlane({ appEnv: 'production', firebaseUid: uid }) === 'supabase') plane = 'demo';
-    } catch (_) {}
+      const { resolveRequestPlane } = require('./src/db/request_plane');
+      if (resolveRequestPlane(uid, { appEnv: 'production' }) === 'supabase') plane = 'demo';
+    } catch (err) {
+      // An invalid demo-plane marker must stop the request, never fall back to the RDS plane.
+      if (err && err.code === 'unauthenticated') throw err;
+    }
   }
 
   let url;
