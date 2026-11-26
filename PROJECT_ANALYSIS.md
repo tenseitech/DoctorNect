@@ -55,7 +55,7 @@ Status: open / fixed (commit) / needs decision / blocked (on you) / won't fix.
 | M8 | Medium | Legacy | 109 Flutter files / 7 backend files mention Firestore | Dead dual-path code, naming | Maintenance, accidental re-enable | Staged removal | L | Medium | needs decision (D3) |
 | L1 | Low | DB | `storage_audit_logs.status` | No CHECK | Bad values possible | CHECK constraint (NOT VALID + validate) | S | Low | open |
 | L2 | Low | Gateway | `services/api-gateway/src/config.js` | Allowlists name non-existent `lab_catalog`, `medicine_suggestions`, `admin_users`, `provisioning_errors`, `sync_dead_letter_queue`, `delete_my_account` | Stale surface | Remove dead names (test) | S | Low | open |
-| L3 | Low | Client | `medicine_suggestion_repository.dart` | Inserts into dropped table; never called | Dead code | Remove | S | None | open |
+| L3 | Low | Client | `medicine_suggestion_repository.dart` | Inserts into dropped table; never called | Dead code | Remove | S | None | fixed |
 | L4 | Low | Android | Razorpay SDK adds `NFC`, `READ_BASIC_PHONE_STATE` | Extra permissions in Data safety | Store listing questions | `tools:node="remove"` after a payment test | S | Medium (SDK) | needs decision (D4) |
 | L5 | Low | Flutter | 337 `deprecated_member_use` (material.dart -> material_ui) | Deprecation only | Future break | Migrate when material_ui is stable for all plugins | L | Medium | needs decision (D5) |
 | L6 | Low | Android | `gradle.properties` `android.builtInKotlin=false` + shim | Plugins still apply KGP | Blocks AGP built-in Kotlin | Remove when plugins update | S | - | blocked (upstream) |

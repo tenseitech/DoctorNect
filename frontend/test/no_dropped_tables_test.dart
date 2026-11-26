@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Tables the app must not query: they were dropped from the Postgres schema (and the gateway
 /// would refuse them). Keeps PROJECT_ANALYSIS.md M4 / L3 fixed.
-const _dropped = ['lab_catalog'];
+const _dropped = ['lab_catalog', 'medicine_suggestions'];
 
 void main() {
   test('no client code queries a dropped table', () {

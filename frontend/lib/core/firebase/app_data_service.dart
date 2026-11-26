@@ -15,7 +15,6 @@ import 'repositories/lab_order_repository.dart';
 import 'repositories/lab_repository.dart';
 import 'repositories/medical_directory_repository.dart';
 import 'repositories/medical_store_repository.dart';
-import 'repositories/medicine_suggestion_repository.dart';
 import 'repositories/patient_account_repository.dart';
 import 'repositories/patient_profile_repository.dart';
 import 'repositories/pharmacy_firestore_repository.dart';
@@ -42,7 +41,6 @@ export 'repositories/lab_order_repository.dart';
 export 'repositories/lab_repository.dart';
 export 'repositories/medical_directory_repository.dart';
 export 'repositories/medical_store_repository.dart';
-export 'repositories/medicine_suggestion_repository.dart';
 export 'repositories/patient_account_repository.dart';
 export 'repositories/patient_profile_repository.dart';
 export 'repositories/pharmacy_firestore_repository.dart';
@@ -97,8 +95,6 @@ class AppDataService {
       _repo(() => MedicalDirectoryRepository.instance, 'medicalDirectory');
   MedicalStoreRepository get medicalStore =>
       _repo(() => MedicalStoreRepository.instance, 'medicalStore');
-  MedicineSuggestionRepository get medicineSuggestion => _repo(
-      () => MedicineSuggestionRepository.instance, 'medicineSuggestion');
   PatientAccountRepository get patientAccount =>
       _repo(() => PatientAccountRepository.instance, 'patientAccount');
   PatientProfileRepository get patientProfile =>
