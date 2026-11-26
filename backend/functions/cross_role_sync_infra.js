@@ -8,6 +8,7 @@ const {
   isTransientSyncError,
   computeBackoffMs,
 } = require('./src/reliability/transient_error');
+const { emitSyncDlqEvent } = require('./src/observability/structured_ops_log');
 
 function getSupabaseConfig() {
   const isProduction = (process.env.APP_ENV || 'staging').toLowerCase() === 'production';
@@ -55,11 +56,22 @@ async function recordDlqFailure({ direction, entityType, entityId, payload, erro
     created_at: new Date().toISOString(),
   };
 
+  emitSyncDlqEvent({
+    direction: dlqEntry.direction,
+    entityType: dlqEntry.entity_type,
+    entityId: dlqEntry.entity_id,
+    retryCount: dlqEntry.retry_count,
+    errorMessage: dlqEntry.error_message,
+  });
   console.error(JSON.stringify({
     securityEvent: true,
     severity: 'CRITICAL',
     event: 'SYNC_BRIDGE_DLQ_FAILURE',
-    ...dlqEntry,
+    entity_type: dlqEntry.entity_type,
+    entity_id: dlqEntry.entity_id,
+    direction: dlqEntry.direction,
+    retry_count: dlqEntry.retry_count,
+    error_message: String(dlqEntry.error_message || '').slice(0, 300),
   }));
 
   if (url && key) {

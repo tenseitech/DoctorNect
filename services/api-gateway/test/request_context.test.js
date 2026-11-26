@@ -40,6 +40,8 @@ describe('request_context (REL-10)', () => {
       const log = JSON.parse(line);
       assert.strictEqual(log.request_id, 'audit-trace-12345678');
       assert.strictEqual(log.event, 'api_request');
+      assert.strictEqual(log.service, 'doctornect-auth-gateway');
+      assert.ok(log.environment);
     } finally {
       process.stdout.write = origWrite;
     }

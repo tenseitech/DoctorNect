@@ -1,0 +1,53 @@
+# Audit 7 — Alert configuration templates (NOT ACTIVE — documentation only)
+# Apply in CloudWatch, GCP Logging metrics, or your monitoring platform after operator review.
+
+version: 1
+service: doctornect
+notes: |
+  Do not deploy these alerts automatically from this repo.
+  Replace {log_group}, {notification_arn}, and thresholds with environment values.
+
+alerts:
+  - id: OPS-ALERT-GW-5XX
+    name: Gateway 5xx rate elevated
+    severity: SEV-2
+    data_source: stdout JSON logs (doctornect-auth-gateway)
+    filter: 'jsonPayload.severity="ERROR" AND jsonPayload.event="api_request"'
+    metric: rate of status >= 500 per 5m
+    threshold: "> 5% of requests for 10m"
+    action: notify on-call; run RUNBOOK_HIGH_ERROR_RATE.md
+
+  - id: OPS-ALERT-GW-READYZ
+    name: Gateway not ready
+    severity: SEV-1
+    probe: GET /readyz
+    threshold: "non-200 for 3 consecutive checks"
+    action: RUNBOOK_GATEWAY_OUTAGE.md
+
+  - id: OPS-ALERT-SYNC-DLQ
+    name: Cross-role sync DLQ critical event
+    severity: SEV-2
+    filter: 'jsonPayload.event="cross_role_sync_dlq"'
+    threshold: ">= 1 event in 15m"
+    action: RUNBOOK_CROSS_ROLE_SYNC_FAILURE.md
+
+  - id: OPS-ALERT-FUNCTION-ERROR
+    name: Cloud Function error spike
+    severity: SEV-2
+    data_source: GCP Cloud Logging (securityEvent or severity ERROR)
+    threshold: "error rate 3x baseline 15m"
+    action: RUNBOOK_FUNCTION_FAILURE.md
+
+  - id: OPS-ALERT-AUTH-FAIL
+    name: Authentication failure spike
+    severity: SEV-3
+    filter: 'jsonPayload.category="auth" AND jsonPayload.action="auth.failure"'
+    threshold: "> 50 failures / 5m per region"
+    action: RUNBOOK_AUTH_OUTAGE.md
+
+  - id: OPS-ALERT-BACKUP
+    name: Backup job failed or missing
+    severity: SEV-2
+    data_source: operator backup monitoring (RDS snapshot / logical backup manifest)
+    threshold: "no successful backup in retention window"
+    action: RUNBOOK_BACKUP_FAILURE.md

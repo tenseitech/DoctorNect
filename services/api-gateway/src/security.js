@@ -141,8 +141,12 @@ function emitAuditLog({
   requestId = null,
 }) {
   const cleanPath = (path || '/').split('?')[0];
+  const env = String(process.env.APP_ENV || process.env.NODE_ENV || 'staging').toLowerCase();
   const logEntry = {
     timestamp: new Date().toISOString(),
+    service: 'doctornect-auth-gateway',
+    environment: env,
+    severity: status >= 500 ? 'ERROR' : status >= 400 ? 'WARNING' : 'INFO',
     event: 'api_request',
     method: method || 'GET',
     path: cleanPath,
@@ -151,6 +155,7 @@ function emitAuditLog({
     role: role || 'anon',
     uid_hash: uidHash,
     ip: ip ? ip.replace(/^.*:/, '') : null,
+    outcome: status >= 400 ? 'failure' : 'success',
   };
   if (requestId) {
     logEntry.request_id = requestId;
