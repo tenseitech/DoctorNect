@@ -138,3 +138,11 @@ number." (no data plane). Real users must use the production build (`scripts/rel
 powershell -ExecutionPolicy Bypass -File frontend/scripts/build_staging_demo_apk.ps1
 adb install -r frontend/build/app/outputs/flutter-apk/app-staging-demo.apk
 ```
+
+A `flutter run` / debug build on the phone is signed with the Android debug key and has no
+data plane (logcat: `[SupabaseBootstrap] Skipping initialization`), so demo login there ends
+in "Account profile not found". `adb install -r` then fails with
+`INSTALL_FAILED_UPDATE_INCOMPATIBLE`; run `adb uninstall com.tenseitech.doctornect` first.
+Set `APP_CHECK_DEBUG_TOKEN` (a debug token already registered in Firebase Console > App Check)
+in `.env` so the fresh install passes App Check; otherwise register the debug secret the app
+prints in logcat.

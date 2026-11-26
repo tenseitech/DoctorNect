@@ -8,7 +8,7 @@
   "Account profile not found for this mobile number." This script passes the staging data plane
   (STAGING_SUPABASE_URL / STAGING_SUPABASE_ANON_KEY) and the Firebase client config
   (FIREBASE_API_KEY_ANDROID, FIREBASE_PROJECT_ID) from the repo-root .env or the shell, plus
-  APP_ENV=staging and APP_CHECK_DEBUG_PROVIDER=true. It stops before building when any of
+  APP_ENV=staging and APP_CHECK_DEBUG_PROVIDER=true (plus APP_CHECK_DEBUG_TOKEN when set). It stops before building when any of
   them is missing. Values are never printed.
 
   This build is for testing the five demo accounts (docs/DEMO_ACCOUNTS.md). Real users must use
@@ -82,6 +82,16 @@ $defines = @(
   "--dart-define=SUPABASE_URL=$url",
   "--dart-define=SUPABASE_ANON_KEY=$anon"
 )
+# Optional: a fixed App Check debug token already registered in Firebase Console (App Check >
+# Manage debug tokens). Without it the debug provider makes a new random token per install, so
+# after a fresh install every callable (OTP send/verify) fails with UNAUTHENTICATED until that
+# new token is registered. Value never printed.
+$appCheckToken = Get-EnvValue 'APP_CHECK_DEBUG_TOKEN'
+if ($appCheckToken) {
+  $defines += "--dart-define=APP_CHECK_DEBUG_TOKEN=$appCheckToken"
+} else {
+  Write-Host 'APP_CHECK_DEBUG_TOKEN not set: register the debug secret DebugAppCheckProvider prints in logcat after install.'
+}
 # Names only, never values.
 $provided = $defines | ForEach-Object { (($_ -replace '^--dart-define=', '') -split '=')[0] }
 Write-Host "Provided dart-defines: $($provided -join ', ')"

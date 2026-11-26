@@ -48,6 +48,18 @@ void main() {
     }
   });
 
+  test('staging demo APK passes the data plane and the registered App Check debug token', () {
+    final staging = File('scripts/build_staging_demo_apk.ps1').readAsStringSync();
+    // Without these the app signs in, finds no Supabase client and shows
+    // "Account profile not found" (data plane) or fails every callable with
+    // UNAUTHENTICATED after a fresh install (App Check token).
+    for (final name in ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'APP_CHECK_DEBUG_TOKEN']) {
+      expect(staging, contains('--dart-define=$name='), reason: 'staging must pass $name');
+    }
+    final constants = File('lib/core/constants/app_constants.dart').readAsStringSync();
+    expect(constants, contains("'APP_CHECK_DEBUG_TOKEN'"));
+  });
+
   test('the Firebase project never defaults to a project without Cloud Functions', () {
     final options = File('lib/firebase_options.dart').readAsStringSync();
     expect(options, isNot(contains("'medibond-staging'")));
