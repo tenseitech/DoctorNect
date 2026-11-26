@@ -25,7 +25,16 @@ Copy `.env.example` → gitignored `.env`. Fill **staging-only** values. Never c
 
 ---
 
+## Automated local security (before staging)
+
+```bash
+node scripts/audit_closure/run_master_local_verification.js
+node scripts/security/audit1_run_local_validation.js   # optional full local suites (Redis integration if available)
+```
+
 ## SEC-04 — Token revocation → Gateway 401
+
+**Script:** `node scripts/security/audit1_staging_sec04_revocation_e2e.js` (after prereq exit 0)
 
 **Safety:** Dedicated staging Firebase user only. Never revoke production accounts.
 

@@ -1,0 +1,37 @@
+{
+  "startedAt": "2026-11-26T11:32:54.244Z",
+  "steps": [
+    {
+      "name": "env_parity",
+      "status": "PASS",
+      "exitCode": 0
+    },
+    {
+      "name": "audit1_staging_prereq",
+      "status": "BLOCKED",
+      "exitCode": 2
+    },
+    {
+      "name": "sec07_csp_static",
+      "status": "PASS",
+      "exitCode": 0
+    },
+    {
+      "name": "gateway_unit",
+      "status": "PASS",
+      "exitCode": 0
+    },
+    {
+      "name": "functions_env_parity",
+      "status": "PASS",
+      "exitCode": 0
+    },
+    {
+      "name": "alert_templates_validation",
+      "status": "PASS",
+      "exitCode": 0
+    }
+  ],
+  "finishedAt": "2026-11-26T11:32:59.339Z",
+  "dockerAvailable": false
+}

@@ -2,13 +2,18 @@
 
 **Date:** 2026-11-26  
 **Branch:** `audit-closure/remaining-audits`  
-**Base commit:** `4bbc48457d27f182df53e182fcb97895733d8caf` (Audit 9)
+**Latest closure commit:** See git log on `audit-closure/remaining-audits`  
+**Master completion pass:** 2026-11-26 (second wave)
 
 ---
 
 ## Executive summary
 
-This pass **completed safe local remediation and verification** across Audits 1–3 (preserved), 5–9, and **Audit 8 QA-03 (env parity)**. **Audit 4 was not modified** and remains **ON HOLD**. Staging security (Audit 1 SEC-04/07/08), Docker local smoke (Audit 2), operator E2E, and device accessibility **were not executed** due to missing staging credentials, Docker CLI, AWS CLI, and `gh` on the build host.
+Maximum **local** closure completed: **SEC-07 CSP** tightened in `firebase.json` with automated `hosting_csp_*` tests; **QA-04** welcome smoke test; **QA-07** emulator job in closure CI; **SEC staging scripts** tracked; **master verification** script + JSON evidence; **logout** a11y tap target; expanded **audit_closure_gates.yml**.
+
+**Audit 4 remains ON HOLD** — no migrations or Audit 4 runtime work.
+
+**Still pending (external):** SEC-04/08 staging, SEC-07 **browser** on hosted URL, Docker local, GHA Docker job confirmation, device a11y, REL-10 staging, REL-04 (Audit 4), Audit 7 alert/DR activation.
 
 ---
 
@@ -23,7 +28,7 @@ This pass **completed safe local remediation and verification** across Audits 1�
 | 5 Performance | COMPLETE (limited) | **REMEDIATION COMPLETE — LIMITED PROFILING PENDING** |
 | 6 Reliability | COMPLETE (limited) | **REMEDIATION COMPLETE — STAGING VERIFICATION PENDING**; REL-04 **BLOCKED BY AUDIT 4** |
 | 7 Operations | External pending | **REMEDIATION COMPLETE — EXTERNAL ACTIVATION PENDING** |
-| 8 Testing/QA | Limited E2E | **REMEDIATION COMPLETE — QA-03 VERIFIED**; E2E **PENDING** |
+| 8 Testing/QA | Limited E2E | **PARTIALLY COMPLETE** — QA-03 verified; QA-04 smoke test added; full E2E **PENDING** |
 | 9 UI/UX/a11y | Limited device | **REMEDIATION COMPLETE — DEVICE VERIFICATION PENDING**; partial UX-16 |
 
 ---
@@ -47,7 +52,8 @@ This pass **completed safe local remediation and verification** across Audits 1�
 | `cd backend/functions && npm run test:env-parity` | **5/5 pass** |
 | `cd backend/functions && npm test` | **592 pass** (full suite, env_parity included) |
 | `cd services/api-gateway && npm test` | **135/135 pass** |
-| `cd frontend && flutter test` | **704/704 pass** |
+| `cd frontend && flutter test` | **705/705 pass** |
+| `run_master_local_verification.js` | See `DOCTORNECT_FINAL_AUDIT_EVIDENCE.json` |
 | `flutter analyze` (touched auth paths) | **Clean** |
 | Local Docker build | **NOT RUN** (Docker CLI absent) |
 | `audit1_staging_prereq_check.js` | **Exit 2** (expected: staging vars missing) |

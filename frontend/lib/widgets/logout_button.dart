@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/accessibility/accessibility_tokens.dart';
 import '../core/auth/app_logout.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
@@ -12,11 +13,17 @@ class LogoutIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = color ?? AppColors.textSecondaryOf(context);
-    return TextButton(
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: TextButton(
       onPressed: () => AppLogout.confirmAndSignOut(context),
       style: TextButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        minimumSize: const Size(44, 44),
+        minimumSize: const Size(
+          AccessibilityTokens.minTapTarget,
+          AccessibilityTokens.minTapTarget,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -38,6 +45,7 @@ class LogoutIconButton extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

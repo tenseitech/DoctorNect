@@ -108,6 +108,53 @@ jobs:
           docker rm -f ac-gateway ac-mock-pgrst 2>/dev/null || true
           docker network rm audit-closure-gw-net 2>/dev/null || true
 
+  security-static:
+    name: Audit 1 — SEC-07 CSP static + alerts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - working-directory: backend/functions
+        run: npm ci
+      - name: SEC-07 hosting connect-src tests
+        working-directory: backend/functions
+        run: node --test test/hosting_csp_connect_src.test.js
+      - name: Audit 7 alert template validation
+        run: node --test scripts/test/alert_templates_validation.test.js
+
+  functions-regression:
+    name: Functions tests (env parity + core)
+    runs-on: ubuntu-latest
+    needs: [env-parity]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: backend/functions
+      - name: Full functions npm test
+        working-directory: backend/functions
+        run: npm test
+
+  firebase-rules-emulators:
+    name: QA-07 Firebase rules (emulators)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: backend/functions
+      - run: npm i -g firebase-tools
+      - name: Rules emulator suite
+        working-directory: backend/functions
+        run: npm run test:rules
+
   flutter-regression:
     name: Flutter tests (closure)
     runs-on: ubuntu-latest
@@ -131,3 +178,4 @@ jobs:
           flutter test test/audit_closure_app_colors_contrast_test.dart
           flutter test test/booking_in_flight_regression_test.dart
           flutter test test/auth_flows_test.dart
+          flutter test test/e2e_auth_welcome_smoke_test.dart

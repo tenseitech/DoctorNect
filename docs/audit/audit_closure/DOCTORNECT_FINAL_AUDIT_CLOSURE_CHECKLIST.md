@@ -6,6 +6,7 @@
 | Audit | ID | Description | Status | Evidence |
 |-------|-----|-------------|--------|----------|
 | 1 | SEC-04 | Staging revoke → 401 | PENDING OPERATOR | `audit1_staging_prereq_check.js` exit 2 |
+| 1 | SEC-07 | CSP connect-src policy + static tests | FIXED / TESTED | `firebase.json`, `hosting_csp_connect_src.test.js` |
 | 1 | SEC-07 | Hosted CSP browser | PENDING OPERATOR | No `AUDIT1_STAGING_HOSTING_URL` |
 | 1 | SEC-08 | ECS shared Redis 429 | PENDING ENVIRONMENT | No AWS CLI |
 | 1 | SEC-01–03,05–06,09–13 | In-repo fixes | FIXED / TESTED | Prior Audit 1 reports |
@@ -26,7 +27,7 @@
 | 7 | Alerts / DR drill | Production paths | PENDING OPERATOR | No prod activation |
 | 8 | QA-01–02 | CI + booking guard test | FIXED / TESTED | Prior audit 8 |
 | 8 | QA-03 | env_parity | FIXED / VERIFIED | `npm run test:env-parity` 5/5 |
-| 8 | QA-04 | Device/browser E2E | OPEN | No framework run |
+| 8 | QA-04 | Device/browser E2E | PARTIALLY FIXED | `e2e_auth_welcome_smoke_test.dart`; no integration_test driver |
 | 8 | QA-05 | Global coverage % gate | OPEN | Not enforced |
 | 8 | QA-07 | Emulator rules suites | PENDING ENVIRONMENT | Emulators not started |
 | 8 | Staging E2E | Manual matrix | PENDING OPERATOR | Runbook § Audit 8 |
