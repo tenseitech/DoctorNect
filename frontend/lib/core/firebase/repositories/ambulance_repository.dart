@@ -1005,6 +1005,12 @@ class AmbulanceRepository {
       final driverId = data['driverId'] as String? ?? '';
       if (driverId.isEmpty) return const AmbulanceDriverLoginResult();
 
+      // The server just changed this session's custom claims (ambulance role, and for the demo
+      // ambulance the demo-plane marker). Force a fresh ID token before the next request so the
+      // gateway / Functions see them; otherwise the cached token routes to the wrong plane.
+      final refreshed = await AmbulanceAuthHelper.refreshCallableAuthToken();
+      if (!refreshed) return const AmbulanceDriverLoginResult();
+
       await linkDriverAuth(driverId);
 
       var profile = await fetchAmbulanceById(driverId);
