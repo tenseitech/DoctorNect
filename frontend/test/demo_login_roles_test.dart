@@ -58,4 +58,14 @@ void main() {
     final release = File('scripts/release_build.ps1').readAsStringSync();
     expect(release, isNot(contains('staging-demo')));
   });
+
+  test('release build imports every required Firebase variable from .env', () {
+    final s = File('scripts/release_build.ps1').readAsStringSync();
+    final start = s.indexOf(r'$script:ClientReleaseEnvAllowlist');
+    final allowlist = s.substring(start, s.indexOf(')', start));
+    for (final name in ['FIREBASE_API_KEY_ANDROID', 'FIREBASE_PROJECT_ID']) {
+      expect(allowlist, contains("'$name'"),
+          reason: '$name must be read from .env');
+    }
+  });
 }
