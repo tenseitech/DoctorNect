@@ -8,28 +8,11 @@ class LabCatalogRepository {
 
   static final LabCatalogRepository instance = LabCatalogRepository._();
 
-  static const _docId = 'default';
 
   Future<LabCatalog> fetchCatalog() async {
-    LabCatalog catalog;
-
-    catalog = LabCatalog.defaults();
-    if (SupabaseBootstrap.isReady) {
-      try {
-        final snap = await SupabaseBootstrap.client
-            .from('lab_catalog')
-            .select('payload')
-            .eq('id', _docId)
-            .maybeSingle();
-        final payload = snap?['payload'];
-        if (payload is Map<String, dynamic>) {
-          catalog = LabCatalog.fromMap(payload);
-        } else if (payload is Map) {
-          catalog = LabCatalog.fromMap(Map<String, dynamic>.from(payload));
-        }
-      } catch (_) {}
-    }
-
+    // The old server-side `lab_catalog` table no longer exists (Postgres schema): the base
+    // catalog is the built-in one, merged with registered partner labs below.
+    final catalog = LabCatalog.defaults();
     return _withRegisteredPartnerLabs(_withMergedTests(catalog));
   }
 
