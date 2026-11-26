@@ -1,5 +1,10 @@
 # DoctorNect Production Cutover: Progress Ledger
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 **Tracking File:** `docs/ops/PROGRESS.md`  
 **Current Phase:** Blocked on Manual Actions (Phase 2 Backup Tools & Phase 5 RDS Provisioning); Codebase & Access Layer Preparation Complete  
 **Execution Engine:** Gravitas  

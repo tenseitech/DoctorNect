@@ -100,7 +100,8 @@ class VerificationStatusBanner extends StatelessWidget {
         final mobile = profile.mobile;
         final isDemoDoctor =
             role == UserType.doctor && DemoAuthConfig.isDemoDoctorPhone(mobile);
-        final verified = profile.verificationStatus == 'verified' || isDemoDoctor;
+        final verified =
+            profile.verificationStatus == 'verified' || isDemoDoctor;
         if (verified) return const SizedBox.shrink();
 
         final statusStr = profile.verificationStatus ?? 'registered';

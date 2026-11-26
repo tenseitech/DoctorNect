@@ -1,5 +1,10 @@
 # DoctorNect: Supabase ↔ Firestore Sync Observability & Dead-Letter Runbook
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 This guide documents the error codes, dead-letter contracts, logging infrastructure, alerting mechanisms, weekly audit procedures, and manual reconciliation workflows for the bidirectional sync bridge between Supabase PostgreSQL and Firebase Cloud Firestore.
 
 ---

@@ -10,6 +10,9 @@ on:
       - 'frontend/pubspec.lock'
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
@@ -28,7 +31,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.5'
+          flutter-version: '3.50.1'
           channel: 'stable'
           cache: true
 
@@ -36,9 +39,11 @@ jobs:
         run: cp lib/firebase_options.secrets.example.dart lib/firebase_options.secrets.dart
 
       - run: flutter pub get
-      - run: flutter build apk --release
+      # Debug build only: a release APK needs the Firebase / data-plane dart-defines and the
+      # release keystore (scripts/release_build.ps1 / build_staging_demo_apk.ps1), never CI.
+      - run: flutter build apk --debug
 
       - uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: frontend/build/app/outputs/flutter-apk/app-release.apk
+          name: app-debug-apk
+          path: frontend/build/app/outputs/flutter-apk/app-debug.apk

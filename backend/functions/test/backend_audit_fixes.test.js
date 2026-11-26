@@ -24,7 +24,7 @@ test('M-5: lookupMobileRegistration and Razorpay callables enforce App Check', (
   const indexSrc = fs.readFileSync(path.join(__dirname, '../index.js'), 'utf8');
   assert.match(
     indexSrc,
-    /exports\.lookupMobileRegistration = onCall\(\s*\{\s*region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK/,
+    /exports\.lookupMobileRegistration = onCall\(\s*\{\s*region: CALLABLE_REGION,\s*enforceAppCheck: ENFORCE_ABUSE_APP_CHECK/,
   );
 
   const adsSrc = fs.readFileSync(path.join(__dirname, '../promoted_ads.js'), 'utf8');
@@ -35,12 +35,13 @@ test('M-5: lookupMobileRegistration and Razorpay callables enforce App Check', (
 
 test('H-4: deleteMyAccount binds Supabase service-role secrets', () => {
   const src = fs.readFileSync(path.join(__dirname, '../index.js'), 'utf8');
-  assert.match(src, /secrets: \[awsAccessKeyId, awsSecretAccessKey, supabaseServiceRoleKey\]/);
+  assert.match(src, /secrets: withDataPlaneSecrets\(\[awsAccessKeyId, awsSecretAccessKey, supabaseServiceRoleKey\]\)/);
 });
 
 test('H-7: paid ads go to pending_approval and live queries use status == active', () => {
   const src = fs.readFileSync(path.join(__dirname, '../promoted_ads.js'), 'utf8');
   assert.match(src, /status: 'pending_approval'/);
-  assert.match(src, /where\('status', '==', 'active'\)/);
+  // Postgres expiry sweep only touches live ads (status = 'active').
+  assert.match(src, /\.eq\('status', 'active'\)/);
   assert.match(src, /async function reviewPromotedAdHandler/);
 });

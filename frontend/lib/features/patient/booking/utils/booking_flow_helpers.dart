@@ -38,8 +38,7 @@ abstract final class BookingFlowHelpers {
     String? appointmentPatientId,
   }) {
     final fromAppointment = appointmentPatientId?.trim() ?? '';
-    if (fromAppointment.isNotEmpty &&
-        fromAppointment != placeholderPatientId) {
+    if (fromAppointment.isNotEmpty && fromAppointment != placeholderPatientId) {
       return fromAppointment;
     }
     final fromSession = sessionPatientId.trim();

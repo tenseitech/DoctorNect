@@ -20,6 +20,7 @@ const { loadRootEnv } = require('../lib/bootstrap_root_env');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard } = require('../lib/env_guard');
 const { buildPostgrestPayload } = require('../../services/api-gateway/src/jwt_minter');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 function parseArgs() {
   const targetIdx = process.argv.indexOf('--target');
@@ -181,7 +182,7 @@ async function main() {
       process.exit(2);
     }
     assertDatabaseGuard({ targetKind: 'staging', operationName: 'staging_e2e_write_flow' });
-    ssl = { rejectUnauthorized: false };
+    ssl = stagingPgSsl();
   } else {
     dbUrl = localDbUrl();
     ssl = false;

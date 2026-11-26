@@ -6,8 +6,13 @@ const { HttpsError } = require('firebase-functions/v2/https');
 const {
   assertLoginAllowed,
   recordFailedLogin,
-  clearFailedLogins,
+  clearFailedLoginsTrusted,
 } = require('../registration_otp');
+const { setRedisClientForTesting } = require('../redis');
+const { createMemoryRedis } = require('./helpers/memory_redis');
+
+// Counters live in Redis (in-memory double); the db argument is ignored by the Postgres/Redis code.
+test.beforeEach(() => setRedisClientForTesting(createMemoryRedis()));
 
 /**
  * Reusable mock Firestore instance mirroring login_failure_tracking.test.js
@@ -81,7 +86,7 @@ function createMockFirestore() {
  * Simulates the ambulance driver PIN verification login flow in index.js:runVerifyAmbulanceDriverLogin:
  * 1. Checks assertLoginAllowed for identifier `ambulance:${username}`
  * 2. If credentials fail, records failed login via recordFailedLogin
- * 3. If credentials succeed, clears failed logins via clearFailedLogins
+ * 3. If credentials succeed, clears failed logins via clearFailedLoginsTrusted (server-side)
  */
 async function simulateAmbulanceDriverLogin(db, { username, pinMatches, clientIp = '203.0.113.50' }) {
   const identifier = `ambulance:${username}`;
@@ -96,7 +101,7 @@ async function simulateAmbulanceDriverLogin(db, { username, pinMatches, clientIp
   }
 
   // Step 3: Clear failed attempts on success (index.js:1395)
-  await clearFailedLogins(db, { identifier });
+  await clearFailedLoginsTrusted(identifier);
   return { ok: true };
 }
 

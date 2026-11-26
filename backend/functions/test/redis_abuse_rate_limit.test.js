@@ -3,7 +3,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { HttpsError } = require('firebase-functions/v2/https');
-const { LIMITS, hashKey, enforceAbuseLimit, getRateLimitBackend } = require('../abuse_rate_limit');
+const abuse = require('../abuse_rate_limit');
+const { LIMITS, hashKey, enforceAbuseLimit } = abuse;
 const { setRedisClientForTesting } = require('../redis');
 
 function createMockFirestore() {
@@ -121,13 +122,20 @@ function createMockRedis() {
   };
 }
 
-test('flag default: RATE_LIMIT_BACKEND defaults to redis (Postgres-only prod)', () => {
+test('Redis is the only rate-limit backend: RATE_LIMIT_BACKEND=firestore has no effect', async () => {
+  assert.equal(typeof abuse.getRateLimitBackend, 'undefined');
+  assert.equal(typeof abuse.assertBucket, 'undefined');
   const orig = process.env.RATE_LIMIT_BACKEND;
-  delete process.env.RATE_LIMIT_BACKEND;
+  process.env.RATE_LIMIT_BACKEND = 'firestore';
+  setRedisClientForTesting({ eval: async () => { throw new Error('down'); }, on() { return this; } });
   try {
-    assert.equal(getRateLimitBackend(), 'redis');
+    await assert.rejects(
+      () => enforceAbuseLimit(null, { rawRequest: { ip: '198.51.100.7' } }, 'api'),
+      (err) => err.code === 'unavailable',
+    );
   } finally {
-    if (orig !== undefined) process.env.RATE_LIMIT_BACKEND = orig;
+    if (orig === undefined) delete process.env.RATE_LIMIT_BACKEND; else process.env.RATE_LIMIT_BACKEND = orig;
+    setRedisClientForTesting(require('./helpers/memory_redis').createMemoryRedis());
   }
 });
 

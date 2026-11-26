@@ -101,7 +101,7 @@ class PatientProfileRepository {
     bool preferCache = true,
   }) async {
     return SupabasePatientProfileRepository.instance
-          .fetchPatientDocument(patientId);
+        .fetchPatientDocument(patientId);
   }
 
   /// Records a patient↔doctor relationship for rules-side care-team grant checks.
@@ -114,23 +114,22 @@ class PatientProfileRepository {
     String? referralId,
   }) async {
     return SupabasePatientProfileRepository.instance.ensureDoctorPatientLink(
-        patientId: patientId,
-        doctorId: doctorId,
-        source: source,
-        fromDoctorId: fromDoctorId,
-        referralId: referralId,
-      );
+      patientId: patientId,
+      doctorId: doctorId,
+      source: source,
+      fromDoctorId: fromDoctorId,
+      referralId: referralId,
+    );
   }
 
   Future<bool> grantDoctorCareTeamAccess({
     required String patientId,
     required String doctorId,
   }) async {
-    return SupabasePatientProfileRepository.instance
-          .grantDoctorCareTeamAccess(
-        patientId: patientId,
-        doctorId: doctorId,
-      );
+    return SupabasePatientProfileRepository.instance.grantDoctorCareTeamAccess(
+      patientId: patientId,
+      doctorId: doctorId,
+    );
   }
 
   Future<void> savePatientDocument(
@@ -138,12 +137,11 @@ class PatientProfileRepository {
     Map<String, dynamic> data,
   ) async {
     return SupabasePatientProfileRepository.instance
-          .savePatientDocument(patientId, data);
+        .savePatientDocument(patientId, data);
   }
 
   Future<List<HealthRecord>> fetchHealthRecords(String patientId) async {
-    return SupabaseHealthRecordsRepository.instance
-          .fetchForPatient(patientId);
+    return SupabaseHealthRecordsRepository.instance.fetchForPatient(patientId);
   }
 
   Future<void> savePatientFcmToken(String patientId, String token) async {
@@ -192,11 +190,11 @@ class PatientProfileRepository {
 
   Future<void> saveHealthRecord(String patientId, HealthRecord record) async {
     return SupabaseHealthRecordsRepository.instance
-          .save(record, patientId: patientId);
+        .save(record, patientId: patientId);
   }
 
   Future<void> deleteHealthRecord(String recordId) async {
     return SupabaseHealthRecordsRepository.instance
-          .delete(recordId, patientId: '');
+        .delete(recordId, patientId: '');
   }
 }

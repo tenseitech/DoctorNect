@@ -13,7 +13,9 @@ void main() {
     store.mergeFromFirestore(const []);
   });
 
-  test('patient booking calls bookAppointment and does not write the document itself', () async {
+  test(
+      'patient booking calls bookAppointment and does not write the document itself',
+      () async {
     var persisted = false;
     Map<String, dynamic>? payload;
     SharedAppointmentsStore.debugPersistOverride = (_) async {

@@ -30,7 +30,10 @@ void main() {
   test('installed build below the minimum blocks when a store URL is set', () {
     expect(
       MinimumBuildGate.shouldBlock(
-        snapshot(installedBuild: 6, minimumBuild: 7, storeUrl: 'https://example.com/app'),
+        snapshot(
+            installedBuild: 6,
+            minimumBuild: 7,
+            storeUrl: 'https://example.com/app'),
       ),
       isTrue,
     );
@@ -39,13 +42,19 @@ void main() {
   test('installed build equal to or above the minimum does not block', () {
     expect(
       MinimumBuildGate.shouldBlock(
-        snapshot(installedBuild: 7, minimumBuild: 7, storeUrl: 'https://example.com/app'),
+        snapshot(
+            installedBuild: 7,
+            minimumBuild: 7,
+            storeUrl: 'https://example.com/app'),
       ),
       isFalse,
     );
     expect(
       MinimumBuildGate.shouldBlock(
-        snapshot(installedBuild: 8, minimumBuild: 7, storeUrl: 'https://example.com/app'),
+        snapshot(
+            installedBuild: 8,
+            minimumBuild: 7,
+            storeUrl: 'https://example.com/app'),
       ),
       isFalse,
     );
@@ -63,7 +72,11 @@ void main() {
   test('a failed config read does not block', () {
     expect(
       MinimumBuildGate.shouldBlock(
-        snapshot(configReadable: false, installedBuild: 1, minimumBuild: 9, storeUrl: 'https://example.com/app'),
+        snapshot(
+            configReadable: false,
+            installedBuild: 1,
+            minimumBuild: 9,
+            storeUrl: 'https://example.com/app'),
       ),
       isFalse,
     );
@@ -72,7 +85,10 @@ void main() {
   test('a malformed minimum does not block', () {
     expect(
       MinimumBuildGate.shouldBlock(
-        snapshot(installedBuild: 1, minimumBuild: null, storeUrl: 'https://example.com/app'),
+        snapshot(
+            installedBuild: 1,
+            minimumBuild: null,
+            storeUrl: 'https://example.com/app'),
       ),
       isFalse,
     );
@@ -81,13 +97,18 @@ void main() {
   test('web does not block', () {
     expect(
       MinimumBuildGate.shouldBlock(
-        snapshot(isWeb: true, installedBuild: 1, minimumBuild: 9, storeUrl: 'https://example.com/app'),
+        snapshot(
+            isWeb: true,
+            installedBuild: 1,
+            minimumBuild: 9,
+            storeUrl: 'https://example.com/app'),
       ),
       isFalse,
     );
   });
 
-  testWidgets('a blocking snapshot replaces the app with the update screen', (tester) async {
+  testWidgets('a blocking snapshot replaces the app with the update screen',
+      (tester) async {
     MinimumBuildGate.debugSnapshot = snapshot(
       installedBuild: 1,
       minimumBuild: 9,

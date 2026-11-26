@@ -12,11 +12,6 @@ let origLegacy;
 
 test.beforeEach(() => {
   origLegacy = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
-  process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
-  try {
-    const { _resetRemoteConfigCache } = require('../sync_flags');
-    _resetRemoteConfigCache();
-  } catch (_) {}
 });
 
 test.afterEach(() => {
@@ -24,26 +19,26 @@ test.afterEach(() => {
   else process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacy;
 });
 
+/** Profile rows now live in Postgres public.users (in-memory double). */
+let currentPg = null;
 function mockDb(profileByUid = new Map()) {
-  return {
-    collection(name) {
-      return {
-        doc(id) {
-          return {
-            async get() {
-              if (name !== 'users') return { exists: false, data: () => undefined };
-              const data = profileByUid.get(id);
-              return { exists: data != null, data: () => data };
-            },
-            async delete() {
-              if (name === 'users') profileByUid.delete(id);
-            },
-          };
-        },
-      };
-    },
-  };
+  const { setDatabaseClientForTesting } = require('../src/db/client');
+  const { createMemoryPostgrest } = require('./helpers/memory_postgrest');
+  const users = [...profileByUid.entries()].map(([uid, p]) => ({
+    id: uid,
+    firebase_uid: uid,
+    role: p.role,
+    profile_id: p.profileId || null,
+    mobile: p.mobile || null,
+    mobile_verified: p.mobileVerified === true,
+    email_verified: p.emailVerified === true,
+    created_at: p.createdAt?.toDate ? p.createdAt.toDate().toISOString() : (p.createdAt || null),
+  }));
+  currentPg = createMemoryPostgrest({ users });
+  setDatabaseClientForTesting(currentPg);
+  return null;
 }
+const hasProfile = (uid) => Boolean(currentPg && currentPg.rows('users').some((r) => r.id === uid));
 
 function mockAuthAdmin(usersByUid, deletedOut) {
   return {
@@ -93,7 +88,7 @@ test('cleanupPendingRegistration deletes fresh unverified orphan', async () => {
   );
 
   assert.deepEqual(result, { ok: true, cleaned: true });
-  assert.equal(profileByUid.has(uid), false);
+  assert.equal(hasProfile(uid), false);
   assert.deepEqual(deleted, [uid]);
 });
 

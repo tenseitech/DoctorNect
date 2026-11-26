@@ -1,16 +1,43 @@
 'use strict';
 
 const { createClient } = require('@supabase/supabase-js');
-const {
-  resolveDataPlane,
-  redisKeyNamespace,
-  objectStoragePrefix,
-} = require('../../../../scripts/lib/demo_routing');
+const { assertDemoUidNotOnRds } = require('../../lib/rds_demo_uid_guard');
+const { resolveRequestPlane, requestRedisNamespace, requestObjectStoragePrefix } = require('./request_plane');
+
+/**
+ * Every database request (gateway / Supabase PostgREST) gets a hard timeout so an outage fails
+ * fast with an error instead of holding the function until its 60 s limit.
+ */
+const DB_REQUEST_TIMEOUT_MS = 15000;
+let dbRequestTimeoutForTesting = null;
+function dbRequestTimeoutMs() {
+  return dbRequestTimeoutForTesting || DB_REQUEST_TIMEOUT_MS;
+}
+/** @visibleForTesting */
+function setDbRequestTimeoutForTesting(ms) {
+  dbRequestTimeoutForTesting = ms || null;
+}
+
+function fetchWithTimeout(input, init = {}) {
+  const timeout = AbortSignal.timeout(dbRequestTimeoutMs());
+  const signal = init && init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+  return fetch(input, { ...init, signal });
+}
 
 let cachedClient = null;
 let cachedKey = null;
 let cachedDemoClient = null;
 let cachedDemoKey = null;
+
+/** Unit tests only: inject an in-memory PostgREST-compatible client for every plane. */
+let _testingDatabaseClient = null;
+function setDatabaseClientForTesting(client) {
+  if (client && String(process.env.APP_ENV || '').trim().toLowerCase() === 'production'
+      && (process.env.K_SERVICE || process.env.FUNCTION_TARGET)) {
+    throw new Error('[DatabaseClient] test client injection is not allowed in a deployed runtime');
+  }
+  _testingDatabaseClient = client || null;
+}
 
 /**
  * Returns a configured database client (Supabase-compatible) based on APP_ENV and optional Firebase UID.
@@ -24,9 +51,16 @@ let cachedDemoKey = null;
  * @returns {import('@supabase/supabase-js').SupabaseClient}
  */
 function getDatabaseClient(options = {}) {
+  if (_testingDatabaseClient) return _testingDatabaseClient;
   const appEnv = (process.env.APP_ENV || 'staging').toLowerCase();
   const uid = options.firebaseUid || options.uid || null;
-  const plane = resolveDataPlane({ appEnv, firebaseUid: uid });
+  const plane = options.loginLookupPlane
+    ? options.loginLookupPlane
+    : resolveRequestPlane(uid, { appEnv });
+
+  if (plane === 'rds') {
+    assertDemoUidNotOnRds(uid);
+  }
 
   let url;
   let serviceKey;
@@ -83,6 +117,7 @@ function getDatabaseClient(options = {}) {
         // Server-side plane is resolved here; never send x-data-plane (gateway forbids client routing hints).
         'x-client-source': 'medibond-cloud-functions',
       },
+      fetch: fetchWithTimeout,
     },
   });
 
@@ -106,12 +141,12 @@ function getDatabaseClientForCallable(request, options = {}) {
 
 function getRedisNamespaceForCallable(request) {
   const appEnv = (process.env.APP_ENV || 'staging').toLowerCase();
-  return redisKeyNamespace({ appEnv, firebaseUid: request?.auth?.uid || null });
+  return requestRedisNamespace(request?.auth?.uid || null, { appEnv });
 }
 
 function getObjectStoragePrefixForCallable(request) {
   const appEnv = (process.env.APP_ENV || 'staging').toLowerCase();
-  return objectStoragePrefix({ appEnv, firebaseUid: request?.auth?.uid || null });
+  return requestObjectStoragePrefix(request?.auth?.uid || null, { appEnv });
 }
 
 function resetDatabaseClientForTesting() {
@@ -127,4 +162,8 @@ module.exports = {
   getRedisNamespaceForCallable,
   getObjectStoragePrefixForCallable,
   resetDatabaseClientForTesting,
+  setDatabaseClientForTesting,
+  dbRequestTimeoutMs,
+  fetchWithTimeout,
+  setDbRequestTimeoutForTesting,
 };

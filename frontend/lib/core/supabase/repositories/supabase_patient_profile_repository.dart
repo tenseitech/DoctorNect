@@ -143,9 +143,9 @@ class SupabasePatientProfileRepository {
 
     try {
       await _client.from('patient_doctor_links').upsert(
-        payload,
-        onConflict: 'patient_id, doctor_id',
-      );
+            payload,
+            onConflict: 'patient_id, doctor_id',
+          );
       return true;
     } catch (_) {
       return false;
@@ -164,10 +164,10 @@ class SupabasePatientProfileRepository {
 
     try {
       final currentDoc = await fetchPatientDocument(patientId);
-      final currentTeam = (currentDoc?['care_team_doctor_ids'] as List<dynamic>? ??
-              const [])
-          .map((e) => e.toString())
-          .toSet();
+      final currentTeam =
+          (currentDoc?['care_team_doctor_ids'] as List<dynamic>? ?? const [])
+              .map((e) => e.toString())
+              .toSet();
 
       if (!currentTeam.contains(doctorId)) {
         currentTeam.add(doctorId);
@@ -235,7 +235,9 @@ class SupabasePatientProfileRepository {
           notes: row['notes'] as String?,
           sharedWithDoctors: row['shared_with_doctors'] as bool? ?? false,
           fileStorage: storageStatus != null
-              ? (HealthRecordFileStorage.values.where((e) => e.name == storageStatus).firstOrNull ??
+              ? (HealthRecordFileStorage.values
+                      .where((e) => e.name == storageStatus)
+                      .firstOrNull ??
                   HealthRecordFileStorage.none)
               : HealthRecordFileStorage.none,
           storageUrl: row['storage_url'] as String?,

@@ -1,5 +1,10 @@
 # Open issues (from archived security audits)
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 Consolidated from `docs/archive/verification/SECURITY_AUDIT_2026-10-06.md` and `SECURITY_AUDIT_v2.md`. **Status** reflects audit date unless a later spine doc says fixed. Verification spine: [reports/DOCTORNECT_FINAL_AUDIT.md](reports/DOCTORNECT_FINAL_AUDIT.md), [ops/ARCHITECTURE_CUTOVER_REPORT.md](ops/ARCHITECTURE_CUTOVER_REPORT.md).
 
 | ID | Title | Severity | Status | Source |

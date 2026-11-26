@@ -35,7 +35,9 @@ void main() {
   });
 
   group('SupabaseBootstrap Claim Verification', () {
-    test('MissingSupabaseClaimException format string and friendly error mapping', () {
+    test(
+        'MissingSupabaseClaimException format string and friendly error mapping',
+        () {
       const ex = MissingSupabaseClaimException('Missing role=authenticated');
       expect(
         ex.toString(),
@@ -66,7 +68,8 @@ void main() {
 
     test('fetch returns null when Supabase is not ready', () async {
       SupabaseBootstrap.resetForTesting();
-      final res = await SupabaseDoctorAvailabilityRepository.instance.fetch('doc_123');
+      final res =
+          await SupabaseDoctorAvailabilityRepository.instance.fetch('doc_123');
       expect(res, isNull);
     });
   });
@@ -74,7 +77,8 @@ void main() {
   group('SupabaseUserRepository & DoctorNectUserProfile', () {
     test('fetchProfile returns null when Supabase is not ready', () async {
       SupabaseBootstrap.resetForTesting();
-      final user = await SupabaseUserRepository.instance.fetchProfile('user_123');
+      final user =
+          await SupabaseUserRepository.instance.fetchProfile('user_123');
       expect(user, isNull);
     });
 
@@ -85,21 +89,26 @@ void main() {
   });
 
   group('SupabaseDoctorRepository', () {
-    test('fetchAllDoctors returns empty list when Supabase is not ready', () async {
+    test('fetchAllDoctors returns empty list when Supabase is not ready',
+        () async {
       SupabaseBootstrap.resetForTesting();
       final docs = await SupabaseDoctorRepository.instance.fetchAllDoctors();
       expect(docs, isEmpty);
     });
 
-    test('isDoctorVerified returns false when Supabase is not ready or doctorId is empty', () async {
+    test(
+        'isDoctorVerified returns false when Supabase is not ready or doctorId is empty',
+        () async {
       SupabaseBootstrap.resetForTesting();
       final v1 = await SupabaseDoctorRepository.instance.isDoctorVerified('');
-      final v2 = await SupabaseDoctorRepository.instance.isDoctorVerified('doc_123');
+      final v2 =
+          await SupabaseDoctorRepository.instance.isDoctorVerified('doc_123');
       expect(v1, isFalse);
       expect(v2, isFalse);
     });
 
-    test('streamAllDoctors returns empty stream when Supabase is not ready', () {
+    test('streamAllDoctors returns empty stream when Supabase is not ready',
+        () {
       SupabaseBootstrap.resetForTesting();
       final stream = SupabaseDoctorRepository.instance.streamAllDoctors();
       expect(stream, emitsDone);
@@ -107,39 +116,51 @@ void main() {
   });
 
   group('SupabasePatientProfileRepository', () {
-    test('fetchPatientDocument returns null when Supabase is not ready or patientId empty', () async {
+    test(
+        'fetchPatientDocument returns null when Supabase is not ready or patientId empty',
+        () async {
       SupabaseBootstrap.resetForTesting();
-      final res1 = await SupabasePatientProfileRepository.instance.fetchPatientDocument('');
-      final res2 = await SupabasePatientProfileRepository.instance.fetchPatientDocument('pat_123');
+      final res1 = await SupabasePatientProfileRepository.instance
+          .fetchPatientDocument('');
+      final res2 = await SupabasePatientProfileRepository.instance
+          .fetchPatientDocument('pat_123');
       expect(res1, isNull);
       expect(res2, isNull);
     });
   });
 
   group('SupabaseFamilyMemberRepository', () {
-    test('fetchForPatient returns empty list when Supabase is not ready', () async {
+    test('fetchForPatient returns empty list when Supabase is not ready',
+        () async {
       SupabaseBootstrap.resetForTesting();
-      final members = await SupabaseFamilyMemberRepository.instance.fetchForPatient('pat_123');
+      final members = await SupabaseFamilyMemberRepository.instance
+          .fetchForPatient('pat_123');
       expect(members, isEmpty);
     });
   });
 
   group('SupabaseHealthRecordsRepository', () {
-    test('fetchForPatient returns empty list when Supabase is not ready', () async {
+    test('fetchForPatient returns empty list when Supabase is not ready',
+        () async {
       SupabaseBootstrap.resetForTesting();
-      final records = await SupabaseHealthRecordsRepository.instance.fetchForPatient('pat_123');
+      final records = await SupabaseHealthRecordsRepository.instance
+          .fetchForPatient('pat_123');
       expect(records, isEmpty);
     });
   });
 
   group('SupabaseAppointmentRepository & Mapper', () {
-    test('fetchForDoctor returns empty list when Supabase is not ready', () async {
+    test('fetchForDoctor returns empty list when Supabase is not ready',
+        () async {
       SupabaseBootstrap.resetForTesting();
-      final res = await SupabaseAppointmentRepository.instance.fetchForDoctor('doc_123');
+      final res = await SupabaseAppointmentRepository.instance
+          .fetchForDoctor('doc_123');
       expect(res, isEmpty);
     });
 
-    test('AppointmentSupabaseMapper maps valid row to DoctorNectAppointmentRecord', () {
+    test(
+        'AppointmentSupabaseMapper maps valid row to DoctorNectAppointmentRecord',
+        () {
       final now = DateTime.now();
       final row = <String, dynamic>{
         'appointment_id': 'apt_test_999',
@@ -170,7 +191,9 @@ void main() {
       expect(record.tokenNumber, equals(4));
     });
 
-    test('AppointmentSupabaseMapper returns null when essential fields are missing', () {
+    test(
+        'AppointmentSupabaseMapper returns null when essential fields are missing',
+        () {
       expect(AppointmentSupabaseMapper.fromRow({}), isNull);
       expect(
         AppointmentSupabaseMapper.fromRow({'appointment_id': ''}),
@@ -178,44 +201,55 @@ void main() {
       );
     });
 
-    test('watchForDoctor returns empty stream when Supabase is not ready or doctorId is empty', () {
+    test(
+        'watchForDoctor returns empty stream when Supabase is not ready or doctorId is empty',
+        () {
       SupabaseBootstrap.resetForTesting();
       final stream1 = SupabaseAppointmentRepository.instance.watchForDoctor('');
       expect(stream1, emitsDone);
 
-      final stream2 = SupabaseAppointmentRepository.instance.watchForDoctor('doc_123');
+      final stream2 =
+          SupabaseAppointmentRepository.instance.watchForDoctor('doc_123');
       expect(stream2, emitsDone);
     });
   });
 
   group('SupabasePrescriptionRepository', () {
-    test('fetchForDoctor returns empty page when Supabase is not ready', () async {
+    test('fetchForDoctor returns empty page when Supabase is not ready',
+        () async {
       SupabaseBootstrap.resetForTesting();
-      final page = await SupabasePrescriptionRepository.instance.fetchForDoctor('doc_123');
+      final page = await SupabasePrescriptionRepository.instance
+          .fetchForDoctor('doc_123');
       expect(page.items, isEmpty);
       expect(page.hasMore, isFalse);
     });
 
-    test('fetchForPatient returns empty list when Supabase is not ready', () async {
+    test('fetchForPatient returns empty list when Supabase is not ready',
+        () async {
       SupabaseBootstrap.resetForTesting();
-      final page = await SupabasePrescriptionRepository.instance.fetchForPatient('pat_123');
+      final page = await SupabasePrescriptionRepository.instance
+          .fetchForPatient('pat_123');
       expect(page.items, isEmpty);
       expect(page.hasMore, isFalse);
     });
   });
 
   group('SupabaseReferralRepository', () {
-    test('fetchReceivedByDoctor returns empty list when Supabase is not ready', () async {
+    test('fetchReceivedByDoctor returns empty list when Supabase is not ready',
+        () async {
       SupabaseBootstrap.resetForTesting();
-      final res = await SupabaseReferralRepository.instance.fetchReceivedByDoctor('doc_123');
+      final res = await SupabaseReferralRepository.instance
+          .fetchReceivedByDoctor('doc_123');
       expect(res, isEmpty);
     });
   });
 
   group('SupabaseReviewRepository', () {
-    test('fetchForDoctor returns empty list when Supabase is not ready', () async {
+    test('fetchForDoctor returns empty list when Supabase is not ready',
+        () async {
       SupabaseBootstrap.resetForTesting();
-      final res = await SupabaseReviewRepository.instance.fetchForDoctor('doc_123');
+      final res =
+          await SupabaseReviewRepository.instance.fetchForDoctor('doc_123');
       expect(res, isEmpty);
     });
 

@@ -2,7 +2,7 @@
 
 /**
  * Strict input validation / sanitization for Cloud Functions.
- * Firestore is not SQL — still reject control chars, script payloads, and
+ * Values go to PostgREST as parameters (not string SQL) — still reject control chars, script payloads, and
  * type-mismatched fields so stored/reflected XSS and injection stay out.
  */
 

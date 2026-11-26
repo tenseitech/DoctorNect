@@ -15,7 +15,8 @@ void main() {
   });
 
   group('SupabaseWatcherStateMachine (Real State Machine Verification)', () {
-    test('1. Error surfacing: fetcher exception is emitted to stream', () async {
+    test('1. Error surfacing: fetcher exception is emitted to stream',
+        () async {
       final stateMachine = SupabaseWatcherStateMachine<Map<String, dynamic>>(
         fetcher: () async => throw StateError('Database connection lost'),
         getId: (item) => item['id'] as String,
@@ -24,7 +25,8 @@ void main() {
       final stream = stateMachine.stream();
       expect(
         stream,
-        emitsError(isA<StateError>().having((e) => e.message, 'message', contains('Database connection lost'))),
+        emitsError(isA<StateError>().having(
+            (e) => e.message, 'message', contains('Database connection lost'))),
       );
     });
 
@@ -67,7 +69,8 @@ void main() {
     });
 
     test('3. Delete removes row and emits revised cache', () async {
-      final eventController = StreamController<WatcherEvent<Map<String, dynamic>>>();
+      final eventController =
+          StreamController<WatcherEvent<Map<String, dynamic>>>();
       final stateMachine = SupabaseWatcherStateMachine<Map<String, dynamic>>(
         fetcher: () async => [
           {'id': 'item_a', 'val': 10},
@@ -101,7 +104,8 @@ void main() {
     });
 
     test('4. Reconnect triggers authorative resync', () async {
-      final eventController = StreamController<WatcherEvent<Map<String, dynamic>>>();
+      final eventController =
+          StreamController<WatcherEvent<Map<String, dynamic>>>();
       var currentItems = [
         {'id': 'x', 'status': 'pending'},
       ];
@@ -185,14 +189,16 @@ void main() {
       expect(profile.city, 'Bengaluru');
       expect(profile.verified, isTrue);
 
-      final backToRow = PharmacySupabaseMapper.storeToRow(profile, ownerUid: 'user_pharm_01');
+      final backToRow =
+          PharmacySupabaseMapper.storeToRow(profile, ownerUid: 'user_pharm_01');
       expect(backToRow['store_id'], 'store_001');
       expect(backToRow['owner_uid'], 'user_pharm_01');
       expect(backToRow['city'], 'Bengaluru');
       expect(backToRow['verified'], isTrue);
     });
 
-    test('Maps pharmacy delivery row to PharmacyPrescriptionDelivery and back', () {
+    test('Maps pharmacy delivery row to PharmacyPrescriptionDelivery and back',
+        () {
       final now = DateTime.now().toUtc();
       final row = {
         'delivery_id': 'del_777',
@@ -226,7 +232,8 @@ void main() {
       expect(delivery!.id, 'del_777');
       expect(delivery.status, PharmacyDeliveryStatus.viewed);
       expect(delivery.medicineLines, hasLength(1));
-      expect(delivery.medicineLines.first.availability, MedicineAvailability.available);
+      expect(delivery.medicineLines.first.availability,
+          MedicineAvailability.available);
 
       final payload = PharmacySupabaseMapper.deliveryToRow(delivery);
       expect(payload['delivery_id'], 'del_777');
@@ -344,7 +351,8 @@ void main() {
       expect(driver.available, isTrue);
       expect(driver.averageRating, closeTo(4.8, 0.05));
 
-      final payload = AmbulanceSupabaseMapper.driverToRow(driver, ownerUid: 'user_driver_01');
+      final payload = AmbulanceSupabaseMapper.driverToRow(driver,
+          ownerUid: 'user_driver_01');
       expect(payload['ambulance_id'], 'amb_001');
       expect(payload['vehicle_number'], 'KA-01-EA-1234');
       expect(payload['owner_uid'], 'user_driver_01');

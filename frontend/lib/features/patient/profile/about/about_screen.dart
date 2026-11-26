@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../../core/legal/legal_document_screen.dart';
 import '../../../../core/legal/medibond_legal_content.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -64,11 +65,17 @@ class AboutScreen extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  Text(
-                    'Version ${PatientProfileMock.appVersion}',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      color: AppColors.textSecondaryOf(context),
+                  // Real installed version (was a hard-coded "1.0.1").
+                  FutureBuilder<PackageInfo>(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (context, snap) => Text(
+                      snap.hasData
+                          ? 'Version ${snap.data!.version} (${snap.data!.buildNumber})'
+                          : 'Version',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                   ),
                 ],

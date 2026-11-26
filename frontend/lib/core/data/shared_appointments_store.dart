@@ -3,7 +3,6 @@ import 'package:medibond/core/firebase/app_data_service.dart';
 
 import 'dart:async';
 
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 
@@ -359,7 +358,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
           doctorId,
           preferCache: preferCache,
         );
-      } else if (!_effectiveReleaseMode && _debugDoctorFirestoreRefresh != null) {
+      } else if (!_effectiveReleaseMode &&
+          _debugDoctorFirestoreRefresh != null) {
         remote = await _debugDoctorFirestoreRefresh!(doctorId);
       } else if (kReleaseMode) {
         throw StateError(
@@ -392,8 +392,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
       if (supabaseOverride != null) {
         supabaseRows = await supabaseOverride(patientId);
       } else if (SupabaseBootstrap.isReady) {
-        final rows =
-            await SupabasePatientRepository.instance.fetchAppointments(patientId);
+        final rows = await SupabasePatientRepository.instance
+            .fetchAppointments(patientId);
         supabaseRows = rows
             .map((r) => SupabasePatientRepository.instance.toRecord(r))
             .whereType<DoctorNectAppointmentRecord>()
@@ -467,8 +467,7 @@ class SharedAppointmentsStore extends ChangeNotifier {
       try {
         await SupabaseAppointmentRepository.instance.save(
           record,
-          patientId:
-              resolvedPatientId.isNotEmpty ? resolvedPatientId : null,
+          patientId: resolvedPatientId.isNotEmpty ? resolvedPatientId : null,
         );
       } catch (e, st) {
         if (kDebugMode) {
@@ -863,7 +862,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
     if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
       final res = await SupabasePatientRepository.instance.bookAppointment(
         context: null,
-        appointmentId: payload['appointmentId'] as String? ?? 'app_${DateTime.now().millisecondsSinceEpoch}',
+        appointmentId: payload['appointmentId'] as String? ??
+            'app_${DateTime.now().millisecondsSinceEpoch}',
         doctorId: payload['doctorId'] as String,
         doctorName: payload['doctorName'] as String? ?? '',
         specialization: payload['specialization'] as String? ?? '',
@@ -871,7 +871,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
         patientName: payload['patientName'] as String? ?? '',
         patientAge: payload['patientAge'] as int? ?? 30,
         patientGender: payload['patientGender'] as String? ?? 'other',
-        dateTime: DateTime.tryParse(payload['dateTime'] as String? ?? '') ?? DateTime.now(),
+        dateTime: DateTime.tryParse(payload['dateTime'] as String? ?? '') ??
+            DateTime.now(),
         slotLabel: payload['slotLabel'] as String? ?? '',
         visitType: payload['visitType'] as String? ?? 'newVisit',
         clinicName: payload['clinicName'] as String?,
@@ -880,17 +881,11 @@ class SharedAppointmentsStore extends ChangeNotifier {
       return res;
     }
 
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError(
-        'Could not save appointment. Firebase is not available.',
-      );
-    }
-    final callable = FirebaseFunctions.instanceFor(region: 'asia-south1')
-        .httpsCallable('bookAppointment');
-    final response = await callable.call(payload);
-    final data = response.data;
-    if (data is Map) return Map<String, dynamic>.from(data);
-    throw StateError('Booking did not return an appointment.');
+    // Booking runs only through the Postgres RPC (book_appointment_atomic); the legacy
+    // Firestore `bookAppointment` callable was removed.
+    throw StateError(
+      'Could not save appointment. Database connection is not ready.',
+    );
   }
 
   Future<Map<String, dynamic>> _callRescheduleAppointment(
@@ -921,17 +916,10 @@ class SharedAppointmentsStore extends ChangeNotifier {
       return {'ok': true, 'appointmentId': appointmentId};
     }
 
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError(
-        'Could not save appointment. Firebase is not available.',
-      );
-    }
-    final callable = FirebaseFunctions.instanceFor(region: 'asia-south1')
-        .httpsCallable('rescheduleAppointment');
-    final response = await callable.call(payload);
-    final data = response.data;
-    if (data is Map) return Map<String, dynamic>.from(data);
-    throw StateError('Could not reschedule this appointment.');
+    // Reschedule runs only through reschedule_appointment_atomic; the legacy callable was removed.
+    throw StateError(
+      'Could not reschedule this appointment. Database connection is not ready.',
+    );
   }
 
   static List<String> _normalizeTags(List<String> raw) {
@@ -1053,9 +1041,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
     final trimmedSlot = newSlotLabel.trim();
     final newDateTime = _resolveRescheduleDateTime(newDate, trimmedSlot);
     _assertSlotDateTimeConsistent(newDateTime, trimmedSlot);
-    final appointmentId = old.appointmentId.trim().isNotEmpty
-        ? old.appointmentId.trim()
-        : old.id;
+    final appointmentId =
+        old.appointmentId.trim().isNotEmpty ? old.appointmentId.trim() : old.id;
     final result = await _callRescheduleAppointment({
       'appointmentId': appointmentId,
       'dateTime': newDateTime.toIso8601String(),

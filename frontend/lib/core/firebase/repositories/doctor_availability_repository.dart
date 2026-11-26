@@ -18,12 +18,12 @@ class DoctorAvailabilityRepository {
     bool preferCache = true,
   }) async {
     return SupabaseDoctorAvailabilityRepository.instance
-          .fetch(doctorId, preferCache: preferCache);
+        .fetch(doctorId, preferCache: preferCache);
   }
 
   Future<void> save(String doctorId, DoctorAvailability schedule) async {
     return SupabaseDoctorAvailabilityRepository.instance
-          .save(doctorId, schedule);
+        .save(doctorId, schedule);
   }
 
   List<DateTime> nextBookableDays({int count = 7}) {

@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 const DB_NAME = process.env.FRESH_LOCAL_DB_NAME || 'doctornect_fresh_zero';
 const MEDICAL_TABLES = [
@@ -108,7 +109,7 @@ async function main() {
 
   const client = new Client({
     connectionString: url,
-    ssl: url.includes('supabase') ? { rejectUnauthorized: false } : undefined,
+    ssl: url.includes('supabase') ? stagingPgSsl() : undefined,
   });
   await client.connect();
   const report = await audit(client);

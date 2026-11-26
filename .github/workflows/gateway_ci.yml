@@ -12,6 +12,9 @@ on:
       - 'services/api-gateway/**'
       - '.github/workflows/gateway_ci.yml'
 
+permissions:
+  contents: read
+
 jobs:
   test-and-build:
     name: Test & Build Gateway Container
@@ -45,6 +48,11 @@ jobs:
           context: ./services/api-gateway
           file: ./services/api-gateway/Dockerfile
           push: false
+          load: true
           tags: doctornect/api-gateway:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # The image ships only src/: every require must resolve inside it (a missing module crash-loops ECS).
+      - name: Gateway modules load inside the image
+        run: docker run --rm --entrypoint node doctornect/api-gateway:latest -e "require('./src/server.js'); console.log('gateway modules OK')"

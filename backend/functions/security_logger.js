@@ -1,11 +1,9 @@
-require('./firestore_forbidden_guard');
 'use strict';
 
-const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const crypto = require('crypto');
 
 /**
- * Structured security logging for Cloud Logging + optional Firestore audit trail.
+ * Structured security logging for Cloud Logging + Postgres security_events audit trail.
  * Search in Google Cloud Logging with: jsonPayload.securityEvent="true"
  */
 
@@ -23,11 +21,7 @@ function hashIdentifier(value) {
 function baseFields(request, extra = {}) {
   const ip = (() => {
     try {
-      const raw = request?.rawRequest;
-      if (!raw) return 'unknown';
-      const forwarded = raw.headers?.['x-forwarded-for'];
-      if (forwarded) return String(forwarded).split(',')[0].trim();
-      return raw.ip || raw.socket?.remoteAddress || 'unknown';
+      return require('./src/net/client_ip').clientIpFromRawRequest(request?.rawRequest);
     } catch (_) {
       return 'unknown';
     }
@@ -71,9 +65,7 @@ function emit(severity, category, action, fields) {
  */
 async function persistSecurityEvent(payload) {
   try {
-    const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
-    const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
-    if (isCutover) {
+    {
       const { getSupabaseAdminClient } = require('./caller_identity');
       const sb = getSupabaseAdminClient();
       if (sb) {
@@ -93,18 +85,8 @@ async function persistSecurityEvent(payload) {
           created_at: payload.timestamp || new Date().toISOString(),
           expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         });
-        return;
       }
     }
-
-    const { getLegacyFirestoreDb } = require('./legacy_db');
-    const db = getLegacyFirestoreDb();
-    if (!db) return;
-    await db.collection('security_events').add({
-      ...payload,
-      createdAt: FieldValue.serverTimestamp(),
-      expiresAt: Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
-    });
   } catch (_) {
     // Non-fatal
   }

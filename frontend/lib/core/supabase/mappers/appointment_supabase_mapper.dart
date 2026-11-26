@@ -87,9 +87,8 @@ abstract final class AppointmentSupabaseMapper {
       var doctorStatus = _parseDoctorStatus(row['doctor_status'] as String?);
       final isCancelled = patientStatusRaw == 'cancelled' ||
           doctorStatus == AppointmentStatus.cancelled;
-      final cancellationReason = isCancelled
-          ? (row['cancellation_reason'] as String?)
-          : null;
+      final cancellationReason =
+          isCancelled ? (row['cancellation_reason'] as String?) : null;
       if (patientStatusRaw == 'cancelled') {
         doctorStatus = AppointmentStatus.cancelled;
       }

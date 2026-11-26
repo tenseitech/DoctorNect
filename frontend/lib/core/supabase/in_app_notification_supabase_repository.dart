@@ -24,8 +24,8 @@ class InAppNotificationSupabaseRepository {
   static Future<void> Function(String notificationId)? _debugMarkReadOverride;
 
   @visibleForTesting
-  static Future<void> Function(String notificationId)? get debugMarkReadOverride =>
-      _debugMarkReadOverride;
+  static Future<void> Function(String notificationId)?
+      get debugMarkReadOverride => _debugMarkReadOverride;
 
   @visibleForTesting
   static set debugMarkReadOverride(

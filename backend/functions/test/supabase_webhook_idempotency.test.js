@@ -5,9 +5,6 @@ const assert = require('node:assert/strict');
 const {
   _safeCompareSecrets: safeCompareSecrets,
   _supabaseDatabaseWebhookHandler: supabaseDatabaseWebhookHandler,
-  _isDoctorPatientSupabasePrimary: isDoctorPatientSupabasePrimary,
-  _resetRemoteConfigCache: resetRemoteConfigCache,
-  _setMockRemoteConfigTemplate: setMockRemoteConfigTemplate,
 } = require('../index');
 
 test('Timing-safe secret comparison (safeCompareSecrets)', () => {
@@ -229,34 +226,11 @@ test('Dual-write loop guard simulation: single write does not ping-pong', async 
   assert.equal(isLoopOrigin, true, 'Supabase reverse bridge must drop write originating from Firestore');
 });
 
-test('Postgres-only: isDoctorPatientSupabasePrimary is always true (no Firestore dual-write path)', async () => {
-  resetRemoteConfigCache();
-  try {
-    setMockRemoteConfigTemplate(async () => ({
-      parameters: {
-        use_supabase_db_doctor_patient: { defaultValue: { value: 'false' } },
-      },
-    }));
-    resetRemoteConfigCache();
-    assert.equal(await isDoctorPatientSupabasePrimary(), true);
-
-    let firestoreTriggerFired = false;
-    let supabaseWebhookFired = false;
-
-    if (!(await isDoctorPatientSupabasePrimary())) {
-      firestoreTriggerFired = true;
-    }
-    if (await isDoctorPatientSupabasePrimary()) {
-      supabaseWebhookFired = true;
-    }
-
-    assert.equal(firestoreTriggerFired, false, 'Firestore FCM triggers are removed in postgres-only architecture');
-    assert.equal(supabaseWebhookFired, true, 'Supabase webhook is the notification path');
-    assert.equal((firestoreTriggerFired ? 1 : 0) + (supabaseWebhookFired ? 1 : 0), 1);
-  } finally {
-    setMockRemoteConfigTemplate(null);
-    resetRemoteConfigCache();
+test('Postgres-only: Firestore dual-write flag modules are gone', () => {
+  for (const mod of ['../sync_flags', '../legacy_db', '../firestore_forbidden_guard', '../cross_role_sync']) {
+    assert.throws(() => require(mod), /Cannot find module/);
   }
+  assert.equal(require('../index')._isDoctorPatientSupabasePrimary, undefined);
 });
 
 

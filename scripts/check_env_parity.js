@@ -42,6 +42,7 @@ const SYSTEM_ENV_VARS = new Set([
 
 // Test-only emulator / mock variables used in test files
 const TEST_ONLY_VARS = new Set([
+  'DOCTORNECT_TEST_HARNESS',
   'FIREBASE_AUTH_EMULATOR_HOST',
   'FIRESTORE_EMULATOR_HOST',
   'FIREBASE_STORAGE_EMULATOR_HOST',
@@ -89,6 +90,9 @@ const DEV_SCRIPT_VARS = new Set([
   'SUPABASE_ENV',
   'STAGING_SUPABASE_URL',
   'STAGING_SUPABASE_DB_URL',
+  'DEMO_SEED_TARGET',
+  'AWS_PROFILE',
+  'NODE_EXTRA_CA_CERTS',
 ]);
 
 function getFilesRecursive(dir, extensions, ignoreDirs = ['node_modules', '.git', 'build', '.dart_tool', '.vscode']) {

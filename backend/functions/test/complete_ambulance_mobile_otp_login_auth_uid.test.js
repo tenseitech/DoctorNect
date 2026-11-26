@@ -1,443 +1,136 @@
 'use strict';
 
+/**
+ * completeAmbulanceMobileOtpLogin binds the caller's Firebase uid to the ambulance row only after a
+ * valid, single-use Redis OTP session for the same mobile. Postgres-only (ambulances.auth_uid).
+ */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('crypto');
 const { HttpsError } = require('firebase-functions/v2/https');
-const {
-  completeAmbulanceMobileOtpLogin,
-} = require('../registration_otp');
+const { completeAmbulanceMobileOtpLogin, otpSessionRedisKey } = require('../registration_otp');
+const { setRedisClientForTesting } = require('../redis');
+const { createMemoryRedis } = require('./helpers/memory_redis');
+const { setDatabaseClientForTesting } = require('../src/db/client');
+const { createMemoryPostgrest } = require('./helpers/memory_postgrest');
 
-let origLegacyCutover;
-test.beforeEach(() => {
-  origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
-  process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
-  try {
-    const { _resetRemoteConfigCache } = require('../sync_flags');
-    _resetRemoteConfigCache();
-  } catch (_) {}
+const validMobile = '9876543210';
+const driverUid = 'driver-auth-uid-456';
+const ambId = 'amb-reg-1001';
+
+let redis;
+let pg;
+
+async function setup({ ambulance = {}, session = {}, noSession = false } = {}) {
+  redis = createMemoryRedis();
+  setRedisClientForTesting(redis);
+  pg = createMemoryPostgrest({
+    ambulances: [{
+      ambulance_id: ambId,
+      phone: '+919876543210',
+      username: 'city_ambulance',
+      service_name: 'City Ambulance Care',
+      auth_uid: '',
+      ...ambulance,
+    }],
+  });
+  setDatabaseClientForTesting(pg);
+  const sessionId = crypto.randomBytes(16).toString('hex');
+  if (!noSession) {
+    await redis.set(otpSessionRedisKey(sessionId), JSON.stringify({
+      role: 'ambulance',
+      mobileDigits: validMobile,
+      mobileVerified: true,
+      consumed: false,
+      expiresAt: new Date(Date.now() + 300000).toISOString(),
+      ...session,
+    }), 'EX', 900);
+  }
+  return sessionId;
+}
+
+const ambRow = () => pg.rows('ambulances').find((r) => r.ambulance_id === ambId);
+const ambWrites = () => pg.calls.filter((c) => c.table === 'ambulances' && c.mode !== 'select');
+const call = (sessionId, auth = { uid: driverUid }, mobile = validMobile) =>
+  completeAmbulanceMobileOtpLogin(null, { mobile, sessionId }, auth);
+
+test.after(() => {
+  setDatabaseClientForTesting(createMemoryPostgrest());
+  setRedisClientForTesting(createMemoryRedis());
 });
 
-test.afterEach(() => {
-  if (origLegacyCutover === undefined) delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
-  else process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacyCutover;
-  try {
-    const { _resetRemoteConfigCache } = require('../sync_flags');
-    _resetRemoteConfigCache();
-  } catch (_) {}
+test('(a) valid session sets auth_uid on the ambulance row', async () => {
+  const sid = await setup();
+  const result = await call(sid);
+  assert.equal(result.ok, true);
+  assert.equal(result.driverId, ambId);
+  assert.equal(ambRow().auth_uid, driverUid);
+  assert.equal(ambWrites().length, 1);
+  assert.equal(ambWrites()[0].payload.auth_uid, driverUid);
 });
 
-function createFakeDb(initialDocs = {}, { customQueryHandler } = {}) {
-  const docs = new Map();
-  for (const [key, val] of Object.entries(initialDocs)) {
-    docs.set(key, { ...val });
-  }
-  const writeLog = [];
+test('(b) same uid is a no-op: no write to the ambulance row', async () => {
+  const sid = await setup({ ambulance: { auth_uid: driverUid } });
+  const result = await call(sid);
+  assert.equal(result.ok, true);
+  assert.equal(ambWrites().length, 0);
+});
 
-  function getDoc(path) {
-    return docs.get(path);
-  }
+test('(c) stale auth_uid is replaced by the new caller uid', async () => {
+  const sid = await setup({ ambulance: { auth_uid: 'old-stale-device-uid' } });
+  await call(sid);
+  assert.equal(ambRow().auth_uid, driverUid);
+  assert.equal(ambWrites().length, 1);
+});
 
-  function setDoc(path, data, options = {}) {
-    writeLog.push({ action: 'set', path, data: { ...data }, options });
-    if (options.merge && docs.has(path)) {
-      docs.set(path, { ...docs.get(path), ...data });
-    } else {
-      docs.set(path, { ...data });
-    }
-  }
-
-  function deleteDoc(path) {
-    writeLog.push({ action: 'delete', path });
-    docs.delete(path);
-  }
-
-  return {
-    docs,
-    writeLog,
-    collection(colName) {
-      return {
-        doc(docId) {
-          const path = `${colName}/${docId}`;
-          return {
-            id: docId,
-            path,
-            async get() {
-              const data = getDoc(path);
-              return {
-                id: docId,
-                exists: data !== undefined && data !== null,
-                data: () => (data ? { ...data } : undefined),
-              };
-            },
-            async set(data, options = {}) {
-              setDoc(path, data, options);
-            },
-            async delete() {
-              deleteDoc(path);
-            },
-          };
-        },
-        where(field, op, val) {
-          return {
-            limit(n) {
-              return {
-                async get() {
-                  if (customQueryHandler) {
-                    const customResult = customQueryHandler(colName, field, op, val, n);
-                    if (customResult !== undefined) return customResult;
-                  }
-                  const matchingDocs = [];
-                  for (const [p, d] of docs.entries()) {
-                    if (p.startsWith(`${colName}/`)) {
-                      if (op === '==' && d && d[field] === val) {
-                        const id = p.slice(colName.length + 1);
-                        matchingDocs.push({
-                          id,
-                          data: () => ({ ...d }),
-                        });
-                        if (matchingDocs.length >= n) break;
-                      }
-                    }
-                  }
-                  return {
-                    empty: matchingDocs.length === 0,
-                    docs: matchingDocs,
-                  };
-                },
-              };
-            },
-          };
-        },
-      };
-    },
-    async runTransaction(txFn) {
-      const pendingSets = [];
-      const pendingDeletes = [];
-      const tx = {
-        async get(ref) {
-          return await ref.get();
-        },
-        set(ref, data, options = {}) {
-          pendingSets.push({ ref, data, options });
-        },
-        delete(ref) {
-          pendingDeletes.push(ref);
-        },
-      };
-      const result = await txFn(tx);
-      for (const d of pendingDeletes) {
-        await d.delete();
-      }
-      for (const s of pendingSets) {
-        await s.ref.set(s.data, s.options);
-      }
-      return result;
-    },
-  };
-}
-
-function futureTimestamp(msFromNow = 300000) {
-  const d = new Date(Date.now() + msFromNow);
-  return {
-    toDate: () => d,
-  };
-}
-
-function pastTimestamp(msAgo = 60000) {
-  const d = new Date(Date.now() - msAgo);
-  return {
-    toDate: () => d,
-  };
-}
-
-test.describe('completeAmbulanceMobileOtpLogin server-side authUid binding', () => {
-  const validMobile = '9876543210';
-  const driverUid = 'driver-auth-uid-456';
-  const ambDocId = 'amb-reg-1001';
-
-
-  function validSetup(overrides = {}) {
-    return {
-      [`ambulances/${ambDocId}`]: {
-        phone: '+919876543210',
-        username: 'city_ambulance',
-        serviceName: 'City Ambulance Care',
-        authUid: '',
-        ...(overrides.ambulance || {}),
-      },
-      'otp_verification_sessions/session-valid-01': {
-        role: 'ambulance',
-        mobileDigits: validMobile,
-        mobileVerified: true,
-        consumed: false,
-        expiresAt: futureTimestamp(300000),
-        ...(overrides.session || {}),
-      },
-    };
-  }
-
-  test('(a) valid session sets authUid on the ambulance document', async () => {
-    const db = createFakeDb(validSetup());
-    const auth = { uid: driverUid };
-
-    const result = await completeAmbulanceMobileOtpLogin(
-      db,
-      { mobile: validMobile, sessionId: 'session-valid-01' },
-      auth,
-    );
-
-    assert.equal(result.ok, true);
-    assert.equal(result.driverId, ambDocId);
-
-    const ambDoc = db.docs.get(`ambulances/${ambDocId}`);
-    assert.equal(ambDoc.authUid, driverUid);
-
-    const ambulanceWrites = db.writeLog.filter(
-      (w) => w.action === 'set' && w.path === `ambulances/${ambDocId}`,
-    );
-    assert.equal(ambulanceWrites.length, 1);
-    assert.deepEqual(ambulanceWrites[0].data, { authUid: driverUid });
-    assert.deepEqual(ambulanceWrites[0].options, { merge: true });
-  });
-
-  test('(b) same uid is a no-op: does not execute write to ambulance document', async () => {
-    const db = createFakeDb(
-      validSetup({
-        ambulance: { authUid: driverUid },
-      }),
-    );
-    const auth = { uid: driverUid };
-
-    const result = await completeAmbulanceMobileOtpLogin(
-      db,
-      { mobile: validMobile, sessionId: 'session-valid-01' },
-      auth,
-    );
-
-    assert.equal(result.ok, true);
-    assert.equal(result.driverId, ambDocId);
-
-    const ambulanceWrites = db.writeLog.filter(
-      (w) => w.action === 'set' && w.path === `ambulances/${ambDocId}`,
-    );
-    assert.equal(ambulanceWrites.length, 0, 'No write should occur when authUid already matches');
-  });
-
-  test('(c) stale authUid is replaced by the new caller authUid', async () => {
-    const db = createFakeDb(
-      validSetup({
-        ambulance: { authUid: 'old-stale-device-uid' },
-      }),
-    );
-    const auth = { uid: driverUid };
-
-    const result = await completeAmbulanceMobileOtpLogin(
-      db,
-      { mobile: validMobile, sessionId: 'session-valid-01' },
-      auth,
-    );
-
-    assert.equal(result.ok, true);
-    const ambDoc = db.docs.get(`ambulances/${ambDocId}`);
-    assert.equal(ambDoc.authUid, driverUid);
-
-    const ambulanceWrites = db.writeLog.filter(
-      (w) => w.action === 'set' && w.path === `ambulances/${ambDocId}`,
-    );
-    assert.equal(ambulanceWrites.length, 1);
-    assert.deepEqual(ambulanceWrites[0].data, { authUid: driverUid });
-  });
-
-  test('(d) invalid/mismatched/expired session throws and writes nothing to ambulance', async () => {
-    // 1. Missing session doc -> throws failed-precondition
-    {
-      const db = createFakeDb(validSetup());
-      const auth = { uid: driverUid };
-
-      await assert.rejects(
-        () => completeAmbulanceMobileOtpLogin(
-          db,
-          { mobile: validMobile, sessionId: 'nonexistent-session' },
-          auth,
-        ),
-        (err) => {
-          assert.ok(err instanceof HttpsError);
-          assert.equal(err.code, 'failed-precondition');
-          return true;
-        },
-      );
-      assert.equal(db.docs.get(`ambulances/${ambDocId}`).authUid, '');
-      const ambWrites = db.writeLog.filter((w) => w.path === `ambulances/${ambDocId}`);
-      assert.equal(ambWrites.length, 0);
-    }
-
-    // 2. Expired session doc -> throws deadline-exceeded
-    {
-      const db = createFakeDb(validSetup({
-        session: { expiresAt: pastTimestamp(60000) },
-      }));
-      const auth = { uid: driverUid };
-
-      await assert.rejects(
-        () => completeAmbulanceMobileOtpLogin(
-          db,
-          { mobile: validMobile, sessionId: 'session-valid-01' },
-          auth,
-        ),
-        (err) => {
-          assert.ok(err instanceof HttpsError);
-          assert.equal(err.code, 'deadline-exceeded');
-          return true;
-        },
-      );
-      assert.equal(db.docs.get(`ambulances/${ambDocId}`).authUid, '');
-      const ambWrites = db.writeLog.filter((w) => w.path === `ambulances/${ambDocId}`);
-      assert.equal(ambWrites.length, 0);
-    }
-
-    // 3. Mismatched session role -> throws failed-precondition
-    {
-      const db = createFakeDb(validSetup({
-        session: { role: 'patient' },
-      }));
-      const auth = { uid: driverUid };
-
-      await assert.rejects(
-        () => completeAmbulanceMobileOtpLogin(
-          db,
-          { mobile: validMobile, sessionId: 'session-valid-01' },
-          auth,
-        ),
-        (err) => {
-          assert.ok(err instanceof HttpsError);
-          assert.equal(err.code, 'failed-precondition');
-          return true;
-        },
-      );
-      assert.equal(db.docs.get(`ambulances/${ambDocId}`).authUid, '');
-      const ambWrites = db.writeLog.filter((w) => w.path === `ambulances/${ambDocId}`);
-      assert.equal(ambWrites.length, 0);
-    }
-
-    // 4. Mismatched mobile in session -> throws permission-denied
-    {
-      const db = createFakeDb(validSetup({
-        session: { mobileDigits: '9111111111' },
-      }));
-      const auth = { uid: driverUid };
-
-      await assert.rejects(
-        () => completeAmbulanceMobileOtpLogin(
-          db,
-          { mobile: validMobile, sessionId: 'session-valid-01' },
-          auth,
-        ),
-        (err) => {
-          assert.ok(err instanceof HttpsError);
-          assert.equal(err.code, 'permission-denied');
-          return true;
-        },
-      );
-      assert.equal(db.docs.get(`ambulances/${ambDocId}`).authUid, '');
-      const ambWrites = db.writeLog.filter((w) => w.path === `ambulances/${ambDocId}`);
-      assert.equal(ambWrites.length, 0);
-    }
-  });
-
-  test('(e) unauthenticated (auth null) throws unauthenticated', async () => {
-    const db = createFakeDb(validSetup());
-
-    await assert.rejects(
-      () => completeAmbulanceMobileOtpLogin(
-        db,
-        { mobile: validMobile, sessionId: 'session-valid-01' },
-        null,
-      ),
-      (err) => {
-        assert.ok(err instanceof HttpsError);
-        assert.equal(err.code, 'unauthenticated');
-        return true;
-      },
-    );
-    assert.equal(db.docs.get(`ambulances/${ambDocId}`).authUid, '');
-    const ambWrites = db.writeLog.filter((w) => w.path === `ambulances/${ambDocId}`);
-    assert.equal(ambWrites.length, 0);
-  });
-
-  test('(f) phone on doc mismatch throws permission-denied and writes nothing', async () => {
-    const db = createFakeDb(
-      validSetup({
-        ambulance: { phone: '+919999999999' },
-      }),
-      {
-        customQueryHandler: (colName, field, op, val) => {
-          if (colName === 'ambulances' && field === 'phone') {
-            return {
-              empty: false,
-              docs: [
-                {
-                  id: ambDocId,
-                  data: () => ({
-                    phone: '+919999999999',
-                    username: 'city_ambulance',
-                    serviceName: 'City Ambulance Care',
-                    authUid: '',
-                  }),
-                },
-              ],
-            };
-          }
-        },
-      },
-    );
-    const auth = { uid: driverUid };
-
-    await assert.rejects(
-      () => completeAmbulanceMobileOtpLogin(
-        db,
-        { mobile: validMobile, sessionId: 'session-valid-01' },
-        auth,
-      ),
-      (err) => {
-        assert.ok(err instanceof HttpsError);
-        assert.equal(err.code, 'permission-denied');
-        assert.equal(err.message, 'Registered mobile does not match ambulance profile.');
-        return true;
-      },
-    );
-
-    const ambWrites = db.writeLog.filter((w) => w.path === `ambulances/${ambDocId}`);
-    assert.equal(ambWrites.length, 0);
-    assert.equal(db.docs.get(`ambulances/${ambDocId}`).authUid, '');
-  });
-
-  test('(g) no matching doc -> not-found and no write', async () => {
-    const db = createFakeDb({
-      'otp_verification_sessions/session-valid-01': {
-        role: 'ambulance',
-        mobileDigits: validMobile,
-        mobileVerified: true,
-        consumed: false,
-        expiresAt: futureTimestamp(300000),
-      },
+test('(d) missing / expired / wrong-role / wrong-mobile / replayed session writes nothing', async () => {
+  const expectReject = async (sid, code, mobile) => {
+    await assert.rejects(() => call(sid, undefined, mobile), (err) => {
+      assert.ok(err instanceof HttpsError);
+      assert.equal(err.code, code);
+      return true;
     });
-    const auth = { uid: driverUid };
+    assert.equal(ambRow().auth_uid, '');
+    assert.equal(ambWrites().length, 0);
+  };
+  await expectReject(await setup({ noSession: true }), 'failed-precondition');
+  await expectReject(await setup({ session: { expiresAt: new Date(Date.now() - 60000).toISOString() } }), 'deadline-exceeded');
+  await expectReject(await setup({ session: { role: 'patient' } }), 'failed-precondition');
+  await expectReject(await setup({ session: { mobileDigits: '9111111111' } }), 'permission-denied');
 
-    await assert.rejects(
-      () => completeAmbulanceMobileOtpLogin(
-        db,
-        { mobile: validMobile, sessionId: 'session-valid-01' },
-        auth,
-      ),
-      (err) => {
-        assert.ok(err instanceof HttpsError);
-        assert.equal(err.code, 'not-found');
-        assert.equal(err.message, 'No ambulance account found for this mobile number.');
-        return true;
-      },
-    );
+  // Replay: a consumed session cannot bind a second device.
+  const sid = await setup();
+  await call(sid);
+  await assert.rejects(() => call(sid, { uid: 'attacker-uid' }), (err) => err.code === 'failed-precondition');
+  assert.equal(ambRow().auth_uid, driverUid);
+});
 
-    const ambWrites = db.writeLog.filter((w) => w.path.startsWith('ambulances/'));
-    assert.equal(ambWrites.length, 0);
-  });
+test('(e) unauthenticated caller is rejected before any session is consumed', async () => {
+  const sid = await setup();
+  await assert.rejects(() => call(sid, null), (err) => err.code === 'unauthenticated');
+  assert.equal(ambWrites().length, 0);
+  assert.ok(await redis.get(otpSessionRedisKey(sid)), 'session left intact');
+});
+
+test('(f) row whose phone differs from the verified mobile is rejected (defense in depth)', async () => {
+  const sid = await setup();
+  // Simulate a lookup that returns a row with a different phone (e.g. data drift).
+  const realFrom = pg.from.bind(pg);
+  pg.from = (t) => {
+    const b = realFrom(t);
+    if (t !== 'ambulances') return b;
+    const origIn = b.in.bind(b);
+    b.in = () => origIn('ambulance_id', [ambId]);
+    return b;
+  };
+  pg.rows('ambulances')[0].phone = '+919999999999';
+  await assert.rejects(() => call(sid), (err) => err.code === 'permission-denied');
+  assert.equal(ambWrites().length, 0);
+});
+
+test('(g) no ambulance registered for the number -> not-found, no write', async () => {
+  const sid = await setup({ ambulance: { phone: '+919000000000' } });
+  await assert.rejects(() => call(sid), (err) => err.code === 'not-found');
+  assert.equal(ambWrites().length, 0);
 });

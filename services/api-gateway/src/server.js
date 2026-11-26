@@ -1,6 +1,14 @@
 'use strict';
 
-require('../../../scripts/lib/bootstrap_root_env').loadRootEnv();
+// Local development only: load the repo-root .env when the repo is around. The container image
+// ships only src/ and gets its environment from ECS, so a missing loader is expected there.
+if (process.env.DOCTORNECT_TEST_HARNESS !== '1') {
+  try {
+    require('../../../scripts/lib/bootstrap_root_env').loadRootEnv();
+  } catch (err) {
+    if (err && err.code !== 'MODULE_NOT_FOUND') throw err;
+  }
+}
 const http = require('node:http');
 const path = require('node:path');
 const config = require('./config');
@@ -11,7 +19,10 @@ const { mintPostgrestJwt } = require('./jwt_minter');
 const { secureCompare, hashUid, RateLimiter, emitAuditLog } = require('./security');
 const { proxyToPostgrest } = require('./proxy');
 const { defaultJwksClient } = require('./jwks');
-const { resolveDataPlane, assertClientRoutingHintIgnored } = require('../../../scripts/lib/demo_routing');
+const { resolveDataPlane, assertClientRoutingHintIgnored } = require('./shared/demo_routing');
+const { assertRdsPathAllowed } = require('./shared/rds_demo_uid_guard');
+const { evaluateDemoPlaneMarker } = require('./shared/demo_plane_marker');
+const { writeContainsDemoMobile } = require('./demo_write_guard');
 
 function extractEmbeddedRelations(queryString) {
   if (!queryString) return [];
@@ -99,17 +110,11 @@ function createGatewayServer(overrides = {}) {
     let clientRole = 'anon';
     let clientUidHash = null;
 
-    // Resolve client IP using rightmost trusted hop behind reverse proxy / ALB
-    let clientIp = 'unknown';
-    const xff = req.headers['x-forwarded-for'];
-    if (typeof xff === 'string' && xff.trim()) {
-      const hops = xff.split(',').map((h) => h.trim()).filter(Boolean);
-      if (hops.length > 0) {
-        clientIp = hops[hops.length - 1]; // rightmost trusted hop behind ALB
-      }
-    } else if (req.socket && req.socket.remoteAddress) {
-      clientIp = req.socket.remoteAddress;
-    }
+    // Client IP = TRUSTED_PROXY_HOPS-th X-Forwarded-For entry from the right (ALB appends: 1).
+    const clientIp = require('./client_ip').clientIpFromForwardedFor(
+      req.headers['x-forwarded-for'],
+      req.socket?.remoteAddress,
+    );
 
     // Helper to send response and log
     const corsOrigin = resolveCorsOrigin(req, cfg.corsAllowedOrigins || []);
@@ -120,6 +125,11 @@ function createGatewayServer(overrides = {}) {
 
       const responseHeaders = {
         'Content-Type': 'application/json',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Cache-Control': 'no-store',
+        'Strict-Transport-Security': 'max-age=63072000; includeSubDomains',
+        'Referrer-Policy': 'no-referrer',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type, apikey, Prefer, Range, x-client-info',
         ...headers,
@@ -192,7 +202,8 @@ function createGatewayServer(overrides = {}) {
             status: upstream.status,
           };
         } catch (err) {
-          postgrest = { ok: false, status: 'unreachable', message: err.message };
+          // Do not echo internal hostnames / network errors to unauthenticated callers.
+          postgrest = { ok: false, status: 'unreachable' };
         }
       }
       const healthy = postgrest.ok;
@@ -227,7 +238,7 @@ function createGatewayServer(overrides = {}) {
       if (err.message === 'Payload Too Large') {
         return sendJson(413, { error: 'Payload Too Large', message: `Request body exceeds ${cfg.maxBodySizeBytes} bytes.` });
       }
-      return sendJson(400, { error: 'Bad Request', message: `Error reading request body: ${err.message}` });
+      return sendJson(400, { error: 'Bad Request', message: 'Error reading request body.' });
     }
 
     const hintCheck = assertClientRoutingHintIgnored(req.headers);
@@ -326,6 +337,12 @@ function createGatewayServer(overrides = {}) {
           });
         }
       } catch (err) {
+        // Server-side only — never log Authorization / apikey values (SEC-012).
+        const authFailDetail = {
+          code: err && err.code ? String(err.code) : 'auth_verify_failed',
+          reason: err && err.message ? String(err.message).slice(0, 240) : 'unknown',
+        };
+        console.warn('[Auth Gateway] Firebase token verification failed', authFailDetail);
         // Unauthenticated due to invalid token: apply per-IP rate limit before error
         if (!rateLimiter.isAllowed(`ip:${clientIp}`)) {
           return sendJson(429, {
@@ -335,7 +352,7 @@ function createGatewayServer(overrides = {}) {
         }
         return sendJson(401, {
           error: 'Unauthorized',
-          message: `Authentication failed: ${err.message}`,
+          message: 'Authentication failed.',
         });
       }
     } else {
@@ -426,12 +443,27 @@ function createGatewayServer(overrides = {}) {
     let targetBaseUrl = cfg.postgrestUrl;
     let jwtSecret = cfg.postgrestJwtSecret;
     let jwtAud = cfg.postgrestJwtAud;
-    if (appEnv === 'production' && cfg.demoRealRoutingEnabled && clientRole !== 'service_role') {
-      const plane = resolveDataPlane({
-        appEnv,
-        firebaseUid: authenticatedPayload?.uid || null,
+    let dataPlane = 'rds';
+    // Server-set demo-plane marker (demo ambulance on an anonymous session, shared/demo_plane_marker.js),
+    // read only from the verified Firebase token. Present but not valid: refuse, never fall back to RDS.
+    const markerVerdict = clientRole !== 'service_role' && authenticatedPayload
+      ? evaluateDemoPlaneMarker(authenticatedPayload.rawPayload)
+      : 'none';
+    if (appEnv === 'production' && markerVerdict === 'invalid') {
+      return sendJson(401, {
+        error: 'Unauthorized',
+        message: 'Your demo session has expired. Please sign in again.',
       });
-      if (plane === 'supabase') {
+    }
+    if (appEnv === 'production' && clientRole !== 'service_role') {
+      if (cfg.demoRealRoutingEnabled) {
+        dataPlane = resolveDataPlane({
+          appEnv,
+          firebaseUid: authenticatedPayload?.uid || null,
+        });
+      }
+      if (markerVerdict === 'valid') dataPlane = 'supabase';
+      if (dataPlane === 'supabase') {
         if (!cfg.demoPostgrestUrl || !cfg.demoPostgrestJwtSecret) {
           return sendJson(503, {
             error: 'Service Unavailable',
@@ -442,6 +474,35 @@ function createGatewayServer(overrides = {}) {
         jwtSecret = cfg.demoPostgrestJwtSecret;
         jwtAud = cfg.demoPostgrestJwtAud;
       }
+    }
+
+    try {
+      if (appEnv === 'production') {
+        const onRdsUpstream = dataPlane === 'rds' || clientRole === 'service_role';
+        const writeMethod = ['POST', 'PATCH', 'PUT'].includes(String(req.method || '').toUpperCase());
+        if (dataPlane === 'rds' && clientRole !== 'service_role' && writeMethod && writeContainsDemoMobile(bodyBuf)) {
+          return sendJson(403, {
+            error: 'Forbidden',
+            message: 'This mobile number is reserved and cannot be used here.',
+          });
+        }
+        if (onRdsUpstream) {
+          assertRdsPathAllowed({
+            firebaseUid: authenticatedPayload?.uid || null,
+            clientRole,
+            subPath: cleanPath,
+            queryString: queryString || '',
+          });
+        }
+      }
+    } catch (guardErr) {
+      if (guardErr.code === 'demo_uid_rds_forbidden') {
+        return sendJson(guardErr.httpStatus || 403, {
+          error: 'Forbidden',
+          message: 'Demo accounts cannot use the production database.',
+        });
+      }
+      throw guardErr;
     }
 
     // Mint appropriate PostgREST JWT and proxy
@@ -501,6 +562,8 @@ function createGatewayServer(overrides = {}) {
 }
 
 if (require.main === module) {
+  const { assertProductionGatewayConfig } = require('./assert_production_config');
+  assertProductionGatewayConfig();
   const { server } = createGatewayServer();
   server.listen(config.port, config.host, () => {
     console.log(`[DoctorNect Auth Gateway] Listening on http://${config.host}:${config.port}`);

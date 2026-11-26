@@ -79,8 +79,7 @@ class MedicalDirectoryStore extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final page =
-          await MedicalDirectoryRepository.instance.fetchForDoctor(
+      final page = await MedicalDirectoryRepository.instance.fetchForDoctor(
         DoctorSession.loggedInDoctorId,
         startAfterCursor: _lastPageCursor,
         preferCache: preferCache,

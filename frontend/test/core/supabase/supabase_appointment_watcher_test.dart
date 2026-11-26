@@ -11,8 +11,11 @@ import 'package:medibond/features/patient/appointments/models/patient_appointmen
 /// 4. Latest cached items emitted immediately to new listeners
 void main() {
   group('Supabase Appointment Watcher State Machine Contract', () {
-    test('1. Error surfacing: exceptions during sync are emitted to listeners via addError', () async {
-      final controller = StreamController<List<DoctorNectAppointmentRecord>>.broadcast();
+    test(
+        '1. Error surfacing: exceptions during sync are emitted to listeners via addError',
+        () async {
+      final controller =
+          StreamController<List<DoctorNectAppointmentRecord>>.broadcast();
       final errors = <Object>[];
       final subscription = controller.stream.listen(
         (_) {},
@@ -35,9 +38,12 @@ void main() {
       await controller.close();
     });
 
-    test('2. Resync replaces cache: stale appointments are cleared, deleted rows disappear', () async {
+    test(
+        '2. Resync replaces cache: stale appointments are cleared, deleted rows disappear',
+        () async {
       final recordsMap = <String, DoctorNectAppointmentRecord>{};
-      final controller = StreamController<List<DoctorNectAppointmentRecord>>.broadcast();
+      final controller =
+          StreamController<List<DoctorNectAppointmentRecord>>.broadcast();
       final emittedLists = <List<DoctorNectAppointmentRecord>>[];
 
       final sub = controller.stream.listen((list) => emittedLists.add(list));
@@ -53,10 +59,12 @@ void main() {
       for (final r in initialFetch) {
         recordsMap[r.id] = r;
       }
-      controller.add(recordsMap.values.toList()..sort((a, b) => b.dateTime.compareTo(a.dateTime)));
+      controller.add(recordsMap.values.toList()
+        ..sort((a, b) => b.dateTime.compareTo(a.dateTime)));
 
       await pumpEventQueue();
-      expect(emittedLists.last.map((a) => a.id).toList(), containsAll(['apt_2', 'apt_1']));
+      expect(emittedLists.last.map((a) => a.id).toList(),
+          containsAll(['apt_2', 'apt_1']));
 
       // DB update: apt_2 was DELETED in database. Second fetch only returns apt_1 and new apt_3.
       final secondFetch = [
@@ -69,23 +77,30 @@ void main() {
       for (final r in secondFetch) {
         recordsMap[r.id] = r;
       }
-      controller.add(recordsMap.values.toList()..sort((a, b) => b.dateTime.compareTo(a.dateTime)));
+      controller.add(recordsMap.values.toList()
+        ..sort((a, b) => b.dateTime.compareTo(a.dateTime)));
 
       await pumpEventQueue();
       final latest = emittedLists.last;
       expect(latest.map((a) => a.id).toList(), equals(['apt_3', 'apt_1']));
-      expect(latest.any((a) => a.id == 'apt_2'), isFalse, reason: 'apt_2 was deleted and must disappear on resync');
+      expect(latest.any((a) => a.id == 'apt_2'), isFalse,
+          reason: 'apt_2 was deleted and must disappear on resync');
 
       await sub.cancel();
       await controller.close();
     });
 
-    test('3. CDC delete event removes deleted appointment from cache immediately', () async {
+    test(
+        '3. CDC delete event removes deleted appointment from cache immediately',
+        () async {
       final recordsMap = <String, DoctorNectAppointmentRecord>{
-        'apt_a': _fakeAppointment('apt_a', 'doc_1', DateTime(2026, 10, 20, 9, 0)),
-        'apt_b': _fakeAppointment('apt_b', 'doc_1', DateTime(2026, 10, 20, 10, 0)),
+        'apt_a':
+            _fakeAppointment('apt_a', 'doc_1', DateTime(2026, 10, 20, 9, 0)),
+        'apt_b':
+            _fakeAppointment('apt_b', 'doc_1', DateTime(2026, 10, 20, 10, 0)),
       };
-      final controller = StreamController<List<DoctorNectAppointmentRecord>>.broadcast();
+      final controller =
+          StreamController<List<DoctorNectAppointmentRecord>>.broadcast();
       final emitted = <List<DoctorNectAppointmentRecord>>[];
       final sub = controller.stream.listen((l) => emitted.add(l));
 
@@ -102,13 +117,17 @@ void main() {
       await controller.close();
     });
 
-    test('4. Immediate cache playback: new listeners receive cached state immediately', () async {
+    test(
+        '4. Immediate cache playback: new listeners receive cached state immediately',
+        () async {
       final recordsMap = <String, DoctorNectAppointmentRecord>{
-        'apt_cached': _fakeAppointment('apt_cached', 'doc_1', DateTime(2026, 10, 20, 10, 0)),
+        'apt_cached': _fakeAppointment(
+            'apt_cached', 'doc_1', DateTime(2026, 10, 20, 10, 0)),
       };
 
       late final StreamController<List<DoctorNectAppointmentRecord>> controller;
-      controller = StreamController<List<DoctorNectAppointmentRecord>>.broadcast(
+      controller =
+          StreamController<List<DoctorNectAppointmentRecord>>.broadcast(
         onListen: () {
           if (recordsMap.isNotEmpty && !controller.isClosed) {
             controller.add(recordsMap.values.toList());
@@ -129,7 +148,8 @@ void main() {
   });
 }
 
-DoctorNectAppointmentRecord _fakeAppointment(String id, String doctorId, DateTime dt) {
+DoctorNectAppointmentRecord _fakeAppointment(
+    String id, String doctorId, DateTime dt) {
   return DoctorNectAppointmentRecord(
     id: id,
     appointmentId: id,

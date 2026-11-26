@@ -8,8 +8,11 @@ const {
   assertProductionOtpHmacOnly,
   warnProductionOtpHmacFallback,
   assertProductionReviewOtpDisabled,
+  assertProductionAppCheckEnforcement,
   assertProductionNoPlaceholderSecrets,
   assertProductionCutoverBoot,
+  shouldRunCutoverBootAsserts,
+  assertProductionFirestoreForbidden,
 } = require('../src/db/assert_app_env');
 
 describe('assertAppEnvDatabaseRouting', () => {
@@ -87,12 +90,23 @@ describe('assertProductionRedisTls', () => {
 
   it('production allows rediss:// or TLS default with hostname', () => {
     process.env.APP_ENV = 'production';
+    process.env.REDIS_PASSWORD = 'unit-test-redis-auth';
     process.env.REDIS_HOST = 'rediss://cache.example:6380';
     assert.doesNotThrow(() => assertProductionRedisTls());
 
     process.env.REDIS_HOST = 'cache.internal';
     process.env.REDIS_TLS = 'true';
     assert.doesNotThrow(() => assertProductionRedisTls());
+    delete process.env.REDIS_PASSWORD;
+  });
+
+  it('production rejects Redis without AUTH password', () => {
+    process.env.APP_ENV = 'production';
+    process.env.REDIS_HOST = 'cache.internal';
+    process.env.REDIS_TLS = 'true';
+    delete process.env.REDIS_PASSWORD;
+    const { buildRedisOptions } = require('../src/config/redis');
+    assert.throws(() => buildRedisOptions(), (err) => err.code === 'REDIS_INSECURE_CONFIG');
   });
 
   it('staging skips Redis TLS enforcement', () => {
@@ -148,6 +162,18 @@ describe('warnProductionOtpHmacFallback', () => {
     assert.match(warnings[0], /OTP_HMAC_SECRET/);
   });
 
+  it('warns inside the OTP callables (secret bound there) but not in unrelated functions', () => {
+    process.env.APP_ENV = 'production';
+    process.env.MSG91_AUTH_KEY = 'placeholder-key';
+    delete process.env.OTP_HMAC_SECRET;
+    const warnings = [];
+    for (const target of ['sendUserRegistrationOtp', 'verifyUserRegistrationOtp', 'deleteMyAccount']) {
+      warnProductionOtpHmacFallback({ ...process.env, FUNCTION_TARGET: target }, (msg) => warnings.push(`${target}:${msg}`));
+    }
+    assert.equal(warnings.length, 2);
+    assert.ok(warnings.every((w) => !w.startsWith('deleteMyAccount')));
+  });
+
   it('does not warn when OTP_HMAC_SECRET is configured', () => {
     process.env.APP_ENV = 'production';
     process.env.MSG91_AUTH_KEY = 'placeholder-key';
@@ -158,7 +184,7 @@ describe('warnProductionOtpHmacFallback', () => {
   });
 });
 
-describe('assertProductionReviewOtpDisabled', () => {
+describe('assertProductionAppCheckEnforcement', () => {
   const original = { ...process.env };
 
   beforeEach(() => {
@@ -169,16 +195,68 @@ describe('assertProductionReviewOtpDisabled', () => {
     process.env = original;
   });
 
-  it('production rejects REVIEWER_OTP_ENABLED', () => {
-    process.env.APP_ENV = 'production';
-    process.env.REVIEWER_OTP_ENABLED = 'true';
-    assert.throws(() => assertProductionReviewOtpDisabled(), /REVIEWER_OTP_ENABLED/);
+  it('medibond-45fad rejects ENFORCE_OTP_APP_CHECK=false', () => {
+    process.env.GCLOUD_PROJECT = 'medibond-45fad';
+    process.env.ENFORCE_OTP_APP_CHECK = 'false';
+    process.env.ENFORCE_ABUSE_APP_CHECK = 'true';
+    assert.throws(() => assertProductionAppCheckEnforcement(), /ENFORCE_OTP_APP_CHECK/);
   });
 
-  it('production rejects REVIEW_FIXED_OTP', () => {
+  it('medibond-45fad rejects ENFORCE_ABUSE_APP_CHECK=0', () => {
+    process.env.GCLOUD_PROJECT = 'medibond-45fad';
+    process.env.ENFORCE_OTP_APP_CHECK = 'true';
+    process.env.ENFORCE_ABUSE_APP_CHECK = '0';
+    assert.throws(() => assertProductionAppCheckEnforcement(), /ENFORCE_ABUSE_APP_CHECK/);
+  });
+
+  it('medibond-staging allows app check flags off', () => {
+    process.env.GCLOUD_PROJECT = 'medibond-staging';
+    process.env.APP_ENV = 'staging';
+    process.env.ENFORCE_OTP_APP_CHECK = 'false';
+    assert.doesNotThrow(() => assertProductionAppCheckEnforcement());
+  });
+});
+
+describe('assertProductionReviewerOtpPolicy', () => {
+  const original = { ...process.env };
+
+  beforeEach(() => {
+    process.env = { ...original };
+  });
+
+  afterEach(() => {
+    process.env = original;
+  });
+
+  it('production rejects plain REVIEW_FIXED_OTP when reviewer disabled', () => {
     process.env.APP_ENV = 'production';
+    process.env.REVIEWER_OTP_ENABLED = 'false';
     process.env.REVIEW_FIXED_OTP = '123456';
     assert.throws(() => assertProductionReviewOtpDisabled(), /REVIEW_FIXED_OTP/);
+  });
+
+  it('production requires the demo plane URL and a future expiry when reviewer enabled', () => {
+    process.env.APP_ENV = 'production';
+    process.env.REVIEWER_OTP_ENABLED = 'true';
+    process.env.REVIEW_ACCESS_UNTIL = '2099-01-01T00:00:00.000Z';
+    delete process.env.DEMO_SUPABASE_URL;
+    assert.throws(() => assertProductionReviewOtpDisabled(), /DEMO_SUPABASE_URL/);
+    process.env.DEMO_SUPABASE_URL = 'https://staging-ref.supabase.co';
+    assert.doesNotThrow(() => assertProductionReviewOtpDisabled());
+    process.env.REVIEW_ACCESS_UNTIL = '2020-01-01T00:00:00.000Z';
+    assert.throws(() => assertProductionReviewOtpDisabled(), /REVIEW_ACCESS_UNTIL/);
+  });
+
+  it('OTP functions refuse to boot when reviewer OTP is on without a 6-digit REVIEW_FIXED_OTP', () => {
+    const { assertDemoOtpSecretForOtpFunction } = require('../src/db/assert_app_env');
+    const base = { REVIEWER_OTP_ENABLED: 'true', FUNCTION_TARGET: 'verifyUserRegistrationOtp' };
+    assert.throws(() => assertDemoOtpSecretForOtpFunction({ ...base }), /REVIEW_FIXED_OTP secret is missing/);
+    assert.throws(() => assertDemoOtpSecretForOtpFunction({ ...base, REVIEW_FIXED_OTP: '0000' }), /not 6 digits/);
+    assert.doesNotThrow(() => assertDemoOtpSecretForOtpFunction({ ...base, REVIEW_FIXED_OTP: '000000' }));
+    assert.doesNotThrow(() => assertDemoOtpSecretForOtpFunction({ ...base, FUNCTION_TARGET: 'getS3UploadUrl' }),
+      'functions that do not bind the secret are not affected');
+    assert.doesNotThrow(() => assertDemoOtpSecretForOtpFunction({ FUNCTION_TARGET: 'verifyUserRegistrationOtp' }),
+      'reviewer OTP off: nothing required');
   });
 
   it('staging allows reviewer OTP flags', () => {
@@ -186,6 +264,57 @@ describe('assertProductionReviewOtpDisabled', () => {
     process.env.REVIEWER_OTP_ENABLED = 'true';
     process.env.REVIEW_FIXED_OTP = '123456';
     assert.doesNotThrow(() => assertProductionReviewOtpDisabled());
+  });
+});
+
+describe('legacy Firestore deploy boot', () => {
+  const original = { ...process.env };
+
+  beforeEach(() => {
+    process.env = { ...original };
+  });
+
+  afterEach(() => {
+    process.env = original;
+  });
+
+  it('legacy Firestore env (flags unset) no longer skips production boot asserts', () => {
+    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+    delete process.env.FIRESTORE_FORBIDDEN;
+    process.env.APP_ENV = 'production';
+    delete process.env.NODE_ENV;
+    delete process.env.SKIP_APP_ENV_DB_ASSERT;
+    assert.equal(shouldRunCutoverBootAsserts(process.env), true);
+  });
+
+  it('production requires FIRESTORE_FORBIDDEN=1', () => {
+    process.env.APP_ENV = 'production';
+    delete process.env.FIRESTORE_FORBIDDEN;
+    assert.throws(() => assertProductionFirestoreForbidden(process.env), /FIRESTORE_FORBIDDEN=1/);
+    process.env.FIRESTORE_FORBIDDEN = '1';
+    assert.doesNotThrow(() => assertProductionFirestoreForbidden(process.env));
+    process.env.APP_ENV = 'staging';
+    delete process.env.FIRESTORE_FORBIDDEN;
+    assert.doesNotThrow(() => assertProductionFirestoreForbidden(process.env));
+  });
+
+  it('SKIP_APP_ENV_DB_ASSERT cannot disable asserts on a deployed production runtime', () => {
+    process.env.APP_ENV = 'production';
+    delete process.env.NODE_ENV;
+    process.env.SKIP_APP_ENV_DB_ASSERT = 'true';
+    process.env.K_SERVICE = 'unit-test-service';
+    assert.equal(shouldRunCutoverBootAsserts(process.env), true);
+    delete process.env.K_SERVICE;
+    assert.equal(shouldRunCutoverBootAsserts(process.env), false);
+  });
+
+  it('FIRESTORE_FORBIDDEN=1 requires cutover boot asserts', () => {
+    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = '0';
+    process.env.FIRESTORE_FORBIDDEN = '1';
+    delete process.env.APP_ENV;
+    delete process.env.NODE_ENV;
+    delete process.env.SKIP_APP_ENV_DB_ASSERT;
+    assert.equal(shouldRunCutoverBootAsserts(process.env), true);
   });
 });
 
@@ -266,5 +395,30 @@ describe('assertProductionNoPlaceholderSecrets', () => {
     process.env.MSG91_AUTH_KEY = 'configured-msg91-key-value';
     process.env.OTP_HMAC_SECRET = 'a'.repeat(32);
     assert.doesNotThrow(() => assertProductionNoPlaceholderSecrets());
+  });
+});
+
+describe('runCutoverCompletenessAtBoot (D2 switch)', () => {
+  const { runCutoverCompletenessAtBoot, ENFORCE_CUTOVER_COMPLETENESS_AT_BOOT } = require('../src/db/assert_app_env');
+  const incomplete = { APP_ENV: 'production', MSG91_AUTH_KEY: 'secret-value-should-not-appear' };
+
+  it('is OFF in code until the first green production deploy', () => {
+    assert.equal(ENFORCE_CUTOVER_COMPLETENESS_AT_BOOT, false);
+    assert.equal(runCutoverCompletenessAtBoot(incomplete), false);
+  });
+
+  it('when ON it blocks boot and lists missing variable NAMES only', () => {
+    assert.throws(() => runCutoverCompletenessAtBoot(incomplete, true), (e) => {
+      assert.equal(e.code, 'failed-precondition');
+      assert.match(e.message, /PROD_GATEWAY_URL/);
+      assert.match(e.message, /REDIS_URL/);
+      assert.ok(!e.message.includes('secret-value-should-not-appear'), 'no values in the message');
+      return true;
+    });
+  });
+
+  it('is wired into the cold start in index.js', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../index.js'), 'utf8');
+    assert.match(src, /runCutoverCompletenessAtBoot\(\)/);
   });
 });

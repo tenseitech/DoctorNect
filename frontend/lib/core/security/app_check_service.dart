@@ -13,6 +13,42 @@ abstract final class AppCheckService {
   static bool _warmUpAttempted = false;
   static bool _warmUpSucceeded = false;
   static String? _setupHint;
+  static String? _lastFailureReason;
+
+  /// True when this device obtained an App Check token in this app session.
+  static bool get hasToken => _warmUpSucceeded;
+
+  /// Non-sensitive reason code for the last token failure (never contains a
+  /// token or device id). One of: `attestation_failed`, `rate_limited`,
+  /// `play_integrity_unavailable`, `network`, `token_unavailable`.
+  static String? get lastFailureReason => _lastFailureReason;
+
+  @visibleForTesting
+  static void debugSetState({required bool hasToken, String? failureReason}) {
+    _warmUpAttempted = true;
+    _warmUpSucceeded = hasToken;
+    _lastFailureReason = failureReason;
+  }
+
+  @visibleForTesting
+  static String classifyFailure(Object error) {
+    final err = error.toString().toLowerCase();
+    if (err.contains('too many attempts')) return 'rate_limited';
+    if (err.contains('403') || err.contains('attestation failed')) {
+      return 'attestation_failed';
+    }
+    if (err.contains('integrity') ||
+        err.contains('play services') ||
+        err.contains('api_not_available')) {
+      return 'play_integrity_unavailable';
+    }
+    if (err.contains('network') ||
+        err.contains('timeout') ||
+        err.contains('unreachable')) {
+      return 'network';
+    }
+    return 'token_unavailable';
+  }
 
   /// Warms App Check during startup. Safe to call multiple times when successful.
   static Future<bool> warmUp({bool forceRefresh = false}) async {
@@ -25,6 +61,7 @@ abstract final class AppCheckService {
         FirebaseBootstrap.appCheckReady = true;
         _warmUpSucceeded = true;
         _setupHint = null;
+        _lastFailureReason = null;
         if (kDebugMode) {
           debugPrint('App Check token ready (${token.length} chars).');
         }
@@ -32,6 +69,9 @@ abstract final class AppCheckService {
       }
     } catch (e, st) {
       _setupHint = _buildSetupHint(e);
+      _lastFailureReason = classifyFailure(e);
+      // Reason code only: safe to log in release builds.
+      debugPrint('[AppCheck] token_failed reason=$_lastFailureReason');
       if (kDebugMode) {
         debugPrint('App Check getToken failed: $e\n$st');
         if (_setupHint != null) debugPrint(_setupHint!);
@@ -66,14 +106,14 @@ abstract final class AppCheckService {
     final rateLimited = err.toLowerCase().contains('too many attempts');
 
     if (configured.isNotEmpty && attestationFailed) {
-      return 'App Check rejected debug token "$configured". Register it in '
+      return 'App Check rejected the configured APP_CHECK_DEBUG_TOKEN. Register it in '
           'Firebase Console → App Check → Android/iOS app → Manage debug tokens, '
           'then fully restart the app (not hot reload).';
     }
 
     if (configured.isNotEmpty) {
       return 'App Check is using APP_CHECK_DEBUG_TOKEN. If OTP still fails, '
-          'confirm "$configured" is registered under Firebase Console → App Check '
+          'confirm that token is registered under Firebase Console → App Check '
           '→ Manage debug tokens.';
     }
 

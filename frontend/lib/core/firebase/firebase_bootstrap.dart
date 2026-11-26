@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../firebase_options.dart';
 import '../constants/app_constants.dart';
+import '../security/app_check_provider_policy.dart';
 import '../security/app_check_service.dart';
 import '../storage/storage_feature_flag.dart';
 import '../validation/server_validation_service.dart';
@@ -16,7 +17,17 @@ import 'firebase_error_messages.dart';
 abstract final class FirebaseBootstrap {
   static bool isReady = false;
   static bool appCheckReady = false;
+
+  /// User-facing reason the last [initialize] failed (short, non-technical).
   static String? lastInitError;
+
+  /// Non-sensitive machine reason for the last failure (for logs / support), or null.
+  static String? lastInitReasonCode;
+
+  static const configMissingReasonCode = 'firebase_config_missing';
+  static const configMissingUserMessage =
+      'This version of the app is not set up correctly. Please install the latest '
+      'version and try again.';
 
   static Future<bool>? _initFuture;
 
@@ -26,6 +37,7 @@ abstract final class FirebaseBootstrap {
     isReady = false;
     appCheckReady = false;
     lastInitError = null;
+    lastInitReasonCode = null;
   }
 
   static Future<void> activateAppCheck() => _activateAppCheck();
@@ -42,6 +54,7 @@ abstract final class FirebaseBootstrap {
   static Future<bool> _initializeOnce() async {
     try {
       lastInitError = null;
+      lastInitReasonCode = null;
 
       if (Firebase.apps.isNotEmpty) {
         await _onFirebaseAppReady();
@@ -49,8 +62,16 @@ abstract final class FirebaseBootstrap {
       }
 
       if (!DefaultFirebaseOptions.isConfigured) {
+        // Build was produced without the Firebase client config (missing dart-define such as
+        // FIREBASE_API_KEY_ANDROID). Users get a short message; logs get a reason code and
+        // the missing define NAMES only (never values).
         isReady = false;
-        lastInitError = 'Firebase API keys not configured.';
+        lastInitReasonCode = configMissingReasonCode;
+        lastInitError = configMissingUserMessage;
+        debugPrint(
+          '[FirebaseBootstrap] init_failed reason=$configMissingReasonCode '
+          'missing=${DefaultFirebaseOptions.requiredClientDefines.join(',')}',
+        );
         return false;
       }
 
@@ -149,9 +170,18 @@ Future<void> _activateAppCheck() async {
     }
 
     // Release builds use Play Integrity when installed from Play Store.
-    // Pass --dart-define=APP_CHECK_DEBUG_TOKEN=uuid for sideloaded release testing.
-    final debugToken = AppConstants.resolvedAppCheckDebugToken;
-    final useDebugProvider = kDebugMode || debugToken.isNotEmpty;
+    // The debug provider is only for `flutter run` and explicit staging test
+    // builds (APP_ENV=staging + APP_CHECK_DEBUG_PROVIDER=true); see
+    // AppCheckProviderPolicy and docs/APP_CHECK_SETUP.md. Production never.
+    final useDebugProvider =
+        AppCheckProviderPolicy.current() == AppCheckProviderKind.debug;
+    final debugToken =
+        useDebugProvider ? AppConstants.resolvedAppCheckDebugToken : '';
+    debugPrint(
+      useDebugProvider
+          ? '[AppCheck] provider=debug (not for production)'
+          : '[AppCheck] provider=platform_attestation',
+    );
     await FirebaseAppCheck.instance.activate(
       providerAndroid: useDebugProvider
           ? AndroidDebugProvider(
@@ -166,14 +196,15 @@ Future<void> _activateAppCheck() async {
     );
     await FirebaseAppCheck.instance.setTokenAutoRefreshEnabled(true);
 
-    if (kDebugMode && debugToken.isNotEmpty) {
+    if (useDebugProvider && debugToken.isNotEmpty) {
       debugPrint(
-        'App Check using APP_CHECK_DEBUG_TOKEN. Register "$debugToken" in '
+        'App Check using a fixed APP_CHECK_DEBUG_TOKEN. Register it in '
         'Firebase Console → App Check → Manage debug tokens if not done yet.',
       );
-    } else if (!kDebugMode && debugToken.isNotEmpty) {
+    } else if (useDebugProvider) {
       debugPrint(
-        'Release build using APP_CHECK_DEBUG_TOKEN for App Check (local testing only).',
+        'App Check debug provider: copy the "debug secret" printed by '
+        'DebugAppCheckProvider in logcat and register it in Firebase Console.',
       );
     }
 

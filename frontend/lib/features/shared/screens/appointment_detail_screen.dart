@@ -184,7 +184,8 @@ class _DoctorAppointmentDetailScreenState
   Future<void> _openBookAmbulance(Appointment appt) async {
     if (!AmbulanceEnabled.isOn) {
       if (!mounted) return;
-      AppToast.info(context, 'Ambulance booking is not available in this build.');
+      AppToast.info(
+          context, 'Ambulance booking is not available in this build.');
       return;
     }
     final record = _store.findRecordById(appt.id);

@@ -30,9 +30,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
 
     defaultConfig {
         applicationId = "com.tenseitech.doctornect"
@@ -84,6 +81,12 @@ android {
         }
     }
 
+    lint {
+        // Lint the app's own sources only; plugin modules are third-party code (see the
+        // lint note in android/build.gradle.kts).
+        checkDependencies = false
+    }
+
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
@@ -94,6 +97,12 @@ android {
                 "proguard-rules.pro",
             )
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 

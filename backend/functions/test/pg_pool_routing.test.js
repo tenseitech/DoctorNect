@@ -146,12 +146,41 @@ test('pg_pool: production RDS pool config uses CA and rejectUnauthorized true', 
   process.env.PROD_RDS_PASSWORD = 'test-password-not-real';
   process.env.PROD_RDS_SSL_ROOT_CERT = caPath;
   process.env.PROD_RDS_SSL_SERVERNAME = 'example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com';
+  // Hermetic: do not inherit a developer .env sslmode.
+  const prevSslMode = process.env.PROD_RDS_SSLMODE;
+  process.env.PROD_RDS_SSLMODE = 'verify-full';
   try {
     const cfg = resolveProductionPoolConfig();
     assert.ok(cfg.ssl, 'RDS config must include ssl');
     assert.notEqual(cfg.ssl.rejectUnauthorized, false);
     assert.ok(cfg.ssl.ca && cfg.ssl.ca.length > 0, 'RDS ssl must load CA bundle');
   } finally {
+    if (prevSslMode === undefined) delete process.env.PROD_RDS_SSLMODE;
+    else process.env.PROD_RDS_SSLMODE = prevSslMode;
+    restoreEnv(snap);
+  }
+});
+
+test('pg_pool: production refuses PROD_RDS_SSLMODE=require (no cert verification)', () => {
+  const snap = snapshotEnv(ENV_KEYS);
+  const caPath = require('path').resolve(__dirname, '../../../infra/aws/global-bundle.pem');
+  if (!require('fs').existsSync(caPath)) {
+    return;
+  }
+  process.env.APP_ENV = 'production';
+  delete process.env.DATABASE_URL;
+  process.env.PROD_RDS_HOST = 'example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com';
+  process.env.PROD_RDS_CONNECT_HOST = '127.0.0.1';
+  process.env.PROD_RDS_PORT = '5433';
+  process.env.PROD_RDS_PASSWORD = 'test-password-not-real';
+  process.env.PROD_RDS_SSL_ROOT_CERT = caPath;
+  const prevSslMode = process.env.PROD_RDS_SSLMODE;
+  process.env.PROD_RDS_SSLMODE = 'require';
+  try {
+    assert.throws(() => resolveProductionPoolConfig(), (err) => err.code === 'RDS_SSL_INSECURE');
+  } finally {
+    if (prevSslMode === undefined) delete process.env.PROD_RDS_SSLMODE;
+    else process.env.PROD_RDS_SSLMODE = prevSslMode;
     restoreEnv(snap);
   }
 });

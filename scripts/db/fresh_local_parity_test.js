@@ -10,6 +10,7 @@ const path = require('path');
 const { Client } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { fetchCatalog, compareCatalogs } = require('./schema_diff');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 const ADMIN_URL =
   getEnv('REPLAY_DB_URL') ||
@@ -129,7 +130,7 @@ async function main() {
   console.log('Schema parity: Staging (Supabase) vs fresh local');
   console.log('============================================================');
 
-  const sClient = new Client({ connectionString: stagingUri, ssl: { rejectUnauthorized: false } });
+  const sClient = new Client({ connectionString: stagingUri, ssl: stagingPgSsl() });
   const fClient = new Client({ connectionString: freshUrl });
   await sClient.connect();
   await fClient.connect();

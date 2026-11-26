@@ -1,6 +1,7 @@
 'use strict';
 
 const test = require('node:test');
+const { enableOtpRedisTestEnv, seedOtpChallenge, disableOtpRedisTestEnv } = require('./helpers/otp_test_redis');
 const assert = require('node:assert/strict');
 
 const registrationOtp = require('../registration_otp');
@@ -74,6 +75,7 @@ test.describe('P0 Demo Bypass Removal & Reviewer-Only Fixed OTP Guard', () => {
 
     resetReviewerRateLimitForTesting();
     setReviewerRedisClientForTesting(null);
+    disableOtpRedisTestEnv();
   });
 
   test('1. Legacy demo functions and constants are completely removed from module exports', () => {
@@ -108,38 +110,10 @@ test.describe('P0 Demo Bypass Removal & Reviewer-Only Fixed OTP Guard', () => {
     assert.equal(isReviewerPhone(testPhone, 'patient'), false, 'Must not be recognized as reviewer phone');
 
     // Attempting fixed OTP 000000 or 123456 against challenge must fail
-    const mockDb = {
-      collection: () => ({
-        doc: () => ({
-          get: async () => ({
-            exists: true,
-            data: () => ({
-              role: 'patient',
-              mobileDigits: testPhone,
-              otpHash: 'some_real_msg91_hmac_hash',
-              expiresAt: { toDate: () => new Date(Date.now() + 600000) },
-              attempts: 0,
-            }),
-          }),
-        }),
-      }),
-      runTransaction: async (fn) => {
-        return fn({
-          get: async () => ({
-            exists: true,
-            data: () => ({
-              role: 'patient',
-              mobileDigits: testPhone,
-              otpHash: 'some_real_msg91_hmac_hash',
-              expiresAt: { toDate: () => new Date(Date.now() + 600000) },
-              attempts: 0,
-            }),
-          }),
-          set: () => {},
-          delete: () => {},
-        });
-      },
-    };
+    // Challenge lives in Redis (no document DB). Real code differs from any fixed/dev OTP.
+    const mockDb = null;
+    const otpRedis = enableOtpRedisTestEnv();
+    seedOtpChallenge(otpRedis, { otpCode: '654321', role: 'patient', mobileDigits: testPhone });
 
     // Neither '000000' nor '123456' can be consumed
     await assert.rejects(
@@ -175,54 +149,26 @@ test.describe('P0 Demo Bypass Removal & Reviewer-Only Fixed OTP Guard', () => {
 
   test('4. Active reviewer bypass: only allowlisted numbers accept fixed OTP', async () => {
     process.env.REVIEWER_OTP_ENABLED = 'true';
-    process.env.REVIEW_PATIENT_PHONES = '9999900001,9999900002';
     process.env.REVIEW_FIXED_OTP = '112233';
     process.env.REVIEW_ACCESS_UNTIL = '2099-01-01T00:00:00Z'; // Future
     setReviewerRedisClientForTesting(createTestRedisMock());
 
-    assert.equal(isReviewerPhone('9999900001', 'patient'), true, 'Allowlisted number must match');
+    // Fixed allowlist (lib/demo_accounts.js): 9999900001 doctor, 9999900002 patient.
+    assert.equal(isReviewerPhone('9999900001', 'doctor'), true, 'Allowlisted number must match');
     assert.equal(isReviewerPhone('9999900002', 'patient'), true, 'Allowlisted number must match');
-    assert.equal(isReviewerPhone('9999900003', 'patient'), false, 'Non-allowlisted number must NOT match');
+    assert.equal(isReviewerPhone('9999900006', 'patient'), false, 'Non-allowlisted number must NOT match');
 
-    const mockDb = {
-      collection: () => ({
-        doc: () => ({
-          get: async () => ({
-            exists: true,
-            data: () => ({
-              role: 'patient',
-              mobileDigits: '9999900001',
-              otpHash: 'dummy_hash',
-              expiresAt: { toDate: () => new Date(Date.now() + 600000) },
-              attempts: 0,
-            }),
-          }),
-        }),
-      }),
-      runTransaction: async (fn) => {
-        return fn({
-          get: async () => ({
-            exists: true,
-            data: () => ({
-              role: 'patient',
-              mobileDigits: '9999900001',
-              otpHash: 'dummy_hash',
-              expiresAt: { toDate: () => new Date(Date.now() + 600000) },
-              attempts: 0,
-            }),
-          }),
-          set: () => {},
-          delete: () => {},
-        });
-      },
-    };
+    // Challenge lives in Redis (no document DB). Real code differs from any fixed/dev OTP.
+    const mockDb = null;
+    const otpRedis = enableOtpRedisTestEnv();
+    seedOtpChallenge(otpRedis, { otpCode: '654321', role: 'doctor', mobileDigits: '9999900001' });
 
     // Reviewer number with valid fixed OTP succeeds
     const res = await consumeOtpChallengeAtomically(mockDb, {
       challengeKey: 'mock_key',
       otp: '112233',
       mobileDigits: '9999900001',
-      role: 'patient',
+      role: 'doctor',
     });
     assert.equal(res.consumed, true, 'Reviewer with valid fixed OTP must succeed');
   });

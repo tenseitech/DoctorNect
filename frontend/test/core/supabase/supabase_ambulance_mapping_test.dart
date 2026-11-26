@@ -55,7 +55,9 @@ void main() {
       }
     });
 
-    test('bookingFromRow supports backwards compatibility for legacy column names', () {
+    test(
+        'bookingFromRow supports backwards compatibility for legacy column names',
+        () {
       final legacyRow = {
         'broadcast_id': 'bcast-legacy',
         'patient_id': 'pat-1',
@@ -76,7 +78,9 @@ void main() {
       expect(booking.status, equals(AmbulanceBookingStatus.completed));
     });
 
-    test('bookingToRow outputs verified Postgres schema columns (no invalid columns)', () {
+    test(
+        'bookingToRow outputs verified Postgres schema columns (no invalid columns)',
+        () {
       final booking = AmbulanceBooking(
         id: 'bcast-out-1',
         patientName: 'Jane Doe',
@@ -111,7 +115,8 @@ void main() {
       expect(row.containsKey('assigned_driver_id'), isFalse);
     });
 
-    test('requestFromRow correctly maps request and nested broadcast columns', () {
+    test('requestFromRow correctly maps request and nested broadcast columns',
+        () {
       final row = {
         'request_id': 'req-101',
         'driver_id': 'driver-202',
@@ -153,7 +158,8 @@ void main() {
         final req = AmbulanceSupabaseMapper.requestFromRow(row);
         expect(req, isNotNull);
         expect(req!.status, equals(entry.value),
-            reason: 'Request status "${entry.key}" should map to ${entry.value}');
+            reason:
+                'Request status "${entry.key}" should map to ${entry.value}');
       }
     });
   });

@@ -21,7 +21,8 @@ abstract final class DoctorScheduleAvailabilityMapper {
       'breakStart': schedule.breakStart,
       'breakEnd': schedule.breakEnd,
       'blockedDates': schedule.blockedDates
-          .map((d) => DateTime(d.year, d.month, d.day).toUtc().toIso8601String())
+          .map(
+              (d) => DateTime(d.year, d.month, d.day).toUtc().toIso8601String())
           .toList(),
       if (schedule.leaveStart != null)
         'leaveStart': schedule.leaveStart!.toUtc().toIso8601String(),

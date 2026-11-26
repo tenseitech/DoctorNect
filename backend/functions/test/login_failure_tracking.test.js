@@ -1,126 +1,85 @@
 'use strict';
 
+/**
+ * Login failure counters (Redis, env-prefixed, TTL = login window).
+ * clearFailedLogins is owner-only; the server-side trusted clear is separate.
+ */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { Timestamp } = require('firebase-admin/firestore');
 const {
   recordFailedLogin,
   recordLoginFailure,
   clearFailedLogins,
   resetLoginAttempts,
+  clearFailedLoginsTrusted,
+  assertLoginAllowed,
 } = require('../registration_otp');
+const { setRedisClientForTesting } = require('../redis');
+const { createMemoryRedis } = require('./helpers/memory_redis');
 
-function createMockFirestore() {
-  const docs = new Map();
+let redis;
+test.beforeEach(() => {
+  redis = createMemoryRedis();
+  setRedisClientForTesting(redis);
+});
 
-  function docRef(collection, id) {
-    const key = `${collection}/${id}`;
-    return {
-      id,
-      collection,
-      key,
-      async get() {
-        const data = docs.get(key);
-        return {
-          exists: data != null,
-          data: () => (data == null ? undefined : { ...data }),
-        };
-      },
-      set(data, { merge } = {}) {
-        if (merge && docs.has(key)) {
-          docs.set(key, { ...docs.get(key), ...data });
-        } else {
-          docs.set(key, { ...data });
-        }
-      },
-      delete() {
-        docs.delete(key);
-      },
-    };
-  }
-
-  return {
-    docs,
-    collection(name) {
-      return {
-        doc(id) {
-          return docRef(name, id);
-        },
-      };
-    },
-    async runTransaction(updateFn) {
-      const pending = new Map();
-      const tx = {
-        async get(ref) {
-          const existing = pending.get(ref.key) ?? docs.get(ref.key);
-          return {
-            exists: existing != null,
-            data: () => (existing == null ? undefined : { ...existing }),
-          };
-        },
-        set(ref, data, { merge } = {}) {
-          const base = pending.get(ref.key) ?? docs.get(ref.key) ?? {};
-          pending.set(ref.key, merge ? { ...base, ...data } : { ...data });
-        },
-        delete(ref) {
-          pending.set(ref.key, null);
-        },
-      };
-      await updateFn(tx);
-      for (const [key, value] of pending.entries()) {
-        if (value == null) docs.delete(key);
-        else docs.set(key, value);
-      }
-    },
-  };
-}
-
-function readLoginCount(db, bucket) {
-  return db.docs.get(`otp_rate_limits/${bucket}`)?.count ?? 0;
-}
+const failKeys = (kind) => [...redis.store.keys()].filter((k) => k.includes(`ratelimit:login_fail:login_${kind}_`));
+const payload = { identifier: 'user@example.com' };
+const options = { clientIp: '203.0.113.10' };
+const owner = { uid: 'u1', token: { email: 'user@example.com', email_verified: true } };
 
 test('recordFailedLogin and recordLoginFailure complete without recursion', async () => {
-  const db = createMockFirestore();
-  const payload = { identifier: 'user@example.com' };
-  const options = { clientIp: '203.0.113.10' };
-
-  await assert.doesNotReject(() => recordFailedLogin(db, payload, options));
-  await assert.doesNotReject(() => recordLoginFailure(db, payload, options));
+  await assert.doesNotReject(() => recordFailedLogin(null, payload, options));
+  await assert.doesNotReject(() => recordLoginFailure(null, payload, options));
 });
 
-test('repeated failures increment persisted identifier and IP counters', async () => {
-  const db = createMockFirestore();
-  const payload = { identifier: 'user@example.com' };
-  const options = { clientIp: '203.0.113.10' };
-
-  await recordFailedLogin(db, payload, options);
-  await recordFailedLogin(db, payload, options);
-  await recordLoginFailure(db, payload, options);
-
-  const idBucket = [...db.docs.keys()].find((key) => key.startsWith('otp_rate_limits/login_id_'));
-  const ipBucket = [...db.docs.keys()].find((key) => key.startsWith('otp_rate_limits/login_ip_'));
-
-  assert.ok(idBucket);
-  assert.ok(ipBucket);
-  assert.equal(readLoginCount(db, idBucket.split('/')[1]), 3);
-  assert.equal(readLoginCount(db, ipBucket.split('/')[1]), 3);
-  assert.ok(db.docs.get(idBucket).windowStart instanceof Timestamp);
+test('repeated failures increment identifier and IP counters with a TTL', async () => {
+  await recordFailedLogin(null, payload, options);
+  await recordFailedLogin(null, payload, options);
+  await recordLoginFailure(null, payload, options);
+  const [idKey] = failKeys('id');
+  const [ipKey] = failKeys('ip');
+  assert.ok(idKey && ipKey);
+  assert.equal(Number(await redis.get(idKey)), 3);
+  assert.equal(Number(await redis.get(ipKey)), 3);
+  assert.ok((await redis.pttl(idKey)) > 0, 'counter must expire');
+  assert.ok(idKey.startsWith('test:'), 'keys are env-namespaced');
 });
 
-test('clearFailedLogins and resetLoginAttempts reset identifier counter', async () => {
-  const db = createMockFirestore();
-  const payload = { identifier: 'user@example.com' };
+test('5 failures for one identifier block further attempts', async () => {
+  for (let i = 0; i < 5; i++) await recordFailedLogin(null, payload, { clientIp: `198.51.100.${i}` });
+  await assert.rejects(() => assertLoginAllowed(null, payload, { clientIp: '198.51.100.99' }), (e) => e.code === 'resource-exhausted');
+});
 
-  await recordFailedLogin(db, payload, { clientIp: '203.0.113.10' });
-  const idBucket = [...db.docs.keys()].find((key) => key.startsWith('otp_rate_limits/login_id_'));
-  assert.equal(readLoginCount(db, idBucket.split('/')[1]), 1);
+test('clearFailedLogins resets the counter only for the signed-in owner', async () => {
+  await recordFailedLogin(null, payload, options);
+  const [idKey] = failKeys('id');
+  assert.equal(Number(await redis.get(idKey)), 1);
 
-  await clearFailedLogins(db, payload);
-  assert.equal(db.docs.has(idBucket), false);
+  // Unauthenticated / different account cannot reset someone else's lockout.
+  await assert.rejects(() => clearFailedLogins(null, payload), (e) => e.code === 'permission-denied');
+  await assert.rejects(
+    () => clearFailedLogins(null, payload, { uid: 'u2', token: { email: 'attacker@example.com' } }),
+    (e) => e.code === 'permission-denied',
+  );
+  assert.equal(Number(await redis.get(idKey)), 1);
 
-  await recordFailedLogin(db, payload, { clientIp: '203.0.113.10' });
-  assert.equal(readLoginCount(db, idBucket.split('/')[1]), 1);
+  await clearFailedLogins(null, payload, owner);
+  assert.equal(await redis.get(idKey), null);
 
-  await resetLoginAttempts(db, payload);
-  assert.equal(db.docs.has(idBucket), false);
+  await recordFailedLogin(null, payload, options);
+  await resetLoginAttempts(null, payload, owner);
+  assert.equal(await redis.get(idKey), null);
+});
+
+test('clearFailedLoginsTrusted (server-side) clears after verified credentials', async () => {
+  await recordFailedLogin(null, { identifier: 'ambulance:driver1' }, options);
+  await clearFailedLoginsTrusted('ambulance:driver1');
+  assert.equal(failKeys('id').length === 0 || (await redis.get(failKeys('id')[0])) === null, true);
+});
+
+test('Redis down -> login gate fails closed', async () => {
+  setRedisClientForTesting({ get: async () => { throw new Error('down'); }, incr: async () => { throw new Error('down'); }, on() { return this; } });
+  await assert.rejects(() => assertLoginAllowed(null, payload, options), (e) => e.code === 'unavailable');
 });

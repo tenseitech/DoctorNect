@@ -117,8 +117,7 @@ class LabRepository {
   Future<List<RegisteredLabProfile>> fetchVerifiedLabs({
     bool preferCache = true,
   }) async {
-    final partners =
-        await SupabaseLabRepository.instance.fetchVerifiedLabs();
+    final partners = await SupabaseLabRepository.instance.fetchVerifiedLabs();
     if (partners.isEmpty) return const [];
     final profiles = <RegisteredLabProfile>[];
     for (final partner in partners) {

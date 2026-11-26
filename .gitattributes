@@ -3,3 +3,6 @@
 frontend/lib/** text eol=lf
 db/migrations/** text eol=lf
 db/rds_bootstrap/** text eol=lf
+
+# Terraform and deploy scripts: plain LF (HCL rejects stray CR)
+infra/aws/** text eol=lf

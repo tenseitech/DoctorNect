@@ -12,8 +12,8 @@ abstract final class PatientLabBookingWatcher {
     if (patientId.isEmpty) return;
     _sub?.cancel();
 
-    _sub = LabBookingRepository.instance.watchForPatient(patientId)
-        .listen((bookings) {
+    _sub = LabBookingRepository.instance.watchForPatient(patientId).listen(
+        (bookings) {
       PatientLabBookingStore.instance.mergeFromFirestore(bookings);
     }, onError: (_) {});
   }

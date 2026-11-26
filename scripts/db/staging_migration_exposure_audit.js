@@ -11,6 +11,7 @@ const path = require('path');
 const { loadRootEnv } = require('../lib/bootstrap_root_env');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard } = require('../lib/env_guard');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 const VERSIONS = [
   '20261112000003',
@@ -34,7 +35,7 @@ async function main() {
 
   console.log(`Staging migration exposure audit\nDB: ${maskConnectionString(dbUrl)}\n`);
 
-  const pool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false }, max: 2 });
+  const pool = new Pool({ connectionString: dbUrl, ssl: stagingPgSsl(), max: 2 });
   const client = await pool.connect();
   try {
     const ledger = await client.query(

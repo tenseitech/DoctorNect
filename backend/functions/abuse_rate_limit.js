@@ -1,13 +1,10 @@
 'use strict';
-require('./firestore_forbidden_guard');
 
 const crypto = require('crypto');
 const { HttpsError } = require('firebase-functions/v2/https');
-const { FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { logUnusualTraffic } = require('./security_logger');
-const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
 
-/** Shared abuse / bot protection rate limits (Firestore-backed). */
+/** Shared abuse / bot protection rate limits (Redis-backed, env-prefixed keys, fail closed). */
 const LIMITS = {
   api: {
     ip: { windowMs: 60 * 1000, max: 120 },
@@ -21,6 +18,11 @@ const LIMITS = {
   signup: {
     ip: { windowMs: 60 * 60 * 1000, max: 5 },
     id: { windowMs: 24 * 60 * 60 * 1000, max: 3 },
+  },
+  // Account-existence lookups (enumeration oracle): tight per-IP and per-number limits.
+  account_lookup: {
+    ip: { windowMs: 15 * 60 * 1000, max: 20 },
+    id: { windowMs: 15 * 60 * 1000, max: 10 },
   },
   otp_send: {
     ip: { windowMs: 15 * 60 * 1000, max: 30 },
@@ -49,45 +51,18 @@ function hashKey(value) {
   return crypto.createHash('sha256').update(String(value || '')).digest('hex');
 }
 
+/**
+ * Client IP from a raw HTTP request. Uses the RIGHTMOST X-Forwarded-For hop (appended by the
+ * Google front end / ALB). The leftmost value is attacker-controlled; trusting it let callers
+ * rotate fake IPs and bypass every per-IP OTP / SMS / login rate limit.
+ */
+function clientIpFromRawRequest(raw) {
+  // N-th hop from the right, N = TRUSTED_PROXY_HOPS (see src/net/client_ip.js).
+  return require('./src/net/client_ip').clientIpFromRawRequest(raw);
+}
+
 function clientIpFromRequest(request) {
-  const raw = request?.rawRequest;
-  if (!raw) return 'unknown';
-  const forwarded = raw.headers?.['x-forwarded-for'];
-  if (forwarded) return String(forwarded).split(',')[0].trim();
-  return raw.ip || raw.socket?.remoteAddress || 'unknown';
-}
-
-async function assertBucket(db, { bucket, windowMs, maxAttempts, message }) {
-  const ref = db.collection('abuse_rate_limits').doc(bucket);
-  const nowMs = Date.now();
-
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const data = snap.data() || {};
-    const windowStartMs = data.windowStart?.toDate?.()?.getTime() || 0;
-    const withinWindow = windowStartMs > 0 && nowMs - windowStartMs < windowMs;
-    const count = withinWindow ? (Number(data.count) || 0) : 0;
-
-    if (count >= maxAttempts) {
-      throw new HttpsError(
-        'resource-exhausted',
-        message || 'Too many requests. Please slow down and try again later.',
-      );
-    }
-
-    tx.set(ref, {
-      count: count + 1,
-      windowStart: withinWindow
-        ? data.windowStart
-        : Timestamp.fromDate(new Date(nowMs)),
-      updatedAt: FieldValue.serverTimestamp(),
-      category: String(bucket).split('_')[0] || 'abuse',
-    }, { merge: true });
-  });
-}
-
-function getRateLimitBackend() {
-  return String(process.env.RATE_LIMIT_BACKEND || 'redis').trim().toLowerCase();
+  return clientIpFromRawRequest(request?.rawRequest);
 }
 
 const LUA_INCR_EXPIRE = `
@@ -139,34 +114,40 @@ async function assertBucketRedis(redisClient, { key, windowMs, maxAttempts, mess
 
 const { redisKey: envRedisKey } = require('./src/config/redis_keys');
 
-async function assertBucketUnified({ db, redisClient, useRedis, bucket, redisKey, windowMs, maxAttempts, message }) {
-  if (useRedis) {
-    if (!redisClient) {
-      throw new HttpsError('unavailable', 'Rate limit service temporarily unavailable.');
-    }
-    try {
-      await assertBucketRedis(redisClient, {
-        key: envRedisKey(redisKey),
-        windowMs,
-        maxAttempts,
-        message,
-      });
-      return;
-    } catch (err) {
-      if (err instanceof HttpsError && err.code === 'resource-exhausted') {
-        throw err;
-      }
-      throw new HttpsError('unavailable', 'Rate limit service temporarily unavailable.');
-    }
+/** Redis-only limiter; fails CLOSED (unavailable) when Redis cannot be reached. */
+async function assertBucketUnified({ redisClient, redisKey, windowMs, maxAttempts, message }) {
+  if (!redisClient) {
+    throw new HttpsError('unavailable', 'Rate limit service temporarily unavailable.');
   }
-  await assertBucket(db, { bucket, windowMs, maxAttempts, message });
+  try {
+    await assertBucketRedis(redisClient, {
+      key: envRedisKey(redisKey),
+      windowMs,
+      maxAttempts,
+      message,
+    });
+  } catch (err) {
+    if (err instanceof HttpsError && err.code === 'resource-exhausted') {
+      throw err;
+    }
+    throw new HttpsError('unavailable', 'Rate limit service temporarily unavailable.');
+  }
+}
+
+function getAbuseRedisClient() {
+  try {
+    return require('./redis').redis || null;
+  } catch (_) {
+    return null;
+  }
 }
 
 /**
  * Enforce category limits for IP (+ uid when authenticated).
- * @param {'api'|'login'|'signup'|'otp_send'|'ai'|'scrape'|'payment'} category
+ * The first parameter is kept for call-site compatibility and is ignored.
+ * @param {'api'|'login'|'signup'|'otp_send'|'ai'|'scrape'|'payment'|'account_lookup'|'booking'} category
  */
-async function enforceAbuseLimit(db, request, category, {
+async function enforceAbuseLimit(_unusedDb, request, category, {
   identifier,
   message,
 } = {}) {
@@ -177,27 +158,12 @@ async function enforceAbuseLimit(db, request, category, {
 
   const ip = clientIpFromRequest(request);
   const uid = request?.auth?.uid || '';
-  const isCutover = await isDoctorPatientSupabasePrimary();
-  let useRedis = isCutover || getRateLimitBackend() === 'redis' || process.env.FIRESTORE_FORBIDDEN === '1';
-  let redisClient = null;
-  if (useRedis) {
-    try {
-      const { redis } = require('./redis');
-      redisClient = redis;
-    } catch (_) {}
-  }
-  // Unit tests inject Firestore mock db without Redis: fall back to Firestore buckets.
-  if (useRedis && !redisClient && db && typeof db.collection === 'function') {
-    useRedis = false;
-  }
+  const redisClient = getAbuseRedisClient();
 
   try {
     if (limits.ip) {
       await assertBucketUnified({
-        db,
         redisClient,
-        useRedis,
-        bucket: `${category}_ip_${hashKey(ip)}`,
         redisKey: `ratelimit:${category}:${hashKey(`ip:${ip}`)}`,
         windowMs: limits.ip.windowMs,
         maxAttempts: limits.ip.max,
@@ -206,10 +172,7 @@ async function enforceAbuseLimit(db, request, category, {
     }
     if (limits.uid && uid) {
       await assertBucketUnified({
-        db,
         redisClient,
-        useRedis,
-        bucket: `${category}_uid_${hashKey(uid)}`,
         redisKey: `ratelimit:${category}:${hashKey(`uid:${uid}`)}`,
         windowMs: limits.uid.windowMs,
         maxAttempts: limits.uid.max,
@@ -218,10 +181,7 @@ async function enforceAbuseLimit(db, request, category, {
     }
     if (limits.id && identifier) {
       await assertBucketUnified({
-        db,
         redisClient,
-        useRedis,
-        bucket: `${category}_id_${hashKey(String(identifier).toLowerCase())}`,
         redisKey: `ratelimit:${category}:${hashKey(String(identifier).toLowerCase())}`,
         windowMs: limits.id.windowMs,
         maxAttempts: limits.id.max,
@@ -288,11 +248,10 @@ module.exports = {
   LIMITS,
   hashKey,
   clientIpFromRequest,
-  assertBucket,
+  clientIpFromRawRequest,
   assertBucketRedis,
   assertBucketUnified,
   enforceAbuseLimit,
   assertAppCheck,
   withAbuseProtection,
-  getRateLimitBackend,
 };

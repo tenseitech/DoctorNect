@@ -697,7 +697,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                           _AboutSection(
                             icon: Icons.person_remove_outlined,
                             label: 'Delete account',
-                            subtitle: 'Permanently remove this ambulance account',
+                            subtitle:
+                                'Permanently remove this ambulance account',
                             iconColor: AppColors.error,
                             onTap: () => _confirmDeleteAccount(context),
                           ),

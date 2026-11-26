@@ -141,7 +141,26 @@ GRANT SELECT ON public.doctor_directory TO anon, authenticated, service_role;
 REVOKE ALL ON TABLE public.doctors FROM anon;
 
 DROP POLICY IF EXISTS doctors_select_directory_definer ON public.doctors;
-CREATE POLICY doctors_select_directory_definer ON public.doctors
-    FOR SELECT
-    TO doctornect_admin, rds_master
-    USING (verified IS TRUE AND deactivated IS FALSE);
+
+DO $policy$
+DECLARE
+    roles text[] := ARRAY[]::text[];
+    role_list text;
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'doctornect_admin') THEN
+        roles := array_append(roles, 'doctornect_admin');
+    END IF;
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'rds_master') THEN
+        roles := array_append(roles, 'rds_master');
+    END IF;
+    IF array_length(roles, 1) IS NULL THEN
+        RAISE NOTICE 'doctors_select_directory_definer: no target roles; policy not created';
+        RETURN;
+    END IF;
+    SELECT string_agg(quote_ident(r), ', ') INTO role_list FROM unnest(roles) AS t(r);
+    EXECUTE format(
+        'CREATE POLICY doctors_select_directory_definer ON public.doctors FOR SELECT TO %s USING (verified IS TRUE AND deactivated IS FALSE)',
+        role_list
+    );
+END;
+$policy$;

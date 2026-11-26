@@ -1,6 +1,7 @@
 const { Client } = require('pg');
 const { loadRootEnv } = require('./lib/bootstrap_root_env');
 const { getEnv } = require('./lib/env_loader');
+const { stagingPgSsl } = require('./lib/staging_pg_ssl');
 
 loadRootEnv();
 const dbUrl = getEnv('PROD_SUPABASE_DB_URL') || getEnv('STAGING_SUPABASE_DB_URL');
@@ -8,7 +9,7 @@ if (!dbUrl) {
   console.error('PROD_SUPABASE_DB_URL or STAGING_SUPABASE_DB_URL missing in repo root .env');
   process.exit(1);
 }
-const client = new Client({ connectionString: dbUrl.trim(), ssl: { rejectUnauthorized: false } });
+const client = new Client({ connectionString: dbUrl.trim(), ssl: stagingPgSsl() });
 
 async function check() {
   await client.connect();

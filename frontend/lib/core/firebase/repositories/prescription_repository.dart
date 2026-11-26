@@ -1,6 +1,6 @@
 import '../../../features/doctor/clinical/models/clinical_models.dart';
 import '../firestore_query_limits.dart';
-import '../models/firestore_page.dart';
+import 'package:medibond/core/data/data_page.dart';
 import '../../supabase/repositories/supabase_prescription_repository.dart';
 
 class PrescriptionRepository {
@@ -17,7 +17,7 @@ class PrescriptionRepository {
         .save(draft, doctorId, isNewRecord: isNewRecord);
   }
 
-  Future<FirestorePage<PrescriptionDraft>> fetchForDoctor(
+  Future<DataPage<PrescriptionDraft>> fetchForDoctor(
     String doctorId, {
     String? startAfter,
     int limit = FirestoreQueryLimits.prescriptionsPage,
@@ -31,7 +31,7 @@ class PrescriptionRepository {
     );
   }
 
-  Future<FirestorePage<PrescriptionDraft>> fetchForPatient(
+  Future<DataPage<PrescriptionDraft>> fetchForPatient(
     String patientId, {
     String? startAfter,
     int limit = FirestoreQueryLimits.prescriptionsPage,
@@ -45,7 +45,7 @@ class PrescriptionRepository {
     );
   }
 
-  Future<FirestorePage<PrescriptionDraft>> fetchForPatientForDoctor(
+  Future<DataPage<PrescriptionDraft>> fetchForPatientForDoctor(
     String patientId, {
     String? startAfter,
     int limit = FirestoreQueryLimits.prescriptionsPage,
@@ -59,7 +59,7 @@ class PrescriptionRepository {
     );
   }
 
-  Future<FirestorePage<PrescriptionDraft>> fetchForDoctorAndPatient(
+  Future<DataPage<PrescriptionDraft>> fetchForDoctorAndPatient(
     String doctorId,
     String patientId, {
     int limit = FirestoreQueryLimits.prescriptionsPage,
@@ -73,7 +73,7 @@ class PrescriptionRepository {
     );
   }
 
-  Future<FirestorePage<PrescriptionDraft>> fetchForDoctorAndPatientForDoctor(
+  Future<DataPage<PrescriptionDraft>> fetchForDoctorAndPatientForDoctor(
     String doctorId,
     String patientId, {
     int limit = FirestoreQueryLimits.prescriptionsPage,

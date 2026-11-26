@@ -21,10 +21,13 @@ import 'helpers/auth_validation_rules_fixture.dart';
 import 'helpers/firestore_test_access.dart';
 
 class MockUser extends Mock implements User {}
-class MockFirebaseAuth extends Mock implements FirebaseAuth {}
-class MockSupabaseUserRepository extends Mock implements SupabaseUserRepository {}
-class FakeUser extends Fake implements User {}
 
+class MockFirebaseAuth extends Mock implements FirebaseAuth {}
+
+class MockSupabaseUserRepository extends Mock
+    implements SupabaseUserRepository {}
+
+class FakeUser extends Fake implements User {}
 
 void main() {
   setUpAll(() {
@@ -257,7 +260,9 @@ void main() {
   });
 
   group('FirebaseAuthService — registration null-profile resilience', () {
-    test('profile timeout result preserves account without premature deletion message', () {
+    test(
+        'profile timeout result preserves account without premature deletion message',
+        () {
       final timeoutResult = AuthSignInResult.fail(
         'Account created, but profile verification timed out. Please sign in to continue.',
       );
@@ -267,7 +272,9 @@ void main() {
       expect(timeoutResult.message, isNot(contains('delete')));
     });
 
-    test('network issue result during profile save preserves user account without deletion', () {
+    test(
+        'network issue result during profile save preserves user account without deletion',
+        () {
       final networkErrorResult = AuthSignInResult.fail(
         'Registration encountered a network issue while saving profile. Please check your connection and try again.',
       );
@@ -276,11 +283,10 @@ void main() {
       expect(networkErrorResult.message, contains('check your connection'));
       expect(networkErrorResult.message, isNot(contains('delete')));
     });
-
-
   });
 
-  group('Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks)', () {
+  group('Real UserRepository & FirebaseAuthService Resilience (Fakes & Mocks)',
+      () {
     late MockUser mockUser;
     late MockFirebaseAuth mockAuth;
     late MockSupabaseUserRepository mockSupabaseRepo;
@@ -301,7 +307,9 @@ void main() {
       SupabaseBootstrap.isReady = false;
     });
 
-    test('(a) profile null after 3 attempts triggers signOut and does NOT call user.delete()', () async {
+    test(
+        '(a) profile null after 3 attempts triggers signOut and does NOT call user.delete()',
+        () async {
       when(() => mockUser.uid).thenReturn('orphan_user_123');
       when(() => mockAuth.signOut()).thenAnswer((_) async {});
       when(
@@ -322,19 +330,21 @@ void main() {
       verifyNever(() => mockUser.delete());
     });
 
-    test('(b) UserRepository.createProfile propagates ProfileCreationException from Supabase layer', () async {
+    test(
+        '(b) UserRepository.createProfile propagates ProfileCreationException from Supabase layer',
+        () async {
       when(() => mockUser.uid).thenReturn('dual_write_uid_456');
       when(() => mockUser.email).thenReturn('patient@test.com');
 
       when(() => mockSupabaseRepo.createProfile(
-        user: any(named: 'user'),
-        role: any(named: 'role'),
-        profileId: any(named: 'profileId'),
-        displayName: any(named: 'displayName'),
-        mobile: any(named: 'mobile'),
-        mobileVerified: any(named: 'mobileVerified'),
-        roleData: any(named: 'roleData'),
-      )).thenAnswer((_) async {
+            user: any(named: 'user'),
+            role: any(named: 'role'),
+            profileId: any(named: 'profileId'),
+            displayName: any(named: 'displayName'),
+            mobile: any(named: 'mobile'),
+            mobileVerified: any(named: 'mobileVerified'),
+            roleData: any(named: 'roleData'),
+          )).thenAnswer((_) async {
         throw ProfileCreationException('503 Service Unavailable');
       });
 
@@ -351,7 +361,8 @@ void main() {
       );
     });
 
-    test('(c) repairMissingProfile returns Supabase-repaired profile', () async {
+    test('(c) repairMissingProfile returns Supabase-repaired profile',
+        () async {
       when(() => mockUser.uid).thenReturn('orphan_repaired_uid');
       when(() => mockUser.email).thenReturn('orphan@example.com');
 
@@ -381,7 +392,9 @@ void main() {
       expect(repaired.profileId, 'patient_rep_001');
     });
 
-    test('(d) repairMissingProfile returns null when Supabase finds no role row', () async {
+    test(
+        '(d) repairMissingProfile returns null when Supabase finds no role row',
+        () async {
       when(() => mockUser.uid).thenReturn('unrepairable_orphan_uid');
       when(() => mockUser.email).thenReturn('unrepairable@example.com');
       when(
@@ -399,8 +412,9 @@ void main() {
       expect(repaired, isNull);
     });
 
-
-    test('(i) repairMissingProfile returns null when ownerUid does not match caller', () async {
+    test(
+        '(i) repairMissingProfile returns null when ownerUid does not match caller',
+        () async {
       when(() => mockUser.uid).thenReturn('attacker_uid_111');
       when(() => mockUser.email).thenReturn('attacker@example.com');
       when(
@@ -418,7 +432,8 @@ void main() {
       expect(repaired, isNull);
     });
 
-    test('(ii) repairMissingProfile returns null on expectedRole mismatch', () async {
+    test('(ii) repairMissingProfile returns null on expectedRole mismatch',
+        () async {
       when(() => mockUser.uid).thenReturn('cross_role_uid_222');
       when(() => mockUser.email).thenReturn('cross@example.com');
       when(

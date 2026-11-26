@@ -6,6 +6,11 @@ resource "aws_ecs_cluster" "main" {
     name  = "containerInsights"
     value = "enabled"
   }
+
+  # Existing production resource: never destroy or replace it from Terraform.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # IAM Role: Task Execution (Pulls from ECR and reads Secrets Manager)
@@ -20,6 +25,11 @@ resource "aws_iam_role" "ecs_execution_role" {
       Principal = { Service = "ecs-tasks.amazonaws.com" }
     }]
   })
+
+  # Existing production resource: never destroy or replace it from Terraform.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_execution_standard" {
@@ -40,7 +50,9 @@ resource "aws_iam_policy" "secrets_access" {
       Resource = [
         aws_secretsmanager_secret.database_credentials.arn,
         aws_secretsmanager_secret.postgrest_jwt_secret.arn,
-        aws_secretsmanager_secret.gateway_service_key.arn
+        aws_secretsmanager_secret.gateway_service_key.arn,
+        aws_secretsmanager_secret.demo_routing.arn,
+        aws_secretsmanager_secret.gateway_firebase_admin.arn
       ]
     }]
   })
@@ -49,6 +61,10 @@ resource "aws_iam_policy" "secrets_access" {
 resource "aws_iam_role_policy_attachment" "ecs_secrets_access" {
   role       = aws_iam_role.ecs_execution_role.name
   policy_arn = aws_iam_policy.secrets_access.arn
+}
+
+locals {
+  ecs_subnet_ids = var.ecs_assign_public_ip ? var.public_subnet_ids : var.private_subnet_ids
 }
 
 # ECS Task Definition: Dual container pod (Gateway + PostgREST) over localhost
@@ -78,12 +94,22 @@ resource "aws_ecs_task_definition" "app" {
       environment = [
         { name = "NODE_ENV", value = "production" },
         { name = "PORT", value = "3000" },
+        { name = "APP_ENV", value = "production" },
         { name = "PGRST_URL", value = "http://127.0.0.1:3001" },
-        { name = "FIREBASE_PROJECT_ID", value = var.firebase_project_id }
+        { name = "FIREBASE_PROJECT_ID", value = var.firebase_project_id },
+        { name = "DEMO_REAL_ROUTING_ENABLED", value = "1" },
+        { name = "DEMO_PGRST_JWT_AUD", value = "authenticated" },
+        { name = "TRUSTED_PROXY_HOPS", value = "1" },
+        { name = "CORS_ALLOWED_ORIGINS", value = join(",", var.cors_allowed_origins) }
       ]
       secrets = [
         { name = "PGRST_JWT_SECRET", valueFrom = "${aws_secretsmanager_secret.postgrest_jwt_secret.arn}:jwt_secret::" },
-        { name = "SERVICE_ROLE_KEY", valueFrom = "${aws_secretsmanager_secret.gateway_service_key.arn}:service_key::" }
+        { name = "SERVICE_ROLE_KEY", valueFrom = "${aws_secretsmanager_secret.gateway_service_key.arn}:service_key::" },
+        { name = "ANON_KEY", valueFrom = "${aws_secretsmanager_secret.gateway_service_key.arn}:anon_key::" },
+        { name = "FIREBASE_SERVICE_ACCOUNT_JSON", valueFrom = "${aws_secretsmanager_secret.gateway_firebase_admin.arn}:firebase_service_account_json::" },
+        { name = "DEMO_FIREBASE_UID_ALLOWLIST", valueFrom = "${aws_secretsmanager_secret.demo_routing.arn}:DEMO_FIREBASE_UID_ALLOWLIST::" },
+        { name = "DEMO_PGRST_URL", valueFrom = "${aws_secretsmanager_secret.demo_routing.arn}:DEMO_PGRST_URL::" },
+        { name = "DEMO_PGRST_JWT_SECRET", valueFrom = "${aws_secretsmanager_secret.demo_routing.arn}:DEMO_PGRST_JWT_SECRET::" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -94,7 +120,9 @@ resource "aws_ecs_task_definition" "app" {
         }
       }
     },
-    # 2. PostgREST Official Container (Port 3001, private to the pod)
+    # 2. PostgREST (Port 3001, private to the task). Image: services/postgrest (official image +
+    #    pinned AWS RDS CA bundle). PGRST_DB_URI must use sslmode=verify-full and
+    #    sslrootcert=/etc/ssl/rds/global-bundle.pem (docs/GATEWAY_DEPLOY.md).
     {
       name      = "postgrest"
       image     = var.postgrest_image
@@ -127,18 +155,18 @@ resource "aws_ecs_task_definition" "app" {
   ])
 }
 
-# ECS Service: High Availability (2 tasks across AZs in private subnets)
+# ECS Service: start at desired_count=0; scale after secrets + health check
 resource "aws_ecs_service" "main" {
   name            = "${var.project_name}-${var.environment}-service"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.app.arn
-  desired_count   = 2
+  desired_count   = var.ecs_desired_count
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = var.private_subnet_ids
+    subnets          = local.ecs_subnet_ids
     security_groups  = [aws_security_group.ecs.id]
-    assign_public_ip = false
+    assign_public_ip = var.ecs_assign_public_ip
   }
 
   load_balancer {
@@ -148,4 +176,8 @@ resource "aws_ecs_service" "main" {
   }
 
   depends_on = [aws_lb_listener.https]
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
 }

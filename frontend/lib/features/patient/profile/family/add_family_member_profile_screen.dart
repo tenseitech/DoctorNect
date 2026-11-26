@@ -144,7 +144,8 @@ class _AddFamilyMemberProfileScreenState
         PatientSession.loggedInPatientId;
     final memberId = isEditing
         ? widget.existingMember!.id
-        : AddFamilyMemberProfileScreen.generateFamilyMemberId(ownerUid: ownerUid);
+        : AddFamilyMemberProfileScreen.generateFamilyMemberId(
+            ownerUid: ownerUid);
 
     final member = FamilyProfileMember(
       id: memberId,

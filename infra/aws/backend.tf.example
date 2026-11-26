@@ -1,0 +1,12 @@
+# Copy to backend.tf after creating the S3 state bucket (see docs/ops/TERRAFORM_REMOTE_STATE.md).
+# Requires Terraform >= 1.10 for use_lockfile (S3-native state locking).
+
+terraform {
+  backend "s3" {
+    bucket       = "doctornect-terraform-state-<AWS_ACCOUNT_ID>"
+    key          = "production/gateway/terraform.tfstate"
+    region       = "ap-south-1"
+    encrypt      = true
+    use_lockfile = true
+  }
+}

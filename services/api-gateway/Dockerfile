@@ -1,4 +1,4 @@
-# Multi-stage minimal production image for DoctorNect Auth Gateway
+# Production image for the DoctorNect Auth Gateway
 FROM node:22-alpine AS runner
 
 WORKDIR /app
@@ -6,10 +6,15 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
+# ALB appends the client address to X-Forwarded-For (see src/client_ip.js).
+ENV TRUSTED_PROXY_HOPS=1
 
-# Copy application code (zero external npm dependencies required)
+# Install runtime dependencies from the lockfile (firebase-admin is required for the
+# production token-revocation check; without it every authenticated request is rejected).
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+
 COPY src/ ./src/
-COPY package.json ./
 
 # Security: Non-root execution
 RUN addgroup -S doctornect && adduser -S doctornect -G doctornect

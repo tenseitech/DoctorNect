@@ -11,11 +11,19 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" tools:node="remove" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
+    <!-- Added by the Razorpay SDK (card tap / device info); not needed for checkout (D4).
+         Verify one TEST-mode payment after changes: docs/RAZORPAY_PAYMENT_TEST.md -->
+    <uses-permission android:name="android.permission.NFC" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_BASIC_PHONE_STATE" tools:node="remove" />
     <application
         android:label="DoctorNect"
         android:name="${applicationName}"
-        android:icon="@mipmap/launcher_icon"
-        android:resizeableActivity="true">
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:resizeableActivity="true"
+        android:allowBackup="false"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"

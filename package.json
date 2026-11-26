@@ -3,10 +3,16 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test:rules": "npx firebase-tools emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node scripts/run_rules_tests.js\"",
     "audit:firestore-reachability": "node scripts/audit/scan_firestore_release_reachability.js",
     "env:verify": "node scripts/env/verify_env_duplicate_keys.js && node scripts/env/verify_env_file_policy.js && node scripts/env/guard_env_example_secrets.js && node scripts/env/guard_committed_infra_fingerprints.js && node scripts/env/verify_env_key_parity.js",
-    "env:ci": "node scripts/env/ci_env_checks.js"
+    "env:ci": "node scripts/env/ci_env_checks.js",
+    "materialize:functions-env": "node scripts/env/materialize_functions_env.js",
+    "bundle:verify": "node scripts/ops/functions_deploy_bundle_verify.js",
+    "predeploy:outbox-guard": "node scripts/ops/predeploy_notification_outbox_guard.js",
+    "test:db": "node scripts/db/run_sql_tests.js",
+    "check:boot-env": "node scripts/env/check_boot_env.js",
+    "test:demo-login": "node scripts/db/demo_login_e2e.js",
+    "seed:demo": "node scripts/db/seed_staging_demo_accounts.js"
   },
   "devDependencies": {
     "libpg-query": "^18.2.1"

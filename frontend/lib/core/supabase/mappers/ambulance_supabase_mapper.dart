@@ -66,11 +66,17 @@ abstract final class AmbulanceSupabaseMapper {
       }
 
       final createdAtRaw = row['created_at'] as String?;
-      final dt = createdAtRaw != null ? DateTime.parse(createdAtRaw) : DateTime.now();
+      final dt =
+          createdAtRaw != null ? DateTime.parse(createdAtRaw) : DateTime.now();
 
-      final pickup = row['pickup_location'] as String? ?? row['pickup_address'] as String? ?? '';
-      final phone = row['contact_phone'] as String? ?? row['patient_phone'] as String? ?? '';
-      final driverId = row['accepted_driver_id'] as String? ?? row['assigned_driver_id'] as String?;
+      final pickup = row['pickup_location'] as String? ??
+          row['pickup_address'] as String? ??
+          '';
+      final phone = row['contact_phone'] as String? ??
+          row['patient_phone'] as String? ??
+          '';
+      final driverId = row['accepted_driver_id'] as String? ??
+          row['assigned_driver_id'] as String?;
 
       return AmbulanceBooking(
         id: row['broadcast_id'] as String? ?? '',
@@ -128,12 +134,21 @@ abstract final class AmbulanceSupabaseMapper {
       }
 
       final createdAtRaw = row['created_at'] as String?;
-      final dt = createdAtRaw != null ? DateTime.parse(createdAtRaw) : DateTime.now();
+      final dt =
+          createdAtRaw != null ? DateTime.parse(createdAtRaw) : DateTime.now();
 
       final broadcast = row['ambulance_broadcasts'] as Map<String, dynamic>?;
-      final pickup = row['pickup_location'] as String? ?? broadcast?['pickup_location'] as String? ?? broadcast?['pickup_address'] as String? ?? '';
-      final drop = row['drop_location'] as String? ?? broadcast?['drop_location'] as String? ?? broadcast?['destination_address'] as String? ?? '';
-      final patientId = row['patient_id'] as String? ?? broadcast?['patient_id'] as String? ?? '';
+      final pickup = row['pickup_location'] as String? ??
+          broadcast?['pickup_location'] as String? ??
+          broadcast?['pickup_address'] as String? ??
+          '';
+      final drop = row['drop_location'] as String? ??
+          broadcast?['drop_location'] as String? ??
+          broadcast?['destination_address'] as String? ??
+          '';
+      final patientId = row['patient_id'] as String? ??
+          broadcast?['patient_id'] as String? ??
+          '';
 
       return AmbulanceRequest(
         id: row['request_id'] as String? ?? '',

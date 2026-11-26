@@ -1,4 +1,4 @@
-import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/app_data_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/core/data/shared_appointments_store.dart';
 import 'package:medibond/core/firebase/firebase_bootstrap.dart';

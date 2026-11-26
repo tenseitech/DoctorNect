@@ -34,7 +34,8 @@ abstract final class AmbulanceEntryPoints {
     if (logicalIndex < 0 || logicalIndex > 4) return null;
     if (logicalIndex == patientShellAmbulanceTabIndex) {
       if (showUnavailableToast && context != null && context.mounted) {
-        AppToast.info(context, 'Ambulance booking is not available in this build.');
+        AppToast.info(
+            context, 'Ambulance booking is not available in this build.');
       }
       return null;
     }

@@ -31,10 +31,28 @@ variable "private_subnet_ids" {
   description = "Private subnet IDs across at least 2 AZs for ECS tasks. NOTE: Private subnets and NAT Gateways are expected as existing inputs, not created by this module. The route tables for these subnets MUST have a 0.0.0.0/0 route pointing to a functional NAT Gateway. If the VPC has no NAT Gateway, ECS tasks in private subnets cannot reach the internet, causing outbound HTTPS (port 443) requests to Google JWKS (https://www.googleapis.com) to hang and time out, resulting in HTTP 504 Gateway Timeouts on all authenticated requests."
 }
 
+variable "ecs_assign_public_ip" {
+  type        = bool
+  description = "When true, Fargate tasks use public_subnet_ids with a public IP (no NAT). When false, use private_subnet_ids (NAT required)."
+  default     = true
+}
+
+variable "ecs_desired_count" {
+  type        = number
+  description = "Initial ECS service desired count (0 until secrets + images are verified, then scale up)."
+  default     = 0
+}
+
 variable "domain_name" {
   type        = string
   description = "API domain name (e.g. api.doctornect.com)"
   default     = "api.doctornect.com"
+}
+
+variable "enable_waf" {
+  type        = bool
+  description = "When true, create regional WAF Web ACL and associate with ALB (~$10/mo fixed)."
+  default     = false
 }
 
 variable "acm_certificate_arn" {
@@ -49,8 +67,7 @@ variable "gateway_image" {
 
 variable "postgrest_image" {
   type        = string
-  description = "PostgREST official container image (pinned; default v16.5 for PG18 RDS)"
-  default     = "postgrest/postgrest:v16.5"
+  description = "PostgREST image built from services/postgrest (official v16.5 + pinned AWS RDS CA bundle) and pushed to ECR doctornect-postgrest. The stock image has no RDS CA and cannot verify the RDS certificate."
 }
 
 variable "ecs_cpu_architecture" {
@@ -95,4 +112,20 @@ variable "rds_instance_identifier" {
   type        = string
   description = "AWS RDS DB instance identifier for parameter group attachment"
   default     = "doctornect-production-rds"
+}
+
+variable "cors_allowed_origins" {
+  type        = list(string)
+  description = "Browser origins allowed by the gateway CORS policy and the production S3 bucket CORS rule."
+  default     = ["https://doctornect.com", "https://www.doctornect.com", "https://app.doctornect.com"]
+}
+
+variable "s3_production_bucket_name" {
+  type        = string
+  description = "Name of the NEW production S3 bucket (globally unique). Must differ from the staging bucket. Suggested: doctornect-prod-<account-id>-ap-south-1 (set in terraform.tfvars)."
+}
+
+variable "s3_staging_bucket_name" {
+  type        = string
+  description = "Existing staging bucket (not managed here; used only for the staging IAM policy document)."
 }

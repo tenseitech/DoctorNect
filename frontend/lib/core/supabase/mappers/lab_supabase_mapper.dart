@@ -18,7 +18,8 @@ abstract final class LabSupabaseMapper {
     try {
       final dateTimeRaw = row['date_time'] as String?;
       final createdAtRaw = row['created_at'] as String?;
-      final dt = dateTimeRaw != null ? DateTime.parse(dateTimeRaw) : DateTime.now();
+      final dt =
+          dateTimeRaw != null ? DateTime.parse(dateTimeRaw) : DateTime.now();
 
       final isHome = row['is_home_collection'] as bool? ?? false;
       final collType = isHome ? 'home' : 'walkIn';
@@ -55,7 +56,8 @@ abstract final class LabSupabaseMapper {
       'test_name': record.testName,
       'date_time': record.dateTime.toIso8601String(),
       'slot_label': record.slotLabel,
-      'is_home_collection': record.collectionType.toLowerCase().contains('home'),
+      'is_home_collection':
+          record.collectionType.toLowerCase().contains('home'),
       'collection_address': record.address,
       'status': record.status,
       if (record.reportStorageKey != null)
@@ -66,10 +68,12 @@ abstract final class LabSupabaseMapper {
   static DoctorLabOrder? orderFromRow(Map<String, dynamic> row) {
     try {
       final createdAtRaw = row['created_at'] as String?;
-      final dt = createdAtRaw != null ? DateTime.parse(createdAtRaw) : DateTime.now();
+      final dt =
+          createdAtRaw != null ? DateTime.parse(createdAtRaw) : DateTime.now();
 
       final testIdsRaw = (row['test_ids'] as List?)?.cast<String>() ?? const [];
-      final testNamesRaw = (row['test_names'] as List?)?.cast<String>() ?? const [];
+      final testNamesRaw =
+          (row['test_names'] as List?)?.cast<String>() ?? const [];
 
       return DoctorLabOrder(
         orderId: row['order_id'] as String? ?? '',
@@ -83,7 +87,9 @@ abstract final class LabSupabaseMapper {
         testIds: testIdsRaw,
         testNames: testNamesRaw.isNotEmpty
             ? testNamesRaw
-            : (row['test_name'] != null ? [row['test_name'] as String] : const []),
+            : (row['test_name'] != null
+                ? [row['test_name'] as String]
+                : const []),
         indication: row['clinical_notes'] as String?,
         status: row['status'] as String? ?? 'prescribed',
         reportStorageKey: row['report_s3_key'] as String?,

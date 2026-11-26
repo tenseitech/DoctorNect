@@ -1,5 +1,10 @@
 # DoctorNect: Firebase → Supabase Migration & Cutover Runbook
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 This runbook provides the operational manual for executing the backend migration of **DoctorNect** from Firebase to Supabase without downtime, data loss, or disruption to live Google Play Store users.
 
 ---

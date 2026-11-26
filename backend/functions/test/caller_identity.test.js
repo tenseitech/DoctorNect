@@ -9,82 +9,22 @@ describe('caller_identity helper', () => {
     setSupabaseClientForTesting(null);
   });
 
-  describe('Firestore path (cutover flag OFF)', () => {
-    let origLegacyCutover;
-    beforeEach(() => {
-      origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
-      process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
-      try {
-        const { _resetRemoteConfigCache } = require('../sync_flags');
-        _resetRemoteConfigCache();
-      } catch (_) {}
-    });
-
-    afterEach(() => {
-      if (origLegacyCutover === undefined) delete process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
-      else process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = origLegacyCutover;
-      try {
-        const { _resetRemoteConfigCache } = require('../sync_flags');
-        _resetRemoteConfigCache();
-      } catch (_) {}
-    });
-    it('resolves user profile when document exists in Firestore', async () => {
-      const mockDb = {
-        collection: (name) => {
-          assert.equal(name, 'users');
-          return {
-            doc: (docId) => ({
-              get: async () => ({
-                exists: true,
-                id: docId,
-                data: () => ({
-                  role: 'doctor',
-                  profileId: 'doc_123',
-                  verified: true,
-                  mobile: '9876543210',
-                }),
-              }),
-            }),
-          };
-        },
-      };
-
-      const user = await resolveCallerIdentity({
-        db: mockDb,
-        uid: 'user_abc',
-        forceSupabase: false,
-      });
-
-      assert.equal(user.id, 'user_abc');
+  describe('Postgres-only (Firestore removed)', () => {
+    it('ignores any injected Firestore db and reads public.users', async () => {
+      const { createMemoryPostgrest } = require('./helpers/memory_postgrest');
+      const sb = createMemoryPostgrest({ users: [{ id: 'user_abc', firebase_uid: 'user_abc', role: 'doctor', profile_id: 'doc_123', verified: true }] });
+      const firestoreLike = { collection: () => { throw new Error('Firestore must never be touched'); } };
+      const user = await resolveCallerIdentity({ db: firestoreLike, uid: 'user_abc', supabaseClient: sb });
       assert.equal(user.role, 'doctor');
       assert.equal(user.profileId, 'doc_123');
-      assert.equal(user.verified, true);
     });
 
-    it('throws unauthenticated HttpsError when Firestore document is missing', async () => {
-      const mockDb = {
-        collection: () => ({
-          doc: () => ({
-            get: async () => ({
-              exists: false,
-              data: () => null,
-            }),
-          }),
-        }),
-      };
-
-      await assert.rejects(
-        () => resolveCallerIdentity({
-          db: mockDb,
-          uid: 'missing_user',
-          forceSupabase: false,
-        }),
-        (err) => {
-          assert.equal(err.code, 'unauthenticated');
-          assert.match(err.message, /User profile document not found/);
-          return true;
-        }
-      );
+    it('rejects uids that could inject PostgREST filter syntax', async () => {
+      const { createMemoryPostgrest } = require('./helpers/memory_postgrest');
+      const sb = createMemoryPostgrest({ users: [] });
+      for (const uid of ['a,role.eq.superAdmin', 'x)or(', 'a b']) {
+        await assert.rejects(() => resolveCallerIdentity({ uid, supabaseClient: sb }), (err) => err.code === 'unauthenticated');
+      }
     });
   });
 

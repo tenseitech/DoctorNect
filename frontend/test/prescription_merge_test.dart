@@ -10,7 +10,8 @@ void main() {
     )..primaryDiagnosis = diagnosis;
   }
 
-  test('Firestore prescription wins when Supabase has only part of the chart', () {
+  test('Firestore prescription wins when Supabase has only part of the chart',
+      () {
     final merged = ClinicalPrescriptionStore.mergeByIdFirestoreWins(
       [row('rx-1', 'supabase-partial')],
       [

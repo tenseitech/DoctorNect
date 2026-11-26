@@ -270,18 +270,19 @@ class LabBookingRepository {
       existingReportStorageKey: existingReportStorageKey,
       confirmNewKeyPersistedAfterError: (newKey) =>
           SupabaseLabRepository.instance.verifyLinkedLabBookingReportKeys(
-            {
-              bookingId,
-              ...linkedBookingIds,
-            },
-            newKey,
-          ),
+        {
+          bookingId,
+          ...linkedBookingIds,
+        },
+        newKey,
+      ),
       persistToDatabase: () async {
         for (final id in {
           bookingId,
           ...linkedBookingIds,
         }.where((id) => id.trim().isNotEmpty)) {
-          final ok = await SupabaseLabRepository.instance.updateLabBookingStatus(
+          final ok =
+              await SupabaseLabRepository.instance.updateLabBookingStatus(
             bookingId: id,
             newStatus: 'completed',
             reportStorageKey: uploadResult.objectKey,

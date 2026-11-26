@@ -141,31 +141,31 @@ class PatientProfileMock {
     _patientSub = SupabasePatientProfileRepository.instance
         .watchPatientDocument(patientId)
         .listen((data) {
-        if (data == null) return;
-        _applyFromSupabase(data);
-        final url =
-            (data['photo_url'] as String?) ?? (data['photoUrl'] as String?);
-        final key =
-            (data['photo_key'] as String?) ?? (data['photoKey'] as String?);
-        final storage = (data['photo_storage'] as String?) ??
-            (data['photoStorage'] as String?);
-        bool changed = false;
-        if (url != profile.photoUrl) {
-          profile.photoUrl = url;
-          changed = true;
-        }
-        if (key != profile.photoKey) {
-          profile.photoKey = key;
-          changed = true;
-        }
-        if (storage != profile.photoStorage) {
-          profile.photoStorage = storage;
-          changed = true;
-        }
-        if (changed) {
-          notifyProfileUpdated();
-        }
-      });
+      if (data == null) return;
+      _applyFromSupabase(data);
+      final url =
+          (data['photo_url'] as String?) ?? (data['photoUrl'] as String?);
+      final key =
+          (data['photo_key'] as String?) ?? (data['photoKey'] as String?);
+      final storage = (data['photo_storage'] as String?) ??
+          (data['photoStorage'] as String?);
+      bool changed = false;
+      if (url != profile.photoUrl) {
+        profile.photoUrl = url;
+        changed = true;
+      }
+      if (key != profile.photoKey) {
+        profile.photoKey = key;
+        changed = true;
+      }
+      if (storage != profile.photoStorage) {
+        profile.photoStorage = storage;
+        changed = true;
+      }
+      if (changed) {
+        notifyProfileUpdated();
+      }
+    });
   }
 
   static void _applyFromSupabase(Map<String, dynamic> data) {
@@ -623,5 +623,4 @@ class PatientProfileMock {
   static const supportEmail = 'support@doctornect.com';
   static const websiteUrl = 'https://doctornect.com';
   static const appDownloadUrl = 'https://doctornect.com/download';
-  static const appVersion = '1.0.1';
 }

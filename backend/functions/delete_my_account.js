@@ -1,15 +1,11 @@
-const { resolveCallerIdentity } = require('./caller_identity');
 'use strict';
-require('./firestore_forbidden_guard');
 
+const { resolveCallerIdentity } = require('./caller_identity');
 const crypto = require('crypto');
-const { getFirestore } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
-const { getStorage } = require('firebase-admin/storage');
 const { logger } = require('firebase-functions');
 const { HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
-const { toUserUuid } = require('./user_id_bridge');
 const { readSupabaseServiceRoleKey } = require('./secure_config');
 
 
@@ -27,9 +23,10 @@ function getS3Sdk() {
   return _s3Sdk;
 }
 
-const { resolveS3Bucket } = require('./src/config/s3_bucket');
-function s3Bucket() {
-  return resolveS3Bucket();
+const { resolveS3BucketForUid } = require('./src/config/s3_bucket');
+/** Bucket that holds this account's files (demo accounts: staging bucket in production). */
+function s3Bucket(uid) {
+  return resolveS3BucketForUid(uid);
 }
 let _testingS3Client = null;
 
@@ -57,20 +54,12 @@ function getS3Client() {
  * Deletes OTP challenge keys from Redis for the deleting user.
  * Best-effort, fail-soft.
  */
-async function cleanupUserRedisKeys({ mobileDigits, role }) {
-  if (String(process.env.OTP_REDIS_MIRROR || '').trim().toLowerCase() !== 'on') {
-    return;
-  }
+async function cleanupUserRedisKeys({ mobileDigits }) {
   const digits = normalizeMobileDigits(mobileDigits);
   if (!digits) return;
   try {
-    const { getRedisClient } = require('./redis');
-    const redis = getRedisClient();
-    if (!redis) return;
-    const roles = ['patient', 'doctor', 'medicalStore', 'lab', 'ambulance', null];
-    if (role && !roles.includes(role)) roles.push(role);
-    const keys = roles.map((r) => (r ? `otp:challenge:${r}:${digits}` : `otp:challenge:${digits}`));
-    await Promise.all(keys.map((k) => (typeof redis.del === 'function' ? redis.del(k) : Promise.resolve()).catch(() => {})));
+    // Uses the same env-prefixed / HMAC key derivation as the OTP module (previous raw keys never matched).
+    await require('./registration_otp').purgeOtpStateForMobile(digits);
   } catch (err) {
     logger.warn('deleteMyAccount: Redis cleanup failed (soft-fail)', {
       error: err?.message || 'unknown',
@@ -78,16 +67,9 @@ async function cleanupUserRedisKeys({ mobileDigits, role }) {
   }
 }
 
-const OTP_ROLES = ['patient', 'doctor', 'medicalStore', 'medical', 'lab', 'ambulance'];
-const ABUSE_CATEGORIES = ['api', 'login', 'signup', 'ai', 'scrape', 'payment'];
 
 function hashKey(value) {
   return crypto.createHash('sha256').update(String(value || '')).digest('hex');
-}
-
-function mobileHash(role, digits) {
-  const normRole = (role === 'medical' || role === 'pharmacy') ? 'medicalStore' : role;
-  return crypto.createHash('sha256').update(`${normRole}:${digits}`).digest('hex');
 }
 
 function normalizeMobileDigits(mobile) {
@@ -102,53 +84,6 @@ function normalizeMobileDigits(mobile) {
   return normalized;
 }
 
-function normalizeEmail(email) {
-  return String(email || '').trim().toLowerCase();
-}
-
-async function deleteDocIfExists(db, ref) {
-  const snap = await ref.get();
-  if (!snap.exists) return;
-  await db.recursiveDelete(ref);
-}
-
-async function deleteWhere(db, collection, field, value) {
-  const normalized = String(value || '').trim();
-  if (!normalized) return;
-
-  let lastDoc = null;
-  while (true) {
-    let query = db.collection(collection).where(field, '==', normalized).limit(200);
-    if (lastDoc) query = query.startAfter(lastDoc);
-    const snap = await query.get();
-    if (snap.empty) break;
-
-    for (const doc of snap.docs) {
-      await db.recursiveDelete(doc.ref);
-    }
-
-    if (snap.size < 200) break;
-    lastDoc = snap.docs[snap.docs.length - 1];
-  }
-}
-
-async function deleteStoragePrefix(bucket, prefix) {
-  const normalized = String(prefix || '').trim();
-  if (!normalized) return;
-  try {
-    await bucket.deleteFiles({ prefix: normalized });
-  } catch (err) {
-    logger.warn('deleteMyAccount storage prefix delete failed', {
-      prefix: normalized,
-      code: err?.code || 'unknown',
-    });
-  }
-}
-
-/**
- * Deletes all objects, versions, and delete markers under an S3 prefix in batches of up to 1000.
- * Best-effort: catches errors, logs warnings, and returns success status.
- */
 async function deleteS3PrefixVersions(s3, bucketName, prefix) {
   const normalizedPrefix = String(prefix || '').trim();
   if (!normalizedPrefix) return { success: true, count: 0, prefix: '' };
@@ -328,159 +263,47 @@ async function deleteS3SpecificKeysVersions(s3, bucketName, keys) {
   };
 }
 
-async function getOwnedProfileIds(db, collection, field, uid) {
-  const normalizedUid = String(uid || '').trim();
-  if (!normalizedUid) return [];
-  const snap = await db.collection(collection).where(field, '==', normalizedUid).get();
-  return snap.docs.map((doc) => doc.id);
+/**
+ * Physical key prefix for the account's data plane (production only): demo/ or prod/.
+ * Objects created before plane prefixing are unprefixed and belong to prod/.
+ */
+function planeKeyPrefixes(uid) {
+  if (String(process.env.APP_ENV || '').trim().toLowerCase() !== 'production') return [''];
+  const { requestObjectStoragePrefix } = require('./src/db/request_plane');
+  const plane = requestObjectStoragePrefix(uid || null, { appEnv: 'production' });
+  return plane === 'prod/' ? ['prod/', ''] : [plane];
 }
 
 /**
- * Resolves all S3 prefixes that belong to a user/profile.
- * - patients/{patientId}/
- * - doctor_profiles/{doctorId}/
- * - health_records/{patientId}/
- * - lab_reports/{patientId}/ (only if the user is the patient; NOT deleted for lab accounts)
- * - promoted_ads/{providerId}/ (if provider)
+ * S3 prefixes owned by the deleting account (matches getS3UploadUrlHandler key layout):
+ * - patient: patients/{id}/, health_records/{id}/, lab_reports/{id}/  (the patient's own records)
+ * - doctor_profiles/{id}/, labs/{id}/, pharmacies/{id}/, ambulances/{id}/  (provider media + KYC)
+ * - promoted_ads/{uid|profileId}/
+ * Lab report files uploaded by a LAB for patients are never deleted with the lab account:
+ * they belong to the patient's medical record.
  */
-async function resolveUserS3Prefixes(db, { uid, role, profileId }) {
-  const prefixes = new Set();
-
-  // 1. Promoted ad banners for provider or user
-  const isProvider = ['doctor', 'lab', 'pharmacy', 'medicalStore', 'medical', 'ambulance'].includes(role);
-  if (isProvider || uid) {
-    prefixes.add(`promoted_ads/${uid}/`);
-    if (profileId && profileId !== uid) {
-      prefixes.add(`promoted_ads/${profileId}/`);
-    }
-  }
-
-  // 2. Patient profiles (own profileId + any owned patient docs)
-  if (role === 'patient') {
-    let ownedPatientIds = [];
-    try {
-      ownedPatientIds = await getOwnedProfileIds(db, 'patients', 'ownerUid', uid);
-    } catch (_) {}
-    const patientIds = new Set([profileId, uid, ...ownedPatientIds].filter(Boolean));
-    for (const pid of patientIds) {
-      prefixes.add(`patients/${pid}/`);
-      prefixes.add(`health_records/${pid}/`);
-      prefixes.add(`lab_reports/${pid}/`); // User IS the patient: clean up their reports
-    }
-  }
-
-  // 3. Doctor profiles (own profileId + any owned doctor docs)
-  if (role === 'doctor') {
-    let ownedDoctorIds = [];
-    try {
-      ownedDoctorIds = await getOwnedProfileIds(db, 'doctors', 'ownerUid', uid);
-    } catch (_) {}
-    const doctorIds = new Set([profileId, uid, ...ownedDoctorIds].filter(Boolean));
-    for (const did of doctorIds) {
-      prefixes.add(`doctor_profiles/${did}/`);
-    }
-  }
-
-  // 4. Lab profiles (own profileId + any owned lab docs)
-  if (role === 'lab') {
-    let ownedLabIds = [];
-    try {
-      ownedLabIds = await getOwnedProfileIds(db, 'labs', 'ownerUid', uid);
-    } catch (_) {}
-    const labIds = new Set([profileId, uid, ...ownedLabIds].filter(Boolean));
-    for (const lid of labIds) {
-      prefixes.add(`labs/${lid}/`);
-      // NOTE: There is no lab_reports/{labId}/ prefix! Lab reports are stored as
-      // lab_reports/{patientId}/{bookingId}/{uuid}.ext.
-      // Specific report keys for this lab are collected via collectRoleSpecificS3ReportKeys()
-      // and deleted specifically without touching any other reports or prefix.
-    }
-  }
-
-  // 5. Medical store / pharmacy
-  if (role === 'medicalStore' || role === 'pharmacy' || role === 'medical') {
-    let ownedStoreIds = [];
-    try {
-      ownedStoreIds = await getOwnedProfileIds(db, 'medical_stores', 'ownerUid', uid);
-    } catch (_) {}
-    const storeIds = new Set([profileId, uid, ...ownedStoreIds].filter(Boolean));
-    for (const sid of storeIds) {
-      prefixes.add(`pharmacies/${sid}/`);
-    }
-  }
-
-  // 6. Ambulance
-  if (role === 'ambulance') {
-    let ownedAmbIds = [];
-    try {
-      ownedAmbIds = await getOwnedProfileIds(db, 'ambulances', 'authUid', uid);
-    } catch (_) {}
-    const ambIds = new Set([profileId, uid, ...ownedAmbIds].filter(Boolean));
-    for (const aid of ambIds) {
-      prefixes.add(`ambulances/${aid}/`);
-    }
-  }
-
-  return Array.from(prefixes);
-}
-
-/**
- * Collects exact S3 reportStorageKey values for roles that upload on behalf of another entity (e.g. lab uploading for patient).
- * Queries lab_bookings and lab_orders where labId is in providerIds.
- */
-async function collectRoleSpecificS3ReportKeys(db, { role, profileId, uid }) {
-  const keys = new Set();
-  const reportRoles = ['lab', 'pharmacy', 'medicalStore', 'medical', 'ambulance'];
-  if (!reportRoles.includes(role)) {
-    return [];
-  }
-
-  let ownedIds = [];
-  try {
-    if (role === 'lab') {
-      ownedIds = await getOwnedProfileIds(db, 'labs', 'ownerUid', uid);
+async function resolveUserS3Prefixes(_db, { uid, role, profileId }) {
+  const logical = new Set();
+  const ids = Array.from(new Set([profileId, uid].filter(Boolean)));
+  for (const id of ids) {
+    logical.add(`promoted_ads/${id}/`);
+    if (role === 'patient') {
+      logical.add(`patients/${id}/`);
+      logical.add(`health_records/${id}/`);
+      logical.add(`lab_reports/${id}/`);
+    } else if (role === 'doctor') {
+      logical.add(`doctor_profiles/${id}/`);
+    } else if (role === 'lab') {
+      logical.add(`labs/${id}/`);
     } else if (role === 'medicalStore' || role === 'pharmacy' || role === 'medical') {
-      ownedIds = await getOwnedProfileIds(db, 'medical_stores', 'ownerUid', uid);
+      logical.add(`pharmacies/${id}/`);
     } else if (role === 'ambulance') {
-      ownedIds = await getOwnedProfileIds(db, 'ambulances', 'authUid', uid);
-    }
-  } catch (_) {}
-
-  const providerIds = Array.from(new Set([profileId, uid, ...ownedIds].filter(Boolean)));
-
-  for (const pid of providerIds) {
-    try {
-      // 1. lab_bookings
-      const bookingsSnap = await db.collection('lab_bookings').where('labId', '==', pid).get();
-      for (const doc of bookingsSnap.docs) {
-        const data = doc.data() || {};
-        const key = data.reportStorageKey;
-        const provider = data.reportStorageProvider;
-        if (key && typeof key === 'string' && (provider === 's3' || key.startsWith('lab_reports/'))) {
-          keys.add(key.trim());
-        }
-      }
-
-      // 2. lab_orders
-      const ordersSnap = await db.collection('lab_orders').where('labId', '==', pid).get();
-      for (const doc of ordersSnap.docs) {
-        const data = doc.data() || {};
-        const key = data.reportStorageKey;
-        const provider = data.reportStorageProvider;
-        if (key && typeof key === 'string' && (provider === 's3' || key.startsWith('lab_reports/'))) {
-          keys.add(key.trim());
-        }
-      }
-    } catch (err) {
-      logger.warn('collectRoleSpecificS3ReportKeys query error', {
-        providerId: pid,
-        role,
-        message: err?.message || 'unknown',
-      });
+      logical.add(`ambulances/${id}/`);
     }
   }
-
-  return Array.from(keys);
+  const out = [];
+  for (const plane of planeKeyPrefixes(uid)) for (const p of logical) out.push(plane + p);
+  return out;
 }
 
 /**
@@ -497,174 +320,6 @@ async function cleanupUserS3Prefixes(s3, bucketName, prefixes) {
   return failedS3Prefixes;
 }
 
-async function countSuperAdmins(db) {
-  const [a, b] = await Promise.all([
-    db.collection('users').where('role', '==', 'super_admin').get(),
-    db.collection('users').where('role', '==', 'superAdmin').get(),
-  ]);
-  const ids = new Set([...a.docs, ...b.docs].map((doc) => doc.id));
-  return ids.size;
-}
-
-async function assertCanDeleteUser(db, uid, role) {
-  if (role !== 'super_admin' && role !== 'superAdmin') return;
-  const count = await countSuperAdmins(db);
-  if (count <= 1) {
-    throw new HttpsError(
-      'failed-precondition',
-      'Cannot delete the last Super Admin account.',
-    );
-  }
-}
-
-async function deleteAccountSupportData(db, { uid, email, mobileDigits }) {
-  const deletes = [];
-
-  await Promise.all([
-    deleteWhere(db, 'in_app_notifications', 'recipientUid', uid),
-    deleteWhere(db, 'promotedAds', 'providerId', uid),
-  ]);
-
-  if (email) {
-    deletes.push(
-      db.collection('otp_rate_limits').doc(`login_id_${hashKey(email)}`).delete().catch(() => {}),
-    );
-    for (const category of ABUSE_CATEGORIES) {
-      deletes.push(
-        db
-          .collection('abuse_rate_limits')
-          .doc(`${category}_id_${hashKey(email)}`)
-          .delete()
-          .catch(() => {}),
-      );
-    }
-  }
-
-  for (const category of ABUSE_CATEGORIES) {
-    deletes.push(
-      db
-        .collection('abuse_rate_limits')
-        .doc(`${category}_uid_${hashKey(uid)}`)
-        .delete()
-        .catch(() => {}),
-    );
-  }
-
-  if (mobileDigits) {
-    for (const otpRole of OTP_ROLES) {
-      const key = mobileHash(otpRole, mobileDigits);
-      deletes.push(
-        db.collection('otp_challenges').doc(key).delete().catch(() => {}),
-        db.collection('otp_verification_sessions').doc(key).delete().catch(() => {}),
-      );
-    }
-  }
-
-  await Promise.all(deletes);
-}
-
-async function deletePatientProfile(db, bucket, patientId) {
-  if (!patientId) return;
-  await deleteDocIfExists(db, db.collection('patients').doc(patientId));
-  await deleteStoragePrefix(bucket, `patients/${patientId}/`);
-}
-
-async function deleteDoctorProfile(db, bucket, doctorId) {
-  if (!doctorId) return;
-  await deleteDocIfExists(db, db.collection('doctor_availability').doc(doctorId));
-  await deleteDocIfExists(db, db.collection('doctors').doc(doctorId));
-  await Promise.all([
-    deleteStoragePrefix(bucket, `doctor_profiles/${doctorId}/`),
-    deleteStoragePrefix(bucket, `doctors/${doctorId}/`),
-  ]);
-}
-
-async function deleteMedicalStoreProfile(db, bucket, storeId) {
-  if (!storeId) return;
-  await deleteDocIfExists(db, db.collection('medical_stores').doc(storeId));
-  await deleteStoragePrefix(bucket, `pharmacies/${storeId}/`);
-}
-
-async function deleteLabProfile(db, bucket, labId) {
-  if (!labId) return;
-  await deleteDocIfExists(db, db.collection('labs').doc(labId));
-  await deleteStoragePrefix(bucket, `labs/${labId}/`);
-}
-
-async function deleteAmbulanceProfile(db, bucket, ambulanceId) {
-  if (!ambulanceId) return;
-  await deleteDocIfExists(db, db.collection('ambulances').doc(ambulanceId));
-  await deleteStoragePrefix(bucket, `ambulances/${ambulanceId}/`);
-}
-
-async function deleteOwnedProfiles(db, bucket, collection, field, uid, deleteFn) {
-  const normalizedUid = String(uid || '').trim();
-  if (!normalizedUid) return;
-
-  let lastDoc = null;
-  while (true) {
-    let query = db.collection(collection).where(field, '==', normalizedUid).limit(200);
-    if (lastDoc) query = query.startAfter(lastDoc);
-    const snap = await query.get();
-    if (snap.empty) break;
-
-    for (const doc of snap.docs) {
-      await deleteFn(db, bucket, doc.id);
-    }
-
-    if (snap.size < 200) break;
-    lastDoc = snap.docs[snap.docs.length - 1];
-  }
-}
-
-async function deleteRoleOwnedProfiles(db, bucket, uid) {
-  await Promise.all([
-    deleteOwnedProfiles(db, bucket, 'patients', 'ownerUid', uid, deletePatientProfile),
-    deleteOwnedProfiles(db, bucket, 'doctors', 'ownerUid', uid, deleteDoctorProfile),
-    deleteOwnedProfiles(
-      db,
-      bucket,
-      'medical_stores',
-      'ownerUid',
-      uid,
-      deleteMedicalStoreProfile,
-    ),
-    deleteOwnedProfiles(db, bucket, 'labs', 'ownerUid', uid, deleteLabProfile),
-    deleteOwnedProfiles(db, bucket, 'ambulances', 'authUid', uid, deleteAmbulanceProfile),
-  ]);
-}
-
-async function deleteRoleProfileData(db, bucket, role, profileId) {
-  switch (role) {
-    case 'patient':
-      await deletePatientProfile(db, bucket, profileId);
-      break;
-    case 'doctor':
-      await deleteDoctorProfile(db, bucket, profileId);
-      break;
-    case 'medicalStore':
-    case 'medical':
-    case 'pharmacy':
-      await deleteMedicalStoreProfile(db, bucket, profileId);
-      break;
-    case 'lab':
-      await deleteLabProfile(db, bucket, profileId);
-      break;
-    case 'ambulance':
-      await deleteAmbulanceProfile(db, bucket, profileId);
-      break;
-    default:
-      break;
-  }
-}
-
-async function deletePersonalStorage(db, bucket, uid) {
-  await Promise.all([
-    deleteStoragePrefix(bucket, `verification_docs/${uid}/`),
-    deleteStoragePrefix(bucket, `promoted_ads/${uid}/`),
-  ]);
-}
-
 function readBoundSecret(secret, envName) {
   try {
     if (secret && typeof secret.value === 'function') {
@@ -675,20 +330,40 @@ function readBoundSecret(secret, envName) {
   return String(process.env[envName] || '').trim();
 }
 
-function getSupabaseServiceConfig() {
+/**
+ * PostgREST target for the deleting account. Production demo/reviewer UIDs live on the staging
+ * plane (DEMO_SUPABASE_*); everyone else in production is on RDS via the gateway.
+ */
+function getSupabaseServiceConfig(uid = null) {
   const isProduction = (process.env.APP_ENV || 'staging').toLowerCase() === 'production';
-  const url = isProduction
-    ? String(process.env.PROD_GATEWAY_URL || '').trim().replace(/\/+$/, '')
-    : String(process.env.STAGING_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
+  let plane = isProduction ? 'rds' : 'staging';
+  if (isProduction && uid) {
+    try {
+      const { resolveRequestPlane } = require('./src/db/request_plane');
+      if (resolveRequestPlane(uid, { appEnv: 'production' }) === 'supabase') plane = 'demo';
+    } catch (err) {
+      // An invalid demo-plane marker must stop the request, never fall back to the RDS plane.
+      if (err && err.code === 'unauthenticated') throw err;
+    }
+  }
 
-  const key = isProduction
-    ? String(process.env.PROD_GATEWAY_SERVICE_KEY || '').trim()
-    : (readBoundSecret(supabaseServiceRoleKey, 'SUPABASE_SERVICE_ROLE_KEY') ||
+  let url;
+  let key;
+  if (plane === 'rds') {
+    url = String(process.env.PROD_GATEWAY_URL || '').trim().replace(/\/+$/, '');
+    key = String(process.env.PROD_GATEWAY_SERVICE_KEY || '').trim();
+  } else if (plane === 'demo') {
+    url = String(process.env.DEMO_SUPABASE_URL || process.env.STAGING_SUPABASE_URL || '').trim().replace(/\/+$/, '');
+    key = String(process.env.DEMO_SUPABASE_SERVICE_ROLE_KEY || process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  } else {
+    url = String(process.env.STAGING_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
+    key = readBoundSecret(supabaseServiceRoleKey, 'SUPABASE_SERVICE_ROLE_KEY') ||
       readSupabaseServiceRoleKey({ required: false }) ||
       String(process.env.STAGING_SUPABASE_SERVICE_ROLE_KEY || '').trim() ||
-      String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim());
+      String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  }
   if (!url || !key) return null;
-  return { url, key, isProduction };
+  return { url, key, isProduction, plane };
 }
 
 function supabaseHeaders(key) {
@@ -736,7 +411,7 @@ function addIds(set, rows, field) {
  */
 async function cleanupUserSupabaseRows({ uid, role, profileId }) {
   const failedSupabaseTables = [];
-  const config = getSupabaseServiceConfig();
+  const config = getSupabaseServiceConfig(uid);
   if (!config) {
     return { skipped: true, failedSupabaseTables };
   }
@@ -757,6 +432,18 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
       if (err?.status === 403 || err?.status === 404) {
         throw err;
       }
+      recordFailure(table, err);
+    }
+  };
+
+  // Tables that live in the private schema on real Postgres (PostgREST answers 404 for them):
+  // best effort, never abort the deletion because of them.
+  const delOptional = async (table, query) => {
+    try {
+      await supabaseRequest(config, 'DELETE', `${table}?${query}`);
+    } catch (err) {
+      if (err?.status === 404) return;
+      if (err?.status === 403) throw err;
       recordFailure(table, err);
     }
   };
@@ -822,34 +509,44 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     addIds(ambulanceIds, await getRows('ambulances', `auth_uid=eq.${encodeURIComponent(supabaseUserId)}`, 'ambulance_id'), 'ambulance_id');
   }
 
-  // 1. Collect and delete deliveries and medicines (RESTRICT on prescriptions/patients/stores/doctors)
+  const patch = async (table, query, body) => {
+    try {
+      await supabaseRequest(config, 'PATCH', `${table}?${query}`, body);
+    } catch (err) {
+      if (err?.status === 403 || err?.status === 404) {
+        throw err;
+      }
+      recordFailure(table, err);
+    }
+  };
+
+  /*
+   * Retention policy: records that belong to a PATIENT's medical history (lab bookings/orders and
+   * their report files, prescriptions, appointments, referrals, pharmacy deliveries, ambulance trips)
+   * are deleted only when the PATIENT deletes their account. When a PROVIDER (lab, doctor, pharmacy,
+   * ambulance) deletes theirs, the provider is anonymised and detached instead, so patients keep
+   * access to their own records.
+   */
+
+  // 1. Patient-owned pharmacy deliveries
   const deliveryIds = new Set();
   for (const pid of patientIds) {
     addIds(deliveryIds, await getRows('pharmacy_deliveries', `patient_id=eq.${encodeURIComponent(pid)}`, 'delivery_id'), 'delivery_id');
-  }
-  for (const sid of storeIds) {
-    addIds(deliveryIds, await getRows('pharmacy_deliveries', `store_id=eq.${encodeURIComponent(sid)}`, 'delivery_id'), 'delivery_id');
-  }
-  for (const did of doctorIds) {
-    addIds(deliveryIds, await getRows('pharmacy_deliveries', `doctor_id=eq.${encodeURIComponent(did)}`, 'delivery_id'), 'delivery_id');
   }
   for (const delId of deliveryIds) {
     await del('pharmacy_delivery_medicines', `delivery_id=eq.${encodeURIComponent(delId)}`);
     await del('pharmacy_deliveries', `delivery_id=eq.${encodeURIComponent(delId)}`);
   }
 
-  // 2. Lab orders & Lab bookings & Lab connections (RESTRICT on patients/doctors/labs)
+  // 2. Patient-owned lab bookings/orders; provider relationship rows only
   for (const pid of patientIds) {
     await del('lab_orders', `patient_id=eq.${encodeURIComponent(pid)}`);
     await del('lab_bookings', `patient_id=eq.${encodeURIComponent(pid)}`);
   }
   for (const lid of labIds) {
-    await del('lab_orders', `lab_id=eq.${encodeURIComponent(lid)}`);
-    await del('lab_bookings', `lab_id=eq.${encodeURIComponent(lid)}`);
     await del('lab_connections', `lab_id=eq.${encodeURIComponent(lid)}`);
   }
   for (const did of doctorIds) {
-    await del('lab_orders', `doctor_id=eq.${encodeURIComponent(did)}`);
     await del('lab_connections', `doctor_id=eq.${encodeURIComponent(did)}`);
     await del('pharmacy_connections', `doctor_id=eq.${encodeURIComponent(did)}`);
   }
@@ -857,16 +554,12 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('pharmacy_connections', `medical_store_id=eq.${encodeURIComponent(sid)}`);
   }
 
-  // 3. Referrals (RESTRICT on patients/doctors)
+  // 3. Patient referrals
   for (const pid of patientIds) {
     await del('referrals', `patient_id=eq.${encodeURIComponent(pid)}`);
   }
-  for (const did of doctorIds) {
-    await del('referrals', `from_doctor_id=eq.${encodeURIComponent(did)}`);
-    await del('referrals', `to_doctor_id=eq.${encodeURIComponent(did)}`);
-  }
 
-  // 4. Prescriptions
+  // 4. Patient prescriptions
   const prescriptionIds = new Set();
   for (const patientId of patientIds) {
     addIds(
@@ -875,14 +568,6 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
       'prescription_id',
     );
   }
-  for (const doctorId of doctorIds) {
-    addIds(
-      prescriptionIds,
-      await getRows('prescriptions', `doctor_id=eq.${encodeURIComponent(doctorId)}`, 'prescription_id'),
-      'prescription_id',
-    );
-  }
-
   for (const prescriptionId of prescriptionIds) {
     const q = `prescription_id=eq.${encodeURIComponent(prescriptionId)}`;
     await del('prescription_medicines', q);
@@ -891,21 +576,17 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('prescriptions', q);
   }
 
-  // 4b. Ambulance trip contacts & location updates (linked to broadcasts/phones)
+  // 4b. Patient ambulance trips (contacts + location trail)
   const broadcastIds = new Set();
   for (const pid of patientIds) {
     addIds(broadcastIds, await getRows('ambulance_broadcasts', `patient_id=eq.${encodeURIComponent(pid)}`, 'broadcast_id'), 'broadcast_id');
-  }
-  for (const aid of ambulanceIds) {
-    addIds(broadcastIds, await getRows('ambulance_broadcasts', `accepted_driver_id=eq.${encodeURIComponent(aid)}`, 'broadcast_id'), 'broadcast_id');
   }
   for (const bid of broadcastIds) {
     await del('ambulance_trip_contacts', `broadcast_id=eq.${encodeURIComponent(bid)}`);
     await del('ambulance_location_updates', `broadcast_id=eq.${encodeURIComponent(bid)}`);
   }
-  if (supabaseMobile) {
+  if (supabaseMobile && patientIds.size > 0) {
     await del('ambulance_trip_contacts', `patient_phone=eq.${encodeURIComponent(supabaseMobile)}`);
-    await del('ambulance_trip_contacts', `driver_phone=eq.${encodeURIComponent(supabaseMobile)}`);
   }
 
   // 5. Patient records & relationships
@@ -924,7 +605,8 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('patients', q);
   }
 
-  // 6. Doctor records & relationships
+  // 6. Doctor: delete doctor-private data and care links; anonymise the doctor row
+  //    (appointments / prescriptions / referrals stay in the patients' history).
   for (const doctorId of doctorIds) {
     const q = `doctor_id=eq.${encodeURIComponent(doctorId)}`;
     await del('doctor_invites', q);
@@ -937,31 +619,77 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('patient_doctor_links', q);
     await del('patient_care_team', q);
     await del('medical_directory', q);
-    await del('reviews', q);
-    await del('appointments', q);
-    await del('doctors', q);
+    await patch('doctors', q, {
+      name: 'Deleted doctor',
+      email: `deleted+${doctorId}@deleted.invalid`,
+      mobile: 'deleted',
+      photo_url: null,
+      about: null,
+      owner_uid: null,
+      verified: false,
+      deactivated: true,
+    });
   }
 
-  // 7. Store records
+  // 7. Pharmacy: anonymise (deliveries remain on the patient side)
   for (const storeId of storeIds) {
     await del('pharmacy_doctor_invites', `store_id=eq.${encodeURIComponent(storeId)}`);
-    await del('medical_stores', `store_id=eq.${encodeURIComponent(storeId)}`);
+    await patch('medical_stores', `store_id=eq.${encodeURIComponent(storeId)}`, {
+      store_name: 'Deleted pharmacy',
+      owner_name: 'Deleted',
+      drug_license_number: 'deleted',
+      gst_number: null,
+      phone: 'deleted',
+      email: `deleted+${storeId}@deleted.invalid`,
+      owner_uid: null,
+      verified: false,
+      deactivated: true,
+    });
   }
 
-  // 8. Lab records
+  // 8. Lab: anonymise; lab_bookings / lab_orders / report files stay with the patient
   for (const labId of labIds) {
-    await del('labs', `lab_id=eq.${encodeURIComponent(labId)}`);
+    await patch('labs', `lab_id=eq.${encodeURIComponent(labId)}`, {
+      lab_name: 'Deleted lab',
+      license_number: 'deleted',
+      gst_number: null,
+      phone: 'deleted',
+      email: `deleted+${labId}@deleted.invalid`,
+      owner_uid: null,
+      verified: false,
+      deactivated: true,
+    });
   }
 
-  // 9. Ambulance records
+  // 9. Ambulance: delete PIN / invites / live location; anonymise the vehicle row and the driver
+  //    contact copied onto patients' past trips.
   for (const ambulanceId of ambulanceIds) {
     const q = `ambulance_id=eq.${encodeURIComponent(ambulanceId)}`;
     await del('ambulance_private_settings', q);
     await del('ambulance_invites', q);
     await del('ambulance_locations', `driver_id=eq.${encodeURIComponent(ambulanceId)}`);
     await del('ambulance_requests', `driver_id=eq.${encodeURIComponent(ambulanceId)}`);
-    await del('ambulance_broadcasts', `accepted_driver_id=eq.${encodeURIComponent(ambulanceId)}`);
-    await del('ambulances', q);
+    await patch('ambulance_broadcasts', `accepted_driver_id=eq.${encodeURIComponent(ambulanceId)}`, {
+      accepted_driver_name: 'Deleted driver',
+      accepted_driver_phone: null,
+      accepted_vehicle_number: null,
+    });
+    await patch('ambulances', q, {
+      service_name: 'Deleted ambulance',
+      owner_name: null,
+      driver_name: 'Deleted',
+      phone: 'deleted',
+      vehicle_number: 'deleted',
+      license_number: null,
+      insurance_number: null,
+      username: `deleted_${ambulanceId}`,
+      auth_uid: null,
+      is_available: false,
+      verified: false,
+    });
+  }
+  if (supabaseMobile && ambulanceIds.size > 0) {
+    await del('ambulance_trip_contacts', `driver_phone=eq.${encodeURIComponent(supabaseMobile)}`);
   }
 
   // 10. Support tickets & messages
@@ -992,19 +720,19 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
   if (supabaseUserId) {
     await del('user_devices', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
   }
-  await del('in_app_notifications', `recipient_uid=${encodeURIComponent(uid)}`);
+  await del('in_app_notifications', `recipient_uid=eq.${encodeURIComponent(uid)}`);
 
   // 11. Promoted ads & admin/provisioning records
   if (supabaseProfileId) {
-    await del('promoted_ads', `provider_id=eq=${encodeURIComponent(supabaseProfileId)}`);
+    await del('promoted_ads', `provider_id=eq.${encodeURIComponent(supabaseProfileId)}`);
   }
   if (supabaseUserId) {
-    await del('promoted_ads', `provider_id=eq=${encodeURIComponent(supabaseUserId)}`);
-    await del('admin_users', `user_id=eq=${encodeURIComponent(supabaseUserId)}`);
+    await del('promoted_ads', `provider_id=eq.${encodeURIComponent(supabaseUserId)}`);
+    await delOptional('admin_users', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
   }
-  await del('promoted_ads', `provider_id=eq=${encodeURIComponent(uid)}`);
-  await del('super_admins', `user_uid=eq=${encodeURIComponent(uid)}`);
-  await del('provisioning_errors', `auth_user_id=eq=${encodeURIComponent(uid)}`);
+  await del('promoted_ads', `provider_id=eq.${encodeURIComponent(uid)}`);
+  await del('super_admins', `user_uid=eq.${encodeURIComponent(uid)}`);
+  await delOptional('provisioning_errors', `auth_user_id=eq.${encodeURIComponent(uid)}`);
 
   // Anonymize payment records (PII minimization while retaining accounting audit history)
   try {
@@ -1078,112 +806,21 @@ async function deleteMyAccountHandler(uid) {
     if (e instanceof HttpsError) throw e;
   }
 
-  const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
-  const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
-
-  if (isCutover) {
-    let profile = null;
-    try {
-      profile = await resolveCallerIdentity({ uid: normalizedUid, forceSupabase: true });
-    } catch (err) {
-      // User not found in Supabase
-    }
-
-    if (!profile) {
-      try {
-        await getAuth().deleteUser(normalizedUid);
-      } catch (err) {
-        if (err?.code !== 'auth/user-not-found') {
-          logger.error('deleteMyAccount auth cleanup failed for missing profile', {
-            uid: normalizedUid,
-            code: err?.code || 'unknown',
-          });
-          throw new HttpsError('internal', 'Could not delete account. Please try again.');
-        }
-      }
-      return { ok: true, alreadyDeleted: true };
-    }
-
-    const role = String(profile.role || '').trim();
-    const profileId = String(profile.profileId || profile.profile_id || '').trim();
-
-    // S3 cleanup
-    let failedS3Prefixes = [];
-    try {
-      const s3 = getS3Client();
-      const s3Prefixes = [];
-      if (profileId) {
-        if (role === 'doctor') s3Prefixes.push(`doctor_profiles/${profileId}/`);
-        if (role === 'patient') {
-          s3Prefixes.push(`patient_profiles/${profileId}/`);
-          s3Prefixes.push(`health_records/${profileId}/`);
-        }
-        if (role === 'lab') s3Prefixes.push(`lab_reports/${profileId}/`);
-        if (role === 'medicalStore' || role === 'medical') s3Prefixes.push(`pharmacy_licenses/${profileId}/`);
-        s3Prefixes.push(`promoted_ads/${profileId}/`);
-      }
-      s3Prefixes.push(`avatars/${normalizedUid}/`);
-      failedS3Prefixes = await cleanupUserS3Prefixes(s3, s3Bucket(), s3Prefixes);
-    } catch (s3Err) {
-      logger.warn('deleteMyAccount S3 cleanup unexpected failure (soft-fail)', {
-        uid: normalizedUid,
-        message: s3Err?.message || 'unknown',
-      });
-    }
-
-    // Supabase row cleanup
-    let failedSupabaseTables = [];
-    try {
-      const supabaseCleanup = await cleanupUserSupabaseRows({
-        uid: normalizedUid,
-        role,
-        profileId,
-      });
-      failedSupabaseTables = supabaseCleanup.failedSupabaseTables || [];
-    } catch (sbErr) {
-      if (sbErr?.status === 403 || sbErr?.status === 404) {
-        throw new HttpsError('internal', `Account deletion blocked by gateway authorization: ${sbErr.message}`);
-      }
-      logger.warn('deleteMyAccount Supabase cleanup unexpected failure (soft-fail)', {
-        uid: normalizedUid,
-        message: sbErr?.message || 'unknown',
-      });
-    }
-
-    // Delete Firebase Auth user LAST
-    try {
-      await getAuth().deleteUser(normalizedUid);
-    } catch (authErr) {
-      if (authErr?.code !== 'auth/user-not-found') {
-        logger.error('deleteMyAccount Firebase Auth deletion failed', {
-          uid: normalizedUid,
-          code: authErr?.code || 'unknown',
-        });
-        throw new HttpsError('internal', 'Could not delete account. Please try again.');
-      }
-    }
-
-    return {
-      ok: true,
-      supabase: true,
-      failedS3Prefixes,
-      failedSupabaseTables,
-    };
+  let profile = null;
+  try {
+    profile = await resolveCallerIdentity({ uid: normalizedUid });
+  } catch (err) {
+    if (err instanceof HttpsError && err.code === 'unavailable') throw err;
+    profile = null; // no Postgres profile row
   }
 
-  const { getLegacyFirestoreDb } = require('./legacy_db');
-  const db = getLegacyFirestoreDb();
-  const bucket = getStorage().bucket();
-  const userRef = db.collection('users').doc(normalizedUid);
-  const userSnap = await userRef.get();
-
-  if (!userSnap.exists) {
+  if (!profile) {
     try {
       await getAuth().deleteUser(normalizedUid);
     } catch (err) {
       if (err?.code !== 'auth/user-not-found') {
         logger.error('deleteMyAccount auth cleanup failed for missing profile', {
-          uid: normalizedUid,
+          uidHash: hashKey(normalizedUid).slice(0, 16),
           code: err?.code || 'unknown',
         });
         throw new HttpsError('internal', 'Could not delete account. Please try again.');
@@ -1192,119 +829,75 @@ async function deleteMyAccountHandler(uid) {
     return { ok: true, alreadyDeleted: true };
   }
 
-  const profile = userSnap.data() || {};
   const role = String(profile.role || '').trim();
-  const profileId = String(profile.profileId || '').trim();
-  const email = normalizeEmail(profile.email);
-  const mobileDigits = normalizeMobileDigits(profile.mobile);
+  const profileId = String(profile.profileId || profile.profile_id || '').trim();
+  const mobileDigits = normalizeMobileDigits(profile.mobile || profile.phone);
 
-  await assertCanDeleteUser(db, normalizedUid, role);
-
+  // 1. S3 objects (all versions). Any failure keeps the Auth user so the deletion can be retried.
+  let failedS3Prefixes = [];
   try {
-    await deleteAccountSupportData(db, {
-      uid: normalizedUid,
-      email,
-      mobileDigits,
+    const s3 = getS3Client();
+    const prefixes = await resolveUserS3Prefixes(null, { uid: normalizedUid, role, profileId });
+    failedS3Prefixes = await cleanupUserS3Prefixes(s3, s3Bucket(normalizedUid), prefixes);
+  } catch (s3Err) {
+    failedS3Prefixes = ['*'];
+    logger.error('deleteMyAccount S3 cleanup failed', {
+      uidHash: hashKey(normalizedUid).slice(0, 16),
+      message: s3Err?.message || 'unknown',
     });
-    await deletePersonalStorage(db, bucket, normalizedUid);
-
-    if (profileId) {
-      await deleteRoleProfileData(db, bucket, role, profileId);
-    }
-
-    await deleteRoleOwnedProfiles(db, bucket, normalizedUid);
-
-    // S3 cleanup (best-effort, soft-fail per prefix/key)
-    let failedS3Prefixes = [];
-    let failedS3Keys = [];
-    try {
-      const s3 = getS3Client();
-      const s3Prefixes = await resolveUserS3Prefixes(db, {
-        uid: normalizedUid,
-        role,
-        profileId,
-      });
-      failedS3Prefixes = await cleanupUserS3Prefixes(s3, s3Bucket(), s3Prefixes);
-
-      // Collect specific S3 object keys (e.g. lab reports uploaded by this lab for patients)
-      const specificReportKeys = await collectRoleSpecificS3ReportKeys(db, {
-        role,
-        profileId,
-        uid: normalizedUid,
-      });
-      if (specificReportKeys.length > 0) {
-        const keysRes = await deleteS3SpecificKeysVersions(s3, s3Bucket(), specificReportKeys);
-        if (!keysRes.success && keysRes.failedKeys) {
-          failedS3Keys = keysRes.failedKeys;
-        }
-      }
-
-      const totalFailed = [...failedS3Prefixes, ...failedS3Keys];
-      if (totalFailed.length > 0) {
-        logger.warn('deleteMyAccount: Some S3 items failed cleanup (soft-fail)', {
-          uid: normalizedUid,
-          failedS3Prefixes,
-          failedS3Keys,
-        });
-      }
-    } catch (s3Err) {
-      logger.warn('deleteMyAccount S3 cleanup unexpected failure (soft-fail)', {
-        uid: normalizedUid,
-        message: s3Err?.message || 'unknown',
-      });
-    }
-
-    let failedSupabaseTables = [];
-    try {
-      const supabaseCleanup = await cleanupUserSupabaseRows({
-        uid: normalizedUid,
-        role,
-        profileId,
-      });
-      failedSupabaseTables = supabaseCleanup.failedSupabaseTables || [];
-      if (failedSupabaseTables.length > 0) {
-        logger.warn('deleteMyAccount: Some Supabase tables failed cleanup (soft-fail)', {
-          uid: normalizedUid,
-          failedSupabaseTables,
-        });
-      }
-    } catch (supabaseErr) {
-      failedSupabaseTables = ['supabase'];
-      logger.warn('deleteMyAccount supabase cleanup unexpected failure (soft-fail)', {
-        uid: normalizedUid,
-        message: supabaseErr?.message || 'unknown',
-      });
-    }
-
-    await deleteDocIfExists(db, userRef);
-
-    await getAuth().deleteUser(normalizedUid);
-
-    logger.info('deleteMyAccount completed', { uid: normalizedUid, role });
-    const failedS3Total = [...failedS3Prefixes, ...failedS3Keys];
-    return {
-      ok: true,
-      ...(failedS3Total.length > 0 ? { failedS3Prefixes: failedS3Total } : {}),
-      ...(failedSupabaseTables.length > 0 ? { failedSupabaseTables } : {}),
-    };
-  } catch (err) {
-    logger.error('deleteMyAccount failed', {
-      uid: normalizedUid,
-      role,
-      code: err?.code || 'unknown',
-      message: err?.message || 'unknown',
-    });
-    if (err instanceof HttpsError) throw err;
-    throw new HttpsError('internal', 'Could not delete account. Please try again.');
   }
+  if (failedS3Prefixes.length > 0) {
+    throw new HttpsError('unavailable', 'Could not delete all account files. Please try again.');
+  }
+
+  // 2. Redis OTP / session state for the account's mobile number.
+  await cleanupUserRedisKeys({ mobileDigits, role });
+
+  // 3. Postgres rows. Fail closed: if any table could not be cleaned, keep the Auth user so the
+  //    user can retry instead of leaving orphaned PHI behind an account they can no longer access.
+  let supabaseCleanup;
+  try {
+    supabaseCleanup = await cleanupUserSupabaseRows({ uid: normalizedUid, role, profileId });
+  } catch (sbErr) {
+    logger.error('deleteMyAccount Postgres cleanup failed', {
+      uidHash: hashKey(normalizedUid).slice(0, 16),
+      status: sbErr?.status || 'unknown',
+    });
+    throw new HttpsError('unavailable', 'Could not delete account data. Please try again.');
+  }
+  const failedSupabaseTables = supabaseCleanup?.failedSupabaseTables || [];
+  if (supabaseCleanup?.skipped || failedSupabaseTables.length > 0) {
+    logger.error('deleteMyAccount Postgres cleanup incomplete; Auth user kept for retry', {
+      uidHash: hashKey(normalizedUid).slice(0, 16),
+      failedSupabaseTables,
+      skipped: Boolean(supabaseCleanup?.skipped),
+    });
+    throw new HttpsError('unavailable', 'Could not delete all account data. Please try again.');
+  }
+
+  // 4. Firebase Auth user LAST.
+  try {
+    await getAuth().deleteUser(normalizedUid);
+  } catch (authErr) {
+    if (authErr?.code !== 'auth/user-not-found') {
+      logger.error('deleteMyAccount Firebase Auth deletion failed', {
+        uidHash: hashKey(normalizedUid).slice(0, 16),
+        code: authErr?.code || 'unknown',
+      });
+      throw new HttpsError('internal', 'Could not delete account. Please try again.');
+    }
+  }
+
+  logger.info('deleteMyAccount completed', { uidHash: hashKey(normalizedUid).slice(0, 16), role });
+  return { ok: true };
 }
 
 module.exports = {
   deleteMyAccountHandler,
   deleteS3PrefixVersions,
   deleteS3SpecificKeysVersions,
-  collectRoleSpecificS3ReportKeys,
   resolveUserS3Prefixes,
+  planeKeyPrefixes,
   cleanupUserS3Prefixes,
   cleanupUserSupabaseRows,
   cleanupUserRedisKeys,

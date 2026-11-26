@@ -18,6 +18,7 @@ const path = require('path');
 const { loadRootEnv } = require('../lib/bootstrap_root_env');
 const { getEnv } = require('../lib/env_loader');
 const { assertDatabaseGuard } = require('../lib/env_guard');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 async function query(client, label, sql, params = []) {
   const res = await client.query(sql, params);
@@ -52,7 +53,7 @@ async function main() {
 
   const pool = new Pool({
     connectionString: dbUrl,
-    ssl: { rejectUnauthorized: false },
+    ssl: stagingPgSsl(),
     max: 2,
     connectionTimeoutMillis: 15000,
   });

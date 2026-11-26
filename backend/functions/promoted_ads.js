@@ -1,25 +1,69 @@
+const { safeErrorForLog } = require('./log_safe');
 const { resolveCallerIdentity } = require('./caller_identity');
-require('./firestore_forbidden_guard');
-const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+// onCall runs handlers inside the verified-auth context (data-plane routing, demo ambulance).
+const { onCall, onRequest, HttpsError } = require('./callable_with_auth_context');
+const { withDataPlaneSecrets } = require('./demo_plane_secrets');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
-const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const crypto = require('crypto');
-const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
 
 let _testingSupabaseClient = null;
 function setSupabaseClientForTesting(client) {
   _testingSupabaseClient = client;
 }
 
-function getSupabaseAdmin() {
+/**
+ * Server-side DB client. Pass the ad owner's Firebase UID so production demo accounts route to the
+ * staging plane and real users to RDS (never mix planes for one payment).
+ */
+function getSupabaseAdmin(firebaseUid = null) {
   if (_testingSupabaseClient) return _testingSupabaseClient;
   try {
     const { getDatabaseClient } = require('./src/db/client');
-    return getDatabaseClient();
+    return getDatabaseClient(firebaseUid ? { firebaseUid } : {});
   } catch (_) {
     return null;
   }
+}
+
+const SAFE_UID_RE = /^[A-Za-z0-9_\-:.]{1,128}$/;
+
+/**
+ * Postgres path: loads promoted_ads row and enforces caller ownership + non-patient role.
+ * Fails closed when the caller profile cannot be resolved.
+ */
+async function loadOwnedPromotedAdRow(supabase, adId, uid) {
+  if (!SAFE_UID_RE.test(String(uid || ''))) {
+    throw new HttpsError('unauthenticated', 'Authentication required.');
+  }
+  const { data: adRows, error: adErr } = await supabase
+    .from('promoted_ads')
+    .select('*')
+    .eq('ad_id', adId);
+  if (adErr) {
+    throw new HttpsError('unavailable', 'Database service temporarily unavailable.');
+  }
+  const ad = Array.isArray(adRows) ? adRows[0] : null;
+  if (!ad) {
+    throw new HttpsError('not-found', 'Promoted ad document not found.');
+  }
+  let caller = null;
+  try {
+    caller = await resolveCallerIdentity({ uid, supabaseClient: supabase, forceSupabase: true });
+  } catch (_) {
+    caller = null;
+  }
+  if (!caller) {
+    throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
+  }
+  if (String(caller.role || '').toLowerCase() === 'patient') {
+    throw new HttpsError('permission-denied', 'Patients are not permitted to create promotions.');
+  }
+  const profileId = caller.profileId || caller.profile_id || null;
+  if (ad.provider_id !== uid && !(profileId && ad.provider_id === profileId)) {
+    throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
+  }
+  return ad;
 }
 const https = require('https');
 const { enforceAbuseLimit, assertAppCheck } = require('./abuse_rate_limit');
@@ -31,18 +75,9 @@ const ENFORCE_ABUSE_APP_CHECK = String(
   .trim()
   .toLowerCase() !== 'false';
 
-const SUPER_ADMIN_EMAILS = ['admin@doctornect.com'];
-
-function isSuperAdmin(auth, userDoc) {
-  const email = String(auth?.token?.email || '').trim().toLowerCase();
-  const emailVerified = auth?.token?.email_verified === true;
-  const allowListed = Boolean(email && emailVerified && SUPER_ADMIN_EMAILS.includes(email));
-  // Allow-listed verified email still passes, including a user doc whose role is admin.
-  if (allowListed) return true;
-  const role = userDoc?.role || '';
-  // Role "admin" alone is not a super admin. super_admin / superAdmin stay.
-  return role === 'super_admin' || role === 'superAdmin';
-}
+// Super admin = verified email in SUPER_ADMIN_EMAILS + admin custom claim (lib/super_admin.js).
+const { isSuperAdmin } = require('./lib/super_admin');
+const { isDemoUid } = require('./lib/demo_accounts');
 
 const razorpayWebhookSecret = defineSecret('RAZORPAY_WEBHOOK_SECRET');
 const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');
@@ -64,42 +99,32 @@ const AD_PRICING_TABLE = {
   720: 5000,
 };
 
-function getRazorpayCredentials() {
+const DEMO_PAYMENTS_DISABLED_MESSAGE = 'Payments are disabled for demo accounts.';
+
+/**
+ * Razorpay credentials for a caller. Demo accounts (lib/demo_accounts.js) may only ever use
+ * Razorpay TEST mode: RAZORPAY_TEST_KEY_ID / RAZORPAY_TEST_KEY_SECRET, or the main keys when
+ * they are themselves test keys (staging). A live key is never returned for a demo UID, so a
+ * demo account cannot create a real charge.
+ */
+function getRazorpayCredentials(uid = null) {
+  if (uid && isDemoUid(uid)) {
+    const mainId = (process.env.RAZORPAY_KEY_ID || '').trim();
+    const testId = (process.env.RAZORPAY_TEST_KEY_ID || '').trim()
+      || (mainId.startsWith('rzp_test_') ? mainId : '');
+    const testSecret = (process.env.RAZORPAY_TEST_KEY_SECRET || '').trim()
+      || (mainId.startsWith('rzp_test_') ? (process.env.RAZORPAY_KEY_SECRET || '').trim() : '');
+    if (!testId.startsWith('rzp_test_') || !testSecret) {
+      throw new HttpsError('failed-precondition', DEMO_PAYMENTS_DISABLED_MESSAGE);
+    }
+    return { keyId: testId, keySecret: testSecret, testMode: true };
+  }
   const keyId = (process.env.RAZORPAY_KEY_ID || '').trim();
   const keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();
   if (!keyId || !keySecret) {
     throw new HttpsError('failed-precondition', 'Razorpay credentials not configured');
   }
-  return { keyId, keySecret };
-}
-
-/** Helper: verify provider ownership by auth.uid or users/{uid}.profileId */
-async function isAdOwner(db, adData, uid) {
-  if (!adData || !uid) return false;
-  if (adData.providerId === uid) return true;
-  try {
-    const caller = await resolveCallerIdentity({ db, uid });
-    if (caller && (caller.profileId || caller.profile_id) && adData.providerId === (caller.profileId || caller.profile_id)) return true;
-  } catch (err) {
-    console.warn('[isAdOwner] Failed to check user profileId:', err.message);
-  }
-  return false;
-}
-
-/** Helper: ensure patients cannot create or pay for promotional campaigns */
-async function assertCanPromote(db, uid) {
-  try {
-    const caller = await resolveCallerIdentity({ db, uid });
-    if (caller) {
-      const role = String(caller.role || '').toLowerCase();
-      if (role === 'patient') {
-        throw new HttpsError('permission-denied', 'Patients are not permitted to create promotions.');
-      }
-    }
-  } catch (err) {
-    if (err && err.code === 'permission-denied') throw err;
-    console.warn('[assertCanPromote] Failed to check user role:', err.message);
-  }
+  return { keyId, keySecret, testMode: keyId.startsWith('rzp_test_') };
 }
 
 /** Helper: Send HTTPS Request to Razorpay REST API */
@@ -136,12 +161,16 @@ function makeRazorpayRequest(path, method = 'GET', payload = null, keyId, keySec
             reject(new Error(parsed.error?.description || `Razorpay error HTTP ${res.statusCode}`));
           }
         } catch (err) {
-          reject(new Error(`Failed to parse Razorpay response: ${body}`));
+          // Never echo the gateway body (may contain payment details) into logs/errors.
+          reject(new Error(`Failed to parse Razorpay response (HTTP ${res.statusCode})`));
         }
       });
     });
 
     req.on('error', (e) => reject(e));
+    if (typeof req.setTimeout === 'function') {
+      req.setTimeout(10000, () => req.destroy(new Error('Razorpay request timed out')));
+    }
     if (postData) {
       req.write(postData);
     }
@@ -150,17 +179,108 @@ function makeRazorpayRequest(path, method = 'GET', payload = null, keyId, keySec
 }
 
 /**
+ * Postgres (Supabase staging / RDS production) order creation. Amount always comes from
+ * AD_PRICING_TABLE on the server; client-sent amounts are never read.
+ */
+async function createRazorpayOrderPostgres(uid, safeAdId, hours, amountINR) {
+  const supabase = getSupabaseAdmin(uid);
+  if (!supabase) {
+    throw new HttpsError('unavailable', 'Database service temporarily unavailable.');
+  }
+  const ad = await loadOwnedPromotedAdRow(supabase, safeAdId, uid);
+  if (ad.status !== 'draft' && ad.status !== 'pending_payment') {
+    throw new HttpsError(
+      'failed-precondition',
+      `Cannot create payment order for ad with status '${ad.status}'.`,
+    );
+  }
+
+  const { keyId, keySecret } = getRazorpayCredentials(uid);
+  const amountPaise = amountINR * 100;
+
+  if (ad.status === 'pending_payment' && ad.razorpay_order_id && Number(ad.duration_hours) === hours) {
+    const existingOrderId = String(ad.razorpay_order_id).trim();
+    try {
+      const existingOrder = await makeRazorpayRequest(`/v1/orders/${encodeURIComponent(existingOrderId)}`, 'GET', null, keyId, keySecret);
+      const notes = existingOrder.notes || {};
+      if (
+        existingOrder.id === existingOrderId &&
+        existingOrder.amount === amountPaise &&
+        existingOrder.currency === 'INR' &&
+        existingOrder.status !== 'paid' &&
+        notes.adId === safeAdId &&
+        notes.providerUid === uid &&
+        parseInt(notes.durationHours, 10) === hours
+      ) {
+        return { orderId: existingOrder.id, keyId, amount: amountINR, currency: 'INR' };
+      }
+    } catch (err) {
+      console.warn('[createRazorpayOrder] Could not reuse existing order; creating new one.');
+    }
+  }
+
+  let razorpayOrder;
+  try {
+    razorpayOrder = await makeRazorpayRequest(
+      '/v1/orders',
+      'POST',
+      {
+        amount: amountPaise,
+        currency: 'INR',
+        receipt: safeAdId.slice(0, 40),
+        notes: { adId: safeAdId, providerUid: uid, durationHours: String(hours) },
+      },
+      keyId,
+      keySecret,
+    );
+  } catch (err) {
+    console.error('[createRazorpayOrder] Razorpay order creation failed:', err?.message || 'unknown');
+    throw new HttpsError('internal', 'Failed to create Razorpay order.');
+  }
+
+  const nowIso = new Date().toISOString();
+  const { error: updErr } = await supabase
+    .from('promoted_ads')
+    .update({
+      razorpay_order_id: razorpayOrder.id,
+      duration_hours: hours,
+      status: 'pending_payment',
+      payment_status: 'pending',
+      updated_at: nowIso,
+    })
+    .eq('ad_id', safeAdId);
+  if (updErr) {
+    throw new HttpsError('internal', 'Failed to create Razorpay order.');
+  }
+  const { error: orderErr } = await supabase.from('razorpay_orders').upsert({
+    order_id: razorpayOrder.id,
+    user_uid: uid,
+    ad_id: safeAdId,
+    amount_paise: amountPaise,
+    currency: 'INR',
+    receipt: safeAdId.slice(0, 40),
+    status: 'created',
+    updated_at: nowIso,
+  }, { onConflict: 'order_id' });
+  if (orderErr) {
+    console.warn('[createRazorpayOrder] razorpay_orders ledger write failed');
+  }
+
+  return { orderId: razorpayOrder.id, keyId, amount: amountINR, currency: 'INR' };
+}
+
+/**
  * 1. Callable Cloud Function: createRazorpayOrder
  * Input: { adId: string, durationHours: number }
  */
 const createRazorpayOrder = onCall(
-  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required to create payment order.');
   }
   assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
-  await enforceAbuseLimit(require('./legacy_db').getLegacyFirestoreDb(), request, 'payment', {
+  await enforceAbuseLimit(null, request, 'payment', {
     message: 'Too many payment attempts. Please try again later.',
   });
 
@@ -173,113 +293,13 @@ const createRazorpayOrder = onCall(
   );
   const amountINR = AD_PRICING_TABLE[hours];
 
-  const db = require('./legacy_db').getLegacyFirestoreDb();
-  const adRef = db.collection('promotedAds').doc(safeAdId);
-  const adSnap = await adRef.get();
-
-  if (!adSnap.exists) {
-    throw new HttpsError('not-found', 'Promoted ad document not found.');
-  }
-
-  const adData = adSnap.data();
-  await assertCanPromote(db, request.auth.uid);
-  const isOwner = await isAdOwner(db, adData, request.auth.uid);
-  if (!isOwner) {
-    throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
-  }
-
-  if (adData.status !== 'draft' && adData.status !== 'pending_payment') {
-    throw new HttpsError(
-      'failed-precondition',
-      `Cannot create payment order for ad with status '${adData.status}'.`
-    );
-  }
-
-  const { keyId, keySecret } = getRazorpayCredentials();
-  const amountPaise = amountINR * 100;
-
-  // If pending_payment with existing razorpayOrderId for same durationHours, reuse verified existing order
-  if (
-    adData.status === 'pending_payment' &&
-    adData.razorpayOrderId &&
-    Number(adData.durationHours) === hours
-  ) {
-    const existingOrderId = String(adData.razorpayOrderId).trim();
-    try {
-      const existingOrder = await makeRazorpayRequest(
-        `/v1/orders/${existingOrderId}`,
-        'GET',
-        null,
-        keyId,
-        keySecret
-      );
-
-      const notes = existingOrder.notes || {};
-      const orderDuration = parseInt(notes.durationHours, 10);
-
-      if (
-        existingOrder.id === existingOrderId &&
-        existingOrder.amount === amountPaise &&
-        notes.adId === safeAdId &&
-        notes.providerUid === request.auth.uid &&
-        orderDuration === hours
-      ) {
-        return {
-          orderId: existingOrder.id,
-          keyId: keyId,
-          amount: amountINR,
-          currency: 'INR',
-        };
-      }
-    } catch (err) {
-      console.warn(`[createRazorpayOrder] Failed to reuse existing order ${existingOrderId}, creating new:`, err.message);
-    }
-  }
-
-  try {
-    const razorpayOrder = await makeRazorpayRequest(
-      '/v1/orders',
-      'POST',
-      {
-        amount: amountPaise,
-        currency: 'INR',
-        receipt: safeAdId.slice(0, 40),
-        notes: {
-          adId: safeAdId,
-          providerUid: request.auth.uid,
-          durationHours: String(hours),
-        },
-      },
-      keyId,
-      keySecret,
-    );
-
-    // Save order ID and amount server-side
-    await adRef.update({
-      razorpayOrderId: razorpayOrder.id,
-      amountPaid: amountINR,
-      durationHours: hours,
-      status: 'pending_payment',
-      paymentStatus: 'pending',
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-
-    return {
-      orderId: razorpayOrder.id,
-      keyId: keyId,
-      amount: amountINR,
-      currency: 'INR',
-    };
-  } catch (err) {
-    console.error('[createRazorpayOrder] Error creating order:', err);
-    throw new HttpsError('internal', 'Failed to create Razorpay order.');
-  }
+  return createRazorpayOrderPostgres(request.auth.uid, safeAdId, hours, amountINR);
   },
 );
 
 /**
  * Shared Activation Helper for Promoted Ad Payments (verifyRazorpayPayment & razorpayWebhook).
- * Runs a single Firestore transaction to verify ad status, validate ledger idempotency,
+ * Verifies ad status and ledger idempotency in Postgres (compare-and-set transition),
  * create the ledger document, and transition ad from pending_payment to pending_approval.
  */
 async function activatePromotedAdPayment(db, {
@@ -308,22 +328,23 @@ async function activatePromotedAdPayment(db, {
     throw new HttpsError('failed-precondition', 'Payment amount or duration mismatch.');
   }
 
-  const isCutover = await isDoctorPatientSupabasePrimary();
-  const useFirestoreDb = db && typeof db.collection === 'function';
-  if (isCutover && !useFirestoreDb) {
-    const supabase = getSupabaseAdmin();
+  {
+    const supabase = getSupabaseAdmin(callerUid || providerUid);
     if (!supabase) {
       throw new HttpsError('unavailable', 'Database service temporarily unavailable.');
     }
 
     const safeEventId = eventId ? requireDocId(eventId, 'eventId') : null;
+    // Fail closed: a DB read error must never be treated as "not processed yet".
+    const dbUnavailable = () => new HttpsError('unavailable', 'Database service temporarily unavailable.');
 
     // 1. Check event idempotency
     if (safeEventId) {
-      const { data: eventRows } = await supabase
+      const { data: eventRows, error: eventErr } = await supabase
         .from('razorpay_webhook_events')
         .select('*')
         .eq('event_id', safeEventId);
+      if (eventErr) throw dbUnavailable();
       if (eventRows && eventRows.length > 0) {
         return {
           success: true,
@@ -335,10 +356,11 @@ async function activatePromotedAdPayment(db, {
     }
 
     // 2. Check existing payment in razorpay_payments
-    const { data: existingPayments } = await supabase
+    const { data: existingPayments, error: payErr } = await supabase
       .from('razorpay_payments')
       .select('*')
       .eq('payment_id', safePaymentId);
+    if (payErr) throw dbUnavailable();
 
     if (existingPayments && existingPayments.length > 0) {
       const prevPay = existingPayments[0];
@@ -354,10 +376,11 @@ async function activatePromotedAdPayment(db, {
     }
 
     // 3. Query promoted_ads row
-    const { data: adRows } = await supabase
+    const { data: adRows, error: adErr } = await supabase
       .from('promoted_ads')
       .select('*')
       .eq('ad_id', safeAdId);
+    if (adErr) throw dbUnavailable();
 
     if (!adRows || adRows.length === 0) {
       throw new HttpsError('not-found', 'Promoted ad document not found.');
@@ -365,9 +388,12 @@ async function activatePromotedAdPayment(db, {
 
     const currentAd = adRows[0];
 
-    // Verify ownership
+    // Verify ownership (order notes / caller must identify the ad owner; never skip).
     const ownerUid = callerUid || providerUid;
-    if (ownerUid) {
+    if (!ownerUid) {
+      throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
+    }
+    {
       if (currentAd.provider_id !== ownerUid) {
         const { data: userRows } = await supabase
           .from('users')
@@ -397,15 +423,32 @@ async function activatePromotedAdPayment(db, {
       );
     }
 
-    // 4. Record webhook event, orders, payments, and update ad
+    // 4. Transition the ad first with a compare-and-set (status + order id) so concurrent
+    //    verify/webhook deliveries cannot double-activate; then write ledgers; record the
+    //    webhook event last so a failed run is retried by Razorpay instead of being skipped.
     const nowIso = new Date().toISOString();
-    if (safeEventId) {
-      await supabase.from('razorpay_webhook_events').upsert({
-        event_id: safeEventId,
-        event_type: 'payment.captured',
-        payload: { adId: safeAdId, orderId: safeOrderId, paymentId: safePaymentId },
-        processed_at: nowIso,
-      }, { onConflict: 'event_id' });
+    const { data: transitioned, error: adUpdErr } = await supabase.from('promoted_ads').update({
+      payment_status: 'verified',
+      status: 'pending_approval',
+      razorpay_order_id: safeOrderId,
+      razorpay_payment_id: safePaymentId,
+      duration_hours: noteDurationHours,
+      amount_paid: expectedPriceINR,
+      updated_at: nowIso,
+    })
+      .eq('ad_id', safeAdId)
+      .eq('status', 'pending_payment')
+      .eq('razorpay_order_id', safeOrderId)
+      .select('ad_id');
+    if (adUpdErr) throw dbUnavailable();
+    if (!Array.isArray(transitioned) || transitioned.length === 0) {
+      // Lost the race to a concurrent activation of the same order.
+      return {
+        success: true,
+        idempotent: true,
+        message: 'Payment already processed (idempotent)',
+        adId: safeAdId,
+      };
     }
 
     await supabase.from('razorpay_orders').upsert({
@@ -426,18 +469,17 @@ async function activatePromotedAdPayment(db, {
       amount_paise: expectedPriceINR * 100,
       currency: currency || 'INR',
       status: 'captured',
-      method: 'webhook',
+      method: safeEventId ? 'webhook' : 'client_verify',
     }, { onConflict: 'payment_id' });
 
-    await supabase.from('promoted_ads').update({
-      payment_status: 'verified',
-      status: 'pending_approval',
-      razorpay_order_id: safeOrderId,
-      razorpay_payment_id: safePaymentId,
-      duration_hours: noteDurationHours,
-      amount_paid: expectedPriceINR,
-      updated_at: nowIso,
-    }).eq('ad_id', safeAdId);
+    if (safeEventId) {
+      await supabase.from('razorpay_webhook_events').upsert({
+        event_id: safeEventId,
+        event_type: 'payment.captured',
+        payload: { adId: safeAdId, orderId: safeOrderId, paymentId: safePaymentId },
+        processed_at: nowIso,
+      }, { onConflict: 'event_id' });
+    }
 
     return {
       success: true,
@@ -448,125 +490,6 @@ async function activatePromotedAdPayment(db, {
       endTime: currentAd.end_time || null,
     };
   }
-
-  const adRef = db.collection('promotedAds').doc(safeAdId);
-  const paymentLedgerRef = db.collection('razorpayPayments').doc(safePaymentId);
-  const safeEventId = String(eventId || '').trim();
-  const eventRef = safeEventId
-    ? db.collection('razorpayWebhookEvents').doc(safeEventId)
-    : null;
-  const paidStatuses = new Set(['pending_approval', 'active', 'rejected']);
-
-  let isIdempotentSuccess = false;
-  let resStartTime = null;
-  let resEndTime = null;
-
-  await db.runTransaction(async (tx) => {
-    const reads = [tx.get(adRef), tx.get(paymentLedgerRef)];
-    if (eventRef) reads.push(tx.get(eventRef));
-    const [currentAdDoc, ledgerDoc, eventDoc] = await Promise.all(reads);
-
-    if (!currentAdDoc.exists) {
-      throw new HttpsError('not-found', 'Promoted ad document not found.');
-    }
-
-    const currentAd = currentAdDoc.data();
-
-    // Verify ownership
-    const ownerUid = callerUid || providerUid;
-    if (ownerUid) {
-      if (currentAd.providerId !== ownerUid) {
-        let callerUser = null; try { callerUser = await resolveCallerIdentity({ db, uid: ownerUid }); } catch (_) {}
-        const callerProfileId = callerUser ? (callerUser.profileId || callerUser.profile_id || null) : null;
-        if (!callerProfileId || currentAd.providerId !== callerProfileId) {
-          throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
-        }
-      }
-    }
-
-    if (eventDoc && eventDoc.exists) {
-      const prev = eventDoc.data() || {};
-      if (prev.paymentId === safePaymentId && prev.adId === safeAdId) {
-        isIdempotentSuccess = true;
-        resStartTime = currentAd.startTime || null;
-        resEndTime = currentAd.endTime || null;
-        return;
-      }
-      throw new HttpsError('already-exists', 'This webhook event has already been used.');
-    }
-
-    // Ledger check: same ad + already paid (pending_approval/active/rejected) is idempotent; other ads reject.
-    if (ledgerDoc.exists) {
-      const ledgerData = ledgerDoc.data();
-      if (
-        ledgerData.adId === safeAdId &&
-        paidStatuses.has(currentAd.status) &&
-        currentAd.razorpayPaymentId === safePaymentId
-      ) {
-        isIdempotentSuccess = true;
-        resStartTime = currentAd.startTime || null;
-        resEndTime = currentAd.endTime || null;
-        if (eventRef) {
-          tx.set(eventRef, {
-            eventId: safeEventId,
-            adId: safeAdId,
-            paymentId: safePaymentId,
-            orderId: safeOrderId,
-            createdAt: FieldValue.serverTimestamp(),
-          });
-        }
-        return;
-      }
-      throw new HttpsError('already-exists', 'This payment has already been used.');
-    }
-
-    // Require ad.status === 'pending_payment' and ad.razorpayOrderId === orderId
-    if (currentAd.status !== 'pending_payment' || currentAd.razorpayOrderId !== safeOrderId) {
-      throw new HttpsError(
-        'failed-precondition',
-        `Ad is not in pending_payment state or order ID mismatch (status: ${currentAd.status}).`
-      );
-    }
-
-    // Create ledger doc in same transaction
-    tx.set(paymentLedgerRef, {
-      adId: safeAdId,
-      orderId: safeOrderId,
-      providerUid: ownerUid || currentAd.providerId,
-      paymentId: safePaymentId,
-      createdAt: FieldValue.serverTimestamp(),
-    });
-
-    tx.update(adRef, {
-      paymentStatus: 'verified',
-      status: 'pending_approval',
-      razorpayOrderId: safeOrderId,
-      razorpayPaymentId: safePaymentId,
-      durationHours: noteDurationHours,
-      amountPaid: expectedPriceINR,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-    if (eventRef) {
-      tx.set(eventRef, {
-        eventId: safeEventId,
-        adId: safeAdId,
-        paymentId: safePaymentId,
-        orderId: safeOrderId,
-        createdAt: FieldValue.serverTimestamp(),
-      });
-    }
-  });
-
-  return {
-    success: true,
-    idempotent: isIdempotentSuccess,
-    message: isIdempotentSuccess
-      ? 'Payment already verified and banner ad is under review (idempotent)'
-      : 'Payment verified. Banner ad submitted for review.',
-    adId: safeAdId,
-    startTime: resStartTime,
-    endTime: resEndTime,
-  };
 }
 
 function toIsoDateString(val) {
@@ -583,13 +506,13 @@ function toIsoDateString(val) {
  * Input: { adId: string, orderId: string, paymentId: string, signature: string }
  */
 const verifyRazorpayPayment = onCall(
-  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required to verify payment.');
   }
   assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
-  await enforceAbuseLimit(require('./legacy_db').getLegacyFirestoreDb(), request, 'payment');
+  await enforceAbuseLimit(null, request, 'payment');
 
   const { adId, orderId, paymentId, signature } = request.data || {};
   const safeAdId = requireDocId(adId, 'adId');
@@ -601,26 +524,20 @@ const verifyRazorpayPayment = onCall(
     pattern: /^[a-fA-F0-9]+$/,
   });
 
-  const db = require('./legacy_db').getLegacyFirestoreDb();
-  const adRef = db.collection('promotedAds').doc(safeAdId);
-  const adSnap = await adRef.get();
-
-  if (!adSnap.exists) {
-    throw new HttpsError('not-found', 'Promoted ad document not found.');
+  const supabase = getSupabaseAdmin(request.auth.uid);
+  if (!supabase) {
+    throw new HttpsError('unavailable', 'Database service temporarily unavailable.');
   }
-
-  const adData = adSnap.data();
-  const isOwner = await isAdOwner(db, adData, request.auth.uid);
-  if (!isOwner) {
-    throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
-  }
+  const row = await loadOwnedPromotedAdRow(supabase, safeAdId, request.auth.uid);
+  const adData = { razorpayOrderId: row.razorpay_order_id };
+  const db = null;
 
   const expectedOrderId = String(adData.razorpayOrderId || '').trim();
   if (!expectedOrderId || expectedOrderId !== safeOrderId) {
     throw new HttpsError('invalid-argument', 'Order does not match this advertisement.');
   }
 
-  const { keyId, keySecret } = getRazorpayCredentials();
+  const { keyId, keySecret } = getRazorpayCredentials(request.auth.uid);
 
   // Server-side HMAC SHA256 signature verification per Razorpay spec
   const payload = `${safeOrderId}|${safePaymentId}`;
@@ -646,7 +563,7 @@ const verifyRazorpayPayment = onCall(
       makeRazorpayRequest(`/v1/orders/${safeOrderId}`, 'GET', null, keyId, keySecret),
     ]);
   } catch (err) {
-    console.error('[verifyRazorpayPayment] Error fetching payment/order from Razorpay:', err);
+    console.error('[verifyRazorpayPayment] Error fetching payment/order from Razorpay:', safeErrorForLog(err));
     throw new HttpsError('internal', 'Failed to verify payment with payment gateway.');
   }
 
@@ -784,10 +701,12 @@ async function razorpayWebhookHandler(req, res, db) {
   const providerUid = typeof notes.providerUid === 'string' ? notes.providerUid.trim() : null;
   const durationHours = notes.durationHours ? parseInt(notes.durationHours, 10) : null;
 
-  const isCutover = await isDoctorPatientSupabasePrimary();
-  const useFirestoreDb = db && typeof db.collection === 'function';
-  if (isCutover && !useFirestoreDb) {
-    const supabase = getSupabaseAdmin();
+  {
+    if (providerUid && !SAFE_UID_RE.test(providerUid)) {
+      res.status(200).json({ status: 'rejected', reason: 'order_notes_invalid' });
+      return;
+    }
+    const supabase = getSupabaseAdmin(providerUid);
     if (!supabase) {
       res.status(503).json({ error: { message: 'Database service unavailable' } });
       return;
@@ -818,7 +737,12 @@ async function razorpayWebhookHandler(req, res, db) {
       return;
     }
 
-    const { data: adRows } = await supabase.from('promoted_ads').select('*').eq('ad_id', adId);
+    const { data: adRows, error: adReadErr } = await supabase.from('promoted_ads').select('*').eq('ad_id', adId);
+    if (adReadErr) {
+      // 5xx so Razorpay retries delivery instead of dropping a real payment.
+      res.status(503).json({ error: { message: 'Database service unavailable' } });
+      return;
+    }
     if (!adRows || adRows.length === 0) {
       console.warn('[razorpayWebhook] ad_not_found');
       res.status(200).json({ status: 'rejected', reason: 'ad_not_found' });
@@ -854,6 +778,10 @@ async function razorpayWebhookHandler(req, res, db) {
       return;
     } catch (err) {
       if (err instanceof HttpsError) {
+        if (err.code === 'unavailable') {
+          res.status(503).json({ error: { message: 'Database service unavailable' } });
+          return;
+        }
         if (err.code === 'already-exists') {
           res.status(200).json({ status: 'rejected', reason: 'payment_already_used' });
           return;
@@ -870,226 +798,6 @@ async function razorpayWebhookHandler(req, res, db) {
     }
   }
 
-  const firestore = db || require('./legacy_db').getLegacyFirestoreDb();
-  if (!firestore || typeof firestore.collection !== 'function') {
-    const { assertFirestoreNotForbidden, isProductionLegacyFirestoreBlocked } = require('./firestore_forbidden_guard');
-    if (isProductionLegacyFirestoreBlocked()) {
-      assertFirestoreNotForbidden('razorpayWebhookHandler');
-    }
-    res.status(503).json({ error: { message: 'Database service unavailable' } });
-    return;
-  }
-
-  if (!adId || !providerUid || !durationHours) {
-    return recordWebhookRejection(firestore, {
-      res,
-      eventId,
-      paymentId,
-      orderId,
-      adId,
-      reason: 'order_notes_missing',
-      amountPaise,
-      currency,
-    });
-  }
-
-  if (!paymentId || !orderId) {
-    return recordWebhookRejection(firestore, {
-      res,
-      eventId,
-      paymentId,
-      orderId,
-      adId,
-      reason: 'missing_identifiers',
-      amountPaise,
-      currency,
-    });
-  }
-
-  if (currency !== 'INR') {
-    return recordWebhookRejection(firestore, {
-      res,
-      eventId,
-      paymentId,
-      orderId,
-      adId,
-      reason: 'currency_mismatch',
-      amountPaise,
-      currency,
-    });
-  }
-
-  const expectedPriceINR = AD_PRICING_TABLE[durationHours];
-  if (!expectedPriceINR || amountPaise !== expectedPriceINR * 100) {
-    return recordWebhookRejection(firestore, {
-      res,
-      eventId,
-      paymentId,
-      orderId,
-      adId,
-      reason: 'amount_mismatch',
-      amountPaise,
-      currency,
-    });
-  }
-
-  const adRef = firestore.collection('promotedAds').doc(adId);
-  const adSnap = await adRef.get();
-
-  if (!adSnap.exists) {
-    return recordWebhookRejection(firestore, {
-      res,
-      eventId,
-      paymentId,
-      orderId,
-      adId,
-      reason: 'ad_not_found',
-      amountPaise,
-      currency,
-    });
-  }
-
-  const adData = adSnap.data() || {};
-  const expectedOrderId = String(adData.razorpayOrderId || '').trim();
-  if (!expectedOrderId || expectedOrderId !== orderId) {
-    return recordWebhookRejection(firestore, {
-      res,
-      eventId,
-      paymentId,
-      orderId,
-      adId,
-      reason: 'order_id_mismatch',
-      amountPaise,
-      currency,
-    });
-  }
-
-  try {
-    const activation = await activatePromotedAdPayment(firestore, {
-      adId,
-      orderId,
-      paymentId,
-      providerUid,
-      durationHours,
-      amountPaise,
-      currency,
-      eventId,
-    });
-
-    console.info(`[razorpayWebhook] Successfully processed ${eventType} for ad ${adId} (idempotent: ${activation.idempotent})`);
-    res.status(200).json({
-      success: true,
-      idempotent: activation.idempotent,
-      adId: activation.adId,
-    });
-  } catch (err) {
-    if (err instanceof HttpsError) {
-      if (err.code === 'already-exists') {
-        return recordWebhookRejection(firestore, {
-          res,
-          eventId,
-          paymentId,
-          orderId,
-          adId,
-          reason: 'payment_already_used',
-          amountPaise,
-          currency,
-        });
-      }
-      if (
-        err.code === 'failed-precondition' ||
-        err.code === 'not-found' ||
-        err.code === 'permission-denied' ||
-        err.code === 'invalid-argument'
-      ) {
-        return recordWebhookRejection(firestore, {
-          res,
-          eventId,
-          paymentId,
-          orderId,
-          adId,
-          reason: err.code,
-          amountPaise,
-          currency,
-        });
-      }
-    }
-
-    console.error('[razorpayWebhook] Transient error committing activation transaction:', err.message);
-    res.status(500).send('Internal Server Error');
-  }
-}
-
-/**
- * Writes a dead-letter rejection document to razorpayWebhookRejections/{docId} using Admin SDK
- * and logs structured warning JSON. If the Firestore write fails, returns HTTP 500 so Razorpay retries.
- */
-async function recordWebhookRejection(firestore, {
-  res,
-  eventId,
-  paymentId,
-  orderId,
-  adId,
-  reason,
-  amountPaise,
-  currency,
-}) {
-  const safeEventId = typeof eventId === 'string' && eventId.trim().length > 0 ? eventId.trim() : null;
-  const safePaymentId = typeof paymentId === 'string' && paymentId.trim().length > 0 ? paymentId.trim() : null;
-  const safeOrderId = typeof orderId === 'string' && orderId.trim().length > 0 ? orderId.trim() : null;
-  const safeAdId = typeof adId === 'string' && adId.trim().length > 0 ? adId.trim() : null;
-  const safeCurrency = typeof currency === 'string' && currency.trim().length > 0 ? currency.trim() : null;
-  const safeAmountPaise = typeof amountPaise === 'number' && Number.isFinite(amountPaise) ? amountPaise : null;
-
-  const docId = safeEventId || `${safePaymentId || 'unknown'}_${reason}`;
-
-  console.warn(JSON.stringify({
-    severity: 'WARNING',
-    category: 'payments',
-    action: 'razorpay.webhook_rejected',
-    reason,
-    paymentId: safePaymentId,
-    adId: safeAdId,
-  }));
-
-  try {
-    const docRef = firestore.collection('razorpayWebhookRejections').doc(docId);
-    const existingSnap = await docRef.get();
-    const serverNow = FieldValue.serverTimestamp();
-
-    if (!existingSnap.exists) {
-      await docRef.set({
-        eventId: safeEventId,
-        paymentId: safePaymentId,
-        orderId: safeOrderId,
-        adId: safeAdId,
-        reason,
-        amountPaise: safeAmountPaise,
-        currency: safeCurrency,
-        createdAt: serverNow,
-        lastSeenAt: serverNow,
-        attempts: 1,
-      });
-    } else {
-      await docRef.set({
-        eventId: safeEventId,
-        paymentId: safePaymentId,
-        orderId: safeOrderId,
-        adId: safeAdId,
-        reason,
-        amountPaise: safeAmountPaise,
-        currency: safeCurrency,
-        lastSeenAt: serverNow,
-        attempts: FieldValue.increment(1),
-      }, { merge: true });
-    }
-  } catch (err) {
-    console.error('[razorpayWebhook] Failed to write rejection document:', err.message);
-    res.status(500).send('Internal Server Error');
-    return;
-  }
-
-  res.status(200).json({ status: 'rejected', reason });
 }
 
 /**
@@ -1099,12 +807,10 @@ async function recordWebhookRejection(firestore, {
 const razorpayWebhook = onRequest(
   {
     region: 'asia-south1',
-    secrets: [razorpayWebhookSecret, supabaseServiceRoleKey],
+    secrets: withDataPlaneSecrets([razorpayWebhookSecret, supabaseServiceRoleKey]),
     invoker: 'public',
   },
-  async (req, res) => {
-    return razorpayWebhookHandler(req, res, require('./legacy_db').getLegacyFirestoreDb());
-  }
+  require('./http_endpoint_security').withApiSecurityHeaders(async (req, res) => razorpayWebhookHandler(req, res, null)),
 );
 
 /**
@@ -1131,11 +837,7 @@ async function reviewPromotedAdHandler(db, data, auth) {
     throw new HttpsError('permission-denied', 'Super admin access required.');
   }
 
-  const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
-  const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
-  const useFirestoreDb = db && typeof db.collection === 'function';
-
-  if (isCutover && !useFirestoreDb) {
+  {
     const { getSupabaseAdminClient } = require('./caller_identity');
     const sb = getSupabaseAdminClient();
     if (!sb) throw new HttpsError('internal', 'Supabase client not configured.');
@@ -1168,6 +870,10 @@ async function reviewPromotedAdHandler(db, data, auth) {
     const now = new Date();
     const nowIso = now.toISOString();
     if (safeDecision === 'approve') {
+      // Never activate an ad whose payment was not verified server-side.
+      if (adData.payment_status !== 'verified' || !adData.razorpay_payment_id) {
+        throw new HttpsError('failed-precondition', 'Ad payment has not been verified.');
+      }
       const hours = parseInt(adData.duration_hours, 10);
       if (!AD_PRICING_TABLE[hours]) {
         throw new HttpsError('failed-precondition', 'Ad duration is invalid.');
@@ -1189,129 +895,56 @@ async function reviewPromotedAdHandler(db, data, auth) {
     }).eq('ad_id', safeAdId);
     return { ok: true, adId: safeAdId, status: 'rejected' };
   }
-
-  const adRef = db.collection('promotedAds').doc(safeAdId);
-  const adSnap = await adRef.get();
-  if (!adSnap.exists) {
-    throw new HttpsError('not-found', 'Promoted ad document not found.');
-  }
-  const adData = adSnap.data() || {};
-  if (adData.status !== 'pending_approval') {
-    throw new HttpsError(
-      'failed-precondition',
-      `Ad is not pending approval (status: ${adData.status}).`,
-    );
-  }
-
-  const providerId = String(adData.providerId || '').trim();
-  const callerProfileId = String(userDoc.profileId || '').trim();
-  if (
-    providerId
-    && (providerId === auth.uid || (callerProfileId && providerId === callerProfileId))
-  ) {
-    throw new HttpsError('permission-denied', 'You cannot review your own promoted ad.');
-  }
-
-  if (safeDecision === 'approve') {
-    const hours = parseInt(adData.durationHours, 10);
-    if (!AD_PRICING_TABLE[hours]) {
-      throw new HttpsError('failed-precondition', 'Ad duration is invalid.');
-    }
-    const now = Timestamp.now();
-    const endTime = Timestamp.fromMillis(now.toMillis() + hours * 3600 * 1000);
-    await adRef.update({
-      status: 'active',
-      startTime: now,
-      endTime,
-      reviewedBy: auth.uid,
-      reviewedAt: FieldValue.serverTimestamp(),
-      reviewDecision: 'approve',
-      ...(safeReason ? { reviewReason: safeReason } : {}),
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-    return { ok: true, adId: safeAdId, status: 'active' };
-  }
-
-  await adRef.update({
-    status: 'rejected',
-    reviewReason: safeReason || 'Rejected by admin',
-    reviewedBy: auth.uid,
-    reviewedAt: FieldValue.serverTimestamp(),
-    reviewDecision: 'reject',
-    updatedAt: FieldValue.serverTimestamp(),
-  });
-  return { ok: true, adId: safeAdId, status: 'rejected' };
 }
 
 const reviewPromotedAd = onCall(
-  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Authentication required.');
     }
     assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
-    await enforceAbuseLimit(require('./legacy_db').getLegacyFirestoreDb(), request, 'api', {
+    await enforceAbuseLimit(null, request, 'api', {
       message: 'Too many requests. Please try again later.',
     });
-    return reviewPromotedAdHandler(require('./legacy_db').getLegacyFirestoreDb(), request.data || {}, request.auth);
+    return reviewPromotedAdHandler(null, request.data || {}, request.auth);
   },
 );
 
 const EXPIRE_BATCH_LIMIT = 400;
 
-async function expirePromotedAdsHandler(db, customNow, chunkSize = EXPIRE_BATCH_LIMIT) {
-  const now = customNow || Timestamp.now();
-  let totalExpired = 0;
-  let batchCount = 0;
-
-  while (true) {
-    const snap = await db
-      .collection('promotedAds')
-      .where('status', '==', 'active')
-      .where('endTime', '<=', now)
-      .limit(chunkSize)
-      .get();
-
-    if (snap.empty) {
-      break;
-    }
-
-    const batch = db.batch();
-    snap.docs.forEach((doc) => {
-      batch.update(doc.ref, {
-        status: 'expired',
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-    });
-
-    await batch.commit();
-    batchCount++;
-    totalExpired += snap.docs.length;
-
-    if (snap.docs.length < chunkSize) {
-      break;
-    }
+/**
+ * Postgres expiry sweep: active ads whose end_time has passed become 'expired'.
+ * (pg_cron does the same on Supabase; this keeps RDS correct until its pg_cron is attached.)
+ */
+async function expirePromotedAdsHandler(_db, customNow = null, supabaseClient = null) {
+  const sb = supabaseClient || getSupabaseAdmin();
+  if (!sb) {
+    throw new Error('Database client unavailable for promoted ad expiry.');
   }
-
-  return { totalExpired, batchCount };
+  const nowIso = (customNow instanceof Date ? customNow : new Date()).toISOString();
+  const { data, error } = await sb
+    .from('promoted_ads')
+    .update({ status: 'expired', updated_at: nowIso })
+    .eq('status', 'active')
+    .lte('end_time', nowIso)
+    .select('ad_id');
+  if (error) {
+    throw new Error(`promoted ad expiry failed: ${error.message || 'unknown'}`);
+  }
+  const totalExpired = Array.isArray(data) ? data.length : 0;
+  return { totalExpired, batchCount: totalExpired > 0 ? 1 : 0 };
 }
 
 /**
- * 3. Scheduled Cloud Function: expirePromotedAds
- * Runs hourly to set status = 'expired' on any active ad whose endTime has passed.
+ * Scheduled Cloud Function: expirePromotedAds (hourly).
  */
-const expirePromotedAds = onSchedule({ schedule: '0 * * * *', region: 'asia-south1' }, async () => {
-  const db = require('./legacy_db').getLegacyFirestoreDb();
-
+const expirePromotedAds = onSchedule({ schedule: '0 * * * *', region: 'asia-south1', secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) }, async () => {
   try {
-    const { totalExpired, batchCount } = await expirePromotedAdsHandler(db);
-    if (totalExpired === 0) {
-      console.log('[expirePromotedAds] No expired ads found.');
-    } else {
-      console.log(`[expirePromotedAds] Successfully expired ${totalExpired} ads across ${batchCount} batch(es).`);
-    }
+    const { totalExpired } = await expirePromotedAdsHandler(null);
+    console.log(`[expirePromotedAds] expired ${totalExpired} ad(s).`);
   } catch (err) {
-    console.error('[expirePromotedAds] Error expiring ads:', err);
+    console.error('[expirePromotedAds] Error expiring ads:', err?.message || err);
   }
 });
 
@@ -1333,5 +966,4 @@ module.exports = {
   setSupabaseClientForTesting,
   getSupabaseAdmin,
   razorpayWebhookSecret,
-  recordWebhookRejection,
 };

@@ -43,3 +43,33 @@ output "rds_parameter_group_name" {
   description = "RDS DB Parameter Group Name configuring pg_cron"
 }
 
+
+output "ecr_auth_gateway_url" {
+  value       = aws_ecr_repository.auth_gateway.repository_url
+  description = "Push the auth-gateway image here"
+}
+
+output "ecr_postgrest_url" {
+  value       = aws_ecr_repository.postgrest.repository_url
+  description = "Push the PostgREST (RDS CA) image here"
+}
+
+output "secrets_manager_gateway_firebase_admin_arn" {
+  value       = aws_secretsmanager_secret.gateway_firebase_admin.arn
+  description = "Secrets Manager Secret ARN for the gateway Firebase Admin service-account JSON"
+}
+
+output "s3_production_bucket" {
+  value       = aws_s3_bucket.vault_production.bucket
+  description = "Put this name in .env as S3_BUCKET_PRODUCTION"
+}
+
+output "functions_s3_production_iam_user" {
+  value       = aws_iam_user.functions_s3_production.name
+  description = "Create an access key for this user in the IAM console; store it only in Firebase Secret Manager"
+}
+
+output "functions_s3_staging_policy_arn" {
+  value       = aws_iam_policy.functions_s3_vault["staging"].arn
+  description = "Attach to the IAM user used by the staging Functions"
+}

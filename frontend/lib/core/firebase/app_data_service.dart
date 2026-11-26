@@ -15,7 +15,6 @@ import 'repositories/lab_order_repository.dart';
 import 'repositories/lab_repository.dart';
 import 'repositories/medical_directory_repository.dart';
 import 'repositories/medical_store_repository.dart';
-import 'repositories/medicine_suggestion_repository.dart';
 import 'repositories/patient_account_repository.dart';
 import 'repositories/patient_profile_repository.dart';
 import 'repositories/pharmacy_firestore_repository.dart';
@@ -42,7 +41,6 @@ export 'repositories/lab_order_repository.dart';
 export 'repositories/lab_repository.dart';
 export 'repositories/medical_directory_repository.dart';
 export 'repositories/medical_store_repository.dart';
-export 'repositories/medicine_suggestion_repository.dart';
 export 'repositories/patient_account_repository.dart';
 export 'repositories/patient_profile_repository.dart';
 export 'repositories/pharmacy_firestore_repository.dart';
@@ -68,16 +66,16 @@ class AppDataService {
       _repo(() => AppointmentRepository.instance, 'appointment');
   DoctorAccountRepository get doctorAccount =>
       _repo(() => DoctorAccountRepository.instance, 'doctorAccount');
-  DoctorAvailabilityRepository get doctorAvailability => _repo(
-      () => DoctorAvailabilityRepository.instance, 'doctorAvailability');
+  DoctorAvailabilityRepository get doctorAvailability =>
+      _repo(() => DoctorAvailabilityRepository.instance, 'doctorAvailability');
   DoctorDirectoryRepository get doctorDirectory =>
       _repo(() => DoctorDirectoryRepository.instance, 'doctorDirectory');
   DoctorProfileDetailRepository get doctorProfileDetail => _repo(
       () => DoctorProfileDetailRepository.instance, 'doctorProfileDetail');
   DoctorProfileRepository get doctorProfile =>
       _repo(() => DoctorProfileRepository.instance, 'doctorProfile');
-  DoctorVerificationRepository get doctorVerification => _repo(
-      () => DoctorVerificationRepository.instance, 'doctorVerification');
+  DoctorVerificationRepository get doctorVerification =>
+      _repo(() => DoctorVerificationRepository.instance, 'doctorVerification');
   FamilyMemberRepository get familyMember =>
       _repo(() => FamilyMemberRepository.instance, 'familyMember');
   InAppNotificationRepository get notification =>
@@ -97,14 +95,12 @@ class AppDataService {
       _repo(() => MedicalDirectoryRepository.instance, 'medicalDirectory');
   MedicalStoreRepository get medicalStore =>
       _repo(() => MedicalStoreRepository.instance, 'medicalStore');
-  MedicineSuggestionRepository get medicineSuggestion => _repo(
-      () => MedicineSuggestionRepository.instance, 'medicineSuggestion');
   PatientAccountRepository get patientAccount =>
       _repo(() => PatientAccountRepository.instance, 'patientAccount');
   PatientProfileRepository get patientProfile =>
       _repo(() => PatientProfileRepository.instance, 'patientProfile');
-  PharmacyFirestoreRepository get pharmacyFirestore => _repo(
-      () => PharmacyFirestoreRepository.instance, 'pharmacyFirestore');
+  PharmacyFirestoreRepository get pharmacyFirestore =>
+      _repo(() => PharmacyFirestoreRepository.instance, 'pharmacyFirestore');
   PrescriptionRepository get prescription =>
       _repo(() => PrescriptionRepository.instance, 'prescription');
   ReferralRepository get referral =>

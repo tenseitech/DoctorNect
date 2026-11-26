@@ -1,5 +1,10 @@
 # DoctorNect deploy checklist
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 Do not run these commands until the matching local phase is committed and you have explicitly approved the step. Nothing in this file deploys by itself.
 
 Project: `medibond-45fad`. Run commands from the repo root.

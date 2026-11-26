@@ -1,5 +1,10 @@
 # Staging / RDS smoke — manual steps (operator)
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 ## Cutover order (numbered)
 
 1. **IAM** — RDS/SG read permissions (or console checks)
@@ -240,16 +245,12 @@ firebase functions:secrets:set DEMO_SUPABASE_SERVICE_ROLE_KEY
 
 Use the **same** Supabase project URL and key as demo data-plane routing (`docs/DEMO_REAL_ROUTING.md`). Deploy exports `supabaseKeepalive` (schedule **03:30 Asia/Kolkata** daily).
 
-### (b) GitHub repository secrets (backup workflow)
+### (b) GitHub backup workflow (removed 2026-11-26)
 
-Settings → Secrets and variables → Actions:
-
-| Secret | Value |
-|--------|--------|
-| `SUPABASE_KEEPALIVE_URL` | `https://<project-ref>.supabase.co` (no trailing slash) |
-| `SUPABASE_KEEPALIVE_KEY` | Prefer **anon** key if RLS allows `SELECT` on whitelisted `system_config` rows; otherwise a dedicated read-only key — **avoid** broad service role in CI if possible |
-
-Workflow: `.github/workflows/supabase-keepalive.yml` (every **2 days** + `workflow_dispatch`).
+`.github/workflows/supabase-keepalive.yml` was deleted (PROJECT_ANALYSIS.md D6): the deployed
+Functions `supabaseKeepalive` schedule does the same ping. Delete the repository secrets
+`SUPABASE_KEEPALIVE_URL` and `SUPABASE_KEEPALIVE_KEY` (Settings > Secrets and variables > Actions);
+nothing else reads them. If the key was a service-role key, rotate it in Supabase.
 
 ### (c) Cloud Monitoring alert
 

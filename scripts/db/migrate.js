@@ -11,6 +11,7 @@ const { assertDatabaseGuard, getHostFingerprint } = require('../lib/env_guard');
 const { assertSessionCapableConnection, SESSION_CONNECTION_DOC } = require('../lib/db_connection_guard');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 const { assertRdsPreMigrateBootstrap } = require('../lib/rds_bootstrap_preflight');
+const { buildStagingPgConfig, CA_PATH_ENV } = require('../lib/staging_pg_ssl');
 
 let parse;
 try {
@@ -62,6 +63,7 @@ const {
   shouldSkipMigrationFile,
   queryPgCronCatalog,
   allowNoCronFromArgv,
+  isRdsProductionTarget,
 } = require('../lib/pg_cron_policy');
 const {
   listMigrationsForTarget,
@@ -73,6 +75,8 @@ const { isSkippableTransactionControlStatement } = require('../lib/migration_txn
 const { normalizeRdsMigrationSql } = require('../lib/rds_migration_sql_normalize');
 const { countAppSchemaObjects, assertTripwireUnchanged } = require('../lib/migrate_prod_tripwire');
 const { withMigrateScratchDatabase } = require('../lib/migrate_scratch_db');
+const { applyBootstrapToScratchDatabase, SCRATCH_DB_PATTERN } = require('../lib/migrate_scratch_bootstrap');
+const { CRON_MIGRATION_FILE } = require('../lib/pg_cron_policy');
 
 const MIGRATION_ADVISORY_TARGETS = new Set(['production', 'rehearsal']);
 
@@ -225,18 +229,12 @@ async function releaseMigrationAdvisoryLock(client, lockHeld) {
     .catch(() => {});
 }
 
+// Verified TLS for staging (shared with seed_staging_demo_accounts.js). Previously this used
+// an unverified TLS setting that encrypted the link but accepted any certificate (MITM risk).
 function buildStagingPoolConfig(dbUrl) {
-  const config = { connectionString: dbUrl };
-  try {
-    const parsed = new URL(dbUrl.replace(/^postgres:\/\//i, 'postgresql://'));
-    const sslmode = (parsed.searchParams.get('sslmode') || '').toLowerCase();
-    if (sslmode === 'require' || sslmode === 'verify-ca' || sslmode === 'verify-full' || parsed.hostname.includes('supabase')) {
-      config.ssl = { rejectUnauthorized: false };
-    }
-  } catch (_) {
-    config.ssl = { rejectUnauthorized: false };
-  }
-  return config;
+  const env = { ...process.env, [CA_PATH_ENV]: getEnv(CA_PATH_ENV) };
+  const { connectionString, ssl } = buildStagingPgConfig(dbUrl, { env });
+  return { connectionString, ssl };
 }
 
 function listPendingMigrationFiles(appliedMap, target) {
@@ -304,6 +302,10 @@ async function executeDryRunAllOnClient({
   const pendingFiles = files.filter((f) => !appliedMap.has(migrationVersionFromRel(f)));
   console.log(`Found ${pendingFiles.length} pending migration files: ${pendingFiles.join(', ')}`);
 
+  const scratchDbRes = await client.query('SELECT current_database() AS db');
+  const scratchDbName = scratchDbRes.rows[0].db;
+  const isScratchDb = SCRATCH_DB_PATTERN.test(scratchDbName);
+
   await client.query('BEGIN');
   let dryRunTxnOpen = true;
   const allErrors = [];
@@ -311,7 +313,18 @@ async function executeDryRunAllOnClient({
 
   try {
     for (const file of pendingFiles) {
-      if (shouldSkipMigrationFile(path.basename(file), skipCronMigration)) {
+      const base = path.basename(file);
+      if (
+        isScratchDb &&
+        isRdsProductionTarget(target) &&
+        base === CRON_MIGRATION_FILE
+      ) {
+        console.log(
+          `\n[SKIPPED — scratch DB pg_cron] ${file} (RDS installs pg_cron only in PROD_RDS_DB; validated on --execute)`,
+        );
+        continue;
+      }
+      if (shouldSkipMigrationFile(base, skipCronMigration)) {
         console.log(`\n[SKIPPED — --allow-no-cron] ${file}`);
         continue;
       }
@@ -534,6 +547,7 @@ async function runMigrations() {
         await withMigrateScratchDatabase(poolConfig, async (scratchPool) => {
           const scratchClient = await scratchPool.connect();
           try {
+            await applyBootstrapToScratchDatabase(scratchClient);
             const { appliedMap: scratchApplied } = await loadAppliedMigrationsMap(scratchClient, false);
             scratchResult = await executeDryRunAllOnClient({
               client: scratchClient,
@@ -704,4 +718,5 @@ module.exports = {
   assertPendingMigrationsInOrder,
   loadAppliedMigrationsMap,
   shouldAcquireMigrationAdvisoryLock,
+  buildStagingPoolConfig,
 };

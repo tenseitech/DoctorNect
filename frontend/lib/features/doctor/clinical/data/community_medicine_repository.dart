@@ -195,5 +195,4 @@ class CommunityMedicineRepository {
     _cache.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     return medicine;
   }
-
 }

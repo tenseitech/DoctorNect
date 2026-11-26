@@ -5,9 +5,9 @@ window.__firebaseSdkReady = (async function loadFirebaseSdks() {
 
   window.firebase_core = await import(base + 'firebase-app.js');
 
+  // Firestore is not used (data is in Postgres behind the API gateway), so its SDK is not loaded.
   var modules = await Promise.all([
     import(base + 'firebase-auth.js'),
-    import(base + 'firebase-firestore-pipelines.js'),
     import(base + 'firebase-functions.js'),
     import(base + 'firebase-storage.js'),
     import(base + 'firebase-messaging.js'),
@@ -15,9 +15,8 @@ window.__firebaseSdkReady = (async function loadFirebaseSdks() {
   ]);
 
   window.firebase_auth = modules[0];
-  window.firebase_firestore = modules[1];
-  window.firebase_functions = modules[2];
-  window.firebase_storage = modules[3];
-  window.firebase_messaging = modules[4];
-  window.firebase_app_check = modules[5];
+  window.firebase_functions = modules[1];
+  window.firebase_storage = modules[2];
+  window.firebase_messaging = modules[3];
+  window.firebase_app_check = modules[4];
 })();

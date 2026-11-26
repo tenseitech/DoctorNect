@@ -13,7 +13,9 @@ import 'package:medibond/features/doctor/models/doctor_models.dart';
 import 'package:medibond/features/patient/appointments/models/patient_appointment_models.dart';
 
 void main() {
-  group('SharedAppointmentsStore (Supabase path + optional Firestore test merge)', () {
+  group(
+      'SharedAppointmentsStore (Supabase path + optional Firestore test merge)',
+      () {
     tearDown(() {
       SharedAppointmentsStore.instance.clearForSignOut();
       SharedAppointmentsStore.debugPatientSupabaseRefresh = null;
@@ -22,7 +24,9 @@ void main() {
       SupabaseBootstrap.isReady = false;
     });
 
-    test('merge uses Supabase rows; extra rows via debugPatientFirestoreRefresh', () async {
+    test(
+        'merge uses Supabase rows; extra rows via debugPatientFirestoreRefresh',
+        () async {
       SupabaseBootstrap.isReady = true;
       SharedAppointmentsStore.debugPatientSupabaseRefresh = (_) async {
         return [
@@ -88,7 +92,8 @@ void main() {
       expect(SharedAppointmentsStore.instance.lastError, isNotNull);
     });
 
-    test('same id from debugPatientFirestoreRefresh overrides Supabase row', () async {
+    test('same id from debugPatientFirestoreRefresh overrides Supabase row',
+        () async {
       SupabaseBootstrap.isReady = true;
       SharedAppointmentsStore.debugPatientSupabaseRefresh = (_) async {
         return [
@@ -138,7 +143,8 @@ void main() {
       );
     });
 
-    test('empty Supabase list still merges debugPatientFirestoreRefresh rows', () async {
+    test('empty Supabase list still merges debugPatientFirestoreRefresh rows',
+        () async {
       SupabaseBootstrap.isReady = true;
       SharedAppointmentsStore.debugPatientSupabaseRefresh = (_) async => [];
       SharedAppointmentsStore.debugPatientFirestoreRefresh = (_) async {
@@ -176,7 +182,8 @@ void main() {
       PatientSession.loggedInPatientId = '';
     });
 
-    test('markDoctorRead sets lastRemoteError when Supabase markRead fails', () async {
+    test('markDoctorRead sets lastRemoteError when Supabase markRead fails',
+        () async {
       DoctorSession.loggedInDoctorId = 'doc_x';
       InAppNotificationService.instance.mergeDoctorRemoteNotifications([
         AppNotification(
@@ -201,7 +208,6 @@ void main() {
       expect(InAppNotificationService.instance.lastRemoteError, isNotNull);
     });
   });
-
 
   group('AmbulanceEnabled / tab mapping', () {
     tearDown(() {

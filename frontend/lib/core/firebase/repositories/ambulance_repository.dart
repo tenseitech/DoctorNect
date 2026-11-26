@@ -68,8 +68,10 @@ class AmbulanceRepository {
     final meta = (row['metadata'] as Map<String, dynamic>?) ?? const {};
     final merged = <String, dynamic>{
       ...meta,
-      'serviceName': meta['service_name'] ?? meta['serviceName'] ?? row['service_name'],
-      'driverName': row['driver_name'] ?? meta['driver_name'] ?? meta['driverName'],
+      'serviceName':
+          meta['service_name'] ?? meta['serviceName'] ?? row['service_name'],
+      'driverName':
+          row['driver_name'] ?? meta['driver_name'] ?? meta['driverName'],
       'phone': row['phone'],
       'vehicleNumber': row['vehicle_number'] ?? meta['vehicle_number'],
       'city': row['city'] ?? meta['city'],
@@ -84,8 +86,9 @@ class AmbulanceRepository {
     RegisteredAmbulance ambulance,
     String? authUid,
   ) {
-    final base = AmbulanceSupabaseMapper.driverToRow(ambulance, ownerUid: authUid);
-  return {
+    final base =
+        AmbulanceSupabaseMapper.driverToRow(ambulance, ownerUid: authUid);
+    return {
       ...base,
       'username': ambulance.username.trim().toLowerCase(),
       if (authUid != null) 'auth_uid': authUid,
@@ -167,7 +170,9 @@ class AmbulanceRepository {
           ? 'web'
           : (defaultTargetPlatform == TargetPlatform.android
               ? 'android'
-              : (defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'unknown'));
+              : (defaultTargetPlatform == TargetPlatform.iOS
+                  ? 'ios'
+                  : 'unknown'));
       await SupabaseBootstrap.client.from('user_devices').upsert({
         'user_id': uid,
         'platform': platform,
@@ -188,7 +193,9 @@ class AmbulanceRepository {
           ? 'web'
           : (defaultTargetPlatform == TargetPlatform.android
               ? 'android'
-              : (defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'unknown'));
+              : (defaultTargetPlatform == TargetPlatform.iOS
+                  ? 'ios'
+                  : 'unknown'));
       await SupabaseBootstrap.client
           .from('user_devices')
           .delete()
@@ -375,10 +382,8 @@ class AmbulanceRepository {
           .toList();
     }
     try {
-      final res = await SupabaseBootstrap.client
-          .from('ambulances')
-          .select()
-          .limit(500);
+      final res =
+          await SupabaseBootstrap.client.from('ambulances').select().limit(500);
       final list = (res as List)
           .map((r) => _profileFromRow(Map<String, dynamic>.from(r)))
           .whereType<RegisteredAmbulance>()
@@ -418,24 +423,22 @@ class AmbulanceRepository {
         .where((a) => _isRegistered(a) && a.available)
         .where((a) => type == null || a.ambulanceType == type)
         .where((a) {
-          if (requestCity.isEmpty) return false;
-          return ambulanceMatchesRequestCity(
-            requestCity: requestCity,
-            ambulanceCity: a.city,
-            serviceAreas: a.serviceAreas,
-            baseAddress: a.baseAddress,
-          );
-        })
-        .where((a) {
-          if (normalizedArea.isEmpty) return true;
-          if (a.serviceAreas.isEmpty) return true;
-          return a.serviceAreas.any((s) {
-            final serviceArea = normalizeArea(s);
-            return serviceArea.contains(normalizedArea) ||
-                normalizedArea.contains(serviceArea);
-          });
-        })
-        .toList()
+      if (requestCity.isEmpty) return false;
+      return ambulanceMatchesRequestCity(
+        requestCity: requestCity,
+        ambulanceCity: a.city,
+        serviceAreas: a.serviceAreas,
+        baseAddress: a.baseAddress,
+      );
+    }).where((a) {
+      if (normalizedArea.isEmpty) return true;
+      if (a.serviceAreas.isEmpty) return true;
+      return a.serviceAreas.any((s) {
+        final serviceArea = normalizeArea(s);
+        return serviceArea.contains(normalizedArea) ||
+            normalizedArea.contains(serviceArea);
+      });
+    }).toList()
       ..sort((a, b) => a.serviceName.compareTo(b.serviceName));
   }
 
@@ -551,7 +554,8 @@ class AmbulanceRepository {
 
     if (SupabaseBootstrap.isReady) {
       final existing = AmbulanceStore.instance.findBooking(broadcastId);
-      final ok = await SupabaseAmbulanceRepository.instance.acceptAmbulanceRequest(
+      final ok =
+          await SupabaseAmbulanceRepository.instance.acceptAmbulanceRequest(
         broadcastId: broadcastId,
         requestId: existing?.firestoreRequestId,
       );
@@ -560,7 +564,8 @@ class AmbulanceRepository {
           bookingId: broadcastId,
           ambulanceId: driverId,
         );
-        final acceptedBooking = AmbulanceStore.instance.findBooking(broadcastId);
+        final acceptedBooking =
+            AmbulanceStore.instance.findBooking(broadcastId);
         if (acceptedBooking != null) {
           AmbulanceNotificationEmitter.notifyBookingAcceptedForBooker(
             booking: acceptedBooking,
@@ -598,7 +603,8 @@ class AmbulanceRepository {
         reason: 'driver_cancelled',
       );
       if (ok) {
-        AmbulanceStore.instance.cancelBooking(broadcastId, rawStatus: 'rejected');
+        AmbulanceStore.instance
+            .cancelBooking(broadcastId, rawStatus: 'rejected');
         return true;
       }
       lastCancelFailureUserMessage =
@@ -685,7 +691,8 @@ class AmbulanceRepository {
       if (SupabaseBootstrap.isReady) {
         await SupabaseBootstrap.client.from('ambulance_broadcasts').update({
           'rating': stars,
-          if (review != null && review.trim().isNotEmpty) 'review': review.trim(),
+          if (review != null && review.trim().isNotEmpty)
+            'review': review.trim(),
           'rated_at': DateTime.now().toUtc().toIso8601String(),
         }).eq('broadcast_id', broadcastId);
       }
@@ -997,6 +1004,12 @@ class AmbulanceRepository {
 
       final driverId = data['driverId'] as String? ?? '';
       if (driverId.isEmpty) return const AmbulanceDriverLoginResult();
+
+      // The server just changed this session's custom claims (ambulance role, and for the demo
+      // ambulance the demo-plane marker). Force a fresh ID token before the next request so the
+      // gateway / Functions see them; otherwise the cached token routes to the wrong plane.
+      final refreshed = await AmbulanceAuthHelper.refreshCallableAuthToken();
+      if (!refreshed) return const AmbulanceDriverLoginResult();
 
       await linkDriverAuth(driverId);
 

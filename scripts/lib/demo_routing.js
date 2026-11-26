@@ -6,6 +6,7 @@
  */
 
 const crypto = require('node:crypto');
+const { isDemoUid } = require('./demo_accounts');
 
 const DEMO_PHONE_ENV_KEYS = [
   'REVIEW_PATIENT_PHONES',
@@ -60,6 +61,8 @@ function collectDemoPhonesFromEnv(env = process.env) {
 function isDemoFirebaseUid(uid, env = process.env) {
   const id = String(uid || '').trim();
   if (!id) return false;
+  // The five fixed demo accounts (demo_accounts.js) are always demo, independent of env.
+  if (isDemoUid(id)) return true;
   const allow = parseFirebaseUidAllowlist(env);
   if (allow.has(id)) return true;
   const prefixRouting =
@@ -86,6 +89,10 @@ function resolveDataPlane({
 } = {}) {
   if (appEnv !== 'production') {
     return 'staging';
+  }
+  // Fixed demo accounts never touch RDS, whatever DEMO_REAL_ROUTING_ENABLED says.
+  if (firebaseUid && isDemoUid(firebaseUid)) {
+    return 'supabase';
   }
   const routingOn = String(env.DEMO_REAL_ROUTING_ENABLED || '').trim() === '1';
   if (!routingOn) {

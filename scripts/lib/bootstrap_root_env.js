@@ -10,6 +10,9 @@ let loaded = false;
  * Load repo root `.env` into process.env (does not override existing process.env keys).
  */
 function loadRootEnv(options = {}) {
+  if (process.env.DOCTORNECT_TEST_HARNESS === '1' && !options.force) {
+    return findRepoRoot(options.startDir);
+  }
   if (loaded && !options.force) return findRepoRoot();
   const root = findRepoRoot(options.startDir);
   const envPath = path.join(root, '.env');

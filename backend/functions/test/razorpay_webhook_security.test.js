@@ -152,14 +152,34 @@ function createMockSupabaseStore(initialAds = [], initialUsers = []) {
               return { data: [] };
             },
           }),
-          update: (data) => ({
-            eq: async (col, val) => {
-              if (col === 'ad_id' && ads.has(val)) {
-                ads.set(val, { ...ads.get(val), ...data });
+          update: (data) => {
+            // Chainable compare-and-set: applies only when every .eq() filter matches.
+            const filters = [];
+            const run = () => {
+              const matched = [];
+              for (const [id, row] of ads.entries()) {
+                if (filters.every(([c, v]) => row[c] === v)) {
+                  ads.set(id, { ...row, ...data });
+                  matched.push({ ad_id: id });
+                }
               }
-              return { error: null };
-            },
-          }),
+              return matched;
+            };
+            const builder = {
+              eq(col, val) {
+                filters.push([col, val]);
+                return builder;
+              },
+              async select() {
+                return { data: run(), error: null };
+              },
+              then(resolve) {
+                run();
+                resolve({ error: null });
+              },
+            };
+            return builder;
+          },
         };
       }
       if (table === 'users') {
@@ -523,11 +543,73 @@ function runWebhookSecurityTestSuite(suiteName, isSupabase) {
   });
 }
 
-// 1. Run 11 security tests against Firestore path
-runWebhookSecurityTestSuite('Firestore Path', false);
-
-// 2. Run 11 security tests against Supabase path
+// Firestore removed: the same 11 scenarios run against the Postgres (Supabase/RDS) path only.
 runWebhookSecurityTestSuite('Supabase Path', true);
+
+/** Replay and out-of-order delivery on the Postgres path. */
+test('Postgres webhook: replay, out-of-order and pre-order deliveries', async (t) => {
+  process.env.RAZORPAY_WEBHOOK_SECRET = TEST_SECRET;
+  const entity = { id: 'pay_rp_1', order_id: 'order_rp_1', amount: 30000, currency: 'INR', notes: { adId: 'ad_rp', providerUid: 'prov_rp', durationHours: '24' } };
+  const orderEntity = { id: 'order_rp_1', amount: 30000, currency: 'INR', notes: entity.notes };
+  const captured = { event: 'payment.captured', payload: { payment: { entity }, order: { entity: orderEntity } } };
+  const orderPaid = { event: 'order.paid', payload: { payment: { entity }, order: { entity: orderEntity } } };
+  const fresh = (status = 'pending_payment') => {
+    const sb = createMockSupabaseStore(
+      [{ ad_id: 'ad_rp', status, provider_id: 'prov_rp', razorpay_order_id: status === 'draft' ? null : 'order_rp_1' }],
+      [{ firebase_uid: 'prov_rp', profile_id: 'prov_rp' }],
+    );
+    setSupabaseClientForTesting(sb);
+    return sb;
+  };
+  const deliver = async (payload, eventId) => {
+    const raw = Buffer.from(JSON.stringify(payload), 'utf8');
+    const { req, res } = createMockReqRes({ rawBody: raw, headers: { 'x-razorpay-signature': computeSignature(raw), 'x-razorpay-event-id': eventId } });
+    await razorpayWebhookHandler(req, res, null);
+    return res;
+  };
+
+  await t.test('same event replayed 3x activates once', async () => {
+    const sb = fresh();
+    const r1 = await deliver(captured, 'evt_rp_1');
+    const r2 = await deliver(captured, 'evt_rp_1');
+    const r3 = await deliver(captured, 'evt_rp_1');
+    assert.equal(r1._status, 200);
+    assert.equal(r1._data.idempotent, false);
+    assert.equal(r2._data.idempotent, true);
+    assert.equal(r3._data.idempotent, true);
+    assert.equal(sb.ads.get('ad_rp').status, 'pending_approval');
+    assert.equal(sb.payments.size, 1);
+  });
+
+  await t.test('order.paid arriving after payment.captured (different event id) is idempotent', async () => {
+    const sb = fresh();
+    await deliver(captured, 'evt_rp_2');
+    const late = await deliver(orderPaid, 'evt_rp_3');
+    assert.equal(late._status, 200);
+    assert.equal(late._data.idempotent, true);
+    assert.equal(sb.ads.get('ad_rp').status, 'pending_approval');
+    assert.equal(sb.payments.size, 1);
+  });
+
+  await t.test('webhook for an ad with no matching order (draft) never activates it', async () => {
+    const sb = fresh('draft');
+    const res = await deliver(captured, 'evt_rp_4');
+    assert.equal(res._status, 200);
+    assert.equal(res._data.status, 'rejected');
+    assert.equal(sb.ads.get('ad_rp').status, 'draft');
+    assert.equal(sb.payments.size, 0);
+  });
+
+  await t.test('replay with a tampered body is rejected by signature', async () => {
+    fresh();
+    const raw = Buffer.from(JSON.stringify(captured), 'utf8');
+    const sig = computeSignature(raw);
+    const tampered = Buffer.from(JSON.stringify({ ...captured, payload: { ...captured.payload, payment: { entity: { ...entity, amount: 100 } } } }), 'utf8');
+    const { req, res } = createMockReqRes({ rawBody: tampered, headers: { 'x-razorpay-signature': sig, 'x-razorpay-event-id': 'evt_rp_5' } });
+    await razorpayWebhookHandler(req, res, null);
+    assert.equal(res._status, 400);
+  });
+});
 
 // 3. Local Docker PostgreSQL Integration Test for Supabase Path
 test('Razorpay Supabase Path: Local Docker PostgreSQL Integration Test', async (t) => {

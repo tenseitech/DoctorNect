@@ -1,6 +1,7 @@
 'use strict';
 
 const { onRequest } = require('firebase-functions/v2/https');
+const { withDataPlaneSecrets } = require('./demo_plane_secrets');
 const { defineSecret } = require('firebase-functions/params');
 const {
   applyCors,
@@ -220,7 +221,7 @@ async function adminConsoleReadHandler(req, res) {
 const adminConsoleRead = onRequest(
   {
     region: 'asia-south1',
-    secrets: [supabaseServiceRoleKey],
+    secrets: withDataPlaneSecrets([supabaseServiceRoleKey]),
     cors: false,
   },
   adminConsoleReadHandler,

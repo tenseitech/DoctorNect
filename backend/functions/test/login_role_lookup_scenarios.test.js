@@ -230,14 +230,13 @@ test('verifyUserRegistrationOtp — successful registration OTP returns exists/r
   }
 });
 
-test('lookupMobileRegistration — returns conflict plus exists/role for client login routing', async () => {
-  const res = await lookupMobileRegistration(emptyFirestoreDb(), {
-    mobile: '9876543210',
-    intent: 'login',
-    role: 'patient',
-  });
-  assert.equal(res.ok, true);
-  assert.ok(Object.prototype.hasOwnProperty.call(res, 'conflict'));
-  assert.equal(res.exists, false);
-  assert.equal(res.role, null);
+test('lookupMobileRegistration — pre-OTP answer never reveals whether an account exists (no DB lookup)', async () => {
+  const untouchable = new Proxy({}, { get() { throw new Error('pre-OTP lookup must not touch the database'); } });
+  for (const mobile of ['9876543210', '9999900001']) {
+    for (const role of ['patient', 'doctor', 'lab']) {
+      const res = await lookupMobileRegistration(untouchable, { mobile, intent: 'login', role });
+      assert.deepEqual(res, { ok: true, conflict: false, exists: null, role: null, decidedAfterOtp: true });
+    }
+  }
+  await assert.rejects(() => lookupMobileRegistration(untouchable, { mobile: '123' }), /valid 10-digit/);
 });

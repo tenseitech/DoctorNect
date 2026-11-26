@@ -25,6 +25,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard } = require('../lib/env_guard');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 /** Extensions present on Supabase-managed Postgres but not required on RDS parity checks. */
 /** Replay/rehearsal skew from optional pg_stat_statements install (not a prod cutover gap). */
@@ -569,7 +570,7 @@ async function run() {
   console.log(`Staging: ${maskConnectionString(stagingUri)}`);
   console.log(`Target:  ${maskConnectionString(targetUri)}`);
 
-  const sClient = new Client({ connectionString: stagingUri, ssl: { rejectUnauthorized: false } });
+  const sClient = new Client({ connectionString: stagingUri, ssl: stagingPgSsl() });
   const isLocalFresh = target === 'fresh' || target === 'fresh_local';
   let tClient;
   const { assertProductionRdsTarget, verifyConnectedRdsSession } = require('../lib/rds_connect_guard');

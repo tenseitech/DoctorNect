@@ -294,8 +294,7 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
 
     try {
       final page = _isDoctorContext
-          ? await PrescriptionRepository.instance
-              .fetchForPatientForDoctor(
+          ? await PrescriptionRepository.instance.fetchForPatientForDoctor(
               patientId,
               startAfter: _lastPatientPage,
               preferCache: preferCache,

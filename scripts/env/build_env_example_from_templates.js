@@ -101,6 +101,8 @@ const SAFE_DEFAULTS = {
   RAZORPAY_KEY_ID: '',
   RAZORPAY_KEY_SECRET: '',
   RAZORPAY_WEBHOOK_SECRET: '',
+  RAZORPAY_TEST_KEY_ID: '',
+  RAZORPAY_TEST_KEY_SECRET: '',
   ENABLE_SUPABASE: '1',
   USE_SUPABASE_AUTH: 'false',
   USE_SUPABASE_DB_DOCTOR_PATIENT: '',
@@ -144,6 +146,8 @@ const SAFE_DEFAULTS = {
   SUPABASE_JWKS_URL: '',
   SUPABASE_PUBLISHABLE_KEY: '',
   SUPER_ADMIN_EMAIL: '',
+  SUPER_ADMIN_EMAILS: '',
+  APP_CHECK_DEBUG_PROVIDER: '',
   SUPER_ADMIN_PASSWORD: '',
 };
 
@@ -315,7 +319,7 @@ function main() {
     },
     {
       title: 'Razorpay',
-      keys: ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET'],
+      keys: ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET', 'RAZORPAY_TEST_KEY_ID', 'RAZORPAY_TEST_KEY_SECRET'],
     },
     {
       title: 'Flutter client (dart-define — no server secrets)',

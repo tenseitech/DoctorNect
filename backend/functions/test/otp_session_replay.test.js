@@ -1,129 +1,77 @@
 'use strict';
 
+/**
+ * Verified-OTP session (Redis) is single-use: an atomic GET+DEL means N concurrent completions
+ * consume it exactly once; replays and malformed ids are rejected.
+ */
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { Timestamp } = require('firebase-admin/firestore');
-const { consumeOtpVerificationSessionAtomically } = require('../registration_otp');
+const crypto = require('crypto');
+const { consumeOtpVerificationSessionAtomically, otpSessionRedisKey } = require('../registration_otp');
+const { setRedisClientForTesting } = require('../redis');
+const { createMemoryRedis } = require('./helpers/memory_redis');
 
-function createConcurrentMockFirestore() {
-  const docs = new Map();
-  let transactionChain = Promise.resolve();
+let redis;
+test.beforeEach(() => {
+  redis = createMemoryRedis();
+  setRedisClientForTesting(redis);
+});
 
-  function docRef(collection, id) {
-    const key = `${collection}/${id}`;
-    return { id, collection, key };
-  }
-
-  function readDoc(key) {
-    const data = docs.get(key);
-    return data == null ? null : { ...data };
-  }
-
-  async function runTransaction(updateFn) {
-    let releaseGate;
-    const gate = new Promise((resolve) => {
-      releaseGate = resolve;
-    });
-    const previous = transactionChain;
-    transactionChain = transactionChain.then(() => gate);
-    await previous;
-
-    try {
-      const pending = new Map();
-      const tx = {
-        async get(ref) {
-          await Promise.resolve();
-          const data = pending.has(ref.key)
-            ? pending.get(ref.key)
-            : readDoc(ref.key);
-          return {
-            exists: data != null,
-            data: () => (data == null ? undefined : { ...data }),
-          };
-        },
-        set(ref, data, { merge } = {}) {
-          const base = pending.has(ref.key)
-            ? pending.get(ref.key)
-            : readDoc(ref.key) || {};
-          pending.set(ref.key, merge ? { ...base, ...data } : { ...data });
-        },
-        delete(ref) {
-          pending.set(ref.key, null);
-        },
-      };
-
-      const result = await updateFn(tx);
-      for (const [key, value] of pending.entries()) {
-        if (value == null) docs.delete(key);
-        else docs.set(key, value);
-      }
-      return result;
-    } finally {
-      releaseGate();
-    }
-  }
-
-  return {
-    docs,
-    collection(name) {
-      return {
-        doc(id) {
-          return docRef(name, id);
-        },
-      };
-    },
-    runTransaction,
-  };
-}
-
-function seedSession(db, sessionId, overrides = {}) {
-  db.docs.set(`otp_verification_sessions/${sessionId}`, {
+function seedSession(sessionId, overrides = {}) {
+  const session = {
     role: 'patient',
     mobileDigits: '9876543210',
     mobileVerified: true,
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
     consumed: false,
-    expiresAt: Timestamp.fromDate(new Date(Date.now() + 30 * 60 * 1000)),
     ...overrides,
-  });
+  };
+  return redis.set(otpSessionRedisKey(sessionId), JSON.stringify(session), 'EX', 900);
 }
 
-function readSession(db, sessionId) {
-  return db.docs.get(`otp_verification_sessions/${sessionId}`) ?? null;
-}
+const newId = () => crypto.randomBytes(16).toString('hex');
 
 test('10 concurrent session completions consume the session exactly once', async () => {
-  const db = createConcurrentMockFirestore();
-  const sessionId = 'session-replay-race';
-
-  seedSession(db, sessionId);
-
+  const sessionId = newId();
+  await seedSession(sessionId);
   const results = await Promise.allSettled(
-    Array.from({ length: 10 }, () => consumeOtpVerificationSessionAtomically(db, sessionId, {
+    Array.from({ length: 10 }, () => consumeOtpVerificationSessionAtomically(null, sessionId, {
       assertSession: (session) => {
-        if (session.mobileVerified !== true) {
-          throw new Error('unexpected session state');
-        }
+        if (session.mobileVerified !== true) throw new Error('unexpected session state');
       },
     })),
   );
-
-  const successes = results.filter((result) => result.status === 'fulfilled');
-  const failures = results.filter((result) => result.status === 'rejected');
-
+  const successes = results.filter((r) => r.status === 'fulfilled');
+  const failures = results.filter((r) => r.status === 'rejected');
   assert.equal(successes.length, 1);
   assert.equal(failures.length, 9);
-  assert.ok(failures.every((result) => result.reason?.code === 'failed-precondition'));
-  assert.equal(readSession(db, sessionId)?.consumed, true);
+  assert.ok(failures.every((r) => r.reason?.code === 'failed-precondition'));
+  assert.equal(await redis.get(otpSessionRedisKey(sessionId)), null, 'session key deleted (env-prefixed key)');
 });
 
 test('rejects replay after a session has already been consumed', async () => {
-  const db = createConcurrentMockFirestore();
-  const sessionId = 'session-replay-used';
+  const sessionId = newId();
+  await seedSession(sessionId);
+  await consumeOtpVerificationSessionAtomically(null, sessionId);
+  await assert.rejects(() => consumeOtpVerificationSessionAtomically(null, sessionId), (err) => err.code === 'failed-precondition');
+});
 
-  seedSession(db, sessionId, { consumed: true });
+test('rejects sessions flagged consumed, expired sessions and malformed ids', async () => {
+  const used = newId();
+  await seedSession(used, { consumed: true });
+  await assert.rejects(() => consumeOtpVerificationSessionAtomically(null, used), (err) => err.code === 'failed-precondition');
 
-  await assert.rejects(
-    () => consumeOtpVerificationSessionAtomically(db, sessionId),
-    (err) => err.code === 'failed-precondition',
-  );
+  const expired = newId();
+  await seedSession(expired, { expiresAt: new Date(Date.now() - 1000).toISOString() });
+  await assert.rejects(() => consumeOtpVerificationSessionAtomically(null, expired), (err) => err.code === 'deadline-exceeded');
+
+  for (const bad of ['session-replay-race', '../x', '']) {
+    await assert.rejects(() => consumeOtpVerificationSessionAtomically(null, bad), (err) => err.code === 'failed-precondition');
+  }
+});
+
+test('Redis down -> fails closed', async () => {
+  setRedisClientForTesting({ eval: async () => { throw new Error('down'); }, on() { return this; } });
+  await assert.rejects(() => consumeOtpVerificationSessionAtomically(null, newId()), (err) => err.code === 'unavailable');
 });

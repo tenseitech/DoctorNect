@@ -19,7 +19,9 @@ abstract final class FirestoreForbiddenGuard {
   @visibleForTesting
   static set debugOverrideForTesting(bool? value) {
     assert(() {
-      if (value != null && value == false && (kReleaseMode || debugForceReleaseMode)) {
+      if (value != null &&
+          value == false &&
+          (kReleaseMode || debugForceReleaseMode)) {
         throw AssertionError(
           'FirestoreForbiddenGuard.debugOverride must not disable forbidden in release mode',
         );

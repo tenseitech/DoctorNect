@@ -2,14 +2,28 @@
 // ignore_for_file: type=lint
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kDebugMode, kIsWeb, TargetPlatform;
+    show
+        defaultTargetPlatform,
+        kDebugMode,
+        kIsWeb,
+        TargetPlatform,
+        visibleForTesting;
 
 import 'firebase_options.secrets.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 class DefaultFirebaseOptions {
   /// Whether Firebase options have a non-empty API key configured for the current platform.
+  /// Test seam: replaces the resolved API key for [isConfigured] (never set in app code).
+  @visibleForTesting
+  static String? debugApiKeyOverride;
+
+  /// Dart-define names a release build must provide for Firebase on this platform.
+  static List<String> get requiredClientDefines => [_apiKeyDefineName()];
+
   static bool get isConfigured {
+    final override = debugApiKeyOverride;
+    if (override != null) return override.isNotEmpty;
     try {
       final options = _unsafeCurrentPlatform;
       return options.apiKey.isNotEmpty;
@@ -78,13 +92,19 @@ class DefaultFirebaseOptions {
     return '';
   }
 
+  /// Firebase project of android/app/google-services.json and ios GoogleService-Info.plist.
+  static const String _defaultProjectId = 'medibond-45fad';
+
   static const String _appEnv =
       String.fromEnvironment('APP_ENV', defaultValue: 'staging');
 
   static String _resolveProjectId() {
     const fromDefine = String.fromEnvironment('FIREBASE_PROJECT_ID');
     if (fromDefine.isNotEmpty) return fromDefine;
-    return _appEnv == 'production' ? 'medibond-45fad' : 'medibond-staging';
+    // One Firebase project serves every build (appId / messagingSenderId below belong to it,
+    // and google-services.json says the same). APP_ENV selects the data plane, not the project:
+    // the former "medibond-staging" default pointed staging APKs at a project without Cloud Functions.
+    return _defaultProjectId;
   }
 
   static String _resolveStorageBucket() {
@@ -92,7 +112,7 @@ class DefaultFirebaseOptions {
     if (fromDefine.isNotEmpty) return fromDefine;
     return _appEnv == 'production'
         ? 'medibond-prod-vault.firebasestorage.app'
-        : 'medibond-staging.firebasestorage.app';
+        : '$_defaultProjectId.firebasestorage.app';
   }
 
   static String _resolveAuthDomain() {

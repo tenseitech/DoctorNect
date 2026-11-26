@@ -1,5 +1,10 @@
 # RDS Migration Runbook (Staging Supabase → Production RDS)
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 **Audience:** Operator / DBA  
 **Code reference:** `scripts/db/migrate.js`, `db/rds_bootstrap/`, `scripts/db/rds_scratch_replay.js`  
 **Safety:** Do not run destructive commands against production without backup. This document is dry-run first.

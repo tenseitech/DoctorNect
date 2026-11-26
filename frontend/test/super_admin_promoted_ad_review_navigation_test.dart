@@ -36,7 +36,8 @@ void main() {
       expect(find.byTooltip('Review promoted ads'), findsOneWidget);
 
       // Tap on the action card
-      await tester.tap(find.byKey(const Key('promoted_ads_review_action_card')));
+      await tester
+          .tap(find.byKey(const Key('promoted_ads_review_action_card')));
       await tester.pumpAndSettle();
 
       // Confirm navigation pushed PromotedAdReviewScreen
@@ -44,8 +45,7 @@ void main() {
       expect(find.text('Promoted ads'), findsOneWidget);
     });
 
-    testWidgets(
-        'AppBar icon button also navigates to PromotedAdReviewScreen',
+    testWidgets('AppBar icon button also navigates to PromotedAdReviewScreen',
         (tester) async {
       await tester.pumpWidget(
         const MaterialApp(

@@ -9,18 +9,13 @@ const { Pool } = require('pg');
 const { getEnv } = require('../lib/env_loader');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 const { computeChecksum } = require('./migrate');
+const { buildStagingPgConfig, CA_PATH_ENV } = require('../lib/staging_pg_ssl');
 
+// Verified TLS (STAGING_SUPABASE_CA_PATH); shared with migrate.js and the demo seed.
 function buildPoolConfig(dbUrl) {
-  const config = { connectionString: dbUrl };
-  try {
-    const parsed = new URL(dbUrl.replace(/^postgres:\/\//i, 'postgresql://'));
-    if (parsed.hostname.includes('supabase')) {
-      config.ssl = { rejectUnauthorized: false };
-    }
-  } catch (_) {
-    config.ssl = { rejectUnauthorized: false };
-  }
-  return config;
+  const env = { ...process.env, [CA_PATH_ENV]: getEnv(CA_PATH_ENV) };
+  const { connectionString, ssl } = buildStagingPgConfig(dbUrl, { env });
+  return { connectionString, ssl };
 }
 
 async function main() {

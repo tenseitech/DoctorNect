@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../features/doctor/clinical/models/clinical_models.dart';
 import '../../firebase/firestore_query_limits.dart';
-import '../../firebase/models/firestore_page.dart';
+import 'package:medibond/core/data/data_page.dart';
 import '../mappers/prescription_supabase_mapper.dart';
 import '../supabase_bootstrap.dart';
 import '../supabase_stream_table.dart';
@@ -95,8 +95,9 @@ class SupabasePrescriptionRepository {
     // Child collections packaged for atomic single-transaction persistence
     prescriptionRow['medicines'] = draft.validMedicines.map((m) {
       return <String, dynamic>{
-        'medicine_entry_id':
-            m.id.isNotEmpty ? m.id : '${draft.prescriptionId}_${m.name.hashCode}',
+        'medicine_entry_id': m.id.isNotEmpty
+            ? m.id
+            : '${draft.prescriptionId}_${m.name.hashCode}',
         'name': m.name,
         'dosage': m.dosageLabel,
         'form': m.form,
@@ -138,14 +139,14 @@ class SupabasePrescriptionRepository {
   }
 
   /// One-time fetch for a doctor's prescriptions with relational child entries.
-  Future<FirestorePage<PrescriptionDraft>> fetchForDoctor(
+  Future<DataPage<PrescriptionDraft>> fetchForDoctor(
     String doctorId, {
     dynamic startAfter,
     int limit = FirestoreQueryLimits.prescriptionsPage,
     bool preferCache = true,
   }) async {
     if (!SupabaseBootstrap.isReady || doctorId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
 
     try {
@@ -162,27 +163,28 @@ class SupabasePrescriptionRepository {
           .whereType<PrescriptionDraft>()
           .toList();
 
-      return FirestorePage(
+      return DataPage(
         items: items,
         hasMore: rows.length == limit,
       );
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('[SupabasePrescriptionRepository] fetchForDoctor failed: $e\n$st');
+        debugPrint(
+            '[SupabasePrescriptionRepository] fetchForDoctor failed: $e\n$st');
       }
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
   }
 
   /// One-time fetch for a patient's prescriptions.
-  Future<FirestorePage<PrescriptionDraft>> fetchForPatient(
+  Future<DataPage<PrescriptionDraft>> fetchForPatient(
     String patientId, {
     dynamic startAfter,
     int limit = FirestoreQueryLimits.prescriptionsPage,
     bool preferCache = true,
   }) async {
     if (!SupabaseBootstrap.isReady || patientId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
 
     try {
@@ -192,7 +194,7 @@ class SupabasePrescriptionRepository {
             .map(PrescriptionSupabaseMapper.fromRow)
             .whereType<PrescriptionDraft>()
             .toList();
-        return FirestorePage(
+        return DataPage(
           items: items,
           hasMore: false,
         );
@@ -211,7 +213,7 @@ class SupabasePrescriptionRepository {
           .whereType<PrescriptionDraft>()
           .toList();
 
-      return FirestorePage(
+      return DataPage(
         items: items,
         hasMore: rows.length == limit,
       );
@@ -220,12 +222,12 @@ class SupabasePrescriptionRepository {
         debugPrint(
             '[SupabasePrescriptionRepository] fetchForPatient failed: $e\n$st');
       }
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
   }
 
   /// Doctor-facing fetch — checks consent/sharing first.
-  Future<FirestorePage<PrescriptionDraft>> fetchForPatientForDoctor(
+  Future<DataPage<PrescriptionDraft>> fetchForPatientForDoctor(
     String patientId, {
     dynamic startAfter,
     int limit = FirestoreQueryLimits.prescriptionsPage,
@@ -234,7 +236,7 @@ class SupabasePrescriptionRepository {
     final isSharing = await SupabasePatientProfileRepository.instance
         .isPatientSharingClinicalDataWithDoctors(patientId);
     if (!isSharing) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
     return fetchForPatient(
       patientId,
@@ -245,14 +247,14 @@ class SupabasePrescriptionRepository {
   }
 
   /// Doctor-scoped fetch for one specific patient.
-  Future<FirestorePage<PrescriptionDraft>> fetchForDoctorAndPatient(
+  Future<DataPage<PrescriptionDraft>> fetchForDoctorAndPatient(
     String doctorId,
     String patientId, {
     int limit = FirestoreQueryLimits.prescriptionsPage,
     bool preferCache = true,
   }) async {
     if (!SupabaseBootstrap.isReady || doctorId.isEmpty || patientId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
 
     try {
@@ -270,7 +272,7 @@ class SupabasePrescriptionRepository {
           .whereType<PrescriptionDraft>()
           .toList();
 
-      return FirestorePage(
+      return DataPage(
         items: items,
         hasMore: rows.length == limit,
       );
@@ -279,12 +281,12 @@ class SupabasePrescriptionRepository {
         debugPrint(
             '[SupabasePrescriptionRepository] fetchForDoctorAndPatient failed: $e\n$st');
       }
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
   }
 
   /// Doctor-facing fetch for one patient — checks consent/sharing first.
-  Future<FirestorePage<PrescriptionDraft>> fetchForDoctorAndPatientForDoctor(
+  Future<DataPage<PrescriptionDraft>> fetchForDoctorAndPatientForDoctor(
     String doctorId,
     String patientId, {
     int limit = FirestoreQueryLimits.prescriptionsPage,
@@ -293,7 +295,7 @@ class SupabasePrescriptionRepository {
     final isSharing = await SupabasePatientProfileRepository.instance
         .isPatientSharingClinicalDataWithDoctors(patientId);
     if (!isSharing) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
     return fetchForDoctorAndPatient(
       doctorId,

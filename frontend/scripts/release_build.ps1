@@ -41,6 +41,7 @@ $script:ClientReleaseEnvAllowlist = @(
     'ENABLE_SUPABASE',
     'USE_SUPABASE_DB_DOCTOR_PATIENT',
     'FIREBASE_API_KEY_ANDROID',
+    'FIREBASE_PROJECT_ID',
     'FIREBASE_API_KEY_IOS',
     'FIREBASE_API_KEY_WEB',
     'GOOGLE_MAPS_API_KEY',
@@ -156,6 +157,14 @@ function Get-FlutterDartDefines {
 
     $defines = [System.Collections.Generic.List[string]]::new()
 
+    # Firebase client config: every missing name is reported together, before any build step.
+    $firebaseRequired = @('FIREBASE_API_KEY_ANDROID', 'FIREBASE_PROJECT_ID')
+    $firebaseMissing = @($firebaseRequired | Where-Object {
+        [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_))
+    })
+    if ($firebaseMissing.Count -gt 0 -and -not ($firebaseMissing.Count -eq 1 -and $firebaseMissing[0] -eq 'FIREBASE_API_KEY_ANDROID')) {
+        throw "Missing required variables (repo root .env or shell); nothing was built: $($firebaseMissing -join ', ')"
+    }
     $androidKey = $env:FIREBASE_API_KEY_ANDROID
     if ([string]::IsNullOrWhiteSpace($androidKey)) {
         $rootEnv = Join-Path (Get-RepoRoot) '.env'
@@ -179,7 +188,16 @@ Optional: node scripts/env/generate_flutter_dart_defines.js (client-safe keys on
 
         throw "Missing FIREBASE_API_KEY_ANDROID.$hint`n`nRe-run: .\scripts\release_build.ps1"
     }
+    $projectId = $env:FIREBASE_PROJECT_ID.Trim()
+    $gsPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'android\app\google-services.json'
+    if (Test-Path -LiteralPath $gsPath) {
+        $gsProject = ((Get-Content -Raw -LiteralPath $gsPath) | ConvertFrom-Json).project_info.project_id
+        if ($projectId -ne $gsProject) {
+            throw 'FIREBASE_PROJECT_ID does not match android/app/google-services.json (project_id); nothing was built.'
+        }
+    }
     $defines.Add("--dart-define=FIREBASE_API_KEY_ANDROID=$androidKey")
+    $defines.Add("--dart-define=FIREBASE_PROJECT_ID=$projectId")
     $defines.Add('--dart-define=FIRESTORE_FORBIDDEN=true')
 
     foreach ($name in @('GOOGLE_MAPS_API_KEY', 'RECAPTCHA_SITE_KEY')) {
@@ -226,7 +244,7 @@ Optional: node scripts/env/generate_flutter_dart_defines.js (client-safe keys on
     }
 
     # Strict allowlist: confirm only intended keys reach dart-defines
-    $allowedDefineKeys = @('FIREBASE_API_KEY_ANDROID', 'FIRESTORE_FORBIDDEN', 'GOOGLE_MAPS_API_KEY', 'RECAPTCHA_SITE_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'USE_SUPABASE_DB_DOCTOR_PATIENT')
+    $allowedDefineKeys = @('FIREBASE_API_KEY_ANDROID', 'FIREBASE_PROJECT_ID', 'FIRESTORE_FORBIDDEN', 'GOOGLE_MAPS_API_KEY', 'RECAPTCHA_SITE_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'USE_SUPABASE_DB_DOCTOR_PATIENT')
     foreach ($def in $allDefines) {
         $key = (($def -replace '^--dart-define=', '') -split '=')[0]
         if ($allowedDefineKeys -notcontains $key) {
@@ -334,7 +352,10 @@ Push-Location $projectRoot
 
 try {
     $repoRoot = Get-RepoRoot
-    Import-ClientReleaseDotEnv -Path (Join-Path $repoRoot '.env')
+    # RELEASE_BUILD_NO_DOTENV=1: hermetic test runs only (shell env is the sole input).
+    if ($env:RELEASE_BUILD_NO_DOTENV -ne '1') {
+        Import-ClientReleaseDotEnv -Path (Join-Path $repoRoot '.env')
+    }
     if ($Launch) {
         $env:ENABLE_SUPABASE = '1'
         $env:USE_SUPABASE_DB_DOCTOR_PATIENT = 'true'

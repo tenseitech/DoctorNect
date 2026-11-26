@@ -22,7 +22,8 @@ void main() {
     SharedAppointmentsStore.debugPersistOverride = (record) async {
       order.add('firestore:${record.doctorStatus.name}');
     };
-    SharedAppointmentsStore.debugSupabaseCancelOverride = (appointmentId, reason) async {
+    SharedAppointmentsStore.debugSupabaseCancelOverride =
+        (appointmentId, reason) async {
       order.add('supabase');
       await mirror(appointmentId, reason);
     };
@@ -34,12 +35,15 @@ void main() {
     return order;
   }
 
-  test('patient cancel persists Firestore before a successful Supabase mirror', () async {
+  test('patient cancel persists Firestore before a successful Supabase mirror',
+      () async {
     final order = await cancelWithMirror((_, __) async {});
-    expect(order, ['firestore:${AppointmentStatus.cancelled.name}', 'supabase']);
+    expect(
+        order, ['firestore:${AppointmentStatus.cancelled.name}', 'supabase']);
   });
 
-  test('patient cancel persists Firestore when the Supabase mirror throws', () async {
+  test('patient cancel persists Firestore when the Supabase mirror throws',
+      () async {
     final order = await cancelWithMirror((_, __) async {
       throw StateError('supabase down');
     });
@@ -47,7 +51,8 @@ void main() {
     expect(order, contains('supabase'));
   });
 
-  test('patient cancel updates in-memory record cancellation reason and status', () async {
+  test('patient cancel updates in-memory record cancellation reason and status',
+      () async {
     DoctorNectAppointmentRecord? persistedRecord;
     SharedAppointmentsStore.debugPersistOverride = (record) async {
       persistedRecord = record;
@@ -68,7 +73,8 @@ void main() {
     expect(persistedRecord!.cancellationReason, 'Emergency personal conflict');
   });
 
-  test('patient cancel rejects completed or in-progress appointments', () async {
+  test('patient cancel rejects completed or in-progress appointments',
+      () async {
     store.mergeFromFirestore([
       bookingRecord(id: 'rec-completed', appointmentId: 'apt-c').copyWith(
         doctorStatus: AppointmentStatus.completed,
@@ -90,7 +96,8 @@ void main() {
       throwsA(isA<StateError>()),
     );
     expect(
-      () => store.cancelByPatient('rec-noshow', reason: 'Already marked noShow'),
+      () =>
+          store.cancelByPatient('rec-noshow', reason: 'Already marked noShow'),
       throwsA(isA<StateError>()),
     );
   });

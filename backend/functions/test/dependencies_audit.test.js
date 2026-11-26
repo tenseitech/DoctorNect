@@ -91,15 +91,11 @@ test('npm audit reports no moderate or higher vulnerabilities', (t) => {
 
 test('firebase-admin modular APIs used by functions still load after upgrade', () => {
   const { initializeApp } = require('firebase-admin/app');
-  const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
   const { getAuth } = require('firebase-admin/auth');
   const { getMessaging } = require('firebase-admin/messaging');
   const { getAppCheck } = require('firebase-admin/app-check');
 
   assert.equal(typeof initializeApp, 'function');
-  assert.equal(typeof getFirestore, 'function');
-  assert.equal(typeof FieldValue.serverTimestamp, 'function');
-  assert.equal(typeof Timestamp.now, 'function');
   assert.equal(typeof getAuth, 'function');
   assert.equal(typeof getMessaging, 'function');
   assert.equal(typeof getAppCheck, 'function');

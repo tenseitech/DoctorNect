@@ -135,6 +135,8 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     return const Scaffold(
+      // Same colour as the native splash, so no frame can show white behind it.
+      backgroundColor: SplashDesign.background,
       body: SplashDesignView(logoKey: SplashScreen.splashLogoKey),
     );
   }

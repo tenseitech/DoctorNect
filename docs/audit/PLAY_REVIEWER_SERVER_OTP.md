@@ -1,3 +1,5 @@
+> **Superseded (2026-11-25):** demo numbers, roles and routing are now fixed in code. The current reference is [docs/DEMO_ACCOUNTS.md](../DEMO_ACCOUNTS.md). REVIEW_*_PHONES / DEMO_PHONE_NUMBERS are ignored.
+
 # Play Store reviewer login (server-only, default OFF)
 
 No Flutter demo flags. Reviewer bypass lives entirely in **`sendUserRegistrationOtp` / `verifyUserRegistrationOtp`** (`backend/functions/registration_otp.js`).

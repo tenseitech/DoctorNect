@@ -1,0 +1,4 @@
+
+# Local test run outputs (may contain App Check debug tokens)
+test_failures_log.txt
+test_results*.json

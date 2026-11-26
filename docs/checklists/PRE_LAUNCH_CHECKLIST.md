@@ -1,5 +1,10 @@
 # DoctorNect: Production Pre-Launch Security & Operational Checklist
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 **Document Version:** 2.0.0 (Clean Launch Edition)  
 **Target Architecture:** Firebase Auth + Supabase PostgreSQL ONLY + AWS S3 + Redis  
 **Regulatory Framework:** India Digital Personal Data Protection Act (DPDP Act 2023)  

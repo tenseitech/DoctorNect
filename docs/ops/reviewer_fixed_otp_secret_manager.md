@@ -1,3 +1,5 @@
+> **Superseded (2026-11-25):** demo numbers, roles and routing are now fixed in code. The current reference is [docs/DEMO_ACCOUNTS.md](../DEMO_ACCOUNTS.md). REVIEW_*_PHONES / DEMO_PHONE_NUMBERS are ignored.
+
 # Play Store & App Store Reviewer Fixed OTP — Secret Manager Runbook
 
 ## Overview

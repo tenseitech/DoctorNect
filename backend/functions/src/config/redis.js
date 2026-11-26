@@ -161,6 +161,20 @@ function buildRedisOptions(overrides = {}) {
     ? Boolean(overrides.tls)
     : String(process.env.REDIS_TLS || 'true').trim().toLowerCase() !== 'false';
 
+  // Production must use TLS with server verification and an AUTH password (OTP / rate-limit store).
+  const isProduction = String(process.env.APP_ENV || '').trim().toLowerCase() === 'production';
+  if (isProduction && overrides.allowInsecureForTests !== true) {
+    const tlsVerifyDisabled = typeof overrides.tls === 'object' && overrides.tls !== null
+      && overrides.tls.rejectUnauthorized === false;
+    if (!useTls || tlsVerifyDisabled || !password) {
+      const err = new Error(
+        '[redis] APP_ENV=production requires REDIS_TLS=true (verified) and REDIS_PASSWORD.',
+      );
+      err.code = 'REDIS_INSECURE_CONFIG';
+      throw err;
+    }
+  }
+
   const options = {
     host,
     port,
@@ -203,6 +217,7 @@ function buildRedisOptions(overrides = {}) {
   delete extraOverrides.password;
   delete extraOverrides.tls;
   delete extraOverrides.ca;
+  delete extraOverrides.allowInsecureForTests;
 
   return Object.assign(options, extraOverrides);
 }

@@ -92,7 +92,8 @@ class _VerificationSubmissionCardState
         final isDemoDoctor = widget.role == UserType.doctor &&
             DemoAuthConfig.isDemoDoctorPhone(mobile);
         final statusStr = profile.verificationStatus ?? 'registered';
-        final isVerified = statusStr == 'verified' || statusStr == 'approved' || isDemoDoctor;
+        final isVerified =
+            statusStr == 'verified' || statusStr == 'approved' || isDemoDoctor;
         final stage = isVerified
             ? VerificationStage.verified
             : VerificationStage.fromString(statusStr);

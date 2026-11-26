@@ -10,6 +10,23 @@ const path = require('path');
 const { findRepoRoot } = require('../lib/repo_root');
 const { parseEnvFile } = require('../lib/parse_env_file');
 const { loadRootEnv } = require('../lib/bootstrap_root_env');
+const {
+  filterBaselineRuntimeEnv,
+  assertFunctionsEnvFilePassesFirebaseValidation,
+} = require('../lib/firebase_tools_reserved_env');
+const {
+  filterSecretBoundEnv,
+  assertNoSecretBoundEnvKeys,
+  collectDefineSecretNames,
+} = require('../lib/functions_define_secrets');
+const {
+  collectNarrowOtpBoundSecretKeys,
+  assertNoOverlapWithBoundSecrets,
+} = require('../lib/functions_bound_secrets');
+const {
+  buildFunctionsSmokeChildEnv,
+  maskSmokeErrorText,
+} = require('../lib/functions_smoke_env');
 
 const FUNCTIONS_KEYS = new Set([
   'APP_ENV',
@@ -26,12 +43,17 @@ const FUNCTIONS_KEYS = new Set([
   'DEMO_PHONE_SUPER_ADMIN',
   'REVIEWER_OTP_ENABLED',
   'REVIEW_ACCESS_UNTIL',
-  'REVIEW_FIXED_OTP',
   'REVIEW_PATIENT_PHONES',
   'REVIEW_DOCTOR_PHONES',
   'REVIEW_LAB_PHONES',
   'REVIEW_MEDICAL_STORE_PHONES',
+  'REVIEW_MEDICALSTORE_PHONES',
   'REVIEW_AMBULANCE_PHONES',
+  'REVIEW_TEST_NUMBERS',
+  'DEMO_REAL_ROUTING_ENABLED',
+  'DEMO_FIREBASE_UID_ALLOWLIST',
+  'DEMO_PGRST_JWT_AUD',
+  'DEMO_SUPABASE_URL',
   'MSG91_AUTH_KEY',
   'MSG91_TEMPLATE_ID',
   'MSG91_TEMPLATE_ID_REGISTRATION',
@@ -75,7 +97,6 @@ const FUNCTIONS_KEYS = new Set([
   'STAGING_SUPABASE_URL',
   'STAGING_SUPABASE_SERVICE_ROLE_KEY',
   'PROD_GATEWAY_URL',
-  'PROD_GATEWAY_SERVICE_KEY',
   'PROD_GATEWAY_ANON_KEY',
   'SUPABASE_URL',
   'SUPABASE_ANON_KEY',
@@ -93,6 +114,111 @@ const FUNCTIONS_KEYS = new Set([
   'SKIP_APP_ENV_DB_ASSERT',
 ]);
 
+const REVIEWER_OVERLAY_KEYS = new Set([
+  'REVIEWER_OTP_ENABLED',
+  'REVIEW_ACCESS_UNTIL',
+  'REVIEW_PATIENT_PHONES',
+  'REVIEW_DOCTOR_PHONES',
+  'REVIEW_LAB_PHONES',
+  'REVIEW_MEDICAL_STORE_PHONES',
+  'REVIEW_MEDICALSTORE_PHONES',
+  'REVIEW_AMBULANCE_PHONES',
+  'REVIEW_TEST_NUMBERS',
+  'DEMO_PHONE_NUMBERS',
+  'DEMO_FIXED_OTP',
+  'DEMO_REAL_ROUTING_ENABLED',
+  'DEMO_FIREBASE_UID_ALLOWLIST',
+  'DEMO_PGRST_JWT_AUD',
+  'DEMO_SUPABASE_URL',
+]);
+
+function materializeNarrowOtpDeploy(root, parsed, lines) {
+  const baselinePath =
+    process.env.DEPLOYED_ENV_BASELINE ||
+    path.join(root, '.artifacts', 'baselines', 'sendUserRegistrationOtp.deployed.json');
+  if (!fs.existsSync(baselinePath)) {
+    throw new Error(`NARROW_OTP_DEPLOY: missing deployed baseline at ${baselinePath}`);
+  }
+  const raw = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
+  let base = filterBaselineRuntimeEnv(raw.serviceConfig?.environmentVariables || raw);
+  const narrowSecrets = collectNarrowOtpBoundSecretKeys(path.join(root, 'backend', 'functions'));
+  base = filterSecretBoundEnv(base, narrowSecrets);
+  for (const key of REVIEWER_OVERLAY_KEYS) {
+    const val = process.env[key] ?? parsed[key] ?? '';
+    if (val !== '') {
+      base[key] = val;
+    }
+  }
+  for (const key of Object.keys(base).sort()) {
+    if (narrowSecrets.has(key)) continue;
+    const val = base[key];
+    if (val === undefined || val === null || String(val) === '') continue;
+    lines.push(`${key}=${String(val)}`);
+  }
+  lines.splice(2, 0, '# NARROW_OTP_DEPLOY=1 — baseline + reviewer overlay only');
+}
+
+function assertGeneratedEnvPolicy(envPath, { narrowOtp = false } = {}) {
+  assertFunctionsEnvFilePassesFirebaseValidation(envPath);
+  const body = fs.readFileSync(envPath, 'utf8');
+  const parsed = {};
+  for (const line of body.split('\n')) {
+    const t = line.trim();
+    if (!t || t.startsWith('#')) continue;
+    const eq = t.indexOf('=');
+    if (eq <= 0) continue;
+    parsed[t.slice(0, eq)] = t.slice(eq + 1);
+  }
+  if (narrowOtp) {
+    const root = findRepoRoot(path.join(__dirname, '../..'));
+    assertNoOverlapWithBoundSecrets(
+      parsed,
+      collectNarrowOtpBoundSecretKeys(path.join(root, 'backend', 'functions')),
+    );
+  } else {
+    assertNoSecretBoundEnvKeys(parsed);
+  }
+}
+
+function tryFunctionsIndexBootSmoke(functionsDir, { timeoutMs = 120000, boundSecretKeys = [] } = {}) {
+  const { spawnSync } = require('child_process');
+  const childEnv = buildFunctionsSmokeChildEnv({ functionsDir, boundSecretKeys });
+  const script = `
+    const t0 = Date.now();
+    try {
+      require('./index.js');
+      console.log('FUNCTIONS_INDEX_LOAD_MS=' + (Date.now() - t0));
+    } catch (e) {
+      console.error('SMOKE_ERR_CODE=' + (e && e.code ? e.code : e.name || 'Error'));
+      console.error('SMOKE_ERR_MSG=' + (e && e.message ? e.message : String(e)));
+      const stack = (e && e.stack ? e.stack : '').split('\\n').slice(0, 5).join('\\n');
+      console.error('SMOKE_ERR_STACK=' + stack);
+      process.exit(1);
+    }
+  `;
+  const res = spawnSync(process.execPath, ['-e', script], {
+    cwd: functionsDir,
+    encoding: 'utf8',
+    timeout: timeoutMs,
+    env: childEnv,
+  });
+  if (res.status !== 0) {
+    const raw = `${res.stdout || ''}\n${res.stderr || ''}`.trim();
+    const code = raw.match(/^SMOKE_ERR_CODE=(.+)$/m);
+    const msg = raw.match(/^SMOKE_ERR_MSG=(.+)$/m);
+    const stack = raw.match(/^SMOKE_ERR_STACK=([\s\S]*?)(?:\nSMOKE_|$)/m);
+    const parts = [
+      'functions index.js load failed:',
+      code ? `code=${maskSmokeErrorText(code[1].trim())}` : 'code=(missing)',
+      msg ? `message=${maskSmokeErrorText(msg[1].trim())}` : 'message=(missing)',
+      stack ? `stack:\n${maskSmokeErrorText(stack[1].trim())}` : '',
+    ].filter(Boolean);
+    throw new Error(parts.join('\n'));
+  }
+  const msLine = (res.stdout || '').split('\n').find((l) => l.startsWith('FUNCTIONS_INDEX_LOAD_MS='));
+  return msLine ? Number(msLine.split('=')[1]) : null;
+}
+
 function main() {
   const root = findRepoRoot(path.join(__dirname, '../..'));
   loadRootEnv({ startDir: root, force: true });
@@ -102,13 +228,32 @@ function main() {
     `# Source: ${path.join(root, '.env')}`,
     '',
   ];
-  for (const key of [...FUNCTIONS_KEYS].sort()) {
-    const val = process.env[key] ?? parsed[key] ?? '';
-    if (val === '' && !['APP_ENV', 'FIRESTORE_FORBIDDEN'].includes(key)) continue;
-    lines.push(`${key}=${val}`);
+  const narrowOtp = String(process.env.NARROW_OTP_DEPLOY || '').trim() === '1';
+  if (narrowOtp) {
+    materializeNarrowOtpDeploy(root, parsed, lines);
+  } else {
+    const secretNames = collectDefineSecretNames(path.join(root, 'backend', 'functions'));
+    for (const key of [...FUNCTIONS_KEYS].sort()) {
+      if (secretNames.has(key)) continue;
+      const val = process.env[key] ?? parsed[key] ?? '';
+      if (val === '') continue;
+      lines.push(`${key}=${val}`);
+    }
   }
   const out = path.join(root, 'backend', 'functions', '.env');
   fs.writeFileSync(out, `${lines.join('\n')}\n`);
+  assertGeneratedEnvPolicy(out, { narrowOtp });
+  console.log(
+    narrowOtp
+      ? 'Materialize policy OK: no reserved keys, no OTP-bound secret overlaps in .env.'
+      : 'Materialize policy OK: no reserved keys, no defineSecret overlaps in .env.',
+  );
+  const functionsDir = path.join(root, 'backend', 'functions');
+  const boundKeys = narrowOtp
+    ? [...collectNarrowOtpBoundSecretKeys(functionsDir)]
+    : [...collectDefineSecretNames(functionsDir)];
+  const loadMs = tryFunctionsIndexBootSmoke(functionsDir, { boundSecretKeys: boundKeys });
+  console.log(`functions index.js load smoke OK (${loadMs != null ? `${loadMs}ms` : 'timing n/a'}).`);
   console.log(`Materialized ${path.relative(root, out)} (${lines.length - 3} keys, values not logged).`);
 }
 

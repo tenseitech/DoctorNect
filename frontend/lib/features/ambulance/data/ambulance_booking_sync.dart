@@ -54,7 +54,8 @@ class AmbulanceBookingSync {
         }
       },
       onError: (e, st) {
-        if (kDebugMode) debugPrint('Ambulance driver Supabase sync error: $e\n$st');
+        if (kDebugMode)
+          debugPrint('Ambulance driver Supabase sync error: $e\n$st');
       },
     );
   }
@@ -75,7 +76,8 @@ class AmbulanceBookingSync {
         }
       },
       onError: (e, st) {
-        if (kDebugMode) debugPrint('Ambulance patient Supabase sync error: $e\n$st');
+        if (kDebugMode)
+          debugPrint('Ambulance patient Supabase sync error: $e\n$st');
       },
     );
   }
@@ -96,7 +98,8 @@ class AmbulanceBookingSync {
         }
       },
       onError: (e, st) {
-        if (kDebugMode) debugPrint('Ambulance history Supabase sync error: $e\n$st');
+        if (kDebugMode)
+          debugPrint('Ambulance history Supabase sync error: $e\n$st');
       },
     );
   }

@@ -79,7 +79,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     if (role == null) return;
 
     if (role == UserType.ambulance && !AmbulanceEnabled.isOn) {
-      AppToast.info(context, 'Ambulance sign-in is not available in this build.');
+      AppToast.info(
+          context, 'Ambulance sign-in is not available in this build.');
       return;
     }
 
@@ -254,54 +255,54 @@ class _WebDynamicBrandPanel extends StatelessWidget {
   final Color selectedAccent;
 
   static Map<UserType, _RoleBenefitData> get _roleBenefits => {
-    UserType.doctor: _RoleBenefitData(
-      icon: Icons.medical_services_rounded,
-      headline: 'Run your practice, simply.',
-      benefits: [
-        'Manage appointments and your schedule',
-        'Write and send digital prescriptions',
-        'Keep patient records in one place',
-      ],
-    ),
-    UserType.patient: _RoleBenefitData(
-      icon: Icons.person_rounded,
-      headline: 'Care that comes to you.',
-      benefits: [
-        'Book doctors and lab tests',
-        'Keep your prescriptions and records together',
-        AmbulanceEnabled.isOn
-            ? 'Request an ambulance when it matters'
-            : 'Track appointments and lab results',
-      ],
-    ),
-    UserType.medicalStore: _RoleBenefitData(
-      icon: Icons.local_pharmacy_rounded,
-      headline: 'Fulfil prescriptions faster.',
-      benefits: [
-        'Receive prescriptions digitally',
-        'Manage and dispense orders',
-        'Stay connected with doctors and patients',
-      ],
-    ),
-    UserType.lab: _RoleBenefitData(
-      icon: Icons.biotech_rounded,
-      headline: 'Diagnostics, connected.',
-      benefits: [
-        'Receive test orders from doctors',
-        'Upload and share reports securely',
-        'Manage your lab\'s workflow',
-      ],
-    ),
-    UserType.ambulance: _RoleBenefitData(
-      icon: Icons.emergency_rounded,
-      headline: 'Respond faster.',
-      benefits: [
-        'Get emergency pickup requests',
-        'Manage your trips and availability',
-        'Stay connected with patients',
-      ],
-    ),
-  };
+        UserType.doctor: _RoleBenefitData(
+          icon: Icons.medical_services_rounded,
+          headline: 'Run your practice, simply.',
+          benefits: [
+            'Manage appointments and your schedule',
+            'Write and send digital prescriptions',
+            'Keep patient records in one place',
+          ],
+        ),
+        UserType.patient: _RoleBenefitData(
+          icon: Icons.person_rounded,
+          headline: 'Care that comes to you.',
+          benefits: [
+            'Book doctors and lab tests',
+            'Keep your prescriptions and records together',
+            AmbulanceEnabled.isOn
+                ? 'Request an ambulance when it matters'
+                : 'Track appointments and lab results',
+          ],
+        ),
+        UserType.medicalStore: _RoleBenefitData(
+          icon: Icons.local_pharmacy_rounded,
+          headline: 'Fulfil prescriptions faster.',
+          benefits: [
+            'Receive prescriptions digitally',
+            'Manage and dispense orders',
+            'Stay connected with doctors and patients',
+          ],
+        ),
+        UserType.lab: _RoleBenefitData(
+          icon: Icons.biotech_rounded,
+          headline: 'Diagnostics, connected.',
+          benefits: [
+            'Receive test orders from doctors',
+            'Upload and share reports securely',
+            'Manage your lab\'s workflow',
+          ],
+        ),
+        UserType.ambulance: _RoleBenefitData(
+          icon: Icons.emergency_rounded,
+          headline: 'Respond faster.',
+          benefits: [
+            'Get emergency pickup requests',
+            'Manage your trips and availability',
+            'Stay connected with patients',
+          ],
+        ),
+      };
 
   List<Color> _panelGradientColors(UserType? role) {
     if (role == null) {

@@ -1,13 +1,28 @@
-require('../../scripts/lib/bootstrap_root_env').loadRootEnv();
+const { safeErrorForLog } = require('./log_safe');
+const fs = require('fs');
+const path = require('path');
+const _repoBootstrap = path.resolve(__dirname, '../../scripts/lib/bootstrap_root_env.js');
+if (
+  !process.env.K_SERVICE &&
+  !process.env.FUNCTION_TARGET &&
+  process.env.DOCTORNECT_TEST_HARNESS !== '1' &&
+  fs.existsSync(_repoBootstrap)
+) {
+  require(_repoBootstrap).loadRootEnv();
+}
 const { resolveCallerIdentity } = require('./caller_identity');
 // Deploy: disable OTP App Check until reCAPTCHA is configured.
-require('./firestore_forbidden_guard');
-const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+// onCall runs handlers inside the verified-auth context (data-plane routing, demo ambulance).
+const { onCall, onRequest, HttpsError } = require('./callable_with_auth_context');
+const { withDataPlaneSecrets } = require('./demo_plane_secrets');
+// Functions without their own secrets list still get the data-plane secrets (the production
+// cold-start assert needs PROD_GATEWAY_SERVICE_KEY in every function). Must run before any
+// function below is defined.
+require('firebase-functions/v2').setGlobalOptions({ secrets: require('./demo_plane_secrets').DATA_PLANE_SECRETS });
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { initializeApp } = require('firebase-admin/app');
 initializeApp();
 
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { sendFcmIfTokenExists, resolveAmbulanceDriverToken } = require('./fcm_push');
 const crypto = require('crypto');
 const {
@@ -28,11 +43,6 @@ function safeCompareSecrets(provided, expected) {
   return crypto.timingSafeEqual(pHash, eHash);
 }
 
-const {
-  isDoctorPatientSupabasePrimary,
-  _resetRemoteConfigCache,
-  _setMockRemoteConfigTemplate,
-} = require('./sync_flags');
 
 const {
   RULES,
@@ -54,6 +64,7 @@ const {
   assertLoginAllowed,
   recordFailedLogin,
   clearFailedLogins,
+  clearFailedLoginsTrusted,
   hashAmbulancePin,
   ambulancePinMatches,
   lookupMobileRegistration,
@@ -66,10 +77,6 @@ const {
   razorpayWebhook,
   reviewPromotedAd,
 } = require('./promoted_ads');
-const {
-  bookAppointment,
-  rescheduleAppointment,
-} = require('./appointment_slots');
 
 const {
   sanitizeRuleParams,
@@ -112,20 +119,42 @@ const {
   clientFacingHttpsMessage,
 } = require('./public_error_messages');
 const { deleteMyAccountHandler, supabaseServiceRoleKey } = require('./delete_my_account');
+const s3Storage = require('./s3_storage');
 const {
   awsAccessKeyId,
   awsSecretAccessKey,
-} = require('./s3_storage');
+} = s3Storage;
+
+// File upload/download callables live in s3_storage.js; Firebase deploys only what index.js
+// exports, so they must be re-exported here (otherwise a deploy deletes them).
+exports.getS3UploadUrl = s3Storage.getS3UploadUrl;
+exports.getS3DownloadUrl = s3Storage.getS3DownloadUrl;
+exports.getS3DownloadUrls = s3Storage.getS3DownloadUrls;
+exports.deleteS3Object = s3Storage.deleteS3Object;
+exports.confirmS3Upload = s3Storage.confirmS3Upload;
+const { reviewFixedOtp } = require('./reviewer_secrets');
+const { otpHmacSecret } = require('./otp_secrets');
+const {
+  demoSupabaseServiceRoleKey,
+  prodGatewayServiceKey,
+} = require('./demo_plane_secrets');
+
+/** Demo/reviewer OTP + Postgres login lookup (secrets must not materialize to .env). */
+const OTP_DATA_PLANE_SECRETS = [
+  otpHmacSecret,
+  reviewFixedOtp,
+  demoSupabaseServiceRoleKey,
+  prodGatewayServiceKey,
+];
 
 assertProductionSecrets();
 assertProductionOtpSafety();
+require('./src/db/assert_app_env').assertProductionFirestoreForbidden();
+require('./src/db/assert_app_env').assertDemoOtpSecretForOtpFunction();
 {
-  const appEnvBoot = String(process.env.APP_ENV || 'staging').trim().toLowerCase();
-  const skipDbAssert =
-    String(process.env.SKIP_APP_ENV_DB_ASSERT || '').trim().toLowerCase() === 'true' ||
-    appEnvBoot === 'test' ||
-    String(process.env.NODE_ENV || '').toLowerCase() === 'test';
-  if (!skipDbAssert) {
+  const { shouldRunCutoverBootAsserts } = require('./src/db/assert_app_env');
+  if (shouldRunCutoverBootAsserts()) {
+    const appEnvBoot = String(process.env.APP_ENV || 'staging').trim().toLowerCase();
     assertAppEnvDatabaseRouting({
       requireStagingDb: appEnvBoot === 'staging',
     });
@@ -134,20 +163,22 @@ assertProductionOtpSafety();
       assertProductionRedisTls,
       assertProductionOtpHmacOnly,
       warnProductionOtpHmacFallback,
-      assertProductionReviewOtpDisabled,
+      assertProductionReviewerOtpPolicy,
+      assertProductionAppCheckEnforcement,
       assertProductionNoPlaceholderSecrets,
     } = require('./src/db/assert_app_env');
     assertStagingProductionResourceIsolation();
     assertProductionRedisTls();
     assertProductionOtpHmacOnly();
     warnProductionOtpHmacFallback();
-    assertProductionReviewOtpDisabled();
+    assertProductionAppCheckEnforcement();
+    assertProductionReviewerOtpPolicy();
     assertProductionNoPlaceholderSecrets();
+    // D2: completeness at boot, off until the first green deploy (switch in assert_app_env.js).
+    require("./src/db/assert_app_env").runCutoverCompletenessAtBoot();
   }
 }
 
-/** Firestore triggers must run in the Firestore database location (live: asia-south2); callables in asia-south1. */
-const FIRESTORE_TRIGGER_REGION = String(process.env.FIRESTORE_TRIGGER_REGION || 'asia-south2').trim();
 const CALLABLE_REGION = 'asia-south1';
 
 /** Redis secrets are bound to OTP callables only when the OTP Redis mirror is enabled. */
@@ -181,11 +212,6 @@ const ENFORCE_ABUSE_APP_CHECK = String(
 const ENFORCE_AMBULANCE_HTTP_APP_CHECK = isAmbulanceHttpAppCheckEnforced();
 const AMBULANCE_HTTP_ALLOWED_ORIGINS = resolveAmbulanceHttpAllowedOrigins();
 
-function db() {
-  const { getLegacyFirestoreDb } = require('./legacy_db');
-  return getLegacyFirestoreDb();
-}
-
 /** Compose security logging + abuse limits for callables. */
 function protectCallable(name, options, handler) {
   const opts = typeof options === 'function'
@@ -202,7 +228,7 @@ function protectCallable(name, options, handler) {
   return withSecurityLogging(
     name,
     withAbuseProtection(
-      db,
+      null,
       { category, enforceAppCheck, identifierFromRequest, message },
       h,
     ),
@@ -216,15 +242,8 @@ function requireAuth(request) {
 }
 
 function getCallableClientIp(request) {
-  const raw = request.rawRequest;
-  if (!raw) return 'unknown';
-
-  const forwarded = raw.headers?.['x-forwarded-for'];
-  if (forwarded) {
-    return String(forwarded).split(',')[0].trim();
-  }
-
-  return raw.ip || raw.socket?.remoteAddress || 'unknown';
+  // Rightmost X-Forwarded-For hop only; the leftmost value is client-controlled.
+  return require('./abuse_rate_limit').clientIpFromRawRequest(request?.rawRequest);
 }
 
 function isAmbulancePinHash(storedPin) {
@@ -237,149 +256,75 @@ function pinMatches(storedPin, enteredPin) {
   return ambulancePinMatches(storedPin, enteredPin);
 }
 
-async function readAmbulancePinHash(db, driverId) {
-  const privateSnap = await db
-    .collection('ambulances')
-    .doc(driverId)
-    .collection('private')
-    .doc('settings')
-    .get();
-  if (privateSnap.exists) {
-    return privateSnap.data()?.pin || '';
-  }
-  const legacySnap = await db.collection('ambulances').doc(driverId).get();
-  return legacySnap.data()?.pin || '';
-}
-
-async function findAmbulanceByUsername(db, username) {
-  const normalized = String(username || '').trim().toLowerCase();
-  if (normalized.length < 3) return null;
-
-  const snapshot = await db
-    .collection('ambulances')
-    .where('username', '==', normalized)
-    .limit(1)
-    .get();
-
-  if (snapshot.empty) return null;
-
-  const doc = snapshot.docs[0];
-  return { id: doc.id, data: doc.data(), username: normalized };
-}
-
-async function verifyAmbulanceCredentials(db, username, pin) {
+async function verifyAmbulanceCredentials(_db, username, pin) {
   const pinNorm = String(pin || '').trim();
   if (pinNorm.length < 6) {
     return { ok: false, invalidCredentials: true };
   }
-
-  const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
-  const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
-
-  const useFirestoreDb = db && typeof db.collection === 'function';
-  if (isCutover && !useFirestoreDb) {
-    const { getSupabaseAdminClient } = require('./caller_identity');
-    const sb = getSupabaseAdminClient();
-    if (!sb) return { ok: false, invalidCredentials: true };
-
-    const { data: amb } = await sb
-      .from('ambulances')
-      .select('*')
-      .ilike('username', username.trim().toLowerCase())
-      .maybeSingle();
-
-    if (!amb) {
-      return { ok: false, invalidCredentials: true };
-    }
-
-    const { data: priv } = await sb
-      .from('ambulance_private_settings')
-      .select('pin_hash')
-      .eq('ambulance_id', amb.ambulance_id)
-      .maybeSingle();
-
-    const storedPin = priv?.pin_hash;
-    if (!isAmbulancePinHash(storedPin)) {
-      return { ok: false, invalidCredentials: true, pinUpgradeRequired: !!storedPin };
-    }
-    if (!pinMatches(storedPin, pinNorm)) {
-      return { ok: false, invalidCredentials: true };
-    }
-
-    return {
-      ok: true,
-      driverId: amb.ambulance_id,
-      data: amb,
-      username: amb.username,
-    };
-  }
-
-  const found = await findAmbulanceByUsername(db, username);
-  if (!found) {
+  const normalized = String(username || '').trim().toLowerCase();
+  // Exact match only: ILIKE would treat % and _ in the input as wildcards and match other drivers.
+  if (normalized.length < 3 || !/^[a-z0-9._-]{3,64}$/.test(normalized)) {
     return { ok: false, invalidCredentials: true };
   }
 
-  const storedPin = await readAmbulancePinHash(db, found.id);
+  const { getSupabaseAdminClient } = require('./caller_identity');
+  const sb = getSupabaseAdminClient();
+  if (!sb) {
+    throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+  }
+
+  const { data: amb, error: ambErr } = await sb
+    .from('ambulances')
+    .select('*')
+    .eq('username', normalized)
+    .maybeSingle();
+  if (ambErr) {
+    throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+  }
+  if (!amb) {
+    return { ok: false, invalidCredentials: true };
+  }
+
+  const { data: priv, error: privErr } = await sb
+    .from('ambulance_private_settings')
+    .select('pin_hash')
+    .eq('ambulance_id', amb.ambulance_id)
+    .maybeSingle();
+  if (privErr) {
+    throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+  }
+
+  const storedPin = priv?.pin_hash;
   if (!isAmbulancePinHash(storedPin)) {
-    if (storedPin) {
-      console.warn(`Ambulance ${found.id} has a non-hashed PIN on file; login denied until PIN reset.`);
-    }
     return { ok: false, invalidCredentials: true, pinUpgradeRequired: !!storedPin };
   }
   if (!pinMatches(storedPin, pinNorm)) {
     return { ok: false, invalidCredentials: true };
   }
 
-  // Upgrade legacy unsalted SHA-256 hashes to PBKDF2 after successful verify.
+  // Upgrade legacy unsalted SHA-256 hashes to salted PBKDF2 after a successful verify.
   if (/^[a-f0-9]{64}$/i.test(String(storedPin || '').trim())) {
-    try {
-      await db
-        .collection('ambulances')
-        .doc(found.id)
-        .collection('private')
-        .doc('settings')
-        .set({
-          pin: hashAmbulancePin(pinNorm),
-          pinUpdatedAt: FieldValue.serverTimestamp(),
-        }, { merge: true });
-    } catch (e) {
-      console.warn(`Ambulance ${found.id} PIN upgrade failed:`, e.message);
+    const { error: upErr } = await sb
+      .from('ambulance_private_settings')
+      .update({ pin_hash: hashAmbulancePin(pinNorm), updated_at: new Date().toISOString() })
+      .eq('ambulance_id', amb.ambulance_id);
+    if (upErr) {
+      console.warn('[verifyAmbulanceCredentials] PIN hash upgrade failed');
     }
   }
 
   return {
     ok: true,
-    driverId: found.id,
-    data: found.data,
-    username: found.username,
+    driverId: amb.ambulance_id,
+    data: {
+      serviceName: amb.service_name || '',
+      driverName: amb.driver_name || '',
+      username: amb.username || normalized,
+      city: amb.city || '',
+      isAvailable: amb.is_available !== false,
+    },
+    username: amb.username,
   };
-}
-
-function ambulanceBookerMatches(profile, broadcast) {
-  if (!profile || !broadcast) return false;
-
-  const bookerPatientId = String(broadcast.patientId || '');
-  const profileId = String(profile.profileId || '');
-  const role = String(profile.role || '');
-
-  return (
-    (role === 'patient' && bookerPatientId === profileId)
-    || (role === 'doctor' && bookerPatientId === profileId)
-  );
-}
-
-function broadcastAlreadyRated(broadcast) {
-  const rating = broadcast.rating;
-  if (rating == null) return false;
-  const numericRating = Number(rating);
-  if (Number.isNaN(numericRating)) return false;
-  if (numericRating === -1) {
-    throw new HttpsError('failed-precondition', 'Rating was skipped for this trip.');
-  }
-  if (numericRating > 0) {
-    throw new HttpsError('already-exists', 'Already rated.');
-  }
-  return false;
 }
 
 /**
@@ -401,14 +346,14 @@ exports.getValidationRules = onCall(
  */
 exports.getValidationRulesHttp = onRequest(
   { region: CALLABLE_REGION },
-  (req, res) => {
+  require('./http_endpoint_security').withApiSecurityHeaders((req, res) => {
     if (req.method !== 'GET') {
       res.status(405).json({ error: { message: 'GET required.' } });
       return;
     }
     res.set('Cache-Control', 'public, max-age=300');
     res.json({ rules: RULES, vitalThresholds: VITAL_THRESHOLDS, version: 1 });
-  },
+  }, { cacheable: true }),
 );
 
 /** Validates a single field server-side. */
@@ -457,24 +402,24 @@ exports.validateFormFields = onCall(
   }),
 );
 
-async function enforceSendUserRegistrationOtpRateLimit(firestore, request) {
+async function enforceSendUserRegistrationOtpRateLimit(_unusedDb, request) {
   const otpType = String(request.data?.otpType || 'registration').trim();
   const mobile = request.data?.mobile || request.data?.email || request.data?.identifier;
   const role = String(request.data?.role || 'patient').trim();
     const digits10 = String(mobile || '').replace(/\D/g, '').slice(-10);
     const identifier = digits10 || mobile;
     if (otpType === 'registration') {
-      await enforceAbuseLimit(firestore, request, 'signup', {
+      await enforceAbuseLimit(null, request, 'signup', {
         identifier,
         message: 'Too many account creation attempts. Please try again later.',
       });
     } else if (otpType === 'login' || otpType === 'forgot_password') {
-      await enforceAbuseLimit(firestore, request, 'otp_send', {
+      await enforceAbuseLimit(null, request, 'otp_send', {
         identifier,
         message: 'Too many OTP requests. Please try again in a few minutes.',
       });
     } else {
-      await enforceAbuseLimit(firestore, request, 'api');
+      await enforceAbuseLimit(null, request, 'api');
     }
 }
 
@@ -484,7 +429,11 @@ exports.sendUserRegistrationOtp = onCall(
     ...MSG91_VPC_OPTIONS,
     ...OTP_REDIS_SECRET_OPTIONS,
     enforceAppCheck: ENFORCE_OTP_APP_CHECK,
-    secrets: [...(OTP_REDIS_SECRET_OPTIONS.secrets || []), supabaseServiceRoleKey],
+    secrets: withDataPlaneSecrets([
+      ...(OTP_REDIS_SECRET_OPTIONS.secrets || []),
+      supabaseServiceRoleKey,
+      ...OTP_DATA_PLANE_SECRETS,
+    ]),
   },
   withSecurityLogging('sendUserRegistrationOtp', async (request) => {
   try {
@@ -498,15 +447,18 @@ exports.sendUserRegistrationOtp = onCall(
     if (ENFORCE_OTP_APP_CHECK && !request.app) {
       logUnusualTraffic(request, { pattern: 'app_check_missing', detail: 'sendUserRegistrationOtp' });
     }
-    const firestore = db();
-    await enforceSendUserRegistrationOtpRateLimit(firestore, request);
-    return await sendUserRegistrationOtp(firestore, request.data || {}, {
+    await enforceSendUserRegistrationOtpRateLimit(null, request);
+    return await sendUserRegistrationOtp(null, request.data || {}, {
       clientIp: getCallableClientIp(request),
     });
   } catch (err) {
-    console.error('sendUserRegistrationOtp failed', err);
+    const { logOtpCallableError } = require('./otp_callable_errors');
+    logOtpCallableError('sendUserRegistrationOtp', err, {
+      otpType: request.data?.otpType || 'registration',
+      mobileLast4: String(request.data?.mobile || '').replace(/\D/g, '').slice(-4),
+    });
     if (err instanceof HttpsError) throw err;
-    throw new HttpsError('internal', 'Could not send OTP. Please try again.');
+    throw new HttpsError('internal', 'Could not send OTP. Please try again.', { reason: 'internal' });
   }
 }),
 );
@@ -514,17 +466,25 @@ exports.enforceSendUserRegistrationOtpRateLimit = enforceSendUserRegistrationOtp
 
 /** Returns whether a mobile number conflicts with login/registration intent (no role disclosure). */
 exports.lookupMobileRegistration = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  {
+    region: CALLABLE_REGION,
+    enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
+    secrets: withDataPlaneSecrets([supabaseServiceRoleKey, ...OTP_DATA_PLANE_SECRETS]),
+  },
   withSecurityLogging('lookupMobileRegistration', async (request) => {
     try {
       assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
-      const firestore = db();
-      await enforceAbuseLimit(firestore, request, 'api', {
+      // Existence lookup is an enumeration oracle: dedicated tight per-IP + per-number bucket.
+      const lookupDigits = String(request.data?.mobile || request.data?.identifier || '')
+        .replace(/\D/g, '')
+        .slice(-10);
+      await enforceAbuseLimit(null, request, 'account_lookup', {
+        identifier: lookupDigits || undefined,
         message: 'Too many requests. Please try again later.',
       });
-      return await lookupMobileRegistration(firestore, request.data || {});
+      return await lookupMobileRegistration(null, request.data || {});
     } catch (err) {
-      console.error('lookupMobileRegistration failed', err);
+      console.error('lookupMobileRegistration failed', safeErrorForLog(err));
       if (err instanceof HttpsError) throw err;
       throw new HttpsError('internal', 'Could not look up mobile number.');
     }
@@ -537,7 +497,11 @@ exports.verifyUserRegistrationOtp = onCall(
     ...MSG91_VPC_OPTIONS,
     ...OTP_REDIS_SECRET_OPTIONS,
     enforceAppCheck: ENFORCE_OTP_APP_CHECK,
-    secrets: [...(OTP_REDIS_SECRET_OPTIONS.secrets || []), supabaseServiceRoleKey],
+    secrets: withDataPlaneSecrets([
+      ...(OTP_REDIS_SECRET_OPTIONS.secrets || []),
+      supabaseServiceRoleKey,
+      ...OTP_DATA_PLANE_SECRETS,
+    ]),
   },
   withSecurityLogging('verifyUserRegistrationOtp', async (request) => {
     const mobileLast4 = String(request.data?.mobile || request.data?.identifier || '')
@@ -553,12 +517,11 @@ exports.verifyUserRegistrationOtp = onCall(
       platform: request.rawRequest?.headers?.['x-client-platform'] || 'unknown',
     });
     try {
-      const firestore = db();
-      await enforceAbuseLimit(firestore, request, 'api', {
+      await enforceAbuseLimit(null, request, 'api', {
         message: 'Too many OTP verification attempts. Please try again later.',
       });
       const result = await verifyUserRegistrationOtp(
-        firestore,
+        null,
         request.data || {},
         request.auth,
         { clientIp: getCallableClientIp(request) },
@@ -571,14 +534,13 @@ exports.verifyUserRegistrationOtp = onCall(
       });
       return result;
     } catch (err) {
-      console.error('[verifyUserRegistrationOtp] Callable request failed', {
+      const { logOtpCallableError } = require('./otp_callable_errors');
+      logOtpCallableError('verifyUserRegistrationOtp', err, {
         mobileLast4: mobileLast4 || 'unknown',
-        errorCode: err.code || 'unknown',
-        errorMessage: err.message,
-        details: err.details || null,
+        otpType: request.data?.otpType || 'registration',
       });
       if (err instanceof HttpsError) throw err;
-      throw new HttpsError('internal', 'Could not verify OTP. Please try again.');
+      throw new HttpsError('internal', 'Could not verify OTP. Please try again.', { reason: 'internal' });
     }
   }),
 );
@@ -587,8 +549,7 @@ exports.finalizePatientOtpVerification = onCall(
   { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
   protectCallable('finalizePatientOtpVerification', { category: 'api' }, async (request) => {
     requireAuth(request);
-    const firestore = db();
-    return finalizePatientOtpVerification(firestore, request.data || {}, request.auth);
+    return finalizePatientOtpVerification(null, request.data || {}, request.auth);
   }),
 );
 
@@ -600,11 +561,10 @@ exports.cleanupPendingRegistration = onCall(
     if (ENFORCE_OTP_APP_CHECK && !request.app) {
       throw new HttpsError('failed-precondition', 'App Check verification required.');
     }
-    const firestore = db();
-    await enforceAbuseLimit(firestore, request, 'api', {
+    await enforceAbuseLimit(null, request, 'api', {
       message: 'Too many registration cleanup attempts. Please try again later.',
     });
-    return cleanupPendingRegistration(firestore, request.auth);
+    return cleanupPendingRegistration(null, request.auth);
   }),
 );
 
@@ -616,12 +576,11 @@ exports.resetAmbulanceDriverPin = onCall(
       if (!request.auth) {
         throw new HttpsError('unauthenticated', 'Anonymous sign-in required.');
       }
-      const firestore = db();
-      return await resetAmbulanceDriverPin(firestore, request.data || {}, request.auth, {
+      return await resetAmbulanceDriverPin(null, request.data || {}, request.auth, {
         clientIp: getCallableClientIp(request),
       });
     } catch (err) {
-      console.error('resetAmbulanceDriverPin failed', err);
+      console.error('resetAmbulanceDriverPin failed', safeErrorForLog(err));
       if (err instanceof HttpsError) throw err;
       throw new HttpsError('internal', 'Could not reset PIN. Please try again.');
     }
@@ -630,15 +589,14 @@ exports.resetAmbulanceDriverPin = onCall(
 
 /** Resets user password after OTP verification using Admin SDK. */
 exports.resetUserPasswordWithOtp = onCall(
-  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   withSecurityLogging('resetUserPasswordWithOtp', async (request) => {
     try {
-      const firestore = db();
-      await enforceAbuseLimit(firestore, request, 'login', {
+      await enforceAbuseLimit(null, request, 'login', {
         identifier: request.data?.identifier || request.data?.mobile || request.data?.email,
         message: 'Too many password reset attempts. Please try again later.',
       });
-      const result = await resetUserPasswordWithOtp(firestore, request.data || {}, {
+      const result = await resetUserPasswordWithOtp(null, request.data || {}, {
         clientIp: getCallableClientIp(request),
       });
       logAuthAttempt(request, {
@@ -648,7 +606,7 @@ exports.resetUserPasswordWithOtp = onCall(
       });
       return result;
     } catch (err) {
-      console.error('resetUserPasswordWithOtp failed', err);
+      console.error('resetUserPasswordWithOtp failed', safeErrorForLog(err));
       logAuthAttempt(request, {
         outcome: 'failure',
         method: 'password_reset',
@@ -663,15 +621,18 @@ exports.resetUserPasswordWithOtp = onCall(
 
 /** Exchanges a verified mobile OTP session for a Firebase custom auth token. */
 exports.completeMobileOtpLogin = onCall(
-  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  {
+    ...MSG91_VPC_OPTIONS,
+    enforceAppCheck: ENFORCE_OTP_APP_CHECK,
+    secrets: withDataPlaneSecrets([supabaseServiceRoleKey, ...OTP_DATA_PLANE_SECRETS]),
+  },
   withSecurityLogging('completeMobileOtpLogin', async (request) => {
     try {
-      const firestore = db();
-      await enforceAbuseLimit(firestore, request, 'login', {
+      await enforceAbuseLimit(null, request, 'login', {
         identifier: request.data?.mobile || request.data?.identifier,
         message: 'Too many login attempts. Please try again later.',
       });
-      const result = await completeMobileOtpLogin(firestore, request.data || {}, {
+      const result = await completeMobileOtpLogin(null, request.data || {}, {
         clientIp: getCallableClientIp(request),
       });
       logAuthAttempt(request, {
@@ -681,7 +642,7 @@ exports.completeMobileOtpLogin = onCall(
       });
       return result;
     } catch (err) {
-      console.error('completeMobileOtpLogin failed', err);
+      console.error('completeMobileOtpLogin failed', safeErrorForLog(err));
       logAuthAttempt(request, {
         outcome: 'failure',
         method: 'mobile_otp',
@@ -696,15 +657,14 @@ exports.completeMobileOtpLogin = onCall(
 
 /** Pre-login rate-limit gate for email/password and admin sign-in. */
 exports.assertLoginAllowed = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   withSecurityLogging('assertLoginAllowed', async (request) => {
-  const firestore = db();
-  await enforceAbuseLimit(firestore, request, 'login', {
+  await enforceAbuseLimit(null, request, 'login', {
     identifier: request.data?.identifier || request.data?.email,
     message: 'Too many login attempts. Please try again later.',
   });
   try {
-    return await assertLoginAllowed(firestore, request.data || {}, {
+    return await assertLoginAllowed(null, request.data || {}, {
       clientIp: getCallableClientIp(request),
     });
   } catch (err) {
@@ -723,16 +683,15 @@ exports.assertLoginAllowed = onCall(
 
 /** Records a failed email/password login for rate limiting. */
 exports.recordFailedLogin = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   protectCallable('recordFailedLogin', { category: 'api' }, async (request) => {
-  const firestore = db();
   logAuthAttempt(request, {
     outcome: 'failure',
     method: 'email_password',
     identifier: request.data?.identifier || request.data?.email,
     reason: 'invalid_credentials',
   });
-  return recordFailedLogin(firestore, request.data || {}, {
+  return recordFailedLogin(null, request.data || {}, {
     clientIp: getCallableClientIp(request),
   });
 }),
@@ -742,69 +701,47 @@ exports.recordFailedLogin = onCall(
 exports.clearFailedLogins = onCall(
   { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
   protectCallable('clearFailedLogins', { category: 'api' }, async (request) => {
-  const firestore = db();
+  requireAuth(request);
   logAuthAttempt(request, {
     outcome: 'success',
     method: 'email_password',
     identifier: request.data?.identifier || request.data?.email,
   });
-  return clearFailedLogins(firestore, request.data || {});
+  return clearFailedLogins(null, request.data || {}, request.auth);
 }),
 );
 
 /**
  * Returns a pending ambulance invite only when inviteId + token both match.
- * Replaces anonymous Firestore get-by-id (IDOR on timestamp invite IDs).
+ * Replaces the old anonymous get-by-id (IDOR on timestamp invite IDs).
  */
 exports.getAmbulanceInvite = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   withSecurityLogging('getAmbulanceInvite', async (request) => {
   assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
-  await enforceAbuseLimit(db(), request, 'api');
+  await enforceAbuseLimit(null, request, 'api');
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Sign-in required to open an invite.');
   }
   const inviteId = requireDocId(request.data?.inviteId, 'inviteId');
   const token = requireInviteToken(request.data?.token, 'token');
 
-  const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
-  const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
+  const { getSupabaseAdminClient } = require('./caller_identity');
+  const sb = getSupabaseAdminClient();
+  if (!sb) throw new HttpsError('unavailable', 'Database service temporarily unavailable.');
 
-  if (isCutover) {
-    const { getSupabaseAdminClient } = require('./caller_identity');
-    const sb = getSupabaseAdminClient();
-    if (!sb) throw new HttpsError('internal', 'Supabase admin client not configured.');
+  const { data: inv, error } = await sb
+    .from('ambulance_invites')
+    .select('*')
+    .eq('invite_id', inviteId)
+    .maybeSingle();
 
-    const { data: inv, error } = await sb
-      .from('ambulance_invites')
-      .select('*')
-      .eq('invite_id', inviteId)
-      .maybeSingle();
-
-    if (error || !inv) {
-      throw new HttpsError('not-found', 'Invite not found.');
-    }
-    if (String(inv.token || '') !== token) {
-      logUnusualTraffic(request, {
-        pattern: 'forbidden_resource',
-        detail: 'ambulance_invite_token_mismatch',
-        identifier: inviteId,
-      });
-      throw new HttpsError('permission-denied', 'Invalid invite link.');
-    }
-    if (String(inv.status || '') !== 'pending') {
-      throw new HttpsError('failed-precondition', 'This invite has already been used.');
-    }
-    return { ok: true, inviteId: inv.invite_id, invite: inv };
-  }
-
-  const firestore = db();
-  const snap = await firestore.collection('ambulance_invites').doc(inviteId).get();
-  if (!snap.exists) {
+  if (error || !inv) {
     throw new HttpsError('not-found', 'Invite not found.');
   }
-  const data = snap.data() || {};
-  if (String(data.token || '') !== token) {
+  const stored = Buffer.from(String(inv.token || ''), 'utf8');
+  const given = Buffer.from(token, 'utf8');
+  if (stored.length === 0 || stored.length !== given.length || !crypto.timingSafeEqual(stored, given)) {
     logUnusualTraffic(request, {
       pattern: 'forbidden_resource',
       detail: 'ambulance_invite_token_mismatch',
@@ -812,35 +749,34 @@ exports.getAmbulanceInvite = onCall(
     });
     throw new HttpsError('permission-denied', 'Invalid invite link.');
   }
-  if (String(data.status || '') !== 'pending') {
+  if (String(inv.status || '') !== 'pending') {
     throw new HttpsError('failed-precondition', 'This invite has already been used.');
   }
-  const expiresAt = data.expiresAt?.toDate?.();
-  if (expiresAt && Date.now() > expiresAt.getTime()) {
+  const expiresAt = inv.expires_at ? new Date(inv.expires_at) : null;
+  if (expiresAt && !Number.isNaN(expiresAt.getTime()) && Date.now() > expiresAt.getTime()) {
     throw new HttpsError('deadline-exceeded', 'This invite link has expired.');
   }
-
-  return { ok: true, inviteId: snap.id, invite: data };
+  // Never echo the bearer token back to the client.
+  const { token: _omitToken, ...safeInvite } = inv;
+  return { ok: true, inviteId: inv.invite_id, invite: safeInvite };
 }),
 );
 
 /** Developer/admin approval: sets role profile verified = true for any account role. */
 exports.approveUserAccount = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   protectCallable('approveUserAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
-    const firestore = db();
-    return approveUserAccount(firestore, request.data || {}, request.auth);
+    return approveUserAccount(null, request.data || {}, request.auth);
   }),
 );
 
 /** Backward-compatible alias for patient approval. */
 exports.approvePatientAccount = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   protectCallable('approvePatientAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
-    const firestore = db();
-    return approvePatientAccount(firestore, request.data || {}, request.auth);
+    return approvePatientAccount(null, request.data || {}, request.auth);
   }),
 );
 
@@ -914,17 +850,17 @@ exports.assertAccountCreationAllowed = onCall(
 /**
  * Shared username/password verification for ambulance driver login.
  */
-async function runVerifyAmbulanceDriverLogin(firestore, payload, { clientIp, requestForLimits }) {
+async function runVerifyAmbulanceDriverLogin(_unusedDb, payload, { clientIp, requestForLimits }) {
   const username = requireUsername(payload?.username);
   const pin = requireAmbulancePassword(payload?.pin, 'password');
 
-  await enforceAbuseLimit(firestore, requestForLimits, 'login', {
+  await enforceAbuseLimit(null, requestForLimits, 'login', {
     identifier: `ambulance:${username}`,
     message: 'Too many login attempts. Please try again later.',
   });
 
   try {
-    await assertLoginAllowed(firestore, { identifier: `ambulance:${username}` }, { clientIp });
+    await assertLoginAllowed(null, { identifier: `ambulance:${username}` }, { clientIp });
   } catch (err) {
     logAuthAttempt(requestForLimits, {
       outcome: 'blocked',
@@ -936,15 +872,13 @@ async function runVerifyAmbulanceDriverLogin(firestore, payload, { clientIp, req
     throw new HttpsError('resource-exhausted', 'Too many login attempts. Please try again later.');
   }
 
-  const verified = await verifyAmbulanceCredentials(firestore, username, pin);
+  const verified = await verifyAmbulanceCredentials(null, username, pin);
   if (!verified.ok) {
     try {
-      await recordFailedLogin(firestore, { identifier: `ambulance:${username}` }, { clientIp });
+      await recordFailedLogin(null, { identifier: `ambulance:${username}` }, { clientIp });
     } catch (err) {
-      console.error('[verifyAmbulanceDriverLoginHttp] Failed to record login failure', {
-        username,
-        clientIp,
-        error: err,
+      console.error('[verifyAmbulanceDriverLogin] Failed to record login failure', {
+        error: err?.message || String(err),
       });
     }
     logAuthAttempt(requestForLimits, {
@@ -957,12 +891,10 @@ async function runVerifyAmbulanceDriverLogin(firestore, payload, { clientIp, req
   }
 
   try {
-    await clearFailedLogins(firestore, { identifier: `ambulance:${username}` });
+    await clearFailedLoginsTrusted(`ambulance:${username}`);
   } catch (err) {
-    console.error('[verifyAmbulanceDriverLoginHttp] Failed to clear login attempts', {
-      username,
-      clientIp,
-      error: err,
+    console.error('[verifyAmbulanceDriverLogin] Failed to clear login attempts', {
+      error: err?.message || String(err),
     });
   }
   logAuthAttempt(requestForLimits, {
@@ -986,21 +918,20 @@ async function runVerifyAmbulanceDriverLogin(firestore, payload, { clientIp, req
 /**
  * Verifies ambulance driver username/PIN server-side so PIN hashes are never
  * exposed to clients. Auth is optional here (PIN is verified server-side); the
- * client links an anonymous Firebase session after success for Firestore access.
+ * client links an anonymous Firebase session after success.
  */
 exports.verifyAmbulanceDriverLogin = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public', secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public', secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   withSecurityLogging('verifyAmbulanceDriverLogin', async (request) => {
   try {
-  const firestore = db();
   const clientIp = getCallableClientIp(request);
   return await runVerifyAmbulanceDriverLogin(
-    firestore,
+    null,
     request.data || {},
     { clientIp, requestForLimits: request },
   );
   } catch (err) {
-    console.error('verifyAmbulanceDriverLogin failed', err);
+    console.error('verifyAmbulanceDriverLogin failed', safeErrorForLog(err));
     if (err instanceof HttpsError) throw err;
     throw new HttpsError(
       'internal',
@@ -1017,8 +948,8 @@ exports.verifyAmbulanceDriverLogin = onCall(
  * PIN check still runs in that default path.
  */
 exports.verifyAmbulanceDriverLoginHttp = onRequest(
-  { region: CALLABLE_REGION, cors: false, invoker: 'public', secrets: [supabaseServiceRoleKey] },
-  async (req, res) => {
+  { region: CALLABLE_REGION, cors: false, invoker: 'public', secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
+  require('./http_endpoint_security').withApiSecurityHeaders(async (req, res) => {
     const allowedOrigins = AMBULANCE_HTTP_ALLOWED_ORIGINS;
     if (handleAmbulanceHttpPreflight(req, res, allowedOrigins)) return;
 
@@ -1036,23 +967,20 @@ exports.verifyAmbulanceDriverLoginHttp = onRequest(
       return;
     }
 
-    const clientIp = String(req.headers['x-forwarded-for'] || req.ip || 'unknown')
-      .split(',')[0]
-      .trim();
+    const clientIp = require('./abuse_rate_limit').clientIpFromRawRequest(req);
     const requestForLimits = { auth: null, rawRequest: req, app: null };
 
     try {
       await assertAmbulanceHttpAppCheck(req, { enforce: ENFORCE_AMBULANCE_HTTP_APP_CHECK });
-      const firestore = db();
       const payload = req.body?.data ?? req.body ?? {};
       const result = await runVerifyAmbulanceDriverLogin(
-        firestore,
+        null,
         payload,
         { clientIp, requestForLimits },
       );
       res.status(200).json({ result });
     } catch (err) {
-      console.error('verifyAmbulanceDriverLoginHttp failed', err);
+      console.error('verifyAmbulanceDriverLoginHttp failed', safeErrorForLog(err));
       if (err instanceof HttpsError) {
         const status = err.code === 'resource-exhausted' ? 429 : 400;
         res.status(status).json({
@@ -1070,23 +998,27 @@ exports.verifyAmbulanceDriverLoginHttp = onRequest(
         },
       });
     }
-  },
+  }),
 );
 
 /** Ambulance driver login via verified mobile OTP session (anonymous auth required). */
 exports.completeAmbulanceMobileOtpLogin = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public' },
+  {
+    region: CALLABLE_REGION,
+    enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
+    invoker: 'public',
+    secrets: withDataPlaneSecrets([...OTP_DATA_PLANE_SECRETS]),
+  },
   withSecurityLogging('completeAmbulanceMobileOtpLogin', async (request) => {
     try {
-      const firestore = db();
       return await completeAmbulanceMobileOtpLogin(
-        firestore,
+        null,
         request.data || {},
         request.auth,
         { clientIp: getCallableClientIp(request) },
       );
     } catch (err) {
-      console.error('completeAmbulanceMobileOtpLogin failed', err);
+      console.error('completeAmbulanceMobileOtpLogin failed', safeErrorForLog(err));
       if (err instanceof HttpsError) throw err;
       throw new HttpsError('internal', 'Could not complete mobile login.');
     }
@@ -1098,7 +1030,7 @@ exports.completeAmbulanceMobileOtpLogin = onCall(
  * duplicate ratings, and atomically updates ambulance rating aggregates.
  */
 exports.submitAmbulanceRating = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   protectCallable('submitAmbulanceRating', { category: 'api' }, async (request) => {
   requireAuth(request);
 
@@ -1107,84 +1039,34 @@ exports.submitAmbulanceRating = onCall(
   const stars = requireStars(request.data?.stars);
   const review = sanitizeReview(request.data?.review || '');
 
-  const db = db();
   const uid = request.auth.uid;
-
-  const profile = await resolveCallerIdentity({ db, uid });
-
-  const broadcastRef = db.collection('ambulance_broadcasts').doc(broadcastId);
-  const ambRef = db.collection('ambulances').doc(ambulanceId);
-
-  const broadcastSnap = await broadcastRef.get();
-  if (!broadcastSnap.exists) {
-    throw new HttpsError('not-found', 'Trip not found.');
-  }
-
-  const broadcast = broadcastSnap.data() || {};
-  if (broadcast.status !== 'completed') {
-    throw new HttpsError('failed-precondition', 'Trip not completed.');
-  }
-  if (String(broadcast.acceptedDriverId || '') !== ambulanceId) {
-    throw new HttpsError('invalid-argument', 'Ambulance does not match this trip.');
-  }
-  if (!ambulanceBookerMatches(profile, broadcast)) {
+  const { getDatabaseClient } = require('./src/db/client');
+  const sb = getDatabaseClient({ firebaseUid: uid });
+  const profile = await resolveCallerIdentity({ uid, supabaseClient: sb, forceSupabase: true });
+  const role = String(profile?.role || '');
+  const profileId = String(profile?.profileId || profile?.profile_id || '');
+  if (!profileId || (role !== 'patient' && role !== 'doctor')) {
     throw new HttpsError('permission-denied', 'Unauthorized.');
   }
-  broadcastAlreadyRated(broadcast);
 
-  const ratingFields = {
-    rating: stars,
-    ratedAt: FieldValue.serverTimestamp(),
-  };
-  if (review) {
-    ratingFields.review = review;
-  }
-
-  await db.runTransaction(async (tx) => {
-    const liveBroadcastSnap = await tx.get(broadcastRef);
-    if (!liveBroadcastSnap.exists) {
-      throw new HttpsError('not-found', 'Trip not found.');
-    }
-
-    const liveBroadcast = liveBroadcastSnap.data() || {};
-    if (liveBroadcast.status !== 'completed') {
-      throw new HttpsError('failed-precondition', 'Trip not completed.');
-    }
-    if (String(liveBroadcast.acceptedDriverId || '') !== ambulanceId) {
-      throw new HttpsError('invalid-argument', 'Ambulance does not match this trip.');
-    }
-    if (!ambulanceBookerMatches(profile, liveBroadcast)) {
-      throw new HttpsError('permission-denied', 'Unauthorized.');
-    }
-    broadcastAlreadyRated(liveBroadcast);
-
-    const ambSnap = await tx.get(ambRef);
-    if (!ambSnap.exists) {
-      throw new HttpsError('not-found', 'Ambulance not found.');
-    }
-
-    const ambData = ambSnap.data() || {};
-    const oldCount = Number(ambData.ratingCount) || 0;
-    const oldTotal = Number(ambData.totalRating) || 0;
-
-    tx.update(ambRef, {
-      ratingCount: oldCount + 1,
-      totalRating: oldTotal + stars,
-    });
-    tx.update(broadcastRef, ratingFields);
+  // Atomic, single-use rating; booker / driver / completed-status checks run inside the RPC.
+  const { error } = await sb.rpc('submit_ambulance_rating', {
+    p_broadcast_id: broadcastId,
+    p_ambulance_id: ambulanceId,
+    p_patient_id: profileId,
+    p_stars: stars,
+    p_review: review || null,
   });
-
-  const requestsSnap = await db
-    .collection('ambulance_requests')
-    .where('broadcastId', '==', broadcastId)
-    .get();
-
-  if (!requestsSnap.empty) {
-    const batch = db.batch();
-    for (const doc of requestsSnap.docs) {
-      batch.update(doc.ref, ratingFields);
+  if (error) {
+    const msg = String(error.message || '');
+    if (msg.startsWith('NOT_FOUND')) throw new HttpsError('not-found', 'Trip not found.');
+    if (msg.startsWith('ALREADY_EXISTS')) throw new HttpsError('already-exists', 'Already rated.');
+    if (msg.startsWith('FORBIDDEN')) throw new HttpsError('permission-denied', 'Unauthorized.');
+    if (msg.startsWith('INVALID_ARGUMENT')) throw new HttpsError('invalid-argument', 'Ambulance does not match this trip.');
+    if (msg.startsWith('FAILED_PRECONDITION')) {
+      throw new HttpsError('failed-precondition', msg.includes('skipped') ? 'Rating was skipped for this trip.' : 'Trip not completed.');
     }
-    await batch.commit();
+    throw new HttpsError('unavailable', 'Could not submit rating. Please try again.');
   }
 
   return { ok: true };
@@ -1196,7 +1078,7 @@ exports.submitAmbulanceRating = onCall(
  * verification so stale authUid values can be reclaimed without opening hijack.
  */
 exports.resyncAmbulanceAuthUid = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public', secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public', secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   protectCallable('resyncAmbulanceAuthUid', {
     category: 'login',
     identifierFromRequest: (request) =>
@@ -1209,15 +1091,21 @@ exports.resyncAmbulanceAuthUid = onCall(
   const username = requireUsername(request.data?.username);
   const pin = requireAmbulancePassword(request.data?.pin, 'password');
 
-  const firestore = db();
-  const verified = await verifyAmbulanceCredentials(firestore, username, pin);
+  const verified = await verifyAmbulanceCredentials(null, username, pin);
   if (!verified.ok) {
     throw new HttpsError('permission-denied', 'Incorrect username or PIN.');
   }
 
-  await firestore.collection('ambulances').doc(verified.driverId).set({
-    authUid: request.auth.uid,
-  }, { merge: true });
+  const { getSupabaseAdminClient } = require('./caller_identity');
+  const sb = getSupabaseAdminClient();
+  if (!sb) throw new HttpsError('unavailable', 'Database service temporarily unavailable.');
+  const { error } = await sb
+    .from('ambulances')
+    .update({ auth_uid: request.auth.uid, updated_at: new Date().toISOString() })
+    .eq('ambulance_id', verified.driverId);
+  if (error) {
+    throw new HttpsError('unavailable', 'Could not link this device. Please try again.');
+  }
 
   const data = verified.data;
   return {
@@ -1232,100 +1120,26 @@ exports.resyncAmbulanceAuthUid = onCall(
 }),
 );
 
-/** Recompute doctor rating aggregates when a review is created or updated. */
-
-/**
- * One-time migration: grant careTeamDoctorIds from historical appointments.
- * Set BACKFILL_ADMIN_EMAILS env (comma-separated) on the function before calling.
- */
-exports.backfillPatientCareTeams = onCall(
-  { timeoutSeconds: 540, region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
-  protectCallable('backfillPatientCareTeams', { category: 'api' }, async (request) => {
-  requireAuth(request);
-
-  const allowedEmails = (process.env.BACKFILL_ADMIN_EMAILS || '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  const callerEmail = String(request.auth.token.email || '').trim().toLowerCase();
-  const emailVerified = request.auth.token.email_verified === true;
-  // Fail closed: empty allow-list must not grant access to every authenticated user.
-  if (allowedEmails.length === 0 || !emailVerified || !allowedEmails.includes(callerEmail)) {
-    throw new HttpsError('permission-denied', 'Not authorized to run migration.');
-  }
-  if (request.data?.confirm !== true) {
-    throw new HttpsError('invalid-argument', 'Pass { confirm: true } to run migration.');
-  }
-
-  const db = db();
-  let lastDoc = null;
-  let scanned = 0;
-  let updated = 0;
-  const pending = new Map();
-
-  while (true) {
-    let query = db.collection('appointments').orderBy('__name__').limit(200);
-    if (lastDoc) query = query.startAfter(lastDoc);
-    const snapshot = await query.get();
-    if (snapshot.empty) break;
-
-    for (const doc of snapshot.docs) {
-      scanned += 1;
-      const data = doc.data();
-      const patientId = String(data.patientId || '').trim();
-      const doctorId = String(data.doctorId || '').trim();
-      if (!patientId || !doctorId) continue;
-      if (!/^p\d+$|^wi/i.test(patientId)) continue;
-
-      if (!pending.has(patientId)) pending.set(patientId, new Set());
-      pending.get(patientId).add(doctorId);
-    }
-
-    lastDoc = snapshot.docs[snapshot.docs.length - 1];
-    if (snapshot.size < 200) break;
-  }
-
-  for (const [patientId, doctorIds] of pending.entries()) {
-    const patientRef = db.collection('patients').doc(patientId);
-    const patientSnap = await patientRef.get();
-    if (!patientSnap.exists) continue;
-
-    await patientRef.set(
-      {
-        careTeamDoctorIds: FieldValue.arrayUnion(...doctorIds),
-        updatedAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true },
-    );
-    updated += 1;
-  }
-
-  return { scanned, patientsUpdated: updated };
-}),
-);
-
 exports.createRazorpayOrder = createRazorpayOrder;
 exports.verifyRazorpayPayment = verifyRazorpayPayment;
 exports.reviewPromotedAd = reviewPromotedAd;
 exports.expirePromotedAds = expirePromotedAds;
 exports.razorpayWebhook = razorpayWebhook;
-exports.bookAppointment = bookAppointment;
-exports.rescheduleAppointment = rescheduleAppointment;
 // Slot reconciliation: Postgres book_appointment_atomic / triggers (no Firestore onDocumentWritten export).
 
 const { sendMsg91Email } = require('./msg91_email');
 
 /**
- * Triggered whenever an email is queued into the `mail` collection in Firestore.
+ * Processes emails queued in the Postgres `mail_queue` table.
  * Automatically dispatches the email via MSG91 Email API v5.
  */
 
-/** Permanently deletes the caller's Firestore, Storage, and Auth data. */
+/** Permanently deletes the caller's Postgres rows, S3 objects, Redis keys and Firebase Auth user. */
 exports.deleteMyAccount = onCall(
   {
     region: CALLABLE_REGION,
     enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
-    secrets: [awsAccessKeyId, awsSecretAccessKey, supabaseServiceRoleKey],
+    secrets: withDataPlaneSecrets([awsAccessKeyId, awsSecretAccessKey, supabaseServiceRoleKey]),
   },
   protectCallable('deleteMyAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
@@ -1337,6 +1151,9 @@ exports.sendMsg91EmailCallable = onCall(
   { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
   protectCallable('sendMsg91EmailCallable', { category: 'api' }, async (request) => {
   requireAuth(request);
+  if (require('./lib/demo_accounts').isDemoUid(request.auth.uid)) {
+    throw new HttpsError('permission-denied', 'Not authorized to send email.');
+  }
   const allowedEmails = (
     process.env.ACCOUNT_APPROVAL_ADMIN_EMAILS
     || process.env.BACKFILL_ADMIN_EMAILS
@@ -1391,7 +1208,7 @@ exports.processMailQueueScheduled = onSchedule(
   {
     schedule: 'every 5 minutes',
     region: CALLABLE_REGION,
-    secrets: [supabaseServiceRoleKey],
+    secrets: withDataPlaneSecrets([supabaseServiceRoleKey]),
   },
   async () => {
     const supabase = getDatabaseClient();
@@ -1423,7 +1240,7 @@ exports.processNotificationOutboxScheduled = onSchedule(
   {
     schedule: 'every 1 minutes',
     region: CALLABLE_REGION,
-    secrets: [supabaseServiceRoleKey, ...(OTP_REDIS_MIRROR_ON ? require('./redis').REDIS_SECRETS : [])],
+    secrets: withDataPlaneSecrets([supabaseServiceRoleKey, ...(OTP_REDIS_MIRROR_ON ? require('./redis').REDIS_SECRETS : [])]),
   },
   async () => {
     await processNotificationOutboxBatch();
@@ -1444,16 +1261,13 @@ exports.adminConsoleRead = adminConsoleRead;
 exports.supabaseDatabaseWebhook = onRequest(
   {
     region: CALLABLE_REGION,
-    secrets: [supabaseWebhookSecret, supabaseServiceRoleKey],
+    secrets: withDataPlaneSecrets([supabaseWebhookSecret, supabaseServiceRoleKey]),
   },
-  supabaseDatabaseWebhookHandler,
+  require('./http_endpoint_security').withApiSecurityHeaders(supabaseDatabaseWebhookHandler),
 );
 
 // Helpers exported for unit testing
 exports._safeCompareSecrets = safeCompareSecrets;
-exports._isDoctorPatientSupabasePrimary = isDoctorPatientSupabasePrimary;
-exports._resetRemoteConfigCache = _resetRemoteConfigCache;
-exports._setMockRemoteConfigTemplate = _setMockRemoteConfigTemplate;
 exports._supabaseDatabaseWebhookHandler = supabaseDatabaseWebhookHandler;
 
 

@@ -1,5 +1,10 @@
 # DoctorNect Cloud Functions Redeployment Checklist (CFG-01)
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 ## Executive Summary
 During architecture audits, 50 legacy Cloud Functions in `baseline_functions.json` were found to have their `SUPABASE_URL` environment variable baked in pointing to the stale staging project reference (`legacy-staging-ref.supabase.co`) instead of the active production PostgreSQL database (`staging-project-ref.supabase.co`).
 

@@ -11,6 +11,45 @@ function normalizeBaseUrl(url) {
   return String(url || '').trim().replace(/\/+$/, '').toLowerCase();
 }
 
+function isTruthyOne(value) {
+  const v = String(value || '').trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
+
+/**
+ * Firestore was removed. Production must declare FIRESTORE_FORBIDDEN=1 so no deployment can
+ * silently run with a stale config that predates the Postgres-only backend.
+ */
+function assertProductionFirestoreForbidden(env = process.env) {
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  if (appEnv !== 'production') return;
+  if (!isTruthyOne(env.FIRESTORE_FORBIDDEN)) {
+    const err = new Error(
+      '[AppEnv] APP_ENV=production requires FIRESTORE_FORBIDDEN=1 (Firestore is no longer used).',
+    );
+    err.code = 'failed-precondition';
+    throw err;
+  }
+}
+
+/**
+ * Postgres-primary boot asserts. Previously skipped in a "legacy Firestore deploy" mode
+ * (FIRESTORE_FORBIDDEN + USE_SUPABASE_DB_DOCTOR_PATIENT unset), which disabled every production
+ * safety check (Redis TLS, App Check, reviewer OTP policy, placeholder secrets). Now always on
+ * outside tests unless an operator explicitly sets SKIP_APP_ENV_DB_ASSERT=true.
+ */
+function shouldRunCutoverBootAsserts(env = process.env) {
+  const isDeployedProduction = String(env.APP_ENV || '').trim().toLowerCase() === 'production'
+    && Boolean(env.K_SERVICE || env.FUNCTION_TARGET);
+  if (String(env.SKIP_APP_ENV_DB_ASSERT || '').trim().toLowerCase() === 'true' && !isDeployedProduction) {
+    return false;
+  }
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  if (appEnv === 'test') return false;
+  if (String(env.NODE_ENV || '').trim().toLowerCase() === 'test') return false;
+  return true;
+}
+
 function assertAppEnvDatabaseRouting(options = {}) {
   const appEnv = String(process.env.APP_ENV || 'staging').trim().toLowerCase();
   const isProduction = appEnv === 'production';
@@ -183,9 +222,16 @@ function isTruthyEnvFlag(value) {
 /**
  * Warn (do not fail) when production relies on MSG91 without OTP HMAC pepper configured.
  */
+/** Callables that hash/verify OTPs; OTP_HMAC_SECRET is bound (Secret Manager) only to these. */
+const OTP_HASH_FUNCTIONS = new Set(['sendUserRegistrationOtp', 'verifyUserRegistrationOtp']);
+
 function warnProductionOtpHmacFallback(env = process.env, logFn = console.warn) {
   const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
   if (appEnv !== 'production') return;
+  // Deployed functions that do not hash OTPs never receive the secret; do not warn there.
+  // (check:boot-env verifies the secret separately: --check-secret-manager.)
+  const target = String(env.FUNCTION_TARGET || '').trim();
+  if (target && !OTP_HASH_FUNCTIONS.has(target)) return;
 
   const hmac = String(env.OTP_HMAC_SECRET || '').trim();
   const msg91 = String(env.MSG91_AUTH_KEY || '').trim();
@@ -252,14 +298,23 @@ function assertProductionNoPlaceholderSecrets(env = process.env) {
   }
 }
 
-function isTruthyOne(value) {
-  const v = String(value || '').trim().toLowerCase();
-  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
-}
-
 /**
  * Production boot: cutover env must be complete before serving traffic.
  */
+/**
+ * D2 / M3: cold-start completeness check (Redis, MSG91, gateway URL, DATABASE_URL when required).
+ * OFF until the first green production deploy: flip to true in code (deliberately not an env
+ * variable) after that deploy, then redeploy. check:boot-env already reports the same check.
+ */
+const ENFORCE_CUTOVER_COMPLETENESS_AT_BOOT = false;
+
+/** Called at cold start from index.js; does nothing while the switch above is off. */
+function runCutoverCompletenessAtBoot(env = process.env, enabled = ENFORCE_CUTOVER_COMPLETENESS_AT_BOOT) {
+  if (!enabled) return false;
+  assertProductionCutoverBoot(env);
+  return true;
+}
+
 function assertProductionCutoverBoot(env = process.env) {
   const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
   if (appEnv !== 'production') return;
@@ -294,28 +349,111 @@ function assertProductionCutoverBoot(env = process.env) {
   }
 }
 
-function assertProductionReviewOtpDisabled(env = process.env) {
-  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
-  if (appEnv !== 'production') return;
+/**
+ * Production Play Store reviewer OTP: allowed when fully configured (secret-bound fixed OTP, demo routing).
+ * Plain-text REVIEW_FIXED_OTP in env is rejected when reviewer mode is off (use Firebase Secret Manager).
+ */
+function assertProductionAppCheckEnforcement(env = process.env) {
+  const { isProductionFirebaseProject } = require('../../production_otp_guard');
+  if (!isProductionFirebaseProject(env)) return;
 
-  const violations = [];
-  if (isTruthyEnvFlag(env.REVIEWER_OTP_ENABLED)) {
-    violations.push('REVIEWER_OTP_ENABLED=true');
-  }
-  if (String(env.REVIEW_FIXED_OTP || '').trim()) {
-    violations.push('REVIEW_FIXED_OTP is set');
-  }
-  if (violations.length) {
+  const otpOff = ['false', '0', 'no', 'off'].includes(
+    String(env.ENFORCE_OTP_APP_CHECK || '').trim().toLowerCase(),
+  );
+  const abuseOff = ['false', '0', 'no', 'off'].includes(
+    String(env.ENFORCE_ABUSE_APP_CHECK || '').trim().toLowerCase(),
+  );
+  if (otpOff || abuseOff) {
     const err = new Error(
-      `[AppEnv] APP_ENV=production must not enable reviewer OTP bypass (${violations.join(', ')}).`,
+      '[AppEnv] APP_ENV=production requires ENFORCE_OTP_APP_CHECK and ENFORCE_ABUSE_APP_CHECK enabled (not false/0/off).',
     );
     err.code = 'failed-precondition';
     throw err;
   }
 }
 
+function assertProductionReviewerOtpPolicy(env = process.env) {
+  const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
+  if (appEnv !== 'production') return;
+
+  const reviewerOn = isTruthyEnvFlag(env.REVIEWER_OTP_ENABLED);
+  if (!reviewerOn) {
+    if (String(env.REVIEW_FIXED_OTP || '').trim()) {
+      const err = new Error(
+        '[AppEnv] APP_ENV=production: REVIEW_FIXED_OTP must be a Firebase secret (reviewer OTP is disabled).',
+      );
+      err.code = 'failed-precondition';
+      throw err;
+    }
+    return;
+  }
+
+  // The five demo numbers, roles and Firebase UIDs are fixed in lib/demo_accounts.js, so no
+  // REVIEW_*_PHONES / DEMO_FIREBASE_UID_ALLOWLIST is needed. The demo plane must be reachable.
+  const missing = [];
+  const accessUntil = String(env.REVIEW_ACCESS_UNTIL || '').trim();
+  if (!accessUntil) {
+    missing.push('REVIEW_ACCESS_UNTIL');
+  } else {
+    const expiry = new Date(accessUntil);
+    if (Number.isNaN(expiry.getTime()) || Date.now() > expiry.getTime()) {
+      missing.push('REVIEW_ACCESS_UNTIL (future ISO timestamp)');
+    }
+  }
+  if (!normalizeBaseUrl(env.DEMO_SUPABASE_URL || '')) {
+    missing.push('DEMO_SUPABASE_URL');
+  }
+  // DEMO_SUPABASE_SERVICE_ROLE_KEY and REVIEW_FIXED_OTP are Firebase defineSecret values
+  // (injected only into the functions that bind them): see assertDemoOtpSecretForOtpFunction.
+
+  if (missing.length) {
+    const err = new Error(
+      `[AppEnv] APP_ENV=production reviewer OTP enabled but misconfigured: ${missing.join(', ')}`,
+    );
+    err.code = 'failed-precondition';
+    throw err;
+  }
+}
+
+/** Cloud Functions that bind REVIEW_FIXED_OTP and accept the demo OTP. */
+const DEMO_OTP_FUNCTIONS = new Set([
+  'sendUserRegistrationOtp',
+  'verifyUserRegistrationOtp',
+  'completeMobileOtpLogin',
+]);
+
+/**
+ * Boot-time (cold start) check inside the OTP functions: with REVIEWER_OTP_ENABLED=true the
+ * REVIEW_FIXED_OTP secret must be bound and be exactly 6 digits, otherwise the instance refuses
+ * to start with a clear message instead of failing every demo login later.
+ */
+function assertDemoOtpSecretForOtpFunction(env = process.env) {
+  if (!isTruthyEnvFlag(env.REVIEWER_OTP_ENABLED)) return;
+  const target = String(env.FUNCTION_TARGET || env.K_SERVICE || '').trim();
+  const isOtpFunction = [...DEMO_OTP_FUNCTIONS].some(
+    (name) => target === name || target.toLowerCase() === name.toLowerCase(),
+  );
+  if (!isOtpFunction) return;
+  const fixed = String(env.REVIEW_FIXED_OTP || '').trim();
+  if (!/^\d{6}$/.test(fixed)) {
+    const err = new Error(
+      `[AppEnv] REVIEWER_OTP_ENABLED=true but the REVIEW_FIXED_OTP secret is ${fixed ? 'not 6 digits' : 'missing'} ` +
+        `in ${target}. Set it with: firebase functions:secrets:set REVIEW_FIXED_OTP, then redeploy.`,
+    );
+    err.code = 'failed-precondition';
+    throw err;
+  }
+}
+
+/** @deprecated use assertProductionReviewerOtpPolicy */
+function assertProductionReviewOtpDisabled(env = process.env) {
+  return assertProductionReviewerOtpPolicy(env);
+}
+
 module.exports = {
+  assertProductionFirestoreForbidden,
   assertAppEnvDatabaseRouting,
+  shouldRunCutoverBootAsserts,
   assertStagingProductionResourceIsolation,
   assertProductionRedisTls,
   isRedisTlsExplicitlyDisabled,
@@ -325,8 +463,14 @@ module.exports = {
   assertRedisClientTlsVerificationEnabled,
   assertProductionOtpHmacOnly,
   warnProductionOtpHmacFallback,
+  assertProductionReviewerOtpPolicy,
+  assertDemoOtpSecretForOtpFunction,
+  DEMO_OTP_FUNCTIONS,
+  assertProductionAppCheckEnforcement,
   assertProductionReviewOtpDisabled,
   assertProductionCutoverBoot,
+  runCutoverCompletenessAtBoot,
+  ENFORCE_CUTOVER_COMPLETENESS_AT_BOOT,
   assertProductionNoPlaceholderSecrets,
   isProductionSecretEnvKey,
   isPlaceholderSecretValue,

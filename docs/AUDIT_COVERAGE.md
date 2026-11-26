@@ -1,4 +1,9 @@
 # DoctorNect Comprehensive Security Audit — Inventory & Coverage Report
+
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
 **Audit Date:** 2026-10-06  
 **Auditor:** DoctorNect Security & Reliability Engineering Audit Team  
 **Corpus / Project:** `medibond-45fad` (DoctorNect)  

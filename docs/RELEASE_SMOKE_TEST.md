@@ -1,5 +1,10 @@
 # Release smoke test
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 Run this by hand after the functions deploy, and again after the app release. Do not paste phone numbers or OTP values into this file or into chat. Demo OTP and phones come from Firestore `app_config/demo_accounts`.
 
 ## 1. OTP login

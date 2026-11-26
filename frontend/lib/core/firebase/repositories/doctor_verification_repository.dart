@@ -14,8 +14,8 @@ class DoctorVerificationRepository {
   static Stream<bool> Function(String doctorId)? _debugWatchVerifiedOverride;
 
   @visibleForTesting
-  static Stream<bool> Function(String doctorId)? get debugWatchVerifiedOverride =>
-      _debugWatchVerifiedOverride;
+  static Stream<bool> Function(String doctorId)?
+      get debugWatchVerifiedOverride => _debugWatchVerifiedOverride;
 
   @visibleForTesting
   static set debugWatchVerifiedOverride(

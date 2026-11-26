@@ -16,18 +16,16 @@ const {
   extractExtension,
 } = _test;
 
-const { _resetRemoteConfigCache } = require('../sync_flags');
+const { createPgFromLegacySeed } = require('./helpers/legacy_seed_to_pg');
 
 let origLegacyCutover;
 let origServiceKey;
 test.beforeEach(() => {
   origLegacyCutover = process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT;
   origServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  process.env.__TEST_FORCE_LEGACY_DOCTOR_PATIENT = '1';
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'dummy-service-role-key-for-test';
   }
-  _resetRemoteConfigCache();
 });
 
 test.afterEach(() => {
@@ -36,108 +34,14 @@ test.afterEach(() => {
 
   if (origServiceKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   else process.env.SUPABASE_SERVICE_ROLE_KEY = origServiceKey;
-
-  _resetRemoteConfigCache();
 });
 
 /**
  * In-memory Mock Firestore for unit testing authorization matrix.
  */
+/** Firestore-shaped seed -> in-memory Postgres (see helpers/legacy_seed_to_pg.js). */
 function createMockDb(initialData = {}) {
-  const store = new Map();
-  const added = [];
-
-  for (const [coll, docs] of Object.entries(initialData)) {
-    for (const [id, data] of Object.entries(docs)) {
-      store.set(`${coll}/${id}`, data);
-    }
-  }
-
-  return {
-    _store: store,
-    _added: added,
-    collection(collName) {
-      return {
-        async add(data) {
-          const autoId = `auto_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-          const key = `${collName}/${autoId}`;
-          store.set(key, data);
-          added.push({ collection: collName, id: autoId, data });
-          return { id: autoId };
-        },
-        doc(docId) {
-          const key = `${collName}/${docId}`;
-          return {
-            async get() {
-              const data = store.get(key);
-              return {
-                id: docId,
-                exists: data !== undefined,
-                data: () => data || null,
-              };
-            },
-            async set(data, options = {}) {
-              if (options.merge) {
-                const existing = store.get(key) || {};
-                store.set(key, { ...existing, ...data });
-              } else {
-                store.set(key, { ...data });
-              }
-            },
-            async update(data) {
-              const existing = store.get(key) || {};
-              store.set(key, { ...existing, ...data });
-            },
-            async delete() {
-              store.delete(key);
-            },
-          };
-        },
-        where(field, op, val) {
-          return {
-            where(field2, op2, val2) {
-              return {
-                limit(n) {
-                  return {
-                    async get() {
-                      const matches = [];
-                      for (const [k, d] of store.entries()) {
-                        if (k.startsWith(`${collName}/`)) {
-                          if (d[field] === val && d[field2] === val2) {
-                            matches.push({ id: k.split('/')[1], data: () => d });
-                          }
-                        }
-                      }
-                      return {
-                        empty: matches.length === 0,
-                        docs: matches.slice(0, n),
-                      };
-                    },
-                  };
-                },
-              };
-            },
-            limit(n) {
-              return {
-                async get() {
-                  const matches = [];
-                  for (const [k, d] of store.entries()) {
-                    if (k.startsWith(`${collName}/`) && d[field] === val) {
-                      matches.push({ id: k.split('/')[1], data: () => d });
-                    }
-                  }
-                  return {
-                    empty: matches.length === 0,
-                    docs: matches.slice(0, n),
-                  };
-                },
-              };
-            },
-          };
-        },
-      };
-    },
-  };
+  return createPgFromLegacySeed(initialData);
 }
 
 const { S3Client } = require('@aws-sdk/client-s3');
@@ -174,6 +78,9 @@ test.beforeEach(() => {
 // ----------------------------------------------------------------------------
 // 1. EXTENSION & CONTENT-TYPE EXTRACTION
 // ----------------------------------------------------------------------------
+function t_cleanupSuperAdminEnv() {}
+test.afterEach(() => { delete process.env.SUPER_ADMIN_EMAILS; });
+
 test('extractExtension normalizes correctly', () => {
   assert.equal(extractExtension('test.pdf', 'application/pdf'), 'pdf');
   assert.equal(extractExtension('photo.JPEG', 'image/jpeg'), 'jpg');
@@ -533,10 +440,11 @@ test('verified doctor with care relationship allowed to download shared record',
       doc_ok: { verified: true, deactivated: false },
     },
     patients: {
-      p_1: {
-        shareRecordsWithDoctors: true,
-        careTeamDoctorIds: ['doc_ok'],
-      },
+      p_1: { shareRecordsWithDoctors: true },
+    },
+    // Postgres care relationship (replaces Firestore careTeamDoctorIds)
+    patient_doctor_links: {
+      link_1: { patientId: 'p_1', doctorId: 'doc_ok' },
     },
     health_records: {
       hr_1: { sharedWithDoctors: true },
@@ -582,14 +490,16 @@ test('different patient blocked from downloading health record', async () => {
   );
 });
 
-test('super admin bypass allows downloading any file', async () => {
+test('super admin (SUPER_ADMIN_EMAILS + verified + admin claim) can download any file', async () => {
+  process.env.SUPER_ADMIN_EMAILS = 'ops-admin@example.org';
+  t_cleanupSuperAdminEnv();
   const db = createMockDb({
     users: {
       uid_admin: { role: 'super_admin', profileId: 'admin_1' },
     },
   });
 
-  const auth = { uid: 'uid_admin', token: { email: 'admin@doctornect.com', email_verified: true } };
+  const auth = { uid: 'uid_admin', token: { email: 'Ops-Admin@example.org', email_verified: true, app_role: 'super_admin' } };
   const data = { objectKey: 'health_records/p_99/hr_99/secret.pdf' };
 
   const res = await getS3DownloadUrlHandler(data, auth, db);
@@ -603,7 +513,9 @@ test('super admin allowlisted email with email_verified=false is denied admin by
     },
   });
 
-  const auth = { uid: 'uid_unverified', token: { email: 'admin@doctornect.com', email_verified: false } };
+  process.env.SUPER_ADMIN_EMAILS = 'ops-admin@example.org';
+  t_cleanupSuperAdminEnv();
+  const auth = { uid: 'uid_unverified', token: { email: 'ops-admin@example.org', email_verified: false, app_role: 'super_admin' } };
   const data = { objectKey: 'health_records/p_99/hr_99/secret.pdf' };
 
   await assert.rejects(
@@ -612,7 +524,9 @@ test('super admin allowlisted email with email_verified=false is denied admin by
   );
 });
 
-test('claim-based admin bypass allows download regardless of non-allowlisted email when email_verified=true', async () => {
+test('admin claim alone (email not in SUPER_ADMIN_EMAILS) is denied', async () => {
+  process.env.SUPER_ADMIN_EMAILS = 'ops-admin@example.org';
+  t_cleanupSuperAdminEnv();
   const db = createMockDb({
     users: {
       uid_claim_admin: { role: 'admin', profileId: 'adm_001' },
@@ -629,8 +543,10 @@ test('claim-based admin bypass allows download regardless of non-allowlisted ema
   };
   const data = { objectKey: 'health_records/p_99/hr_99/secret.pdf' };
 
-  const res = await getS3DownloadUrlHandler(data, auth, db);
-  assert.ok(res.url);
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler(data, auth, db),
+    /You do not have permission to access this file/,
+  );
 });
 
 test('claim-based admin bypass is denied when email_verified=false', async () => {
@@ -951,6 +867,10 @@ test('patient owner allowed to download lab_order report', async () => {
     users: {
       uid_p42: { role: 'patient', profileId: 'p_42' },
     },
+    // Postgres path requires the report to belong to an existing order for this patient.
+    lab_orders: {
+      order_200: { patientId: 'p_42' },
+    },
   });
 
   const auth = { uid: 'uid_p42' };
@@ -1097,7 +1017,7 @@ test('confirmS3Upload verifies S3 HeadObject and persists s3_key in DB', async (
       uid_p1: { role: 'patient', profileId: 'p_1' },
     },
     health_records: {
-      rec_1: { title: 'Blood Report' },
+      rec_1: { patientId: 'p_1', title: 'Blood Report' },
     },
   });
 
@@ -1120,12 +1040,29 @@ test('confirmS3Upload verifies S3 HeadObject and persists s3_key in DB', async (
   assert.equal(res.contentType, 'application/pdf');
 
   // Verify DB record was updated with S3 metadata
-  const doc = await db.collection('health_records').doc('rec_1').get();
-  assert.equal(doc.data().s3Key, 'health_records/p_1/rec_1/uuid123.pdf');
-  assert.equal(doc.data().fileSizeBytes, 4096);
-  assert.equal(doc.data().mimeType, 'application/pdf');
-  assert.equal(doc.data().storageProvider, 's3');
-  assert.ok(doc.data().uploadConfirmedAt);
+  const row = db.rows('health_records').find((r) => r.record_id === 'rec_1');
+  assert.equal(row.s3_key, 'health_records/p_1/rec_1/uuid123.pdf');
+  assert.equal(row.file_size_bytes, 4096);
+  assert.equal(row.mime_type, 'application/pdf');
+  assert.equal(row.storage_provider, 's3');
+  assert.ok(row.upload_confirmed_at);
+});
+
+test('confirmS3Upload cannot re-point another patient record (recordId bound to key)', async () => {
+  const db = createMockDb({
+    users: { uid_p1: { role: 'patient', profileId: 'p_1' } },
+    health_records: {
+      rec_1: { patientId: 'p_1', title: 'Mine' },
+      victim_rec: { patientId: 'p_2', title: 'Victim', s3Key: 'health_records/p_2/victim_rec/orig.pdf' },
+    },
+  });
+  setS3ClientForTesting(createMockS3Client({ ContentType: 'application/pdf', ContentLength: 2048 }));
+  await assert.rejects(
+    confirmS3UploadHandler({ objectKey: 'health_records/p_1/rec_1/a.pdf', purpose: 'health_records', recordId: 'victim_rec' }, { uid: 'uid_p1' }, db),
+    (err) => err.code === 'permission-denied',
+  );
+  const victim = db.rows('health_records').find((r) => r.record_id === 'victim_rec');
+  assert.equal(victim.s3_key, 'health_records/p_2/victim_rec/orig.pdf');
 });
 
 test('confirmS3Upload is idempotent when called twice with same objectKey', async () => {
@@ -1134,7 +1071,7 @@ test('confirmS3Upload is idempotent when called twice with same objectKey', asyn
       uid_p1: { role: 'patient', profileId: 'p_1' },
     },
     health_records: {
-      rec_1: { title: 'Blood Report' },
+      rec_1: { patientId: 'p_1', title: 'Blood Report' },
     },
   });
 
@@ -1155,8 +1092,8 @@ test('confirmS3Upload is idempotent when called twice with same objectKey', asyn
   assert.equal(first.success, true);
   assert.equal(second.success, true);
 
-  const doc = await db.collection('health_records').doc('rec_1').get();
-  assert.equal(doc.data().s3Key, 'health_records/p_1/rec_1/uuid123.pdf');
+  const row = db.rows('health_records').find((r) => r.record_id === 'rec_1');
+  assert.equal(row.s3_key, 'health_records/p_1/rec_1/uuid123.pdf');
 });
 
 test('confirmS3Upload rejects when caller is not the owner (403)', async () => {
@@ -1325,7 +1262,7 @@ test('storage operations record immutable rows in storage_audit_logs', async () 
     assert.equal(log.data.who, 'uid_p1');
     assert.equal(log.data.role, 'patient');
     assert.equal(log.data.status, 'success');
-    assert.ok(log.data.when);
+    assert.ok(log.data.created_at);
   }
 });
 
@@ -1464,16 +1401,22 @@ function createMockSupabase(initialTables = {}) {
         },
         update(payload) {
           pendingUpdate = payload;
-          return {
-            eq(col, val) {
-              const matching = currentRows.filter(r => String(r[col]) === String(val));
-              for (const r of matching) {
-                Object.assign(r, pendingUpdate);
-                updated.push({ table: tableName, row: r, patch: pendingUpdate });
-              }
-              return Promise.resolve({ data: matching, error: null });
+          // Chainable filters (.eq().eq()); applied once when awaited.
+          const filters = [];
+          const upd = {
+            eq(col, val) { filters.push([col, val]); return upd; },
+            then(resolve, reject) {
+              try {
+                const matching = currentRows.filter((r) => filters.every(([c, v]) => String(r[c]) === String(v)));
+                for (const r of matching) {
+                  Object.assign(r, pendingUpdate);
+                  updated.push({ table: tableName, row: r, patch: pendingUpdate });
+                }
+                resolve({ data: matching, error: null });
+              } catch (e) { reject(e); }
             },
           };
+          return upd;
         },
       };
       return builder;

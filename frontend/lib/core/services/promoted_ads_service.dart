@@ -333,8 +333,7 @@ abstract final class PromotedAdsService {
     } else {
       adsRows = SupabaseBootstrap.client
           .from('promoted_ads')
-          .stream(primaryKey: ['ad_id'])
-          .eq('status', 'active');
+          .stream(primaryKey: ['ad_id']).eq('status', 'active');
     }
 
     final adsSub = adsRows.listen((rows) {
@@ -365,8 +364,7 @@ abstract final class PromotedAdsService {
     } else {
       rows = SupabaseBootstrap.client
           .from('promoted_ads')
-          .stream(primaryKey: ['ad_id'])
-          .eq('provider_id', providerId);
+          .stream(primaryKey: ['ad_id']).eq('provider_id', providerId);
     }
 
     return rows.map((list) {

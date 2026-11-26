@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { getEnv } = require('./env_loader');
+const { assertProdRdsLogicalHostNotLoopback, resolveLogicalProdRdsHost } = require('./prod_rds_host_policy');
 
 const DEFAULT_CA = path.resolve(__dirname, '../../infra/aws/global-bundle.pem');
 
@@ -35,6 +36,7 @@ function readCaBundle() {
 }
 
 function buildRdsPoolConfig(options = {}) {
+  assertProdRdsLogicalHostNotLoopback('buildRdsPoolConfig');
   const database = options.database || getEnv('PROD_RDS_DB') || 'doctornect';
   const user = options.user || getEnv('PROD_RDS_USER') || 'postgres';
   const password = getEnv('PROD_RDS_PASSWORD');
@@ -83,7 +85,7 @@ function buildRdsPoolConfig(options = {}) {
     user,
     password,
     ssl,
-    logicalHost: getEnv('PROD_RDS_HOST') || host,
+    logicalHost: resolveLogicalProdRdsHost() || getEnv('PROD_RDS_HOST') || host,
   };
 }
 

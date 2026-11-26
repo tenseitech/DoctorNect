@@ -241,10 +241,12 @@ class ProfileDataGate extends StatelessWidget {
             (isDemoAccount ||
                 DemoAuthConfig.isDemoRolePhone(role, mobile) ||
                 DemoAuthConfig.isDemoRolePhone(role, profileId) ||
-                (role == UserType.doctor && DemoAuthConfig.isDemoDoctorId(profileId)) ||
+                (role == UserType.doctor &&
+                    DemoAuthConfig.isDemoDoctorId(profileId)) ||
                 ((role == UserType.medical || role == UserType.medicalStore) &&
                     DemoAuthConfig.isDemoPharmacyId(profileId)) ||
-                (role == UserType.lab && DemoAuthConfig.isDemoLabId(profileId)) ||
+                (role == UserType.lab &&
+                    DemoAuthConfig.isDemoLabId(profileId)) ||
                 (role == UserType.ambulance &&
                     DemoAuthConfig.isDemoAmbulanceId(profileId)));
         if (isDemo) {

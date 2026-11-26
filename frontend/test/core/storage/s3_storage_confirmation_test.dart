@@ -84,7 +84,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('S3StorageService Confirmation Contract', () {
-    test('uploadBytes invokes S3 PUT and automatically confirms with backend', () async {
+    test('uploadBytes invokes S3 PUT and automatically confirms with backend',
+        () async {
       final mockApi = MockS3PresignApi();
       http.Request? capturedRequest;
 
@@ -124,7 +125,9 @@ void main() {
       expect(mockApi.lastConfirmedRecordId, 'p1/rec1');
     });
 
-    test('uploadBytes throws and skips confirmUpload when HTTP PUT fails with 403', () async {
+    test(
+        'uploadBytes throws and skips confirmUpload when HTTP PUT fails with 403',
+        () async {
       final mockApi = MockS3PresignApi();
       final mockHttp = MockHttpClient((request) async {
         return http.Response(
@@ -183,10 +186,10 @@ void main() {
       S3StorageService.debugConfirmUploadRetryDelay = null;
     });
 
-    test('uploadBytes throws StorageException confirm-failed when confirm never succeeds',
+    test(
+        'uploadBytes throws StorageException confirm-failed when confirm never succeeds',
         () async {
-      final mockApi = MockS3PresignApi()
-        ..confirmFailuresBeforeSuccess = 999;
+      final mockApi = MockS3PresignApi()..confirmFailuresBeforeSuccess = 999;
       S3StorageService.confirmUploadMaxAttempts = 3;
       S3StorageService.debugConfirmUploadRetryDelay = (_) => Duration.zero;
 
@@ -205,7 +208,8 @@ void main() {
           bytes: bytes,
         ),
         throwsA(
-          isA<StorageException>().having((e) => e.code, 'code', 'confirm-failed'),
+          isA<StorageException>()
+              .having((e) => e.code, 'code', 'confirm-failed'),
         ),
       );
 

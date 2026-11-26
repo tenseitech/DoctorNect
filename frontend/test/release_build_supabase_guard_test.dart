@@ -12,7 +12,9 @@ void main() {
       sh = File('scripts/release_build.sh').readAsStringSync();
     });
 
-    test('(a) ENABLE_SUPABASE unset omits Supabase defines and USE_SUPABASE_AUTH is never used', () {
+    test(
+        '(a) ENABLE_SUPABASE unset omits Supabase defines and USE_SUPABASE_AUTH is never used',
+        () {
       expect(ps1.contains('--dart-define=USE_SUPABASE_AUTH'), isFalse);
       expect(sh.contains('--dart-define=USE_SUPABASE_AUTH'), isFalse);
 
@@ -35,55 +37,77 @@ void main() {
       expect(shUrlDefine, greaterThan(shGate));
     });
 
-    test('(b) ENABLE_SUPABASE=1 requires SUPABASE_URL and SUPABASE_ANON_KEY or aborts', () {
+    test(
+        '(b) ENABLE_SUPABASE=1 requires SUPABASE_URL and SUPABASE_ANON_KEY or aborts',
+        () {
       // PowerShell script asserts URL and ANON presence before injecting defines
-      expect(ps1.contains('Missing required environment variable: SUPABASE_URL'), isTrue);
-      expect(ps1.contains('Missing required environment variable: SUPABASE_ANON_KEY'), isTrue);
+      expect(
+          ps1.contains('Missing required environment variable: SUPABASE_URL'),
+          isTrue);
+      expect(
+          ps1.contains(
+              'Missing required environment variable: SUPABASE_ANON_KEY'),
+          isTrue);
 
       // Bash script asserts URL and ANON presence before injecting defines
-      expect(sh.contains('Missing required environment variable: SUPABASE_URL'), isTrue);
-      expect(sh.contains('Missing required environment variable: SUPABASE_ANON_KEY'), isTrue);
+      expect(sh.contains('Missing required environment variable: SUPABASE_URL'),
+          isTrue);
+      expect(
+          sh.contains(
+              'Missing required environment variable: SUPABASE_ANON_KEY'),
+          isTrue);
     });
 
-    test('(c) SUPABASE_SERVICE_ROLE_KEY leakage guard aborts release build with security error', () {
+    test(
+        '(c) SUPABASE_SERVICE_ROLE_KEY leakage guard aborts release build with security error',
+        () {
       // PowerShell script throws security error
       expect(
         ps1.contains('SUPABASE_SERVICE_ROLE_KEY detected in environment'),
         isTrue,
-        reason: 'release_build.ps1 must abort if SUPABASE_SERVICE_ROLE_KEY is present',
+        reason:
+            'release_build.ps1 must abort if SUPABASE_SERVICE_ROLE_KEY is present',
       );
 
       // Bash script prints security error and exits with code 1
       expect(
         sh.contains('SUPABASE_SERVICE_ROLE_KEY detected in environment'),
         isTrue,
-        reason: 'release_build.sh must abort if SUPABASE_SERVICE_ROLE_KEY is present',
+        reason:
+            'release_build.sh must abort if SUPABASE_SERVICE_ROLE_KEY is present',
       );
     });
 
     test('(e) endpoint isolation without STAGING_SUPABASE_URL anchor', () {
       expect(
-        ps1.contains('Production release must not use a *.supabase.co SUPABASE_URL'),
+        ps1.contains(
+            'Production release must not use a *.supabase.co SUPABASE_URL'),
         isTrue,
-        reason: 'production must block Supabase cloud even when STAGING_SUPABASE_URL is unset',
+        reason:
+            'production must block Supabase cloud even when STAGING_SUPABASE_URL is unset',
       );
       expect(
-        ps1.contains('Staging or -Launch release requires STAGING_SUPABASE_URL'),
+        ps1.contains(
+            'Staging or -Launch release requires STAGING_SUPABASE_URL'),
         isTrue,
         reason: 'staging/Launch builds must require STAGING_SUPABASE_URL',
       );
       expect(sh.contains('release_api_endpoint_isolation'), isTrue);
       expect(
-        sh.contains('Staging or --launch release requires STAGING_SUPABASE_URL'),
+        sh.contains(
+            'Staging or --launch release requires STAGING_SUPABASE_URL'),
         isTrue,
       );
       expect(
-        sh.contains('Production release must not use a *.supabase.co SUPABASE_URL'),
+        sh.contains(
+            'Production release must not use a *.supabase.co SUPABASE_URL'),
         isTrue,
       );
     });
 
-    test('(d) DEBUG_TOKEN leakage guard aborts release build with security error', () {
+    test(
+        '(d) DEBUG_TOKEN leakage guard aborts release build with security error',
+        () {
       expect(
         ps1.contains('DEBUG_TOKEN') && ps1.contains('SECURITY ERROR'),
         isTrue,
@@ -120,7 +144,8 @@ void main() {
     bool isPowershellAvailable() {
       try {
         final cmd = Platform.isWindows ? 'powershell' : 'pwsh';
-        final res = Process.runSync(cmd, ['-NoProfile', '-Command', 'echo ready']);
+        final res =
+            Process.runSync(cmd, ['-NoProfile', '-Command', 'echo ready']);
         return res.exitCode == 0 && res.stdout.toString().contains('ready');
       } catch (_) {
         return false;
@@ -129,13 +154,18 @@ void main() {
 
     test('PowerShell release_build.ps1 behavioral test', () async {
       if (!isPowershellAvailable()) {
-        print('Skipping [PowerShell release_build.ps1 behavioral test]: powershell/pwsh is not available on this platform');
+        print(
+            'Skipping [PowerShell release_build.ps1 behavioral test]: powershell/pwsh is not available on this platform');
         return;
       }
 
       final pwshCmd = Platform.isWindows ? 'powershell' : 'pwsh';
       final baseEnv = {
+        // Hermetic: never read the developer's repo-root .env (empty values are
+        // treated as unset on Windows, so .env defaults would leak in).
+        'RELEASE_BUILD_NO_DOTENV': '1',
         'FIREBASE_API_KEY_ANDROID': 'dummy_android_key_123',
+        'FIREBASE_PROJECT_ID': 'medibond-45fad',
         'ENABLE_SUPABASE': '',
         'SUPABASE_URL': '',
         'SUPABASE_ANON_KEY': '',
@@ -145,16 +175,34 @@ void main() {
       // (a) ENABLE_SUPABASE unset -> exit 0 and output does NOT contain SUPABASE_URL
       final resA = await Process.run(
         pwshCmd,
-        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/release_build.ps1', '-DryRun'],
+        [
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-File',
+          'scripts/release_build.ps1',
+          '-DryRun'
+        ],
         environment: baseEnv,
       );
-      expect(resA.exitCode, 0, reason: 'Script must succeed with code 0 on valid dry-run: ${resA.stderr}');
-      expect(resA.stdout.toString().contains('--dart-define=SUPABASE_URL='), isFalse, reason: 'SUPABASE_URL define must not be injected when unset');
+      expect(resA.exitCode, 0,
+          reason:
+              'Script must succeed with code 0 on valid dry-run: ${resA.stderr}');
+      expect(resA.stdout.toString().contains('--dart-define=SUPABASE_URL='),
+          isFalse,
+          reason: 'SUPABASE_URL define must not be injected when unset');
 
       // (b) ENABLE_SUPABASE=1 and SUPABASE_URL missing -> non-zero exit
       final resB = await Process.run(
         pwshCmd,
-        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/release_build.ps1', '-DryRun'],
+        [
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-File',
+          'scripts/release_build.ps1',
+          '-DryRun'
+        ],
         environment: {
           ...baseEnv,
           'ENABLE_SUPABASE': '1',
@@ -162,37 +210,64 @@ void main() {
           'SUPABASE_ANON_KEY': '',
         },
       );
-      expect(resB.exitCode, isNot(0), reason: 'Missing SUPABASE_URL must fail with non-zero exit');
+      expect(resB.exitCode, isNot(0),
+          reason: 'Missing SUPABASE_URL must fail with non-zero exit');
 
       // (c) SUPABASE_SERVICE_ROLE_KEY present -> non-zero exit
       final resC = await Process.run(
         pwshCmd,
-        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/release_build.ps1', '-DryRun'],
+        [
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-File',
+          'scripts/release_build.ps1',
+          '-DryRun'
+        ],
         environment: {
           ...baseEnv,
           'SUPABASE_SERVICE_ROLE_KEY': 'leak_service_role_key_value',
         },
       );
-      expect(resC.exitCode, isNot(0), reason: 'SUPABASE_SERVICE_ROLE_KEY leakage must fail with non-zero exit');
+      expect(resC.exitCode, isNot(0),
+          reason:
+              'SUPABASE_SERVICE_ROLE_KEY leakage must fail with non-zero exit');
 
       // (d) APP_CHECK_DEBUG_TOKEN passed as dart-define -> non-zero exit
       final resD = await Process.run(
         pwshCmd,
-        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/release_build.ps1', '-DryRun', '--dart-define=APP_CHECK_DEBUG_TOKEN=leak_debug_token_value_abc'],
+        [
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-File',
+          'scripts/release_build.ps1',
+          '-DryRun',
+          '--dart-define=APP_CHECK_DEBUG_TOKEN=leak_debug_token_value_abc'
+        ],
         environment: baseEnv,
       );
-      expect(resD.exitCode, isNot(0), reason: 'APP_CHECK_DEBUG_TOKEN leakage must fail with non-zero exit');
+      expect(resD.exitCode, isNot(0),
+          reason: 'APP_CHECK_DEBUG_TOKEN leakage must fail with non-zero exit');
       expect(
         resD.stderr.toString().contains('SECURITY ERROR: Debug token') ||
             resD.stdout.toString().contains('SECURITY ERROR: Debug token'),
         isTrue,
-        reason: 'Error message must explicitly mention debug token security error',
+        reason:
+            'Error message must explicitly mention debug token security error',
       );
 
       // (e) APP_ENV=production + Supabase cloud URL blocked when STAGING_SUPABASE_URL is empty
       final resE = await Process.run(
         pwshCmd,
-        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/release_build.ps1', '-DryRun'],
+        [
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-File',
+          'scripts/release_build.ps1',
+          '-DryRun'
+        ],
         environment: {
           ...baseEnv,
           'APP_ENV': 'production',
@@ -203,7 +278,9 @@ void main() {
           'PROD_GATEWAY_URL': 'https://gateway.prod.example',
         },
       );
-      expect(resE.exitCode, isNot(0), reason: 'Production build must reject *.supabase.co without staging anchor: ${resE.stderr}');
+      expect(resE.exitCode, isNot(0),
+          reason:
+              'Production build must reject *.supabase.co without staging anchor: ${resE.stderr}');
       expect(
         '${resE.stderr}${resE.stdout}'.contains('.supabase.co'),
         isTrue,
@@ -213,14 +290,23 @@ void main() {
       // (f) -Launch requires STAGING_SUPABASE_URL when not in .env
       final resF = await Process.run(
         pwshCmd,
-        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/release_build.ps1', '-DryRun', '-Launch'],
+        [
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-File',
+          'scripts/release_build.ps1',
+          '-DryRun',
+          '-Launch'
+        ],
         environment: {
           ...baseEnv,
           'STAGING_SUPABASE_URL': '',
           'STAGING_SUPABASE_ANON_KEY': '',
         },
       );
-      expect(resF.exitCode, isNot(0), reason: '-Launch must fail when STAGING_SUPABASE_URL is missing');
+      expect(resF.exitCode, isNot(0),
+          reason: '-Launch must fail when STAGING_SUPABASE_URL is missing');
       expect(
         '${resF.stderr}${resF.stdout}'.contains('STAGING_SUPABASE_URL'),
         isTrue,
@@ -229,12 +315,17 @@ void main() {
 
     test('Bash release_build.sh behavioral test', () async {
       if (!isBashAvailable()) {
-        print('Skipping [Bash release_build.sh behavioral test]: bash is not available or non-functional on this platform');
+        print(
+            'Skipping [Bash release_build.sh behavioral test]: bash is not available or non-functional on this platform');
         return;
       }
 
       final baseEnv = {
+        // Hermetic: never read the developer's repo-root .env (empty values are
+        // treated as unset on Windows, so .env defaults would leak in).
+        'RELEASE_BUILD_NO_DOTENV': '1',
         'FIREBASE_API_KEY_ANDROID': 'dummy_android_key_123',
+        'FIREBASE_PROJECT_ID': 'medibond-45fad',
         'ENABLE_SUPABASE': '',
         'SUPABASE_URL': '',
         'SUPABASE_ANON_KEY': '',
@@ -247,8 +338,12 @@ void main() {
         ['scripts/release_build.sh', '--dry-run'],
         environment: baseEnv,
       );
-      expect(resA.exitCode, 0, reason: 'Script must succeed with code 0 on valid dry-run: ${resA.stderr}');
-      expect(resA.stdout.toString().contains('--dart-define=SUPABASE_URL='), isFalse, reason: 'SUPABASE_URL define must not be injected when unset');
+      expect(resA.exitCode, 0,
+          reason:
+              'Script must succeed with code 0 on valid dry-run: ${resA.stderr}');
+      expect(resA.stdout.toString().contains('--dart-define=SUPABASE_URL='),
+          isFalse,
+          reason: 'SUPABASE_URL define must not be injected when unset');
 
       // (b) ENABLE_SUPABASE=1 and SUPABASE_URL missing -> non-zero exit
       final resB = await Process.run(
@@ -261,7 +356,8 @@ void main() {
           'SUPABASE_ANON_KEY': '',
         },
       );
-      expect(resB.exitCode, isNot(0), reason: 'Missing SUPABASE_URL must fail with non-zero exit');
+      expect(resB.exitCode, isNot(0),
+          reason: 'Missing SUPABASE_URL must fail with non-zero exit');
 
       // (c) SUPABASE_SERVICE_ROLE_KEY present -> non-zero exit
       final resC = await Process.run(
@@ -272,20 +368,28 @@ void main() {
           'SUPABASE_SERVICE_ROLE_KEY': 'leak_service_role_key_value',
         },
       );
-      expect(resC.exitCode, isNot(0), reason: 'SUPABASE_SERVICE_ROLE_KEY leakage must fail with non-zero exit');
+      expect(resC.exitCode, isNot(0),
+          reason:
+              'SUPABASE_SERVICE_ROLE_KEY leakage must fail with non-zero exit');
 
       // (d) APP_CHECK_DEBUG_TOKEN passed as dart-define -> non-zero exit
       final resD = await Process.run(
         'bash',
-        ['scripts/release_build.sh', '--dry-run', '--dart-define=APP_CHECK_DEBUG_TOKEN=leak_debug_token_value_abc'],
+        [
+          'scripts/release_build.sh',
+          '--dry-run',
+          '--dart-define=APP_CHECK_DEBUG_TOKEN=leak_debug_token_value_abc'
+        ],
         environment: baseEnv,
       );
-      expect(resD.exitCode, isNot(0), reason: 'APP_CHECK_DEBUG_TOKEN leakage must fail with non-zero exit');
+      expect(resD.exitCode, isNot(0),
+          reason: 'APP_CHECK_DEBUG_TOKEN leakage must fail with non-zero exit');
       expect(
         resD.stderr.toString().contains('SECURITY ERROR: Debug token') ||
             resD.stdout.toString().contains('SECURITY ERROR: Debug token'),
         isTrue,
-        reason: 'Error message must explicitly mention debug token security error',
+        reason:
+            'Error message must explicitly mention debug token security error',
       );
 
       final resE = await Process.run(
@@ -301,7 +405,8 @@ void main() {
           'PROD_GATEWAY_URL': 'https://gateway.prod.example',
         },
       );
-      expect(resE.exitCode, isNot(0), reason: 'Production build must reject *.supabase.co: ${resE.stderr}');
+      expect(resE.exitCode, isNot(0),
+          reason: 'Production build must reject *.supabase.co: ${resE.stderr}');
 
       final resF = await Process.run(
         'bash',
@@ -311,7 +416,8 @@ void main() {
           'STAGING_SUPABASE_URL': '',
         },
       );
-      expect(resF.exitCode, isNot(0), reason: '--launch must fail when STAGING_SUPABASE_URL is missing');
+      expect(resF.exitCode, isNot(0),
+          reason: '--launch must fail when STAGING_SUPABASE_URL is missing');
     });
   });
 }

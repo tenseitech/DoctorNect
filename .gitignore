@@ -57,7 +57,13 @@ app.*.map.json
 **/android/app/release
 *.hprof
 
-# Secrets — only root .env.example is committed
+# Terraform state / secrets (never commit)
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# Secrets â€” only root .env.example is committed
 .env
 **/.env
 .env.*
@@ -69,7 +75,6 @@ backend/functions/.env.*
 frontend/build/dart_defines.local.json
 backend/functions/.secret.local
 **/.secret.local
-!backend/functions/.secret.local.example
 google-services.json
 **/google-services.json
 GoogleService-Info.plist
@@ -171,7 +176,7 @@ infra/aws/.terraform/
 frontend/lib/firebase_options.secrets.dart
 docs/reports/rls_coverage_audit.json
 
-# Local prod/staging audit runs — do not commit (schema/role/version snapshots)
+# Local prod/staging audit runs â€” do not commit (schema/role/version snapshots)
 docs/audit/PROD_RDS_FORENSICS.json
 docs/audit/PROD_RDS_FORENSICS.md
 docs/audit/PROD_RDS_MIGRATION_DIAGNOSIS.md
@@ -187,3 +192,18 @@ docs/audit/rdslike_dry_run_*.txt
 docs/reports/rls_harness_replay_*.md
 docs/reports/rls_harness_staging_*.md
 docs/reports/gateway_rls_authorization_suite.json
+
+# Terraform plan files can embed secrets (never commit)
+*.tfplan
+tfplan
+**/tfplan
+
+# Kotlin / Gradle build caches
+frontend/android/.kotlin/
+**/.kotlin/
+frontend/android/build/
+docs/audit/terraform_plan_*.txt
+infra/aws/backend.tf
+
+# Local CA certificates (e.g. STAGING_SUPABASE_CA_PATH)
+/certs/

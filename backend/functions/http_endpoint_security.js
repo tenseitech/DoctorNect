@@ -81,7 +81,31 @@ async function assertAmbulanceHttpAppCheck(req, { enforce, verifyToken } = {}) {
   await verify(token);
 }
 
+/**
+ * Baseline response headers for every onRequest endpoint (JSON APIs and webhooks).
+ * cacheable: allow public caching for static, non-personal data (validation rules).
+ */
+function applyApiSecurityHeaders(res, { cacheable = false } = {}) {
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('X-Frame-Options', 'DENY');
+  res.set('Referrer-Policy', 'no-referrer');
+  res.set('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
+  res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.set('Cross-Origin-Resource-Policy', 'same-site');
+  if (!cacheable) res.set('Cache-Control', 'no-store');
+}
+
+/** Wraps an onRequest handler so the security headers are set before any response is written. */
+function withApiSecurityHeaders(handler, options = {}) {
+  return (req, res) => {
+    applyApiSecurityHeaders(res, options);
+    return handler(req, res);
+  };
+}
+
 module.exports = {
+  applyApiSecurityHeaders,
+  withApiSecurityHeaders,
   DEFAULT_AMBULANCE_HTTP_ORIGINS,
   parseCommaSeparatedOrigins,
   resolveAmbulanceHttpAllowedOrigins,

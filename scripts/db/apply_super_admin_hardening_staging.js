@@ -12,6 +12,7 @@ const path = require('path');
 const { Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 const MIGRATIONS = [
   '20261115000001_harden_super_admin_no_jwt_email_bypass.sql',
@@ -31,7 +32,7 @@ async function main() {
   if (!dbUrl) throw new Error('STAGING_SUPABASE_DB_URL missing');
   console.log(`Target: ${maskConnectionString(dbUrl)}`);
 
-  const pool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
+  const pool = new Pool({ connectionString: dbUrl, ssl: stagingPgSsl() });
   const client = await pool.connect();
   try {
     for (const file of MIGRATIONS) {

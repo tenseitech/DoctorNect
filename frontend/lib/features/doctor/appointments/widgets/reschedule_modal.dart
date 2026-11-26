@@ -114,8 +114,7 @@ class _RescheduleModalState extends State<RescheduleModal> {
 
   Future<void> _loadSlots() async {
     setState(() => _loadingSlots = true);
-    final slots =
-        await AppDataService.instance.doctorAvailability.slotsForDate(
+    final slots = await AppDataService.instance.doctorAvailability.slotsForDate(
       doctorId: DoctorSession.loggedInDoctorId,
       date: _selectedDate,
     );

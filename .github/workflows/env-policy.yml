@@ -17,6 +17,9 @@ on:
       - 'scripts/lib/bootstrap_root_env.js'
       - '.github/workflows/env-policy.yml'
 
+permissions:
+  contents: read
+
 jobs:
   env-policy:
     runs-on: ubuntu-latest
@@ -24,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Env policy checks
         run: node scripts/env/ci_env_checks.js
       - name: Functions env parity test
