@@ -8,6 +8,7 @@ import '../../firebase/firestore_query_limits.dart';
 import '../../firebase/models/firestore_page.dart';
 import '../mappers/prescription_supabase_mapper.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_keyset_pagination.dart';
 import '../supabase_stream_table.dart';
 import 'supabase_patient_profile_repository.dart';
 
@@ -149,11 +150,24 @@ class SupabasePrescriptionRepository {
     }
 
     try {
-      final res = await _client
+      var query = _client
           .from('prescriptions')
           .select(_selectQuery)
-          .eq('doctor_id', doctorId)
+          .eq('doctor_id', doctorId);
+
+      final keyset = KeysetCursor.decode(startAfter is String ? startAfter : null);
+      if (keyset != null) {
+        query = SupabaseKeysetPagination.applyDescendingPage(
+          query,
+          sortColumn: 'prescription_date',
+          idColumn: 'prescription_id',
+          cursor: keyset,
+        );
+      }
+
+      final res = await query
           .order('prescription_date', ascending: false)
+          .order('prescription_id', ascending: false)
           .limit(limit);
 
       final rows = List<Map<String, dynamic>>.from(res as List);
@@ -162,8 +176,18 @@ class SupabasePrescriptionRepository {
           .whereType<PrescriptionDraft>()
           .toList();
 
+      String? nextCursor;
+      if (rows.length == limit && rows.isNotEmpty) {
+        nextCursor = KeysetCursor.fromRow(
+          rows.last,
+          sortColumn: 'prescription_date',
+          idColumn: 'prescription_id',
+        )?.encode();
+      }
+
       return FirestorePage(
         items: items,
+        cursor: nextCursor,
         hasMore: rows.length == limit,
       );
     } catch (e, st) {
@@ -198,11 +222,24 @@ class SupabasePrescriptionRepository {
         );
       }
 
-      final res = await _client
+      var query = _client
           .from('prescriptions')
           .select(_selectQuery)
-          .eq('patient_id', patientId)
+          .eq('patient_id', patientId);
+
+      final keyset = KeysetCursor.decode(startAfter is String ? startAfter : null);
+      if (keyset != null) {
+        query = SupabaseKeysetPagination.applyDescendingPage(
+          query,
+          sortColumn: 'prescription_date',
+          idColumn: 'prescription_id',
+          cursor: keyset,
+        );
+      }
+
+      final res = await query
           .order('prescription_date', ascending: false)
+          .order('prescription_id', ascending: false)
           .limit(limit);
 
       final rows = List<Map<String, dynamic>>.from(res as List);
@@ -211,8 +248,18 @@ class SupabasePrescriptionRepository {
           .whereType<PrescriptionDraft>()
           .toList();
 
+      String? nextCursor;
+      if (rows.length == limit && rows.isNotEmpty) {
+        nextCursor = KeysetCursor.fromRow(
+          rows.last,
+          sortColumn: 'prescription_date',
+          idColumn: 'prescription_id',
+        )?.encode();
+      }
+
       return FirestorePage(
         items: items,
+        cursor: nextCursor,
         hasMore: rows.length == limit,
       );
     } catch (e, st) {
@@ -262,6 +309,7 @@ class SupabasePrescriptionRepository {
           .eq('doctor_id', doctorId)
           .eq('patient_id', patientId)
           .order('prescription_date', ascending: false)
+          .order('prescription_id', ascending: false)
           .limit(limit);
 
       final rows = List<Map<String, dynamic>>.from(res as List);
@@ -270,8 +318,18 @@ class SupabasePrescriptionRepository {
           .whereType<PrescriptionDraft>()
           .toList();
 
+      String? nextCursor;
+      if (rows.length == limit && rows.isNotEmpty) {
+        nextCursor = KeysetCursor.fromRow(
+          rows.last,
+          sortColumn: 'prescription_date',
+          idColumn: 'prescription_id',
+        )?.encode();
+      }
+
       return FirestorePage(
         items: items,
+        cursor: nextCursor,
         hasMore: rows.length == limit,
       );
     } catch (e, st) {

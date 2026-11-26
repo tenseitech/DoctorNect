@@ -5,6 +5,11 @@ import '../../firebase/firestore_query_limits.dart';
 import '../../firebase/models/doctor_medical_directory_entry.dart';
 import '../../firebase/models/firestore_page.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_keyset_pagination.dart';
+
+/// PostgREST columns for directory list reads (PERF-04).
+const String _medicalDirectoryListColumns =
+    'entry_id,doctor_id,name,type,phone,created_at,updated_at';
 
 /// Supabase repository for Doctor's Medical Directory.
 /// Backed by `public.medical_directory` in PostgreSQL.
@@ -71,40 +76,49 @@ class SupabaseMedicalDirectoryRepository {
   Future<FirestorePage<DoctorMedicalDirectoryEntry>> fetchForDoctor(
     String doctorId, {
     int limit = FirestoreQueryLimits.medicalDirectoryPage,
-    int offset = 0,
+    String? startAfterCursor,
   }) async {
     if (!SupabaseBootstrap.isReady || doctorId.isEmpty) {
       return const FirestorePage(items: [], hasMore: false);
     }
 
     try {
-      final res = await _client
+      var query = _client
           .from('medical_directory')
-          .select()
-          .eq('doctor_id', doctorId)
-          .order('name', ascending: true)
-          .range(offset, offset + limit - 1);
+          .select(_medicalDirectoryListColumns)
+          .eq('doctor_id', doctorId);
 
-      final rows = res as List<dynamic>? ?? [];
-      final items = rows.map((dynamic item) {
-        final row = item as Map<String, dynamic>;
-        return DoctorMedicalDirectoryEntry(
-          entryId: row['entry_id'] as String? ?? '',
-          doctorId: row['doctor_id'] as String? ?? '',
-          name: row['name'] as String? ?? '',
-          type: row['type'] as String? ?? '',
-          phone: row['phone'] as String? ?? '',
-          createdAt: DateTime.tryParse(row['created_at']?.toString() ?? '') ??
-              DateTime.now(),
-          updatedAt: row['updated_at'] != null
-              ? DateTime.tryParse(row['updated_at'].toString())
-              : null,
+      final keyset = KeysetCursor.decode(startAfterCursor);
+      if (keyset != null) {
+        query = SupabaseKeysetPagination.applyAscendingPage(
+          query,
+          sortColumn: 'name',
+          idColumn: 'entry_id',
+          cursor: keyset,
         );
-      }).toList();
+      }
+
+      final res = await query
+          .order('name', ascending: true)
+          .order('entry_id', ascending: true)
+          .limit(limit);
+
+      final rows = List<Map<String, dynamic>>.from(res as List);
+      final items = rows.map(_entryFromRow).toList();
+
+      String? nextCursor;
+      if (rows.isNotEmpty && rows.length == limit) {
+        nextCursor = KeysetCursor.fromRow(
+          rows.last,
+          sortColumn: 'name',
+          idColumn: 'entry_id',
+        )?.encode();
+      }
 
       return FirestorePage(
         items: items,
-        hasMore: items.length == limit,
+        cursor: nextCursor,
+        hasMore: rows.length == limit,
       );
     } catch (e) {
       if (kDebugMode) {
@@ -112,5 +126,20 @@ class SupabaseMedicalDirectoryRepository {
       }
       return const FirestorePage(items: [], hasMore: false);
     }
+  }
+
+  DoctorMedicalDirectoryEntry _entryFromRow(Map<String, dynamic> row) {
+    return DoctorMedicalDirectoryEntry(
+      entryId: row['entry_id'] as String? ?? '',
+      doctorId: row['doctor_id'] as String? ?? '',
+      name: row['name'] as String? ?? '',
+      type: row['type'] as String? ?? '',
+      phone: row['phone'] as String? ?? '',
+      createdAt: DateTime.tryParse(row['created_at']?.toString() ?? '') ??
+          DateTime.now(),
+      updatedAt: row['updated_at'] != null
+          ? DateTime.tryParse(row['updated_at'].toString())
+          : null,
+    );
   }
 }

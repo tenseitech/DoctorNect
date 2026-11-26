@@ -5,9 +5,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../data/data_page.dart';
 import '../../data/shared_appointments_store.dart';
+import '../../firebase/firestore_query_limits.dart';
 import '../mappers/appointment_supabase_mapper.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_keyset_pagination.dart';
 import '../supabase_stream_table.dart';
 
 /// Supabase Repository for Appointments.
@@ -35,6 +38,111 @@ class SupabaseAppointmentRepository {
     await _client.from('appointments').upsert(row, onConflict: 'appointment_id');
   }
 
+  Future<DataPage<DoctorNectAppointmentRecord>> fetchPageForDoctor(
+    String doctorId, {
+    String? cursor,
+    int limit = 50,
+    DateTime? notBefore,
+  }) async {
+    if (!SupabaseBootstrap.isReady || doctorId.isEmpty) {
+      return const DataPage(items: [], hasMore: false);
+    }
+
+    final cutoff = notBefore ?? DateTime.now().subtract(const Duration(days: 365));
+    var query = _client
+        .from('appointments')
+        .select(AppointmentSupabaseMapper.listSelectColumns)
+        .eq('doctor_id', doctorId)
+        .gte('date_time', cutoff.toUtc().toIso8601String());
+
+    final keyset = KeysetCursor.decode(cursor);
+    if (keyset != null) {
+      query = SupabaseKeysetPagination.applyDescendingPage(
+        query,
+        sortColumn: 'date_time',
+        idColumn: 'appointment_id',
+        cursor: keyset,
+      );
+    }
+
+    final res = await query
+        .order('date_time', ascending: false)
+        .order('appointment_id', ascending: false)
+        .limit(limit);
+
+    final rows = List<Map<String, dynamic>>.from(res as List);
+    final items = rows
+        .map(AppointmentSupabaseMapper.fromRow)
+        .whereType<DoctorNectAppointmentRecord>()
+        .toList();
+
+    String? nextCursor;
+    if (rows.isNotEmpty && rows.length == limit) {
+      nextCursor = KeysetCursor.fromRow(
+        rows.last,
+        sortColumn: 'date_time',
+        idColumn: 'appointment_id',
+      )?.encode();
+    }
+
+    return DataPage(
+      items: items,
+      cursor: nextCursor,
+      hasMore: rows.length == limit,
+    );
+  }
+
+  Future<DataPage<DoctorNectAppointmentRecord>> fetchPageForPatient(
+    String patientId, {
+    String? cursor,
+    int limit = 50,
+  }) async {
+    if (!SupabaseBootstrap.isReady || patientId.isEmpty) {
+      return const DataPage(items: [], hasMore: false);
+    }
+
+    var query = _client
+        .from('appointments')
+        .select(AppointmentSupabaseMapper.listSelectColumns)
+        .eq('patient_id', patientId);
+
+    final keyset = KeysetCursor.decode(cursor);
+    if (keyset != null) {
+      query = SupabaseKeysetPagination.applyDescendingPage(
+        query,
+        sortColumn: 'date_time',
+        idColumn: 'appointment_id',
+        cursor: keyset,
+      );
+    }
+
+    final res = await query
+        .order('date_time', ascending: false)
+        .order('appointment_id', ascending: false)
+        .limit(limit);
+
+    final rows = List<Map<String, dynamic>>.from(res as List);
+    final items = rows
+        .map(AppointmentSupabaseMapper.fromRow)
+        .whereType<DoctorNectAppointmentRecord>()
+        .toList();
+
+    String? nextCursor;
+    if (rows.isNotEmpty && rows.length == limit) {
+      nextCursor = KeysetCursor.fromRow(
+        rows.last,
+        sortColumn: 'date_time',
+        idColumn: 'appointment_id',
+      )?.encode();
+    }
+
+    return DataPage(
+      items: items,
+      cursor: nextCursor,
+      hasMore: rows.length == limit,
+    );
+  }
+
   Future<List<DoctorNectAppointmentRecord>> fetchForDoctor(
     String doctorId, {
     bool preferCache = false,
@@ -50,20 +158,10 @@ class SupabaseAppointmentRepository {
             .toList();
       }
 
-      final cutoff = DateTime.now().subtract(const Duration(days: 365));
-      final res = await _client
-          .from('appointments')
-          .select()
-          .eq('doctor_id', doctorId)
-          .gte('date_time', cutoff.toIso8601String())
-          .order('date_time', ascending: false)
-          .limit(200);
-
-      final rows = List<Map<String, dynamic>>.from(res as List);
-      return rows
-          .map(AppointmentSupabaseMapper.fromRow)
-          .whereType<DoctorNectAppointmentRecord>()
-          .toList();
+      return await SupabaseKeysetPagination.collectPages(
+        maxItems: FirestoreQueryLimits.doctorAppointments,
+        fetchPage: (cursor) => fetchPageForDoctor(doctorId, cursor: cursor),
+      );
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('[SupabaseAppointmentRepository] fetchForDoctor error: $e\n$st');
@@ -79,18 +177,10 @@ class SupabaseAppointmentRepository {
     if (!SupabaseBootstrap.isReady || patientId.isEmpty) return const [];
 
     try {
-      final res = await _client
-          .from('appointments')
-          .select()
-          .eq('patient_id', patientId)
-          .order('date_time', ascending: false)
-          .limit(100);
-
-      final rows = List<Map<String, dynamic>>.from(res as List);
-      return rows
-          .map(AppointmentSupabaseMapper.fromRow)
-          .whereType<DoctorNectAppointmentRecord>()
-          .toList();
+      return await SupabaseKeysetPagination.collectPages(
+        maxItems: 200,
+        fetchPage: (cursor) => fetchPageForPatient(patientId, cursor: cursor),
+      );
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('[SupabaseAppointmentRepository] fetchForPatient error: $e\n$st');
@@ -112,6 +202,7 @@ class SupabaseAppointmentRepository {
         primaryKey: ['appointment_id'],
         filterColumn: 'patient_id',
         filterValue: patientId,
+        selectColumns: AppointmentSupabaseMapper.listSelectColumns,
       ).map((rows) {
         final records = rows
             .map(AppointmentSupabaseMapper.fromRow)

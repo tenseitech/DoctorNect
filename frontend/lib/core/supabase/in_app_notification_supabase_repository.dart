@@ -5,7 +5,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../notifications/app_notification.dart';
 import '../notifications/doctor_notification_trigger.dart';
 import '../notifications/patient_notification_trigger.dart';
+import '../data/data_page.dart';
 import 'supabase_bootstrap.dart';
+import 'supabase_keyset_pagination.dart';
 import 'supabase_stream_table.dart';
 import 'supabase_watcher_state_machine.dart';
 
@@ -146,6 +148,58 @@ class InAppNotificationSupabaseRepository {
     }
   }
 
+  Future<DataPage<AppNotification>> fetchPageForRecipient(
+    String recipientUid, {
+    String? cursor,
+    int limit = 50,
+  }) async {
+    if (recipientUid.trim().isEmpty) {
+      return const DataPage(items: [], hasMore: false);
+    }
+
+    var query = _client
+        .from('in_app_notifications')
+        .select(listSelectColumns)
+        .eq('recipient_uid', recipientUid);
+
+    final keyset = KeysetCursor.decode(cursor);
+    if (keyset != null) {
+      query = SupabaseKeysetPagination.applyDescendingPage(
+        query,
+        sortColumn: 'created_at',
+        idColumn: 'notification_id',
+        cursor: keyset,
+      );
+    }
+
+    final res = await query
+        .order('created_at', ascending: false)
+        .order('notification_id', ascending: false)
+        .limit(limit);
+
+    final list = <AppNotification>[];
+    final rows = List<Map<String, dynamic>>.from(res as List);
+    for (final row in rows) {
+      final notif = notificationFromRow(row);
+      if (notif != null) list.add(notif);
+    }
+
+    String? nextCursor;
+    if (rows.length == limit && rows.isNotEmpty) {
+      nextCursor = KeysetCursor.fromRow(
+        rows.last,
+        sortColumn: 'created_at',
+        idColumn: 'notification_id',
+      )?.encode();
+    }
+
+    return DataPage(
+      items: list,
+      cursor: nextCursor,
+      hasMore: rows.length == limit,
+    );
+  }
+
   Future<List<AppNotification>> fetchForRecipient(String recipientUid) async {
     if (!kReleaseMode && debugTableFetcher != null) {
       final rows = await debugTableFetcher!('in_app_notifications');
@@ -157,19 +211,10 @@ class InAppNotificationSupabaseRepository {
       return list;
     }
 
-    final res = await _client
-        .from('in_app_notifications')
-        .select(listSelectColumns)
-        .eq('recipient_uid', recipientUid)
-        .order('created_at', ascending: false)
-        .limit(50);
-
-    final list = <AppNotification>[];
-    for (final row in res as List) {
-      final notif = notificationFromRow(row as Map<String, dynamic>);
-      if (notif != null) list.add(notif);
-    }
-    return list;
+    return SupabaseKeysetPagination.collectPages(
+      maxItems: 200,
+      fetchPage: (cursor) => fetchPageForRecipient(recipientUid, cursor: cursor),
+    );
   }
 
   Future<void> markRead(String notificationId) async {

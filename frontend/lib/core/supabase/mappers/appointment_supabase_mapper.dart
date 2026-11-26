@@ -7,6 +7,16 @@ import '../../../features/patient/appointments/models/patient_appointment_models
 
 /// Maps Supabase PostgreSQL rows to and from DoctorNect domain models.
 abstract final class AppointmentSupabaseMapper {
+  /// PostgREST projection for list/stream reads (PERF-04).
+  static const String listSelectColumns =
+      'appointment_id,doctor_id,patient_id,doctor_name,specialization,patient_name,'
+      'patient_age,patient_gender,date_time,slot_label,token_number,visit_type,'
+      'patient_status,doctor_status,clinic_name,clinic_address,maps_url,cancellation_reason,'
+      'diagnosis,has_prescription,has_report,has_review,review_rating,review_id,'
+      'review_created_at,lab_reports,clinical_notes,contact_number,chief_complaints,'
+      'source,symptoms,observations,booked_by_name,patient_relation,slot_share_reason,'
+      'was_rescheduled';
+
   static List<String> _parseStringList(dynamic raw) {
     if (raw == null) return const [];
     if (raw is List) {

@@ -4,9 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../features/patient/records/models/health_record_models.dart';
+import '../../data/data_page.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_keyset_pagination.dart';
 import '../supabase_stream_table.dart';
 import 'supabase_patient_profile_repository.dart';
+
+/// Default max health records loaded through legacy list APIs (PERF-02).
+const int _healthRecordsListMax = 500;
 
 /// Supabase Repository for Patient Health Records (Clinical Vault).
 /// Replaces Firestore `health_records/{recordId}` documents.
@@ -24,19 +29,61 @@ class SupabaseHealthRecordsRepository {
 
   SupabaseClient get _client => SupabaseBootstrap.client;
 
+  Future<DataPage<HealthRecord>> fetchPageForPatient(
+    String patientId, {
+    String? cursor,
+    int limit = 50,
+  }) async {
+    if (!SupabaseBootstrap.isReady || patientId.isEmpty) {
+      return const DataPage(items: [], hasMore: false);
+    }
+
+    var query = _client
+        .from('health_records')
+        .select(listSelectColumns)
+        .eq('patient_id', patientId);
+
+    final keyset = KeysetCursor.decode(cursor);
+    if (keyset != null) {
+      query = SupabaseKeysetPagination.applyDescendingPage(
+        query,
+        sortColumn: 'date',
+        idColumn: 'record_id',
+        cursor: keyset,
+      );
+    }
+
+    final res = await query
+        .order('date', ascending: false)
+        .order('record_id', ascending: false)
+        .limit(limit);
+
+    final rows = List<Map<String, dynamic>>.from(res as List);
+    final items = rows.map(_fromRow).whereType<HealthRecord>().toList();
+    String? nextCursor;
+    if (rows.length == limit && rows.isNotEmpty) {
+      nextCursor = KeysetCursor.fromRow(
+        rows.last,
+        sortColumn: 'date',
+        idColumn: 'record_id',
+      )?.encode();
+    }
+
+    return DataPage(
+      items: items,
+      cursor: nextCursor,
+      hasMore: rows.length == limit,
+    );
+  }
+
   Future<List<HealthRecord>> fetchForPatient(String patientId) async {
     if (!SupabaseBootstrap.isReady || patientId.isEmpty) return const [];
 
     try {
-      final res = await _client
-          .from('health_records')
-          .select(listSelectColumns)
-          .eq('patient_id', patientId)
-          .order('date', ascending: false)
-          .limit(100);
-
-      final rows = List<Map<String, dynamic>>.from(res as List);
-      return rows.map(_fromRow).whereType<HealthRecord>().toList();
+      return await SupabaseKeysetPagination.collectPages(
+        maxItems: _healthRecordsListMax,
+        fetchPage: (cursor) => fetchPageForPatient(patientId, cursor: cursor),
+      );
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
@@ -54,15 +101,10 @@ class SupabaseHealthRecordsRepository {
     if (!isSharing) return const [];
 
     try {
-      final res = await _client
-          .from('health_records')
-          .select(listSelectColumns)
-          .eq('patient_id', patientId)
-          .order('date', ascending: false)
-          .limit(100);
-
-      final rows = List<Map<String, dynamic>>.from(res as List);
-      return rows.map(_fromRow).whereType<HealthRecord>().toList();
+      return await SupabaseKeysetPagination.collectPages(
+        maxItems: _healthRecordsListMax,
+        fetchPage: (cursor) => fetchPageForPatient(patientId, cursor: cursor),
+      );
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(

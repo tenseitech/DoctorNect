@@ -9,7 +9,7 @@ void main() {
   test(
     'ICD-10 gz loader matches old raw parsing in entry count and search results',
     () async {
-      final rawFile = File('assets/data/icd10_diagnoses.txt');
+      final rawFile = File('test/fixtures/data/icd10_diagnoses.txt');
       expect(rawFile.existsSync(), isTrue);
 
       final raw = await rawFile.readAsString();

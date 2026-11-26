@@ -28,8 +28,9 @@ class MedicalDirectoryRepository {
     bool preferCache = true,
   }) async {
     return SupabaseMedicalDirectoryRepository.instance.fetchForDoctor(
-        doctorId,
-        limit: limit,
-      );
+      doctorId,
+      limit: limit,
+      startAfterCursor: startAfterCursor,
+    );
   }
 }

@@ -12,6 +12,11 @@ import '../supabase_stream_table.dart';
 class SupabaseDoctorRepository {
   SupabaseDoctorRepository._();
 
+  static const String _doctorDirectoryListColumns =
+      'doctor_id,name,specialization,qualification,experience_years,rating,'
+      'review_count,clinic_name,area,city,verified,gender,address_line1,state,'
+      'photo_url,photo_s3_key';
+
   static final SupabaseDoctorRepository instance =
       SupabaseDoctorRepository._();
 
@@ -35,7 +40,10 @@ class SupabaseDoctorRepository {
             .toList();
       }
 
-      final res = await _client.from('doctor_directory').select().limit(50);
+      final res = await _client
+          .from('doctor_directory')
+          .select(_doctorDirectoryListColumns)
+          .limit(50);
       final rows = List<Map<String, dynamic>>.from(res as List);
       return rows
           .map((row) => _fromRow(row['doctor_id'] as String? ?? '', row))

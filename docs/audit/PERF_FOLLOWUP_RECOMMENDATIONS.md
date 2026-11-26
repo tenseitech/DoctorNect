@@ -1,11 +1,11 @@
 # Performance follow-up recommendations (Audit 5)
 
-Non-blocking items deferred from Audit 5 remediation. **Audit 4 remains ON HOLD** for database migration work.
+**Audit 5 follow-up (2026-11-26)** implemented keyset pagination for appointments, health records, prescriptions, medical directory, and in-app notifications; moved ICD-10 raw file to test fixtures. **Audit 4 remains ON HOLD.**
 
-## Client (Flutter)
+## Client (Flutter) — remaining
 
-- Roll `selectColumns` / narrow projections to `supabase_lab_repository.dart`, `supabase_appointment_repository.dart`, `supabase_ambulance_repository.dart`.
-- Introduce cursor-based `DataPage` for lists currently using fixed `.limit(100|200|500)` (PERF-02).
+- Roll `selectColumns` to `supabase_lab_repository.dart`, `supabase_pharmacy_repository.dart`, `supabase_ambulance_repository.dart`.
+- Keyset `DataPage` for lab/pharmacy/ambulance list endpoints still using fixed `.limit(100|150|500)`.
 - Profile startup with DevTools; defer non-critical service init after first frame.
 
 ## Gateway
