@@ -99,3 +99,33 @@ M6 scripts ; M7 docs last.
 Gateway secrets, ECS desired count 1 + apply, DNS CNAME, RDS snapshot + 7 migrations + runtime grants,
 `authenticator` password, Functions secrets (`OTP_HMAC_SECRET`), production S3 settings, deploy via
 `scripts/env/predeploy_gate.ps1` (docs/GATEWAY_DEPLOY.md, "What is left").
+
+## Phase 2 / 3 results (2026-11-26)
+
+Status: 26 findings. Critical 2/2 fixed. High 5 fixed, 1 needs decision (H3). Medium 7 fixed, 2 need
+decision (M3, M8). Low 3 fixed, 2 won't fix (L1, L8), 3 need decision (L4, L5, L7), 1 blocked upstream (L6).
+
+Gate (after the fixes): backend 462 pass / 0 fail / 6 skipped (before 452); gateway 110 pass (before
+108); SQL `npm run test:db` 86 migrations on PG17 + PG18, 8 files / 87 checks (before 84 / 72); script
+tests 138 pass, 1 environment failure (needs a local replay Postgres on port 5440, pre-existing);
+`flutter analyze` 0 errors/warnings (338 infos, all one deprecation); `flutter test` 709 pass (before
+706); `npm audit` 0 in functions, gateway and scripts (scripts had 10 before); `npm run bundle:verify`
+pass (was failing: C2); `terraform validate` pass; `check:boot-env --check-secret-manager`: 2 FAIL left,
+both manual (S3_BUCKET_PRODUCTION, OTP_HMAC_SECRET).
+
+APKs: staging demo APK builds, release-key signed, version name `1.0.2-staging-demo` (H6). The release
+build refuses (its own security gate) because `.env` `SUPABASE_URL` is the staging Supabase URL: a
+production release must use the gateway URL and the gateway anon key (manual step).
+
+Phone (staging demo APK, live Functions still the OLD build, gateway not reachable yet):
+
+| Number | Result | Cause |
+|---|---|---|
+| 9999900001 | signs in as the patient (`rev_fb_pat_001`) | old deployed Functions (old number->role map); expected until the deploy |
+| 9999900002 | "Invalid OTP." | old deployed Functions; expected until the deploy |
+| 9999900003 | "Invalid OTP." | same |
+| 9999900004 | "Invalid OTP." | same |
+| 9999900005 | "Invalid OTP." | same |
+
+Real bug seen on the phone and fixed: About page version (L9). `npm run test:demo-login` (new backend
+code, scratch DB) passes for all five roles.
