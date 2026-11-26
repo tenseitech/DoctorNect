@@ -62,7 +62,7 @@ Status: open / fixed (commit) / needs decision / blocked (on you) / won't fix.
 | L3 | Low | Client | `medicine_suggestion_repository.dart` | Inserts into dropped table; never called | Dead code | Remove | S | None | fixed |
 | L4 | Low | Android | Razorpay SDK adds `NFC`, `READ_BASIC_PHONE_STATE` | Extra permissions in Data safety | Store listing questions | `tools:node="remove"` after a payment test | S | Medium (SDK) | fixed (D4): stripped with tools:node="remove", verified absent in the APK; payment NOT verified, manual check docs/RAZORPAY_PAYMENT_TEST.md |
 | L5 | Low | Flutter | 337 `deprecated_member_use` (material.dart -> material_ui) | Deprecation only | Future break | Migrate when material_ui is stable for all plugins | L | Medium | triaged: all 338 infos are the material/cupertino package split (336 material.dart imports + GlobalMaterialLocalizations + GlobalCupertinoLocalizations); nothing else to fix; migration deferred (D5), note below |
-| L6 | Low | Android | `gradle.properties` `android.builtInKotlin=false` + shim | Plugins still apply KGP | Blocks AGP built-in Kotlin | Remove when plugins update | S | - | blocked (upstream) |
+| L6 | Low | Android | `gradle.properties` `android.builtInKotlin=false` + shim | Plugins still apply KGP | Blocks AGP built-in Kotlin | Remove when plugins update | S | - | blocked upstream (re-checked 2026-11-26): no upgrade within our constraints; even the latest majors still apply KGP; note below |
 | L7 | Low | CI | `supabase-keepalive.yml` | Duplicates Functions `supabaseKeepalive`, needs a repo secret | Extra secret surface | Keep as backup or delete | S | None | fixed (D6): workflow deleted; repo secrets SUPABASE_KEEPALIVE_URL/KEY can be deleted |
 | L8 | Low | Secrets binding | all functions | `PROD_GATEWAY_SERVICE_KEY` bound everywhere | Functions without DB use still hold it | By design (cold-start routing assert + DB calls) | - | - | won't fix (documented) |
 | L9 | Low | Client | `about_screen.dart`, `patient_profile_form_styles.dart` settingsRowCard | About page showed hard-coded "Version 1.0.1" (app is 1.0.2; seen on the phone); settings rows put ListTile inside a coloured box (tap ink invisible, debug assertion) | Wrong version in support conversations; no tap feedback | Version from package_info_plus; transparent Material in the row helper; widget test | S | Low | fixed |
@@ -92,6 +92,19 @@ other analyzer findings. Migrate in one mechanical PR (replace the imports, add 
 pubspec) when (1) the deprecated aliases are announced for removal in an upcoming Flutter stable, or
 (2) a plugin we use requires the new packages; and only after the first green production deploy
 (D5). Run `flutter analyze` (expect 0 infos), `flutter test` and both APK builds before merging.
+
+### L6: Kotlin shim (android.builtInKotlin=false), re-checked 2026-11-26
+
+Plugins whose Android build still applies the Kotlin Gradle plugin themselves: cloud_functions,
+file_picker, firebase_app_check, firebase_auth, firebase_core, firebase_remote_config,
+firebase_storage, package_info_plus, share_plus, smart_auth. `flutter pub outdated`: no upgrade within
+our constraints (Upgradable = Current). The newest majors (cloud_functions 7.1.0, firebase_auth 7.1.0,
+firebase_core 5.2.0, firebase_app_check 0.5.2, firebase_remote_config 7.1.0, firebase_storage 14.1.0,
+share_plus 13.3.1, package_info_plus 10.2.2) STILL apply it (checked their published Android build
+files); file_picker 13.4.1 and smart_auth 4.0.1 could not be checked from source. So builtInKotlin
+cannot be enabled yet. Enable it (and delete the shim in `frontend/android/build.gradle.kts`) when
+every plugin above ships an Android build without `kotlin-android` / `org.jetbrains.kotlin.android`;
+re-run `flutter pub outdated` and grep each plugin's android/build.gradle(.kts) in the pub cache.
 
 ### D1 (a): how the demo-plane marker works
 
