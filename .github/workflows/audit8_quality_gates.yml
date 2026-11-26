@@ -1,0 +1,88 @@
+name: Audit 8 — Quality gates
+
+on:
+  push:
+    branches: [audit8/**, main, staging]
+    paths:
+      - 'frontend/**'
+      - 'backend/functions/**'
+      - 'services/api-gateway/**'
+      - 'scripts/test/**'
+      - '.github/workflows/audit8_quality_gates.yml'
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - 'backend/functions/**'
+      - 'services/api-gateway/**'
+      - 'scripts/test/**'
+
+jobs:
+  gateway:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: services/api-gateway
+      - run: npm test
+        working-directory: services/api-gateway
+
+  functions-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: backend/functions
+      - name: Functions tests (excludes env_parity — needs full env template)
+        working-directory: backend/functions
+        run: |
+          shopt -s nullglob
+          files=(test/*.test.js)
+          filtered=()
+          for f in "${files[@]}"; do
+            [[ "$f" == *env_parity* ]] && continue
+            filtered+=("$f")
+          done
+          node --require ./test/setup_env.js --test "${filtered[@]}"
+
+  flutter-critical:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+      - run: cp lib/firebase_options.secrets.example.dart lib/firebase_options.secrets.dart
+      - run: flutter pub get
+      - name: Critical workflow tests (Audit 8)
+        run: |
+          flutter test test/booking_flow_test.dart
+          flutter test test/booking_uses_callable_test.dart
+          flutter test test/auth_flows_test.dart
+          flutter test test/core/reliability/
+          flutter test test/core/supabase/patient_write_guard_test.dart
+          flutter test test/delete_account_flow_test.dart
+          flutter test test/lab_report_submit_flow_test.dart
+          flutter test test/all_roles_auth_integration_test.dart
+
+  scripts-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: services/api-gateway
+      - run: node --test scripts/test/log_redaction.test.js scripts/test/demo_routing.test.js scripts/test/env_loader.test.js scripts/test/synthetic_gateway_probe.test.js
+        working-directory: .
