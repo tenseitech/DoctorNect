@@ -1,3 +1,4 @@
+const { safeErrorForLog } = require('./log_safe');
 const { resolveCallerIdentity } = require('./caller_identity');
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { withDataPlaneSecrets } = require('./demo_plane_secrets');
@@ -561,7 +562,7 @@ const verifyRazorpayPayment = onCall(
       makeRazorpayRequest(`/v1/orders/${safeOrderId}`, 'GET', null, keyId, keySecret),
     ]);
   } catch (err) {
-    console.error('[verifyRazorpayPayment] Error fetching payment/order from Razorpay:', err);
+    console.error('[verifyRazorpayPayment] Error fetching payment/order from Razorpay:', safeErrorForLog(err));
     throw new HttpsError('internal', 'Failed to verify payment with payment gateway.');
   }
 

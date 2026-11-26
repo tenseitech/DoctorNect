@@ -1,3 +1,4 @@
+const { safeErrorForLog } = require('./log_safe');
 const { getDatabaseClient } = require('./src/db/client');
 
 function sanitizeDocIdPart(value) {
@@ -126,7 +127,7 @@ async function writeInAppNotification(db, eventName, payload, logFields = {}) {
   try {
     return await createInAppNotification(db, { ...payload, recipientUid });
   } catch (err) {
-    console.error(`In-app notification create failed for ${eventName}`, logFields, err);
+    console.error(`In-app notification create failed for ${eventName}`, logFields, safeErrorForLog(err));
     return null;
   }
 }

@@ -1,3 +1,4 @@
+const { safeErrorForLog } = require('./log_safe');
 const fs = require('fs');
 const path = require('path');
 const _repoBootstrap = path.resolve(__dirname, '../../scripts/lib/bootstrap_root_env.js');
@@ -475,7 +476,7 @@ exports.lookupMobileRegistration = onCall(
       });
       return await lookupMobileRegistration(null, request.data || {});
     } catch (err) {
-      console.error('lookupMobileRegistration failed', err);
+      console.error('lookupMobileRegistration failed', safeErrorForLog(err));
       if (err instanceof HttpsError) throw err;
       throw new HttpsError('internal', 'Could not look up mobile number.');
     }
@@ -571,7 +572,7 @@ exports.resetAmbulanceDriverPin = onCall(
         clientIp: getCallableClientIp(request),
       });
     } catch (err) {
-      console.error('resetAmbulanceDriverPin failed', err);
+      console.error('resetAmbulanceDriverPin failed', safeErrorForLog(err));
       if (err instanceof HttpsError) throw err;
       throw new HttpsError('internal', 'Could not reset PIN. Please try again.');
     }
@@ -597,7 +598,7 @@ exports.resetUserPasswordWithOtp = onCall(
       });
       return result;
     } catch (err) {
-      console.error('resetUserPasswordWithOtp failed', err);
+      console.error('resetUserPasswordWithOtp failed', safeErrorForLog(err));
       logAuthAttempt(request, {
         outcome: 'failure',
         method: 'password_reset',
@@ -633,7 +634,7 @@ exports.completeMobileOtpLogin = onCall(
       });
       return result;
     } catch (err) {
-      console.error('completeMobileOtpLogin failed', err);
+      console.error('completeMobileOtpLogin failed', safeErrorForLog(err));
       logAuthAttempt(request, {
         outcome: 'failure',
         method: 'mobile_otp',
@@ -922,7 +923,7 @@ exports.verifyAmbulanceDriverLogin = onCall(
     { clientIp, requestForLimits: request },
   );
   } catch (err) {
-    console.error('verifyAmbulanceDriverLogin failed', err);
+    console.error('verifyAmbulanceDriverLogin failed', safeErrorForLog(err));
     if (err instanceof HttpsError) throw err;
     throw new HttpsError(
       'internal',
@@ -971,7 +972,7 @@ exports.verifyAmbulanceDriverLoginHttp = onRequest(
       );
       res.status(200).json({ result });
     } catch (err) {
-      console.error('verifyAmbulanceDriverLoginHttp failed', err);
+      console.error('verifyAmbulanceDriverLoginHttp failed', safeErrorForLog(err));
       if (err instanceof HttpsError) {
         const status = err.code === 'resource-exhausted' ? 429 : 400;
         res.status(status).json({
@@ -1009,7 +1010,7 @@ exports.completeAmbulanceMobileOtpLogin = onCall(
         { clientIp: getCallableClientIp(request) },
       );
     } catch (err) {
-      console.error('completeAmbulanceMobileOtpLogin failed', err);
+      console.error('completeAmbulanceMobileOtpLogin failed', safeErrorForLog(err));
       if (err instanceof HttpsError) throw err;
       throw new HttpsError('internal', 'Could not complete mobile login.');
     }

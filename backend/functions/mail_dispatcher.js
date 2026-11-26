@@ -1,4 +1,5 @@
 'use strict';
+const { safeErrorForLog } = require('./log_safe');
 
 /**
  * mail_dispatcher.js
@@ -22,7 +23,7 @@ async function processMailQueue({ supabase, sendEmail = sendMsg91Email, limit = 
     .limit(limit);
 
   if (error) {
-    console.error('[MailDispatcher] Error querying mail_queue:', error);
+    console.error('[MailDispatcher] Error querying mail_queue:', safeErrorForLog(error));
     return { success: false, error: error.message, processed: 0 };
   }
 
