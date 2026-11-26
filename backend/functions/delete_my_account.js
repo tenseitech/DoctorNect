@@ -23,9 +23,10 @@ function getS3Sdk() {
   return _s3Sdk;
 }
 
-const { resolveS3Bucket } = require('./src/config/s3_bucket');
-function s3Bucket() {
-  return resolveS3Bucket();
+const { resolveS3BucketForUid } = require('./src/config/s3_bucket');
+/** Bucket that holds this account's files (demo accounts: staging bucket in production). */
+function s3Bucket(uid) {
+  return resolveS3BucketForUid(uid);
 }
 let _testingS3Client = null;
 
@@ -834,7 +835,7 @@ async function deleteMyAccountHandler(uid) {
   try {
     const s3 = getS3Client();
     const prefixes = await resolveUserS3Prefixes(null, { uid: normalizedUid, role, profileId });
-    failedS3Prefixes = await cleanupUserS3Prefixes(s3, s3Bucket(), prefixes);
+    failedS3Prefixes = await cleanupUserS3Prefixes(s3, s3Bucket(normalizedUid), prefixes);
   } catch (s3Err) {
     failedS3Prefixes = ['*'];
     logger.error('deleteMyAccount S3 cleanup failed', {

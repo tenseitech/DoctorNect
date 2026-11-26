@@ -20,7 +20,7 @@ test.beforeEach(() => {
     stg: process.env.S3_BUCKET_STAGING, prd: process.env.S3_BUCKET_PRODUCTION, b: process.env.S3_BUCKET,
   };
   process.env.APP_ENV = 'production';
-  delete process.env.S3_BUCKET_STAGING;
+  process.env.S3_BUCKET_STAGING = 'unit-test-stage-bucket';
   delete process.env.S3_BUCKET;
   process.env.S3_BUCKET_PRODUCTION = 'unit-test-prod-bucket';
   require('../src/config/s3_bucket').resetS3BucketCacheForTesting();
@@ -64,6 +64,12 @@ test('uploads are written under the caller plane prefix', async () => {
   const demo = await s3.getS3UploadUrlHandler(req, { uid: DEMO_UID }, db);
   assert.ok(real.objectKey.startsWith('prod/patients/p1/profile/'));
   assert.ok(demo.objectKey.startsWith('demo/patients/p1/profile/'));
+  // Demo files go to the staging bucket, real users' files to the production bucket.
+  const urlOf = (r) => String(r.uploadUrl || r.url || '');
+  assert.match(urlOf(real), /unit-test-prod-bucket/);
+  assert.doesNotMatch(urlOf(real), /unit-test-stage-bucket/);
+  assert.match(urlOf(demo), /unit-test-stage-bucket/);
+  assert.doesNotMatch(urlOf(demo), /unit-test-prod-bucket/);
 });
 
 test('a demo account with a colliding profile id cannot read a real user record', async () => {

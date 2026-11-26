@@ -20,12 +20,13 @@ const awsAccessKeyId = defineSecret('AWS_ACCESS_KEY_ID');
 const awsSecretAccessKey = defineSecret('AWS_SECRET_ACCESS_KEY');
 const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');
 
-const { resolveS3Bucket } = require('./src/config/s3_bucket');
+const { resolveS3BucketForUid } = require('./src/config/s3_bucket');
 
 const CALLABLE_REGION = 'asia-south1';
 const AWS_REGION = process.env.AWS_REGION || 'ap-south-1';
-function s3Bucket() {
-  return resolveS3Bucket();
+/** Bucket for the verified caller (demo accounts: staging bucket; everyone else: production). */
+function s3Bucket(uid) {
+  return resolveS3BucketForUid(uid);
 }
 
 const ENFORCE_ABUSE_APP_CHECK = String(
@@ -552,7 +553,7 @@ async function getS3UploadUrlHandler(data, auth, dbOrOptions) {
 
   const s3 = getS3Client();
   const command = new PutObjectCommand({
-    Bucket: s3Bucket(),
+    Bucket: s3Bucket(auth.uid),
     Key: objectKey,
     ContentType: contentType,
     ContentLength: sizeBytes,
@@ -1000,7 +1001,7 @@ async function getS3DownloadUrlHandler(data, auth, dbOrOptions) {
 
   const s3 = getS3Client();
   const command = new GetObjectCommand({
-    Bucket: s3Bucket(),
+    Bucket: s3Bucket(auth.uid),
     Key: objectKey,
   });
 
@@ -1084,7 +1085,7 @@ async function getS3DownloadUrlsHandler(data, auth, dbOrOptions) {
     }
 
     const command = new GetObjectCommand({
-      Bucket: s3Bucket(),
+      Bucket: s3Bucket(auth.uid),
       Key: key,
     });
     try {
@@ -1135,7 +1136,7 @@ async function deleteS3ObjectHandler(data, auth, dbOrOptions) {
   const s3 = getS3Client();
   await s3.send(
     new DeleteObjectCommand({
-      Bucket: s3Bucket(),
+      Bucket: s3Bucket(auth.uid),
       Key: objectKey,
     }),
   );
@@ -1171,12 +1172,12 @@ const FILE_SIGNATURES = Object.freeze({
  * Reads the first 16 bytes of an object and checks them against the declared content type.
  * @returns {Promise<boolean|null>} true/false when verified; null when the client returned no body.
  */
-async function sniffObjectSignature(s3, objectKey, contentType) {
+async function sniffObjectSignature(s3, objectKey, contentType, bucket) {
   const check = FILE_SIGNATURES[contentType];
   if (!check) return false;
   let res;
   try {
-    res = await s3.send(new GetObjectCommand({ Bucket: s3Bucket(), Key: objectKey, Range: 'bytes=0-15' }));
+    res = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: objectKey, Range: 'bytes=0-15' }));
   } catch (_) {
     return false;
   }
@@ -1258,12 +1259,12 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
   try {
     head = await s3.send(
       new HeadObjectCommand({
-        Bucket: s3Bucket(),
+        Bucket: s3Bucket(auth.uid),
         Key: objectKey,
       }),
     );
   } catch (err) {
-    await s3.send(new DeleteObjectCommand({ Bucket: s3Bucket(), Key: objectKey })).catch(() => {});
+    await s3.send(new DeleteObjectCommand({ Bucket: s3Bucket(auth.uid), Key: objectKey })).catch(() => {});
     await logStorageAccess(ctx.db, {
       who: auth.uid,
       role: caller.role,
@@ -1280,7 +1281,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
 
   // Enforce content-type allowlist
   if (!ALLOWED_CONTENT_TYPES.has(contentType)) {
-    await s3.send(new DeleteObjectCommand({ Bucket: s3Bucket(), Key: objectKey })).catch(() => {});
+    await s3.send(new DeleteObjectCommand({ Bucket: s3Bucket(auth.uid), Key: objectKey })).catch(() => {});
     await logStorageAccess(ctx.db, {
       who: auth.uid,
       role: caller.role,
@@ -1300,7 +1301,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
 
   const maxAllowedBytes = isImagePurpose ? MAX_IMAGE_BYTES : MAX_DOC_BYTES;
   if (contentLength <= 0 || contentLength > maxAllowedBytes) {
-    await s3.send(new DeleteObjectCommand({ Bucket: s3Bucket(), Key: objectKey })).catch(() => {});
+    await s3.send(new DeleteObjectCommand({ Bucket: s3Bucket(auth.uid), Key: objectKey })).catch(() => {});
     await logStorageAccess(ctx.db, {
       who: auth.uid,
       role: caller.role,
@@ -1313,9 +1314,9 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
   }
 
   // Content-Type is client-declared at PUT time: verify the real file signature (magic bytes).
-  const sniff = await sniffObjectSignature(s3, objectKey, contentType);
+  const sniff = await sniffObjectSignature(s3, objectKey, contentType, s3Bucket(auth.uid));
   if (sniff === false) {
-    await s3.send(new DeleteObjectCommand({ Bucket: s3Bucket(), Key: objectKey })).catch(() => {});
+    await s3.send(new DeleteObjectCommand({ Bucket: s3Bucket(auth.uid), Key: objectKey })).catch(() => {});
     await logStorageAccess(ctx.db, {
       who: auth.uid,
       role: caller.role,
@@ -1340,7 +1341,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
         .from('health_records')
         .update({
           s3_key: objectKey,
-          s3_bucket: s3Bucket(),
+          s3_bucket: s3Bucket(auth.uid),
           storage_key: objectKey,
           storage_provider: 's3',
           file_size_bytes: contentLength,
@@ -1355,7 +1356,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
         .from('lab_bookings')
         .update({
           report_s3_key: objectKey,
-          report_s3_bucket: s3Bucket(),
+          report_s3_bucket: s3Bucket(auth.uid),
           report_storage_key: objectKey,
           report_storage_provider: 's3',
           report_file_size_bytes: contentLength,
@@ -1371,7 +1372,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
         .from('patients')
         .update({
           photo_s3_key: objectKey,
-          photo_s3_bucket: s3Bucket(),
+          photo_s3_bucket: s3Bucket(auth.uid),
           photo_storage_provider: 's3',
           photo_updated_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -1383,7 +1384,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
         .from('doctors')
         .update({
           photo_s3_key: objectKey,
-          photo_s3_bucket: s3Bucket(),
+          photo_s3_bucket: s3Bucket(auth.uid),
           photo_storage_provider: 's3',
           photo_updated_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
