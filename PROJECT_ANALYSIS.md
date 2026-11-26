@@ -119,7 +119,7 @@ re-run `flutter pub outdated` and grep each plugin's android/build.gradle(.kts) 
   claims; anonymous users can be purged by the existing Auth cleanup. The client force-refreshes its
   ID token right after login so the claims are present on the next request.
 
-### Later (b): real-account sign-in for ambulance drivers (design note)
+### Later (b): real-account sign-in for ambulance drivers (design note; full plan: docs/AMBULANCE_REAL_ACCOUNT_SIGNIN.md, groundwork OFF in backend/functions/ambulance_session.js)
 
 1. Server: `verifyUserRegistrationOtp` already mints a custom token for the ambulance account owner
    (users.id). Make `completeAmbulanceMobileOtpLogin` accept that signed-in owner (no anonymous
