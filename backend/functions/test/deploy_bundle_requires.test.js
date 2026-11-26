@@ -34,3 +34,14 @@ test('no deployed module requires a file outside backend/functions', () => {
   }
   assert.deepEqual(bad, []);
 });
+
+test('no deployed module loads the Firestore SDK (Firestore is removed)', () => {
+  const bad = [];
+  for (const file of walk(ROOT, [])) {
+    const src = fs.readFileSync(file, 'utf8');
+    if (/require\(\s*['"](firebase-admin\/firestore|@google-cloud\/firestore)['"]\s*\)|\bgetFirestore\s*\(/.test(src)) {
+      bad.push(path.relative(ROOT, file));
+    }
+  }
+  assert.deepEqual(bad, []);
+});

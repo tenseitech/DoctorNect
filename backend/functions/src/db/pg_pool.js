@@ -20,7 +20,7 @@ const PRODUCTION_PG_CONFIG_ERROR = 'PRODUCTION_PG_CONFIG_MISSING';
 const PRODUCTION_PG_POOL_CALLERS = Object.freeze([
   {
     file: 'cross_role_sync.js',
-    functions: 'DLQ insert, Firestore→Postgres sync handlers (syncAppointment*, syncDoctor*, …)',
+    functions: 'DLQ insert and server-side maintenance jobs',
     pathKind: 'pg_pool',
     traffic: 'batch/maintenance (needs pg_pool); not exported from index.js',
   },

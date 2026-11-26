@@ -708,7 +708,7 @@ exports.clearFailedLogins = onCall(
 
 /**
  * Returns a pending ambulance invite only when inviteId + token both match.
- * Replaces anonymous Firestore get-by-id (IDOR on timestamp invite IDs).
+ * Replaces the old anonymous get-by-id (IDOR on timestamp invite IDs).
  */
 exports.getAmbulanceInvite = onCall(
   { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
@@ -1125,7 +1125,7 @@ exports.razorpayWebhook = razorpayWebhook;
 const { sendMsg91Email } = require('./msg91_email');
 
 /**
- * Triggered whenever an email is queued into the `mail` collection in Firestore.
+ * Processes emails queued in the Postgres `mail_queue` table.
  * Automatically dispatches the email via MSG91 Email API v5.
  */
 

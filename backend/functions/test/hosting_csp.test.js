@@ -51,7 +51,8 @@ test('hosting CSP allows Flutter and Google Sign-In Trusted Types policies', () 
   assert.match(csp, /gis-dart/);
   assert.match(csp, /trusted-types[\s\S]*flutterfire-firebase_core/);
   assert.match(csp, /flutterfire-firebase_auth/);
-  assert.match(csp, /flutterfire-firebase_firestore/);
+  // Firestore is removed (cloud_firestore is not a dependency): its Trusted Types policy must not be allowed.
+  assert.doesNotMatch(csp, /flutterfire-firebase_firestore/);
   assert.match(csp, /flutterfire-firebase_app_check/);
 });
 
@@ -63,6 +64,8 @@ test('web bootstraps Firebase SDKs before Flutter without inline scripts', () =>
     'utf8',
   );
   assert.match(loader, /firebase-app\.js/);
+  assert.doesNotMatch(loader, /firestore/, 'Firestore SDK is not loaded (removed)');
+  assert.doesNotMatch(html, /firestore\.googleapis\.com/, 'no Firestore preconnect');
   assert.doesNotMatch(loader, /createElement\('script'\)/);
   const splash = fs.readFileSync(
     path.join(webDir, 'scripts', 'splash-bootstrap.js'),

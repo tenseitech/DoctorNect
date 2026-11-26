@@ -132,7 +132,7 @@ async function writeInAppNotification(db, eventName, payload, logFields = {}) {
   }
 }
 
-function buildDoctorNewAppointmentNotification(appointment, firestoreDocId) {
+function buildDoctorNewAppointmentNotification(appointment, sourceDocId) {
   const doctorStatus = String(appointment.doctorStatus || '').trim();
   const patientName = String(appointment.patientName || 'Patient').trim() || 'Patient';
   const slotLabel = String(appointment.slotLabel || 'Scheduled time').trim() || 'Scheduled time';
@@ -150,10 +150,10 @@ function buildDoctorNewAppointmentNotification(appointment, firestoreDocId) {
       type: 'booking',
       target: 'appointmentDetail',
       targetId: appointmentId || null,
-      dedupeKey: appointmentId ? `d_appt_new_${appointmentId}` : `d_appt_new_${firestoreDocId}`,
+      dedupeKey: appointmentId ? `d_appt_new_${appointmentId}` : `d_appt_new_${sourceDocId}`,
       doctorTrigger: 'newAppointmentBooked',
       sourceEvent: 'appointment.created',
-      sourceId: firestoreDocId,
+      sourceId: sourceDocId,
     };
   }
 
@@ -168,17 +168,17 @@ function buildDoctorNewAppointmentNotification(appointment, firestoreDocId) {
       targetId: appointmentId || null,
       dedupeKey: appointmentId
         ? `d_appt_request_${appointmentId}`
-        : `d_appt_request_${firestoreDocId}`,
+        : `d_appt_request_${sourceDocId}`,
       doctorTrigger: 'newAppointmentBooked',
       sourceEvent: 'appointment.created',
-      sourceId: firestoreDocId,
+      sourceId: sourceDocId,
     };
   }
 
   return null;
 }
 
-function buildPatientAppointmentStatusNotification(before, after, firestoreDocId) {
+function buildPatientAppointmentStatusNotification(before, after, sourceDocId) {
   const beforeStatus = String(before?.doctorStatus || '').trim();
   const afterStatus = String(after?.doctorStatus || '').trim();
   if (beforeStatus !== 'pendingRequest') return null;
@@ -188,7 +188,7 @@ function buildPatientAppointmentStatusNotification(before, after, firestoreDocId
 
   const doctorName = String(after.doctorName || 'Doctor').trim() || 'Doctor';
   const slotLabel = String(after.slotLabel || 'Scheduled time').trim() || 'Scheduled time';
-  const appointmentId = String(after.appointmentId || firestoreDocId).trim() || firestoreDocId;
+  const appointmentId = String(after.appointmentId || sourceDocId).trim() || sourceDocId;
   const tokenNumber = after.tokenNumber;
   const tokenSuffix =
     tokenNumber != null && String(tokenNumber).trim() !== ''
@@ -207,7 +207,7 @@ function buildPatientAppointmentStatusNotification(before, after, firestoreDocId
       dedupeKey: `p_appt_accepted_${appointmentId}`,
       patientTrigger: 'bookingConfirmed',
       sourceEvent: 'appointment.status_updated',
-      sourceId: firestoreDocId,
+      sourceId: sourceDocId,
     };
   }
 
@@ -223,7 +223,7 @@ function buildPatientAppointmentStatusNotification(before, after, firestoreDocId
       dedupeKey: `p_appt_declined_${appointmentId}`,
       patientTrigger: 'doctorCancelled',
       sourceEvent: 'appointment.status_updated',
-      sourceId: firestoreDocId,
+      sourceId: sourceDocId,
     };
   }
 
@@ -565,12 +565,12 @@ function buildPatientPharmacyDeliveryUpdatedNotification(before, after, delivery
   };
 }
 
-function buildDoctorReferralReceivedNotification(referral, firestoreDocId) {
+function buildDoctorReferralReceivedNotification(referral, sourceDocId) {
   const toDoctorId = String(referral.toDoctorId || '').trim();
   const fromDoctorId = String(referral.fromDoctorId || '').trim();
   const fromDoctorName = String(referral.fromDoctorName || 'A doctor').trim() || 'A doctor';
   const patientName = String(referral.patientName || 'Patient').trim() || 'Patient';
-  const referralId = String(referral.referralId || firestoreDocId || '').trim();
+  const referralId = String(referral.referralId || sourceDocId || '').trim();
 
   if (!toDoctorId || !referralId || toDoctorId === fromDoctorId) return null;
 
@@ -585,7 +585,7 @@ function buildDoctorReferralReceivedNotification(referral, firestoreDocId) {
     dedupeKey: `d_referral_${referralId}`,
     doctorTrigger: 'patientReferredToMe',
     sourceEvent: 'referral.created',
-    sourceId: firestoreDocId,
+    sourceId: sourceDocId,
   };
 }
 

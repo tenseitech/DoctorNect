@@ -3005,7 +3005,7 @@ async function lookupMobileRegistration(db, data) {
 
 /**
  * Supabase third-party Firebase auth requires the JWT `role` claim to be
- * `authenticated`. The app role stays in `app_role`. Firestore rules read
+ * `authenticated`. The app role stays in `app_role`. RLS policies read
  * users/{uid}.role, not this claim.
  */
 function supabaseCompatibleCustomClaims(appRole, extra) {
