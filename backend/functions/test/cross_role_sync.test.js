@@ -396,8 +396,10 @@ test('C.10 Production Mode Security Contract: Only routes to PROD_GATEWAY_URL an
     process.env.PROD_GATEWAY_SERVICE_KEY = 'prod-service-key-999';
     process.env.STAGING_SUPABASE_URL = 'https://staging.supabase.co';
     
-    // Read cross_role_sync source directly to inspect config resolution
-    const syncSource = fs.readFileSync(path.resolve(__dirname, '../cross_role_sync.js'), 'utf8');
+    // Config resolution lives in cross_role_sync_infra.js (extracted for maintainability)
+    const syncSource =
+      fs.readFileSync(path.resolve(__dirname, '../cross_role_sync.js'), 'utf8') +
+      fs.readFileSync(path.resolve(__dirname, '../cross_role_sync_infra.js'), 'utf8');
     assert.match(syncSource, /process\.env\.APP_ENV/);
     assert.match(syncSource, /process\.env\.PROD_GATEWAY_URL/);
     assert.match(syncSource, /process\.env\.PROD_GATEWAY_SERVICE_KEY/);

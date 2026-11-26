@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/config/app_web_urls.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/invite/pharmacy_doctor_invite_service.dart';
 import '../../../core/session/ambulance_session.dart';
@@ -12,7 +13,7 @@ import '../../lab/data/lab_registry.dart';
 import '../../pharmacy/data/medical_store_registry.dart';
 
 abstract final class LabDoctorInviteService {
-  static const appDownloadUrl = 'https://doctornect.com/download';
+  static String get appDownloadUrl => AppWebUrls.appDownloadUrl;
 
   static String buildInviteLink(String labId, {String? role}) {
     final id = labId.trim().isEmpty ? 'lab' : labId.trim();

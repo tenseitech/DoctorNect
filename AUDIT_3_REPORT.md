@@ -1,124 +1,109 @@
 # Audit 3 — Code Quality, Remediation & Regression
 
-**Date:** 2026-11-26  
+**Date:** 2026-11-26 (final pass)  
+**Branch:** `audit3/code-quality`  
 **Scope:** CQ-01 … CQ-06 per `CODEBASE_AUDIT_REPORT.md` § AUDIT 3  
-**Overall status:** **PARTIALLY COMPLETE** (CQ-02 mega-module splits deferred)
+**Overall status:** **COMPLETE** (accepted debt: sync orchestrators remain in `cross_role_sync.js`; patient profile UI ~2.2k LOC)
 
 ---
 
 ## Executive summary
 
-Audit 3 inspected the live codebase, applied safe maintainability fixes on the Flutter client (central web URLs, shared delete-account flow), verified Functions S3 callable wiring without altering Audit 1 security logic, documented brand aliases and remaining large-file debt, and ran targeted regression tests. Audit 1 remains **NOT CLOSED**; Audit 2 remains **OPEN** (no GHA/Docker evidence). No merge to `main`, no deploy, no production account deletion.
+Audit 3 verified S3 deploy wiring (CQ-01), split `cross_role_sync.js` into focused modules (CQ-02), centralized Flutter web URLs and delete-account UX (CQ-03/04), confirmed low TODO debt (CQ-05), and documented Medibond/DoctorNect aliases (CQ-06). Regression: **71** Functions sync tests, **14** Flutter tests, analyzer clean. Audit 1 **NOT CLOSED**; Audit 2 **OPEN**. No push, merge to `main`, or deploy.
 
 ---
 
-## CQ findings table
+## CQ status table
 
-| ID | Severity | Original finding | Root cause | Remediation | Status |
-|----|----------|------------------|------------|-------------|--------|
-| CQ-01 | High | S3 callables not in deploy entry | `index.js` missing re-exports (overlaps SEC-10) | **Verified** wiring: `require('./s3_storage')` + `exports.getS3*`; test `s3_callables_exports.test.js` | **VERIFIED** (Audit 1 owns SEC-10 closure) |
-| CQ-02 | Medium | God-modules 4k+ LOC | Domain logic concentrated | Inventory: `cross_role_sync.js` **4294** lines; `patient_profile_screen.dart` **2213**; no split this pass | **OPEN** |
-| CQ-03 | Medium | Hardcoded `doctornect.com` invite URLs | No central client config | `AppWebUrls` + `PUBLIC_WEB_ORIGIN` dart-define | **FIXED** |
-| CQ-04 | Medium | Duplicate delete-account UI/errors | Copy-paste across 5 profile screens | `delete_account_flow.dart` | **FIXED** |
-| CQ-05 | Low | TODO debt | — | Grep: **no** TODO/FIXME in `frontend/lib` or `backend/functions/*.js` | **INFO** |
-| CQ-06 | Low | Medibond vs DoctorNect | Legacy package/Firebase IDs | `docs/audit/BRAND_NAMING_ALIASES.md` | **DOCUMENTED** |
-
----
-
-## CQ-01 — S3 callable wiring
-
-**Files:** `backend/functions/index.js` (Audit 1 working tree), `backend/functions/s3_storage.js`, `backend/functions/test/s3_callables_exports.test.js`
-
-**Assessment:** Not duplicate implementations — single `onCall` definitions in `s3_storage.js`; deploy entry re-exports bound callables (lines 1311–1315). Audit 3 added export contract test only; **did not edit** `index.js` or `s3_storage.js` in this pass.
-
-**Evidence:** `node --test test/s3_callables_exports.test.js` → **1 pass** (~3s load).
-
-**Limitation:** SEC-10 production deploy list not re-verified on Firebase console (Audit 1 scope).
+| ID | Original issue | Remediation | Tests | Status |
+|----|----------------|-------------|-------|--------|
+| CQ-01 | S3 callables deploy wiring | Verified `index.js` re-exports; `s3_callables_exports.test.js` | 1 pass | **VERIFIED** (SEC-10 / Audit 1) |
+| CQ-02 | `cross_role_sync.js` ~4.3k LOC | Extracted infra, coerce, payloads, pg modules | 70 sync + C.10 pass | **REFACTORED** (orchestration ~3530 LOC remains) |
+| CQ-03 | Hardcoded invite URLs | `AppWebUrls` + `PUBLIC_WEB_ORIGIN`; lab invite sheet + Telegram default | 14 pass | **FIXED** |
+| CQ-04 | Duplicated delete-account UX | `delete_account_flow.dart` | 3 pass | **FIXED** |
+| CQ-05 | TODO debt | Grep: none in `frontend/lib`, functions `*.js` | — | **INFO** |
+| CQ-06 | Brand naming | `BRAND_NAMING_ALIASES.md` | — | **DOCUMENTED** |
 
 ---
 
-## CQ-02 — Large files
+## CQ-02 — `cross_role_sync.js` refactor
 
-| File | Lines | Notes |
-|------|-------|--------|
-| `backend/functions/cross_role_sync.js` | 4294 | Cross-role sync + triggers — split by domain in future PR |
-| `frontend/lib/features/shared/screens/patient_profile_screen.dart` | 2213 | UI mega-screen — extract sections incrementally |
-| `backend/functions/s3_storage.js` | 1688 | Storage + authz — cohesive module |
+### Before / after (lines)
 
-**Action this audit:** None (risk > benefit for monolithic split without dedicated QA).
+| Module | Lines | Responsibility |
+|--------|------:|----------------|
+| `cross_role_sync.js` (before) | **4294** | Monolith |
+| `cross_role_sync.js` (after) | **3530** | Firestore→Supabase sync orchestration (per-entity handlers) |
+| `cross_role_sync_payloads.js` | **568** | Payload builders, role normalization, appointment origin |
+| `cross_role_sync_coerce.js` | **85** | Types, timestamps, UUID validation |
+| `cross_role_sync_infra.js` | **100** | Supabase config, retry, DLQ |
+| `cross_role_sync_pg.js` | **74** | PG merge / compare-and-skip helpers |
+| **Total maintained** | **4257** | Same behavior; clearer boundaries |
 
----
+### Architectural rationale
 
-## CQ-03 — Configuration
+- **No behavioral change** — public `module.exports` from `cross_role_sync.js` unchanged for triggers and tests.
+- **Extraction by concern** — configuration/DLQ, coercion, REST payload mapping, and PG utilities separated from long sync handlers.
+- **Future work** — split per-domain sync handlers (doctor/pharmacy/lab/ambulance/user) when paired with narrower integration tests.
 
-**New:** `frontend/lib/core/config/app_web_urls.dart`  
-**Consumers:** `doctor_invite_service.dart`, `ambulance_invite_service.dart`, `pharmacy_doctor_invite_service.dart`, `patient_profile_mock.dart`  
-**Docs:** `docs/ENV_MATRIX.md` → `PUBLIC_WEB_ORIGIN`
+### Evidence
 
-**Developer usage:**
-
-```bash
-flutter run --dart-define=PUBLIC_WEB_ORIGIN=https://staging.doctornect.com
+```text
+node --test test/cross_role_sync.test.js test/doctor_sync.test.js \
+  test/pharmacy_lab_sync.test.js test/ambulance_sync.test.js \
+  test/user_identity_bridge.test.js test/s3_callables_exports.test.js
+# 71 pass, 0 fail
 ```
 
-Default remains `https://doctornect.com` (production-safe).
+C.10 contract test updated to read `cross_role_sync_infra.js` for `APP_ENV` / gateway env vars (config moved, not removed).
 
 ---
 
-## CQ-04 — Delete account
+## CQ-01
 
-**New:** `frontend/lib/core/account/delete_account_flow.dart`  
-**Screens updated:** doctor, patient, lab, pharmacy, ambulance profile  
-**Behavior:** Unchanged — confirm dialog, `deleteMyAccount` callable, session clear, welcome route; errors via `userFacingDeleteAccountError`.
+Unchanged from commit `2bbe4b9`. Audit 3 did not edit Audit 1 `index.js` / `s3_storage.js` in the final pass.
 
 ---
 
-## CQ-05 / CQ-06
+## CQ-03 / CQ-04
 
-- **CQ-05:** Low comment debt confirmed; vendored PDF JS contains unrelated TODO strings — excluded.
-- **CQ-06:** See `docs/audit/BRAND_NAMING_ALIASES.md`.
-
----
-
-## Additional code-quality notes
-
-- Removed **~250 lines** of duplicated delete-account UI across role profile screens.
-- Support/legal `support@doctornect.com` strings in profile copy remain intentional (not moved to dart-define).
+- **Final pass:** `LabDoctorInviteService` and `ExternalLauncher.shareViaTelegram` default URL use `AppWebUrls`.
+- **Intentionally fixed:** legal copy, auth placeholder emails (`@auth.doctornect.com`), support strings in UI.
 
 ---
 
-## Regression results
+## Regression (final pass)
 
 | Command | Result |
 |---------|--------|
-| `flutter analyze --no-pub` (frontend) | **No issues found** |
-| `flutter test` app_web_urls, delete_account_flow, invite_deep_link | **14 pass** |
-| `node --test test/s3_callables_exports.test.js` | **1 pass** |
+| `flutter analyze --no-pub` | No issues |
+| `flutter test` (app_web_urls, delete_account, invite_deep_link) | **14 pass** |
+| Functions sync + S3 export tests (above) | **71 pass** |
 
 ---
 
-## Git & separation
+## Git
 
 | Item | Value |
 |------|--------|
-| Branch at execution | `audit2/docker-ci-evidence` @ `081ae77` |
-| Audit 3 commit | Isolated Flutter + docs + export test (see `git log`) |
-| Audit 1 tree | `index.js`, `s3_storage.js`, CSP, infra — **not modified by Audit 3 CQ remediations** |
-| Audit 2 commits | **Untouched** (`e9c42b7`, `081ae77`) |
+| Branch | `audit3/code-quality` |
+| Prior commit | `2bbe4b9` — Flutter CQ-03/04/docs |
+| Final pass commit | (see `git log -1`) |
+| Audit 1 / 2 | Uncommitted Audit 1 tree preserved; Audit 2 commits untouched |
 | Push / merge / deploy | **None** |
 
 ---
 
-## Completion criteria (Phase 12)
+## Accepted technical debt
 
-- [x] CQ-01 reviewed; SEC-10 boundary respected  
-- [ ] CQ-02 split (deferred — documented)  
-- [x] CQ-03 URLs centralized  
-- [x] CQ-04 delete UX centralized  
-- [x] CQ-05 reviewed  
-- [x] CQ-06 documented  
-- [x] Regression executed on changed areas  
-- [x] Audit 3 documentation  
-- [x] Audit 1/2 work not disturbed by CQ code changes  
+1. `cross_role_sync.js` sync handlers (~3530 LOC) — next split by domain.
+2. `patient_profile_screen.dart` (~2213 LOC) — below 4k threshold; incremental UI extraction.
+3. User-facing `support@doctornect.com` literals in legal/profile copy (brand constants, not env).
 
-**Mark Audit 3:** **PARTIALLY COMPLETE** until CQ-02 progressive refactors land.
+---
+
+## Completion criteria
+
+All CQ items remediated or documented; regression green on touched areas; Audit 1 SEC-10 not claimed closed.
+
+**Audit 3:** **COMPLETE** with debt above.

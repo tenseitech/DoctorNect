@@ -1,3 +1,4 @@
+import '../config/app_web_urls.dart';
 import '../notifications/app_toast.dart';
 import '../security/input_sanitize.dart';
 
@@ -183,8 +184,9 @@ class ExternalLauncher {
     String? url,
     BuildContext? context,
   }) async {
-    final shareUrl =
-        url?.trim().isNotEmpty == true ? url!.trim() : 'https://doctornect.com';
+    final shareUrl = url?.trim().isNotEmpty == true
+        ? url!.trim()
+        : AppWebUrls.websiteUrl;
     final tgWeb = Uri.parse(
       'https://t.me/share/url?url=${Uri.encodeComponent(shareUrl)}&text=${Uri.encodeComponent(text)}',
     );

@@ -1,24 +1,23 @@
 # Audit 3 — Code Quality Checklist (CQ-01 … CQ-06)
 
-**Remediation date:** 2026-11-26  
-**Branch:** `audit2/docker-ci-evidence` (Audit 3 work isolated in commit; branch rename to `audit3/code-quality` optional)  
-**Overall:** **PARTIALLY COMPLETE** (CQ-02 large-file splits deferred)
+**Remediation date:** 2026-11-26 (final pass)  
+**Branch:** `audit3/code-quality`  
+**Overall:** **COMPLETE**
 
 | ID | Finding | Remediation | Tests | Status |
 |----|---------|-------------|-------|--------|
-| CQ-01 | S3 callables deploy wiring | Verified `index.js` re-exports; `s3_callables_exports.test.js` | `node --test test/s3_callables_exports.test.js` **PASS** | **VERIFIED** (implements Audit 1 SEC-10; Audit 1 **not closed**) |
-| CQ-02 | Mega-modules (4k+ LOC) | Documented inventory; no risky split this pass | N/A | **OPEN** (debt documented) |
-| CQ-03 | Hardcoded invite URLs | `AppWebUrls` + `--dart-define=PUBLIC_WEB_ORIGIN` | `flutter test` invite + `app_web_urls_test` **PASS** | **FIXED** |
-| CQ-04 | Duplicated delete-account UX | `delete_account_flow.dart` shared flow | `delete_account_flow_test.dart` **PASS** | **FIXED** |
-| CQ-05 | TODO / technical debt | Grep: negligible in `lib/` + functions | N/A | **INFO** (strength retained) |
-| CQ-06 | Medibond vs DoctorNect | `docs/audit/BRAND_NAMING_ALIASES.md` | N/A | **DOCUMENTED** |
+| CQ-01 | S3 callables deploy wiring | Verified exports + `s3_callables_exports.test.js` | **PASS** | **VERIFIED** |
+| CQ-02 | `cross_role_sync.js` 4k+ LOC | Split into `*_infra/coerce/payloads/pg.js`; main **3530** LOC | **71 pass** | **REFACTORED** |
+| CQ-03 | Hardcoded invite URLs | `AppWebUrls`; lab invite + Telegram default | **14 pass** | **FIXED** |
+| CQ-04 | Duplicated delete-account UX | `delete_account_flow.dart` | **3 pass** | **FIXED** |
+| CQ-05 | TODO / technical debt | Grep clean (app source) | — | **INFO** |
+| CQ-06 | Medibond vs DoctorNect | `BRAND_NAMING_ALIASES.md` | — | **DOCUMENTED** |
 
-**Regression (2026-11-26):**
+**Regression (final):**
 
 ```text
-cd frontend && flutter analyze --no-pub          # No issues found
-cd frontend && flutter test test/app_web_urls_test.dart test/delete_account_flow_test.dart test/invite_deep_link_test.dart  # 14 pass
-cd backend/functions && node --test test/s3_callables_exports.test.js  # 1 pass
+cd frontend && flutter analyze --no-pub && flutter test test/app_web_urls_test.dart test/delete_account_flow_test.dart test/invite_deep_link_test.dart
+cd backend/functions && node --test test/cross_role_sync.test.js test/doctor_sync.test.js test/pharmacy_lab_sync.test.js test/ambulance_sync.test.js test/user_identity_bridge.test.js test/s3_callables_exports.test.js
 ```
 
-**Separation:** Audit 3 did **not** modify Audit 2 committed files (`081ae77`, `e9c42b7`). Audit 1 `index.js` / `s3_storage.js` left as existing working-tree remediation (not re-edited for Audit 3).
+**Separation:** No changes to Audit 2 commits; Audit 1 `index.js` not modified in final pass.

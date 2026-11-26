@@ -586,7 +586,7 @@ Mis-deployed gateway without secrets → JWT default risk; missing S3 exports �
 | DEP-07 | Dependencies | CVE not re-verified | INFO | HIGH | — | N/A |
 | DEP-08 | Dependencies | MSG91 proxy unlocked install | LOW | MED | proxy Dockerfile | Open |
 | CQ-01 | Quality | S3 export wiring (see SEC-10) | HIGH | CONFIRMED | `index.js` | Verified (Audit 3) |
-| CQ-02 | Quality | Mega modules/screens | MEDIUM | HIGH | multiple | Open |
+| CQ-02 | Quality | Mega modules/screens | MEDIUM | HIGH | `cross_role_sync_*.js` | Refactored (orchestration remains) |
 | CQ-03 | Quality | Hardcoded invite URLs | MEDIUM | HIGH | `app_web_urls.dart` | Fixed |
 | CQ-04 | Quality | Duplicated deletion UX | MEDIUM | MED | `delete_account_flow.dart` | Fixed |
 | CQ-05 | Quality | Low TODO debt | LOW | HIGH | lib/functions | Info |
@@ -920,18 +920,18 @@ Deny-all client Firebase data planes; gateway allowlists; RLS; secret hygiene; h
 
 ## 20. Audit 3 — Code quality remediation (2026-11-26)
 
-**Status:** **PARTIALLY COMPLETE** — see `AUDIT_3_REPORT.md` and `docs/audit/AUDIT_3_CHECKLIST.md`.
+**Status:** **COMPLETE** (2026-11-26 final pass) — see `AUDIT_3_REPORT.md` and `docs/audit/AUDIT_3_CHECKLIST.md`.
 
 | CQ | Post-remediation status |
 |----|-------------------------|
-| CQ-01 | **VERIFIED** — S3 callables re-exported from `index.js` (SEC-10 overlap; Audit 1 not closed) |
-| CQ-02 | **OPEN** — `cross_role_sync.js` (~4294 LOC) split deferred |
-| CQ-03 | **FIXED** — `AppWebUrls` / `PUBLIC_WEB_ORIGIN` |
+| CQ-01 | **VERIFIED** — S3 exports + contract test (SEC-10 / Audit 1 not closed) |
+| CQ-02 | **REFACTORED** — `cross_role_sync` modules; main file **3530** LOC (was ~4294) |
+| CQ-03 | **FIXED** — `AppWebUrls` / `PUBLIC_WEB_ORIGIN` + lab invite sheet |
 | CQ-04 | **FIXED** — `delete_account_flow.dart` |
 | CQ-05 | **INFO** — low TODO debt retained |
 | CQ-06 | **DOCUMENTED** — `docs/audit/BRAND_NAMING_ALIASES.md` |
 
-**Tests:** `flutter analyze --no-pub` clean; 14 Flutter unit tests; `s3_callables_exports.test.js` pass.
+**Tests:** Flutter analyze clean; 14 Flutter unit tests; Functions **71** sync/S3 tests pass.
 
 ---
 
