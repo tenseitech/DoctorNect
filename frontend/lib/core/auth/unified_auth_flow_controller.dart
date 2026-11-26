@@ -33,6 +33,10 @@ enum UnifiedAuthStep { mobile, otp }
 /// drive this, so the Firebase/OTP calls and the login-vs-register branch exist
 /// in exactly one place. Callers own the text field, the OTP widget and the
 /// layout; this only owns the flow state and the network calls.
+/// Role to sign in with after a verified OTP for an EXISTING account: only the role the
+/// server returned. Null (unknown/missing) means "do not sign in" (never default to patient).
+UserType? loginRoleFromServer(UserType? serverRole) => serverRole;
+
 class UnifiedAuthFlowController extends ChangeNotifier {
   UnifiedAuthFlowController({this.role});
 
@@ -209,7 +213,16 @@ class UnifiedAuthFlowController extends ChangeNotifier {
 
       final postVerify = RegistrationOtpService.postVerifyAccountLookup;
       if (postVerify.exists == true) {
-        final targetRole = postVerify.role ?? UserType.patient;
+        final targetRole = loginRoleFromServer(postVerify.role);
+        if (targetRole == null) {
+          // Never guess (an older backend omits the role): a guessed "patient" signs
+          // doctors/labs/pharmacies into the wrong module or fails with a role mismatch.
+          AppToast.error(
+            context,
+            'Could not determine your account type. Please update the app or try again later.',
+          );
+          return;
+        }
         _matchedRole = targetRole;
         _authPath = UnifiedAuthPath.login;
         await _completeLoginAfterVerifiedOtp(

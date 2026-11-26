@@ -893,7 +893,9 @@ class SupabaseUserRepository {
         'super_admin' || 'superAdmin' => UserType.superAdmin,
         'doctor' => UserType.doctor,
         'patient' => UserType.patient,
-        'medical' || 'medicalStore' => UserType.medicalStore,
+        // Same aliases as MobileRegistrationLookup.parseUserType (server role strings).
+        'medical' || 'medicalStore' || 'medical_store' || 'pharmacy' =>
+          UserType.medicalStore,
         'lab' => UserType.lab,
         'ambulance' => UserType.ambulance,
         _ => null,

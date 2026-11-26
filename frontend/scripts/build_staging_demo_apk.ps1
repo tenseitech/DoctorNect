@@ -77,6 +77,8 @@ $defines = @(
   '--dart-define=APP_ENV=staging',
   '--dart-define=APP_CHECK_DEBUG_PROVIDER=true',
   '--dart-define=FIRESTORE_FORBIDDEN=true',
+  # Demo account 9999900005 is an ambulance: the module is off in release builds unless enabled.
+  '--dart-define=AMBULANCE_ENABLED=true',
   "--dart-define=FIREBASE_API_KEY_ANDROID=$($values['FIREBASE_API_KEY_ANDROID'])",
   "--dart-define=FIREBASE_PROJECT_ID=$($values['FIREBASE_PROJECT_ID'])",
   "--dart-define=SUPABASE_URL=$url",
