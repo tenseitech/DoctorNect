@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme_controller.dart';
 import '../../../core/utils/asset_resolver.dart';
+import '../../../widgets/accessible_icon_button.dart';
 import '../../../widgets/medibond_logo.dart';
 
 /// Data model for healthcare carousel slides in AuthLayout.
@@ -251,10 +252,10 @@ class _DesktopAuthScaffold extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             if (showBackButton || onBack != null)
-                              IconButton(
+                              AccessibleIconButton(
                                 icon: const Icon(Icons.arrow_back_rounded),
+                                semanticsLabel: 'Back',
                                 color: AppColors.textPrimaryOf(context),
-                                tooltip: 'Back',
                                 onPressed: onBack ??
                                     () => Navigator.of(context).maybePop(),
                               )

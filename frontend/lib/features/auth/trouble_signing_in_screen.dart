@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/accessible_icon_button.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../patient/profile/support/help_support_screen.dart';
@@ -45,11 +46,11 @@ class TroubleSigningInScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: IconButton(
+                  child: AccessibleIconButton(
                     icon: const Icon(Icons.close_rounded),
+                    semanticsLabel: 'Close',
                     onPressed: () => _close(context),
                     color: AppColors.textPrimaryOf(context),
-                    tooltip: 'Close',
                   ),
                 ),
               ),

@@ -23,6 +23,7 @@ class AccessibleIconButton extends StatelessWidget {
     Key? key,
     required VoidCallback? onPressed,
     String semanticsLabel = 'Go back',
+    Color? color,
   }) {
     return AccessibleIconButton(
       key: key,
@@ -30,6 +31,7 @@ class AccessibleIconButton extends StatelessWidget {
       semanticsLabel: semanticsLabel,
       tooltip: semanticsLabel,
       onPressed: onPressed,
+      color: color,
     );
   }
 
