@@ -2959,21 +2959,16 @@ async function lookupMobileRegistration(db, data) {
   if (intent !== 'login' && intent !== 'registration') {
     throw new HttpsError('invalid-argument', 'Invalid lookup intent.');
   }
-  const requestedRole = normalizeRole(data?.role || '');
-  const search = await findUserByMobileDigits(db, digits, requestedRole || null);
-  const registeredRole = search.found ? normalizeRole(search.role) : null;
-  const exists = Boolean(search.found);
-  const conflict = resolveMobileLookupConflict({
-    found: exists,
-    registeredRole,
-    requestedRole,
-    intent,
-  });
+  // Before an OTP is verified the server must not say whether a number has an account or which
+  // role it has (account enumeration). The app learns both from verifyUserRegistrationOtp, after
+  // the OTP. This pre-OTP callable is kept only so older app builds get a well-formed, neutral
+  // answer; it never queries the database.
   return {
     ok: true,
-    conflict,
-    exists,
-    role: exists ? registeredRole : null,
+    conflict: false,
+    exists: null,
+    role: null,
+    decidedAfterOtp: true,
   };
 }
 
