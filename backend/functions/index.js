@@ -169,6 +169,8 @@ require('./src/db/assert_app_env').assertDemoOtpSecretForOtpFunction();
     assertProductionAppCheckEnforcement();
     assertProductionReviewerOtpPolicy();
     assertProductionNoPlaceholderSecrets();
+    // D2: completeness at boot, off until the first green deploy (switch in assert_app_env.js).
+    require("./src/db/assert_app_env").runCutoverCompletenessAtBoot();
   }
 }
 

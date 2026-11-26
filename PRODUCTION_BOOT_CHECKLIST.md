@@ -136,3 +136,13 @@ not set up correctly." and log `reason=firebase_config_missing`).
 1. API gateway image (current `services/api-gateway`).
 2. PostgREST image with the RDS CA bundle baked in and `PGRST_DB_URI=...?sslmode=verify-full&sslrootcert=/etc/ssl/rds/global-bundle.pem`.
 3. Cloud Functions: `firebase deploy --only functions` after `npm run materialize:functions-env` and `npm run check:boot-env`.
+
+## Cold-start completeness check (D2): flip after the first green deploy
+
+`backend/functions/src/db/assert_app_env.js` has `ENFORCE_CUTOVER_COMPLETENESS_AT_BOOT = false`.
+When `true`, every production function refuses to start unless `PROD_GATEWAY_URL`, a Redis endpoint
+(`REDIS_URL` / `REDIS_URL_PRODUCTION` / `REDIS_HOST`), `MSG91_AUTH_KEY`, `FIRESTORE_FORBIDDEN=1` and,
+when required, `DATABASE_URL` are present (the error lists missing names only). It is a code constant
+on purpose (env files are edited by hand). Flip it after the first green production deploy, once
+`npm run check:boot-env -- .env --target=functions` shows the "cutover completeness" line as PASS for
+the deployed env, then redeploy.

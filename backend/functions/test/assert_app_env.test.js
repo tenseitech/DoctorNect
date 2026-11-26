@@ -397,3 +397,28 @@ describe('assertProductionNoPlaceholderSecrets', () => {
     assert.doesNotThrow(() => assertProductionNoPlaceholderSecrets());
   });
 });
+
+describe('runCutoverCompletenessAtBoot (D2 switch)', () => {
+  const { runCutoverCompletenessAtBoot, ENFORCE_CUTOVER_COMPLETENESS_AT_BOOT } = require('../src/db/assert_app_env');
+  const incomplete = { APP_ENV: 'production', MSG91_AUTH_KEY: 'secret-value-should-not-appear' };
+
+  it('is OFF in code until the first green production deploy', () => {
+    assert.equal(ENFORCE_CUTOVER_COMPLETENESS_AT_BOOT, false);
+    assert.equal(runCutoverCompletenessAtBoot(incomplete), false);
+  });
+
+  it('when ON it blocks boot and lists missing variable NAMES only', () => {
+    assert.throws(() => runCutoverCompletenessAtBoot(incomplete, true), (e) => {
+      assert.equal(e.code, 'failed-precondition');
+      assert.match(e.message, /PROD_GATEWAY_URL/);
+      assert.match(e.message, /REDIS_URL/);
+      assert.ok(!e.message.includes('secret-value-should-not-appear'), 'no values in the message');
+      return true;
+    });
+  });
+
+  it('is wired into the cold start in index.js', () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../index.js'), 'utf8');
+    assert.match(src, /runCutoverCompletenessAtBoot\(\)/);
+  });
+});

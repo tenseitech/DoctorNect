@@ -301,6 +301,20 @@ function assertProductionNoPlaceholderSecrets(env = process.env) {
 /**
  * Production boot: cutover env must be complete before serving traffic.
  */
+/**
+ * D2 / M3: cold-start completeness check (Redis, MSG91, gateway URL, DATABASE_URL when required).
+ * OFF until the first green production deploy: flip to true in code (deliberately not an env
+ * variable) after that deploy, then redeploy. check:boot-env already reports the same check.
+ */
+const ENFORCE_CUTOVER_COMPLETENESS_AT_BOOT = false;
+
+/** Called at cold start from index.js; does nothing while the switch above is off. */
+function runCutoverCompletenessAtBoot(env = process.env, enabled = ENFORCE_CUTOVER_COMPLETENESS_AT_BOOT) {
+  if (!enabled) return false;
+  assertProductionCutoverBoot(env);
+  return true;
+}
+
 function assertProductionCutoverBoot(env = process.env) {
   const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
   if (appEnv !== 'production') return;
@@ -455,6 +469,8 @@ module.exports = {
   assertProductionAppCheckEnforcement,
   assertProductionReviewOtpDisabled,
   assertProductionCutoverBoot,
+  runCutoverCompletenessAtBoot,
+  ENFORCE_CUTOVER_COMPLETENESS_AT_BOOT,
   assertProductionNoPlaceholderSecrets,
   isProductionSecretEnvKey,
   isPlaceholderSecretValue,
