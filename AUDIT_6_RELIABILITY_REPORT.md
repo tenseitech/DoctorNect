@@ -2,6 +2,7 @@
 
 **Date:** 2026-11-26  
 **Branch:** `audit6/reliability-resilience`  
+**Commit:** `e8435ea`  
 **Base:** Audit 5 follow-up `92ac451`
 
 **Status:** **AUDIT 6 COMPLETE** (code + tests). Gateway `server.js` correlation wiring **PARTIALLY FIXED** (Audit 4 hold).

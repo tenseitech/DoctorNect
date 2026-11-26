@@ -21,3 +21,6 @@
 | Gateway server wiring | **Blocked** — mixed Audit 4 tree |
 | Regression tests | 10 tests pass |
 | Documentation | Done |
+| Git commit | `e8435ea` |
+| Push `audit6/reliability-resilience` | Done |
+| `CODEBASE_AUDIT_REPORT.md` §23 | Local only (mixed §21–22 unstaged) |
