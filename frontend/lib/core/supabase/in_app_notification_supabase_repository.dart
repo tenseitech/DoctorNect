@@ -57,6 +57,11 @@ class InAppNotificationSupabaseRepository {
 
   SupabaseClient get _client => _mockClient ?? SupabaseBootstrap.client;
 
+  /// PostgREST column projection for list reads (PERF-04).
+  static const String listSelectColumns =
+      'notification_id,title,body,is_read,type,target_id,doctor_trigger,'
+      'patient_trigger,dedupe_key,created_at';
+
   static AppNotification? notificationFromRow(Map<String, dynamic> row) {
     try {
       final id = (row['notification_id'] as String?)?.trim() ??
@@ -154,7 +159,7 @@ class InAppNotificationSupabaseRepository {
 
     final res = await _client
         .from('in_app_notifications')
-        .select()
+        .select(listSelectColumns)
         .eq('recipient_uid', recipientUid)
         .order('created_at', ascending: false)
         .limit(50);
@@ -188,9 +193,15 @@ class InAppNotificationSupabaseRepository {
         .toList();
     if (ids.isEmpty) return;
 
-    for (final id in ids) {
-      await markRead(id);
+    if (ids.length == 1) {
+      await markRead(ids.first);
+      return;
     }
+
+    await _client.from('in_app_notifications').update({
+      'is_read': true,
+      'read_at': DateTime.now().toIso8601String(),
+    }).inFilter('notification_id', ids);
   }
 
   SupabaseWatcherStateMachine<AppNotification> createWatcher({

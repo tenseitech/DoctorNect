@@ -1,4 +1,7 @@
 import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+
 import 'supabase_bootstrap.dart';
 
 /// Event type for incremental PostgreSQL Realtime mutations.
@@ -60,6 +63,8 @@ class SupabaseWatcherStateMachine<T> {
   StreamSubscription<WatcherEvent<T>>? _eventSub;
   Timer? _pollingTimer;
   bool _isDisposed = false;
+  bool _resyncInFlight = false;
+  bool _resyncPending = false;
 
   /// Returns a defensive copy of the current cached items.
   List<T> get cachedList {
@@ -71,24 +76,42 @@ class SupabaseWatcherStateMachine<T> {
   }
 
   /// Authoritatively resyncs the cache from the primary database [fetcher].
+  ///
+  /// Overlapping calls (e.g. slow network + periodic poll) coalesce into at most
+  /// one follow-up fetch to avoid request stampedes.
   Future<void> resync() async {
     if (_isDisposed) return;
+    if (_resyncInFlight) {
+      _resyncPending = true;
+      return;
+    }
+    _resyncInFlight = true;
     try {
-      final items = await fetcher();
-      if (_isDisposed) return;
-      _cache.clear();
-      for (final item in items) {
-        _cache[getId(item)] = item;
-      }
-      if (_controller != null && !_controller!.isClosed) {
-        _controller!.add(cachedList);
-      }
-    } catch (e, st) {
-      if (_controller != null && !_controller!.isClosed) {
-        _controller!.addError(e, st);
-      }
+      do {
+        _resyncPending = false;
+        try {
+          final items = await fetcher();
+          if (_isDisposed) return;
+          _cache.clear();
+          for (final item in items) {
+            _cache[getId(item)] = item;
+          }
+          if (_controller != null && !_controller!.isClosed) {
+            _controller!.add(cachedList);
+          }
+        } catch (e, st) {
+          if (_controller != null && !_controller!.isClosed) {
+            _controller!.addError(e, st);
+          }
+        }
+      } while (_resyncPending && !_isDisposed);
+    } finally {
+      _resyncInFlight = false;
     }
   }
+
+  @visibleForTesting
+  bool get resyncInFlightForTesting => _resyncInFlight;
 
   /// Processes an incremental mutation event (upsert, delete, or resync).
   void handleEvent(WatcherEvent<T> event) {

@@ -52,6 +52,7 @@ Stream<List<Map<String, dynamic>>> streamTable({
   Stream<void>? pushTrigger,
   StreamTableOptions options = const StreamTableOptions(),
   Future<List<Map<String, dynamic>>> Function()? customFetcher,
+  String? selectColumns,
   @visibleForTesting bool? forcePollingOverride,
 }) {
   final usePolling = forcePollingOverride ?? SupabaseBootstrap.isProduction;
@@ -88,7 +89,9 @@ Stream<List<Map<String, dynamic>>> streamTable({
       } else if (!kReleaseMode && _debugTableFetcher != null) {
         rows = await _debugTableFetcher!(table);
       } else if (SupabaseBootstrap.isReady) {
-        var query = SupabaseBootstrap.client.from(table).select();
+        var query = selectColumns != null && selectColumns.isNotEmpty
+            ? SupabaseBootstrap.client.from(table).select(selectColumns)
+            : SupabaseBootstrap.client.from(table).select();
 
         if (filterColumn != null && filterValue != null) {
           query = query.eq(filterColumn, filterValue);

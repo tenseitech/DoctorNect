@@ -17,6 +17,11 @@ class SupabaseHealthRecordsRepository {
   static final SupabaseHealthRecordsRepository instance =
       SupabaseHealthRecordsRepository._();
 
+  /// PostgREST column projection for list reads (PERF-04; avoids wide rows).
+  static const String listSelectColumns =
+      'record_id,title,type,date,source,file_name,doctor_name,lab_name,is_image,'
+      'notes,shared_with_doctors,file_storage,storage_url,storage_key,storage_provider';
+
   SupabaseClient get _client => SupabaseBootstrap.client;
 
   Future<List<HealthRecord>> fetchForPatient(String patientId) async {
@@ -25,7 +30,7 @@ class SupabaseHealthRecordsRepository {
     try {
       final res = await _client
           .from('health_records')
-          .select()
+          .select(listSelectColumns)
           .eq('patient_id', patientId)
           .order('date', ascending: false)
           .limit(100);
@@ -51,7 +56,7 @@ class SupabaseHealthRecordsRepository {
     try {
       final res = await _client
           .from('health_records')
-          .select()
+          .select(listSelectColumns)
           .eq('patient_id', patientId)
           .order('date', ascending: false)
           .limit(100);
@@ -125,6 +130,7 @@ class SupabaseHealthRecordsRepository {
         primaryKey: ['record_id'],
         filterColumn: 'patient_id',
         filterValue: patientId,
+        selectColumns: listSelectColumns,
       ).map((rows) {
         final records = rows.map(_fromRow).whereType<HealthRecord>().toList();
         records.sort((a, b) => b.date.compareTo(a.date));

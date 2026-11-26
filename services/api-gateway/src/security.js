@@ -28,12 +28,33 @@ class RateLimiter {
   constructor(options = {}) {
     this.windowMs = options.windowMs || 60000;
     this.maxRequests = options.maxRequests || 120;
+    /** Cap tracked keys to bound memory under distributed-IP floods (PERF-12). */
+    this.maxTrackedKeys = options.maxTrackedKeys || 50000;
     this.requests = new Map(); // key -> [timestamps]
 
     // Periodic cleanup of expired buckets every 60s
     this.cleanupTimer = setInterval(() => this.cleanup(), 60000);
     if (this.cleanupTimer.unref) {
       this.cleanupTimer.unref();
+    }
+  }
+
+  _pruneExpiredKeys(windowStart) {
+    for (const [mapKey, timestamps] of this.requests.entries()) {
+      const active = timestamps.filter((t) => t > windowStart);
+      if (active.length === 0) {
+        this.requests.delete(mapKey);
+      } else {
+        this.requests.set(mapKey, active);
+      }
+    }
+  }
+
+  _evictOverflowKeys() {
+    while (this.requests.size >= this.maxTrackedKeys) {
+      const oldest = this.requests.keys().next().value;
+      if (oldest === undefined) break;
+      this.requests.delete(oldest);
     }
   }
 
@@ -48,6 +69,13 @@ class RateLimiter {
     if (timestamps.length >= this.maxRequests) {
       this.requests.set(key, timestamps);
       return false;
+    }
+
+    if (!this.requests.has(key)) {
+      if (this.requests.size >= this.maxTrackedKeys) {
+        this._pruneExpiredKeys(windowStart);
+        this._evictOverflowKeys();
+      }
     }
 
     timestamps.push(now);
