@@ -1119,6 +1119,9 @@ async function retryMsg91SmsOtp(mobileDigits) {
   return { ok: true, httpStatus: statusCode, responseBody: body, requestId: parsed.requestId };
 }
 
+/** MSG91 send timeout (ms); the caller maps a failure to HttpsError('unavailable'). */
+const MSG91_SEND_TIMEOUT_MS = 8000;
+
 function postMsg91OtpRequest({ authKey, mobileDigits, code, templateId, senderId }) {
   const built = buildMsg91OtpRequest({ mobileDigits, code, templateId, senderId });
   const proxyUrl = String(process.env.MSG91_PROXY_URL || '').trim();
@@ -1166,6 +1169,8 @@ function postMsg91OtpRequest({ authKey, mobileDigits, code, templateId, senderId
         });
       });
 
+      // A slow MSG91/proxy must not hold the OTP send until the function timeout.
+      req.setTimeout(MSG91_SEND_TIMEOUT_MS, () => req.destroy(new Error('MSG91 proxy request timed out')));
       req.on('error', (err) => reject(err));
       req.write(postData);
       req.end();
@@ -1203,6 +1208,7 @@ function postMsg91OtpRequest({ authKey, mobileDigits, code, templateId, senderId
       });
     });
 
+    req.setTimeout(MSG91_SEND_TIMEOUT_MS, () => req.destroy(new Error('MSG91 request timed out')));
     req.on('error', (err) => reject(err));
     req.write(built.payload);
     req.end();
