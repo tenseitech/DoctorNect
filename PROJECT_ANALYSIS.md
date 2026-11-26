@@ -1,4 +1,4 @@
-# DoctorNect - project analysis (2026-11-26)
+fixed (D6): workflow deleted; repo secrets SUPABASE_KEEPALIVE_URL/KEY can be deleted
 
 Branch `security/full-audit-fix`, nothing pushed. Admin module out of scope. Method: code reading,
 manifest load of `backend/functions/index.js`, migrations replayed on scratch PG17 + PG18 (Docker),
@@ -44,26 +44,26 @@ Status: open / fixed (commit) / needs decision / blocked (on you) / won't fix.
 | C3 | Critical | Gateway image | `services/api-gateway/src/server.js:3,14-15`, `src/demo_write_guard.js:3` | Requires `../../../scripts/lib/*`; the Dockerfile ships only `src/`, so the container fails at start with `MODULE_NOT_FOUND` (verified with docker run). Found while working on D1 | ECS task crash-loops as soon as desired count is 1; the pushed image (tag 440a465...) is affected | Vendor `demo_accounts`/`demo_routing`/`rds_demo_uid_guard` into `src/shared` (parity test), local .env loader optional, CI loads server.js inside the built image | S | Low | fixed (rebuild + push images needed) |
 | H1 | High | Security/OTP | `index.js` `lookupMobileRegistration`, `registration_otp.js:2962` | Unauthenticated (App Check only) callable returns `exists` + `role` for any number before OTP | Account enumeration: who uses the app and as which provider/patient | Answer with a constant, non-revealing result; delete the dead client path (`resolvePath`) | S | Low (app does not call it) | fixed (server; dead client path left, harmless) |
 | H2 | High | Booking/SQL | `reschedule_appointment_atomic` (`20261119000004`) | Always 10:00 IST; capacity counted by label not time; no advisory lock; re-opens cancelled/completed; past dates allowed | Wrong appointment times (client then fails "slot/time mismatch"), over-booking race, revived cancelled visits | New migration: parse `hh:mm AM/PM`, same lock + capacity rule as booking, status and date guards; SQL test | M | Medium (RPC body only, same signature) | fixed (migration 20261126000001: apply on staging, then RDS) |
-| H3 | High | Ambulance/plane | `completeAmbulanceMobileOtpLogin`, `ambulance_auth_helper.dart` | Ambulance session is anonymous; in production the demo ambulance's anon uid is not on the demo allowlist, so its callables route to RDS | Demo ambulance (Play review) broken after deploy; no real-user impact | See decision D1 | M-L | Medium | needs decision |
+| H3 | High | Ambulance/plane | `completeAmbulanceMobileOtpLogin`, `ambulance_auth_helper.dart` | Ambulance session is anonymous; in production the demo ambulance's anon uid is not on the demo allowlist, so its callables route to RDS | Demo ambulance (Play review) broken after deploy; no real-user impact | See decision D1 | M-L | Medium | fixed (D1 = a: server-set demo-plane marker; commits 713dd98, 5b1c7d8, bccde6a). Later (b) design below |
 | H4 | High | Reliability | `registration_otp.js:1122-1208` `postMsg91OtpRequest` | No timeout on both MSG91 send paths (proxy and direct) | A slow MSG91 holds the OTP send until the 60 s function timeout; user stuck, cost | `req.setTimeout(8000)` like verify | S | Low | fixed |
 | H5 | High | CI | `.github/workflows/*.yml` | Flutter 3.47.5 (project needs 3.50 for AGP 9), Node 20 vs engines 22, no `permissions:` (default token rights), `build-apk` uploads a release APK without Firebase/data-plane config, no SQL/boot-env/secret-scan jobs | CI red or misleading; broader token rights than needed | Pin versions, `permissions: contents: read`, debug-only artifact, new `db-tests.yml` (PG17+PG18 + script audit), format the code base; check:boot-env stays local (needs real secrets) | M | Low | fixed |
 | H6 | High | Release safety | `frontend/scripts/build_staging_demo_apk.ps1` | Staging demo APK (App Check debug provider, staging data plane) is signed with the release key and had the same version name as a release (`1.0.2`) | Could be mistaken for, or uploaded as, a production build | Version name `<version>-staging-demo` (key kept so `adb install -r` works on test phones); test | S | Low | fixed |
 | M1 | Medium | Reliability | `src/db/client.js:92` | Gateway/Supabase client has no request timeout | Gateway outage: every DB call hangs until function timeout | `global.fetch` with `AbortSignal.timeout(15000)` | S | Low | fixed |
 | M2 | Medium | DB perf | 28 FK columns without index (e.g. `appointments.booked_by_uid`, `patient_doctor_links.doctor_id`, `pharmacy_deliveries.doctor_id`, `ambulance_locations.driver_id`, `support_tickets.*`) | Seq scans on joins/deletes (account deletion, cascades) | Slow queries as data grows | Migration `CREATE INDEX IF NOT EXISTS` for all 28 | S | Low | fixed (migration 20261126000002) |
-| M3 | Medium | Boot | `assert_app_env.js` `assertProductionCutoverBoot` | Completeness assert not called at cold start | Missing Redis/MSG91 config found at first use, not boot | Call it at cold start (check:boot-env already warns) | S | Medium (could stop boot) | needs decision (D2) |
+| M3 | Medium | Boot | `assert_app_env.js` `assertProductionCutoverBoot` | Completeness assert not called at cold start | Missing Redis/MSG91 config found at first use, not boot | Call it at cold start (check:boot-env already warns) | S | Medium (could stop boot) | deferred (D2) until after the first green production deploy |
 | M4 | Medium | Lab | `lab_catalog_repository.dart:20` | Queries table `lab_catalog` (dropped); error swallowed | One failing request per lab screen load; catalog never server-driven | Stop querying (built-in defaults already used) | S | Low | fixed |
 | M5 | Medium | Privacy/logs | 10 `console.error(..., err)` sites | Whole error objects logged (PostgREST errors can echo row values) | PHI/PII in Cloud Logging | Log `code` + `message` only (`log_safe.js`) | S | Low | fixed |
 | M6 | Medium | Supply/TLS | ~20 `scripts/**` with `rejectUnauthorized: false` (staging audits) | Unverified TLS to staging DB | MITM of a privileged connection | Use `scripts/lib/staging_pg_ssl.js` (`stagingPgSsl()`) in all 23 | M | Low | fixed |
 | M7 | Medium | Docs | `MIGRATION_STATUS.md` | Says prod 77/77, head `20261119000005`, wrong branch | Misleads cutover steps (7 pending now) | Update | S | None | fixed |
-| M8 | Medium | Legacy | 109 Flutter files / 7 backend files mention Firestore | Dead dual-path code, naming | Maintenance, accidental re-enable | Staged removal | L | Medium | needs decision (D3) |
+| M8 | Medium | Legacy | 109 Flutter files / 7 backend files mention Firestore | Dead dual-path code, naming | Maintenance, accidental re-enable | Staged removal | L | Medium | deferred (D3) until after the first green production deploy |
 | M9 | Medium | Supply chain | `scripts/package.json` | Ops/DB scripts require `pg`, `firebase-admin`, `@supabase/supabase-js`, `jsonwebtoken` without declaring them; no lockfile; installed `firebase-admin` 12.7 had 1 high + 9 other advisories | Unreproducible installs, unaudited code with prod credentials, CI cannot install | Declare deps, align `firebase-admin` to ^14.4 (same as Functions), commit lockfile; audit 0 | S | Low | fixed |
 | L1 | Low | DB | `storage_audit_logs.status` | No CHECK | Bad values possible | CHECK constraint (NOT VALID + validate) | S | Low | won't fix: statuses are fixed strings in code (5 values); a CHECK would turn a new audit status into a failed audit write |
 | L2 | Low | Gateway | `services/api-gateway/src/config.js` | Allowlists name non-existent `lab_catalog`, `medicine_suggestions`, `admin_users`, `provisioning_errors`, `sync_dead_letter_queue`, `delete_my_account` | Stale surface | Remove dead names (test); `admin_users`/`provisioning_errors` kept (deletion uses `delOptional`), `sync_dead_letter_queue` kept (legacy e2e scripts) | S | Low | fixed (partly, rest explained) |
 | L3 | Low | Client | `medicine_suggestion_repository.dart` | Inserts into dropped table; never called | Dead code | Remove | S | None | fixed |
-| L4 | Low | Android | Razorpay SDK adds `NFC`, `READ_BASIC_PHONE_STATE` | Extra permissions in Data safety | Store listing questions | `tools:node="remove"` after a payment test | S | Medium (SDK) | needs decision (D4) |
-| L5 | Low | Flutter | 337 `deprecated_member_use` (material.dart -> material_ui) | Deprecation only | Future break | Migrate when material_ui is stable for all plugins | L | Medium | needs decision (D5) |
+| L4 | Low | Android | Razorpay SDK adds `NFC`, `READ_BASIC_PHONE_STATE` | Extra permissions in Data safety | Store listing questions | `tools:node="remove"` after a payment test | S | Medium (SDK) | fixed (D4): stripped with tools:node="remove", verified absent in the APK; payment NOT verified, manual check docs/RAZORPAY_PAYMENT_TEST.md |
+| L5 | Low | Flutter | 337 `deprecated_member_use` (material.dart -> material_ui) | Deprecation only | Future break | Migrate when material_ui is stable for all plugins | L | Medium | deferred (D5) until after the first green production deploy |
 | L6 | Low | Android | `gradle.properties` `android.builtInKotlin=false` + shim | Plugins still apply KGP | Blocks AGP built-in Kotlin | Remove when plugins update | S | - | blocked (upstream) |
-| L7 | Low | CI | `supabase-keepalive.yml` | Duplicates Functions `supabaseKeepalive`, needs a repo secret | Extra secret surface | Keep as backup or delete | S | None | needs decision (D6) |
+| L7 | Low | CI | `supabase-keepalive.yml` | Duplicates Functions `supabaseKeepalive`, needs a repo secret | Extra secret surface | Keep as backup or delete | S | None | fixed (D6): workflow deleted; repo secrets SUPABASE_KEEPALIVE_URL/KEY can be deleted |
 | L8 | Low | Secrets binding | all functions | `PROD_GATEWAY_SERVICE_KEY` bound everywhere | Functions without DB use still hold it | By design (cold-start routing assert + DB calls) | - | - | won't fix (documented) |
 | L9 | Low | Client | `about_screen.dart`, `patient_profile_form_styles.dart` settingsRowCard | About page showed hard-coded "Version 1.0.1" (app is 1.0.2; seen on the phone); settings rows put ListTile inside a coloured box (tap ink invisible, debug assertion) | Wrong version in support conversations; no tap feedback | Version from package_info_plus; transparent Material in the row helper; widget test | S | Low | fixed |
 
@@ -78,7 +78,38 @@ C1 -> (deploy gate) ; H1, H4, M1, M5 independent ; H2 -> SQL test -> replay PG17
 migration each after H2's number ; H5 after the SQL/test commands are final ; M4, L3 client ; L2 gateway ;
 M6 scripts ; M7 docs last.
 
-## Needs your decision
+## Decisions taken (2026-11-26)
+
+- D1 = (a) implemented (H3). D4 implemented (L4), payment still to be checked by hand. D6 implemented (L7).
+- D2 (M3), D3 (M8), D5 (L5): deferred until after the first green production deploy.
+
+### D1 (a): how the demo-plane marker works
+
+- Set only in `completeAmbulanceMobileOtpLogin` after the OTP session is consumed, only when the
+  verified number is the demo ambulance of the fixed allowlist (`lib/demo_accounts.js`) and the
+  session is anonymous. Firebase custom claims `dn_plane=demo`, `dn_plane_sub=<uid>`,
+  `dn_plane_exp=now+12h` via the Admin SDK (clients cannot write claims; tokens are Google-signed).
+- Honoured (Functions `src/db/request_plane.js`, gateway `src/shared/demo_plane_marker.js`) only for
+  the current verified caller, on an anonymous session, own uid, unexpired, sane TTL. Present but
+  invalid: rejected (Functions `unauthenticated`, gateway 401), never routed to RDS.
+- Cleanup: the marker expires after 12 h (log in again to renew); a real ambulance login replaces all
+  claims; anonymous users can be purged by the existing Auth cleanup. The client force-refreshes its
+  ID token right after login so the claims are present on the next request.
+
+### Later (b): real-account sign-in for ambulance drivers (design note)
+
+1. Server: `verifyUserRegistrationOtp` already mints a custom token for the ambulance account owner
+   (users.id). Make `completeAmbulanceMobileOtpLogin` accept that signed-in owner (no anonymous
+   session) and stop writing `ambulances.auth_uid` per device; key RLS on `owner_uid` instead.
+2. Client: sign in with the custom token (like the other roles) and remove the anonymous-session
+   requirement in `AmbulanceAuthHelper`, `role_session_guard`, `ambulance_shell` and the ~15
+   `ensureSignedIn` call sites; PIN login becomes a second factor on the same account.
+3. Data: migration to backfill `ambulances.owner_uid` from users and switch policies; keep
+   `auth_uid` readable for one release, then drop.
+4. Then remove the demo-plane marker (the demo ambulance becomes a normal allowlisted uid).
+   Tests: ambulance E2E on the scratch DB, RLS SQL tests for owner_uid, gateway routing by uid only.
+
+## Needs your decision (original list)
 
 - **D1 Ambulance session (H3).** (a) Server-side: when `completeAmbulanceMobileOtpLogin` links a
   demo-number ambulance, record the anonymous uid as demo (signed custom claim `dn_plane=demo` set only
