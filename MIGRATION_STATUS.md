@@ -1,5 +1,19 @@
 # DoctorNect migration status
 
+## Current (2026-11-26, branch `security/full-audit-fix`, not pushed)
+
+| Target | Head | Pending |
+|---|---|---|
+| Repo (`db/migrations`) | `20261126000002` (86 files) | - |
+| Staging Supabase (PG17) | `20261125000004` (read-only check 2026-11-26) | `20261126000001` (reschedule fix), `20261126000002` (FK indexes) |
+| Production RDS (PG18) | `20261119000005` (last verified 2026-11-20) | the seven `20261124000001` ... `20261125000004` files plus the two above (9) |
+
+All 86 migrations replay on scratch PG17 and PG18 (`npm run test:db`), the newest are idempotent
+and `db/tests` pass. Apply with `scripts/db/migrate.js` (staging first, then RDS after a snapshot):
+see docs/GATEWAY_DEPLOY.md "What is left" steps 2-4.
+
+## History (2026-11-20 cutover; superseded by the table above)
+
 **Branch:** `migration-cutover-fixes` (local, **not pushed**)  
 **Updated:** 2026-11-20 — **Prod cutover complete**  
 **Staging:** 2026-11-20 — Supabase demo-only reset (5× `rev_fb_*_001`, no staging super admin row).

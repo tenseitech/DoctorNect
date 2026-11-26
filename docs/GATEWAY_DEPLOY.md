@@ -39,7 +39,7 @@ Do not "fix" that by pointing production at the staging Supabase project or by w
    aws ssm start-session --region ap-south-1 --target $bastion --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters "host=$ep,portNumber=5432,localPortNumber=5433"
    ```
 4. **Migrations on RDS** (terminal 2, repo root). Dry run first, read the "Pending migration files"
-   list (expected: the seven 20261124000001 ... 20261125000004 files, the same ones staging got), then apply:
+   list (expected: nine files, 20261124000001 ... 20261126000002: the seven staging got plus the reschedule fix and FK indexes), then apply:
    ```powershell
    $h = (node -e "const {getHostFingerprint}=require('./scripts/lib/env_guard');const {getEnv}=require('./scripts/lib/env_loader');console.log(getHostFingerprint(getEnv('PROD_RDS_HOST')))")
    node scripts/db/migrate.js --target=production --dry-run-all --confirm-live-data --confirm=$h --confirm-db=doctornect
