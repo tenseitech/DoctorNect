@@ -6,9 +6,14 @@ const { parseEnvFile } = require('./parse_env_file');
 const { loadRootEnv } = require('./bootstrap_root_env');
 
 const rootDir = findRepoRoot(path.join(__dirname, '..'));
-loadRootEnv({ startDir: rootDir });
 const rootEnvPath = path.join(rootDir, '.env');
-const rootEnv = parseEnvFile(rootEnvPath, { failOnProductionDuplicateKeys: true });
+const harnessActive = process.env.DOCTORNECT_TEST_HARNESS === '1';
+if (!harnessActive) {
+  loadRootEnv({ startDir: rootDir });
+}
+const rootEnv = harnessActive
+  ? {}
+  : parseEnvFile(rootEnvPath, { failOnProductionDuplicateKeys: true });
 const mergedEnv = { ...rootEnv, ...process.env };
 
 function getEnv(key) {

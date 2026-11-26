@@ -2,10 +2,12 @@
 
 // Local development only: load the repo-root .env when the repo is around. The container image
 // ships only src/ and gets its environment from ECS, so a missing loader is expected there.
-try {
-  require('../../../scripts/lib/bootstrap_root_env').loadRootEnv();
-} catch (err) {
-  if (err && err.code !== 'MODULE_NOT_FOUND') throw err;
+if (process.env.DOCTORNECT_TEST_HARNESS !== '1') {
+  try {
+    require('../../../scripts/lib/bootstrap_root_env').loadRootEnv();
+  } catch (err) {
+    if (err && err.code !== 'MODULE_NOT_FOUND') throw err;
+  }
 }
 const http = require('node:http');
 const path = require('node:path');
