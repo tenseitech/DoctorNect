@@ -87,8 +87,9 @@ This pass **completed safe local remediation and verification** across Audits 1â
 
 | Field | Value |
 |-------|--------|
+| Commit SHA | `de3e082f56bdfd4578afb26aec409f652de806c0` |
 | Commit message | `audit-closure: complete remaining audit remediation and verification` |
-| Push | Attempt after commit |
+| Push | See summary below |
 
 ---
 
