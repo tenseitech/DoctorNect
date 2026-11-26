@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -113,6 +115,9 @@ abstract final class SupabaseBootstrap {
     } catch (_) {}
   }
 
+  static StreamSubscription<User?>? _idTokenSubscription;
+  static Timer? _realtimeAuthDebounce;
+
   static SupabaseClient? _debugClientOverride;
 
   @visibleForTesting
@@ -138,10 +143,28 @@ abstract final class SupabaseBootstrap {
     return Supabase.instance.client;
   }
 
+  static void _scheduleRealtimeAuthUpdate(String token) {
+    _realtimeAuthDebounce?.cancel();
+    _realtimeAuthDebounce = Timer(const Duration(milliseconds: 400), () {
+      if (!isReady || token.isEmpty) return;
+      try {
+        client.realtime.setAuth(token);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[SupabaseBootstrap] realtime setAuth failed: $e');
+        }
+      }
+    });
+  }
+
   @visibleForTesting
   static void resetForTesting() {
     isReady = false;
     lastInitError = null;
+    _realtimeAuthDebounce?.cancel();
+    _realtimeAuthDebounce = null;
+    _idTokenSubscription?.cancel();
+    _idTokenSubscription = null;
     _debugClientOverride = null;
     debugAccessTokenOverride = null;
     debugAppEnvOverride = null;
@@ -191,19 +214,19 @@ abstract final class SupabaseBootstrap {
         }
 
         if (Firebase.apps.isNotEmpty) {
-          FirebaseAuth.instance.idTokenChanges().listen((user) async {
-            if (user != null && isReady) {
-              try {
-                final token = await user.getIdToken();
-                if (token != null && token.isNotEmpty) {
-                  client.realtime.setAuth(token);
-                }
-              } catch (e) {
-                if (kDebugMode) {
-                  debugPrint(
-                    '[SupabaseBootstrap] Failed to set realtime auth on token change: $e',
-                  );
-                }
+          await _idTokenSubscription?.cancel();
+          _idTokenSubscription = FirebaseAuth.instance.idTokenChanges().listen((user) async {
+            if (user == null || !isReady) return;
+            try {
+              final token = await user.getIdToken();
+              if (token != null && token.isNotEmpty) {
+                _scheduleRealtimeAuthUpdate(token);
+              }
+            } catch (e) {
+              if (kDebugMode) {
+                debugPrint(
+                  '[SupabaseBootstrap] Failed to refresh realtime auth on token change: $e',
+                );
               }
             }
           });

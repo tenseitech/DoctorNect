@@ -4,6 +4,10 @@ const { FieldValue } = require('firebase-admin/firestore');
 const { getLegacyFirestoreDb } = require('./legacy_db');
 const { readSupabaseServiceRoleKey } = require('./secure_config');
 const { getPgPool } = require('./src/db/pg_pool');
+const {
+  isTransientSyncError,
+  computeBackoffMs,
+} = require('./src/reliability/transient_error');
 
 function getSupabaseConfig() {
   const isProduction = (process.env.APP_ENV || 'staging').toLowerCase() === 'production';
@@ -23,16 +27,16 @@ async function executeWithRetry(operationFn, { maxRetries = 3, baseDelayMs = 200
       return await operationFn(attempt);
     } catch (err) {
       attempt++;
-      if (attempt > maxRetries) {
-        console.error(`[RetryExhausted] Failed after ${maxRetries} retries for ${context.entityType || 'entity'} ID: ${context.entityId || 'unknown'}: ${err.message}`);
+      if (!isTransientSyncError(err) || attempt > maxRetries) {
+        console.error(`[RetryExhausted] Failed after ${attempt - 1} retries for ${context.entityType || 'entity'} ID: ${context.entityId || 'unknown'}: ${err.message}`);
         const exhaustedErr = new Error(`Exhausted ${maxRetries} retries: ${err.message}`);
         exhaustedErr.originalError = err;
-        exhaustedErr.retryCount = maxRetries;
+        exhaustedErr.retryCount = Math.min(attempt - 1, maxRetries);
         throw exhaustedErr;
       }
-      const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
-      console.warn(`[SyncRetry] Attempt ${attempt}/${maxRetries} failed: ${err.message}. Retrying in ${delayMs}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      const delayMs = computeBackoffMs(attempt, { baseDelayMs, maxDelayMs: 4000 });
+      console.warn(`[SyncRetry] Attempt ${attempt}/${maxRetries} failed (transient): ${err.message}. Retrying in ${delayMs}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
 }
@@ -69,6 +73,7 @@ async function recordDlqFailure({ direction, entityType, entityId, payload, erro
           Prefer: 'return=minimal',
         },
         body: JSON.stringify(dlqEntry),
+        signal: AbortSignal.timeout(8000),
       });
       if (resp.ok) return;
     } catch (_) {

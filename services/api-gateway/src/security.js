@@ -138,6 +138,7 @@ function emitAuditLog({
   uidHash = null,
   role = 'anon',
   ip = null,
+  requestId = null,
 }) {
   const cleanPath = (path || '/').split('?')[0];
   const logEntry = {
@@ -151,6 +152,9 @@ function emitAuditLog({
     uid_hash: uidHash,
     ip: ip ? ip.replace(/^.*:/, '') : null,
   };
+  if (requestId) {
+    logEntry.request_id = requestId;
+  }
   process.stdout.write(JSON.stringify(logEntry) + '\n');
 }
 
