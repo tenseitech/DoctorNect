@@ -1,6 +1,7 @@
 'use strict';
 
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { withDataPlaneSecrets } = require('./demo_plane_secrets');
 const { defineSecret } = require('firebase-functions/params');
 const { getAuth } = require('firebase-admin/auth');
 const { resolveCallerIdentity } = require('./caller_identity');
@@ -480,7 +481,7 @@ async function adminMutatePromotedAdHandler(request) {
 const callableOpts = {
   region: 'asia-south1',
   enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
-  secrets: [supabaseServiceRoleKey],
+  secrets: withDataPlaneSecrets([supabaseServiceRoleKey]),
 };
 
 const adminUpdateUserRole = onCall(callableOpts, (request) => adminUpdateUserRoleHandler(request));

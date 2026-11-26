@@ -1,5 +1,6 @@
 const { resolveCallerIdentity } = require('./caller_identity');
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+const { withDataPlaneSecrets } = require('./demo_plane_secrets');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const crypto = require('crypto');
@@ -271,7 +272,7 @@ async function createRazorpayOrderPostgres(uid, safeAdId, hours, amountINR) {
  * Input: { adId: string, durationHours: number }
  */
 const createRazorpayOrder = onCall(
-  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required to create payment order.');
@@ -503,7 +504,7 @@ function toIsoDateString(val) {
  * Input: { adId: string, orderId: string, paymentId: string, signature: string }
  */
 const verifyRazorpayPayment = onCall(
-  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required to verify payment.');
@@ -804,7 +805,7 @@ async function razorpayWebhookHandler(req, res, db) {
 const razorpayWebhook = onRequest(
   {
     region: 'asia-south1',
-    secrets: [razorpayWebhookSecret, supabaseServiceRoleKey],
+    secrets: withDataPlaneSecrets([razorpayWebhookSecret, supabaseServiceRoleKey]),
     invoker: 'public',
   },
   require('./http_endpoint_security').withApiSecurityHeaders(async (req, res) => razorpayWebhookHandler(req, res, null)),
@@ -895,7 +896,7 @@ async function reviewPromotedAdHandler(db, data, auth) {
 }
 
 const reviewPromotedAd = onCall(
-  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: 'asia-south1', enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Authentication required.');
@@ -936,7 +937,7 @@ async function expirePromotedAdsHandler(_db, customNow = null, supabaseClient = 
 /**
  * Scheduled Cloud Function: expirePromotedAds (hourly).
  */
-const expirePromotedAds = onSchedule({ schedule: '0 * * * *', region: 'asia-south1', secrets: [supabaseServiceRoleKey] }, async () => {
+const expirePromotedAds = onSchedule({ schedule: '0 * * * *', region: 'asia-south1', secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) }, async () => {
   try {
     const { totalExpired } = await expirePromotedAdsHandler(null);
     console.log(`[expirePromotedAds] expired ${totalExpired} ad(s).`);

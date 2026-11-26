@@ -7,7 +7,7 @@
  */
 
 const { onSchedule } = require('firebase-functions/v2/scheduler');
-const { demoSupabaseServiceRoleKey } = require('./demo_plane_secrets');
+const { demoSupabaseServiceRoleKey, withDataPlaneSecrets } = require('./demo_plane_secrets');
 
 const KEEPALIVE_EVENT_FAIL = 'supabase_keepalive_failed';
 const KEEPALIVE_EVENT_OK = 'supabase_keepalive_ok';
@@ -126,7 +126,7 @@ const supabaseKeepalive = onSchedule(
     timeZone: 'Asia/Kolkata',
     region: 'asia-south1',
     timeoutSeconds: 30,
-    secrets: [demoSupabaseServiceRoleKey],
+    secrets: withDataPlaneSecrets([demoSupabaseServiceRoleKey]),
   },
   supabaseKeepaliveHandler,
 );

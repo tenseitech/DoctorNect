@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { withDataPlaneSecrets } = require('./demo_plane_secrets');
 const { defineSecret } = require('firebase-functions/params');
 const {
   S3Client,
@@ -1420,7 +1421,7 @@ async function confirmS3UploadHandler(data, auth, dbOrOptions) {
 
 const CALLABLE_OPTIONS = {
   region: CALLABLE_REGION,
-  secrets: [awsAccessKeyId, awsSecretAccessKey, supabaseServiceRoleKey],
+  secrets: withDataPlaneSecrets([awsAccessKeyId, awsSecretAccessKey, supabaseServiceRoleKey]),
   enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
 };
 

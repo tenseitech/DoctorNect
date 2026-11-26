@@ -7,6 +7,11 @@ if (!process.env.K_SERVICE && !process.env.FUNCTION_TARGET && fs.existsSync(_rep
 const { resolveCallerIdentity } = require('./caller_identity');
 // Deploy: disable OTP App Check until reCAPTCHA is configured.
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+const { withDataPlaneSecrets } = require('./demo_plane_secrets');
+// Functions without their own secrets list still get the data-plane secrets (the production
+// cold-start assert needs PROD_GATEWAY_SERVICE_KEY in every function). Must run before any
+// function below is defined.
+require('firebase-functions/v2').setGlobalOptions({ secrets: require('./demo_plane_secrets').DATA_PLANE_SECRETS });
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { initializeApp } = require('firebase-admin/app');
 initializeApp();
@@ -406,11 +411,11 @@ exports.sendUserRegistrationOtp = onCall(
     ...MSG91_VPC_OPTIONS,
     ...OTP_REDIS_SECRET_OPTIONS,
     enforceAppCheck: ENFORCE_OTP_APP_CHECK,
-    secrets: [
+    secrets: withDataPlaneSecrets([
       ...(OTP_REDIS_SECRET_OPTIONS.secrets || []),
       supabaseServiceRoleKey,
       ...OTP_DATA_PLANE_SECRETS,
-    ],
+    ]),
   },
   withSecurityLogging('sendUserRegistrationOtp', async (request) => {
   try {
@@ -446,7 +451,7 @@ exports.lookupMobileRegistration = onCall(
   {
     region: CALLABLE_REGION,
     enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
-    secrets: [supabaseServiceRoleKey, ...OTP_DATA_PLANE_SECRETS],
+    secrets: withDataPlaneSecrets([supabaseServiceRoleKey, ...OTP_DATA_PLANE_SECRETS]),
   },
   withSecurityLogging('lookupMobileRegistration', async (request) => {
     try {
@@ -474,11 +479,11 @@ exports.verifyUserRegistrationOtp = onCall(
     ...MSG91_VPC_OPTIONS,
     ...OTP_REDIS_SECRET_OPTIONS,
     enforceAppCheck: ENFORCE_OTP_APP_CHECK,
-    secrets: [
+    secrets: withDataPlaneSecrets([
       ...(OTP_REDIS_SECRET_OPTIONS.secrets || []),
       supabaseServiceRoleKey,
       ...OTP_DATA_PLANE_SECRETS,
-    ],
+    ]),
   },
   withSecurityLogging('verifyUserRegistrationOtp', async (request) => {
     const mobileLast4 = String(request.data?.mobile || request.data?.identifier || '')
@@ -566,7 +571,7 @@ exports.resetAmbulanceDriverPin = onCall(
 
 /** Resets user password after OTP verification using Admin SDK. */
 exports.resetUserPasswordWithOtp = onCall(
-  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   withSecurityLogging('resetUserPasswordWithOtp', async (request) => {
     try {
       await enforceAbuseLimit(null, request, 'login', {
@@ -601,7 +606,7 @@ exports.completeMobileOtpLogin = onCall(
   {
     ...MSG91_VPC_OPTIONS,
     enforceAppCheck: ENFORCE_OTP_APP_CHECK,
-    secrets: [supabaseServiceRoleKey, ...OTP_DATA_PLANE_SECRETS],
+    secrets: withDataPlaneSecrets([supabaseServiceRoleKey, ...OTP_DATA_PLANE_SECRETS]),
   },
   withSecurityLogging('completeMobileOtpLogin', async (request) => {
     try {
@@ -634,7 +639,7 @@ exports.completeMobileOtpLogin = onCall(
 
 /** Pre-login rate-limit gate for email/password and admin sign-in. */
 exports.assertLoginAllowed = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   withSecurityLogging('assertLoginAllowed', async (request) => {
   await enforceAbuseLimit(null, request, 'login', {
     identifier: request.data?.identifier || request.data?.email,
@@ -660,7 +665,7 @@ exports.assertLoginAllowed = onCall(
 
 /** Records a failed email/password login for rate limiting. */
 exports.recordFailedLogin = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   protectCallable('recordFailedLogin', { category: 'api' }, async (request) => {
   logAuthAttempt(request, {
     outcome: 'failure',
@@ -693,7 +698,7 @@ exports.clearFailedLogins = onCall(
  * Replaces anonymous Firestore get-by-id (IDOR on timestamp invite IDs).
  */
 exports.getAmbulanceInvite = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   withSecurityLogging('getAmbulanceInvite', async (request) => {
   assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
   await enforceAbuseLimit(null, request, 'api');
@@ -741,7 +746,7 @@ exports.getAmbulanceInvite = onCall(
 
 /** Developer/admin approval: sets role profile verified = true for any account role. */
 exports.approveUserAccount = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   protectCallable('approveUserAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
     return approveUserAccount(null, request.data || {}, request.auth);
@@ -750,7 +755,7 @@ exports.approveUserAccount = onCall(
 
 /** Backward-compatible alias for patient approval. */
 exports.approvePatientAccount = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   protectCallable('approvePatientAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
     return approvePatientAccount(null, request.data || {}, request.auth);
@@ -898,7 +903,7 @@ async function runVerifyAmbulanceDriverLogin(_unusedDb, payload, { clientIp, req
  * client links an anonymous Firebase session after success.
  */
 exports.verifyAmbulanceDriverLogin = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public', secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public', secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   withSecurityLogging('verifyAmbulanceDriverLogin', async (request) => {
   try {
   const clientIp = getCallableClientIp(request);
@@ -925,7 +930,7 @@ exports.verifyAmbulanceDriverLogin = onCall(
  * PIN check still runs in that default path.
  */
 exports.verifyAmbulanceDriverLoginHttp = onRequest(
-  { region: CALLABLE_REGION, cors: false, invoker: 'public', secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, cors: false, invoker: 'public', secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   require('./http_endpoint_security').withApiSecurityHeaders(async (req, res) => {
     const allowedOrigins = AMBULANCE_HTTP_ALLOWED_ORIGINS;
     if (handleAmbulanceHttpPreflight(req, res, allowedOrigins)) return;
@@ -984,7 +989,7 @@ exports.completeAmbulanceMobileOtpLogin = onCall(
     region: CALLABLE_REGION,
     enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
     invoker: 'public',
-    secrets: [...OTP_DATA_PLANE_SECRETS],
+    secrets: withDataPlaneSecrets([...OTP_DATA_PLANE_SECRETS]),
   },
   withSecurityLogging('completeAmbulanceMobileOtpLogin', async (request) => {
     try {
@@ -1007,7 +1012,7 @@ exports.completeAmbulanceMobileOtpLogin = onCall(
  * duplicate ratings, and atomically updates ambulance rating aggregates.
  */
 exports.submitAmbulanceRating = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   protectCallable('submitAmbulanceRating', { category: 'api' }, async (request) => {
   requireAuth(request);
 
@@ -1055,7 +1060,7 @@ exports.submitAmbulanceRating = onCall(
  * verification so stale authUid values can be reclaimed without opening hijack.
  */
 exports.resyncAmbulanceAuthUid = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public', secrets: [supabaseServiceRoleKey] },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public', secrets: withDataPlaneSecrets([supabaseServiceRoleKey]) },
   protectCallable('resyncAmbulanceAuthUid', {
     category: 'login',
     identifierFromRequest: (request) =>
@@ -1116,7 +1121,7 @@ exports.deleteMyAccount = onCall(
   {
     region: CALLABLE_REGION,
     enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
-    secrets: [awsAccessKeyId, awsSecretAccessKey, supabaseServiceRoleKey],
+    secrets: withDataPlaneSecrets([awsAccessKeyId, awsSecretAccessKey, supabaseServiceRoleKey]),
   },
   protectCallable('deleteMyAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
@@ -1185,7 +1190,7 @@ exports.processMailQueueScheduled = onSchedule(
   {
     schedule: 'every 5 minutes',
     region: CALLABLE_REGION,
-    secrets: [supabaseServiceRoleKey],
+    secrets: withDataPlaneSecrets([supabaseServiceRoleKey]),
   },
   async () => {
     const supabase = getDatabaseClient();
@@ -1217,7 +1222,7 @@ exports.processNotificationOutboxScheduled = onSchedule(
   {
     schedule: 'every 1 minutes',
     region: CALLABLE_REGION,
-    secrets: [supabaseServiceRoleKey, ...(OTP_REDIS_MIRROR_ON ? require('./redis').REDIS_SECRETS : [])],
+    secrets: withDataPlaneSecrets([supabaseServiceRoleKey, ...(OTP_REDIS_MIRROR_ON ? require('./redis').REDIS_SECRETS : [])]),
   },
   async () => {
     await processNotificationOutboxBatch();
@@ -1238,7 +1243,7 @@ exports.adminConsoleRead = adminConsoleRead;
 exports.supabaseDatabaseWebhook = onRequest(
   {
     region: CALLABLE_REGION,
-    secrets: [supabaseWebhookSecret, supabaseServiceRoleKey],
+    secrets: withDataPlaneSecrets([supabaseWebhookSecret, supabaseServiceRoleKey]),
   },
   require('./http_endpoint_security').withApiSecurityHeaders(supabaseDatabaseWebhookHandler),
 );

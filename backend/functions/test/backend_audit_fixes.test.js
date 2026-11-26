@@ -35,7 +35,7 @@ test('M-5: lookupMobileRegistration and Razorpay callables enforce App Check', (
 
 test('H-4: deleteMyAccount binds Supabase service-role secrets', () => {
   const src = fs.readFileSync(path.join(__dirname, '../index.js'), 'utf8');
-  assert.match(src, /secrets: \[awsAccessKeyId, awsSecretAccessKey, supabaseServiceRoleKey\]/);
+  assert.match(src, /secrets: withDataPlaneSecrets\(\[awsAccessKeyId, awsSecretAccessKey, supabaseServiceRoleKey\]\)/);
 });
 
 test('H-7: paid ads go to pending_approval and live queries use status == active', () => {

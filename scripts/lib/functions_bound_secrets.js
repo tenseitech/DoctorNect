@@ -41,6 +41,9 @@ function walkJsForVars(dir, root, map) {
 
 const SPREAD_IDENTIFIERS = ['OTP_REDIS_SECRET_OPTIONS', 'OTP_DATA_PLANE_SECRETS'];
 
+/** Keys added by withDataPlaneSecrets() (backend/functions/demo_plane_secrets.js). */
+const DATA_PLANE_SECRET_KEYS = ['PROD_GATEWAY_SERVICE_KEY', 'DEMO_SUPABASE_SERVICE_ROLE_KEY'];
+
 function resolveSecretArraySpread(identifier, indexSrc, varToName) {
   const re = new RegExp(`const\\s+${identifier}\\s*=\\s*\\[([\\s\\S]*?)\\];`, 'm');
   const m = re.exec(indexSrc);
@@ -73,10 +76,12 @@ function collectBoundSecretEnvKeysForExports(exportNames, functionsDir) {
     const block = blockRe.exec(src);
     if (!block) continue;
     const opts = block[1];
-    const secretsRe = /secrets:\s*\[([\s\S]*?)\]/;
+    // secrets: [..] or secrets: withDataPlaneSecrets([..]); the wrapper always adds the data-plane keys.
+    const secretsRe = /secrets:\s*(withDataPlaneSecrets\(\s*)?\[([\s\S]*?)\]/;
     const sec = secretsRe.exec(opts);
     if (!sec) continue;
-    const list = sec[1];
+    if (sec[1]) for (const k of DATA_PLANE_SECRET_KEYS) keys.add(k);
+    const list = sec[2];
     const idents = list.match(/[A-Za-z_$][\w$]*/g) || [];
     for (const id of idents) {
       if (SPREAD_IDENTIFIERS.includes(id)) {
