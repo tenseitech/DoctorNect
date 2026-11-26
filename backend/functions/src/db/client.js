@@ -8,6 +8,26 @@ const {
 } = require('../../lib/demo_routing');
 const { assertDemoUidNotOnRds } = require('../../../../scripts/lib/rds_demo_uid_guard');
 
+/**
+ * Every database request (gateway / Supabase PostgREST) gets a hard timeout so an outage fails
+ * fast with an error instead of holding the function until its 60 s limit.
+ */
+const DB_REQUEST_TIMEOUT_MS = 15000;
+let dbRequestTimeoutForTesting = null;
+function dbRequestTimeoutMs() {
+  return dbRequestTimeoutForTesting || DB_REQUEST_TIMEOUT_MS;
+}
+/** @visibleForTesting */
+function setDbRequestTimeoutForTesting(ms) {
+  dbRequestTimeoutForTesting = ms || null;
+}
+
+function fetchWithTimeout(input, init = {}) {
+  const timeout = AbortSignal.timeout(dbRequestTimeoutMs());
+  const signal = init && init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+  return fetch(input, { ...init, signal });
+}
+
 let cachedClient = null;
 let cachedKey = null;
 let cachedDemoClient = null;
@@ -101,6 +121,7 @@ function getDatabaseClient(options = {}) {
         // Server-side plane is resolved here; never send x-data-plane (gateway forbids client routing hints).
         'x-client-source': 'medibond-cloud-functions',
       },
+      fetch: fetchWithTimeout,
     },
   });
 
@@ -146,4 +167,7 @@ module.exports = {
   getObjectStoragePrefixForCallable,
   resetDatabaseClientForTesting,
   setDatabaseClientForTesting,
+  dbRequestTimeoutMs,
+  fetchWithTimeout,
+  setDbRequestTimeoutForTesting,
 };
