@@ -12,6 +12,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 async function run() {
   bootstrapMutatingScript('scripts/db/verify_zero_residue.js');
@@ -26,7 +27,7 @@ async function run() {
   const baselineCounts = new Map(preflight.rowCounts.map((t) => [`${t.schema}.${t.table}`, t.count]));
 
   console.log('Connecting to Staging:', maskConnectionString(stagingUri));
-  const client = new Client({ connectionString: stagingUri, ssl: { rejectUnauthorized: false } });
+  const client = new Client({ connectionString: stagingUri, ssl: stagingPgSsl() });
   await client.connect();
 
   const auditReport = {

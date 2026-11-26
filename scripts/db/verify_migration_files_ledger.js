@@ -21,6 +21,7 @@ const {
   ledgerChecksumMatches,
 } = require('../lib/migration_checksum');
 const { GHOST_STAGING_LEDGER_VERSION } = require('../lib/live_data_guard');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 const {
   listMigrationsForTarget,
   migrationRelPathToAbs,
@@ -66,7 +67,7 @@ async function connectForTarget(target) {
       allowDestructive: false,
       targetHost: null,
     });
-    const client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+    const client = new Client({ connectionString: url, ssl: stagingPgSsl() });
     await client.connect();
     return { client, mask: maskConnectionString(url), label: 'staging Supabase' };
   }

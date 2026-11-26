@@ -10,6 +10,7 @@ const path = require('path');
 const { Client } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const gatewayConfig = require('../../services/api-gateway/src/config');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 const DB_NAME = process.env.FRESH_LOCAL_DB_NAME || 'doctornect_fresh_zero';
 
@@ -129,7 +130,7 @@ async function main() {
       console.error('STAGING_SUPABASE_DB_URL missing');
       process.exit(1);
     }
-    const sClient = new Client({ connectionString: stagingUrl, ssl: { rejectUnauthorized: false } });
+    const sClient = new Client({ connectionString: stagingUrl, ssl: stagingPgSsl() });
     await sClient.connect();
     report.staging = await fetchGrantMatrix(sClient);
     await sClient.end();

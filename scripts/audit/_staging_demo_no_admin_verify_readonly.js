@@ -5,6 +5,7 @@ const { Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard } = require('../lib/env_guard');
 const { loadRootEnv } = require('../lib/bootstrap_root_env');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 loadRootEnv();
 
@@ -39,7 +40,7 @@ async function loginLookup(client, digits) {
 async function main() {
   assertDatabaseGuard({ targetKind: 'staging', operationName: 'staging_demo_no_admin_verify' });
   const dbUrl = getEnv('STAGING_SUPABASE_DB_URL');
-  const pool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
+  const pool = new Pool({ connectionString: dbUrl, ssl: stagingPgSsl() });
   const client = await pool.connect();
   try {
     const report = { connection: maskConnectionString(dbUrl), ok: true, errors: [] };

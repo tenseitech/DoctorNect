@@ -108,3 +108,31 @@ test('migrate.buildStagingPoolConfig returns the verified config', () => {
     fs.unlinkSync(tmp);
   }
 });
+
+test('stagingPgSsl: verified option from the CA path, refuses when missing or not PEM', () => {
+  const { stagingPgSsl } = require('./staging_pg_ssl');
+  const ca = path.resolve('/ca.crt');
+  assert.deepEqual(stagingPgSsl({ env: { [CA_PATH_ENV]: ca }, readFile: reader({ [ca]: PEM }) }), { ca: PEM, rejectUnauthorized: true });
+  assert.throws(() => stagingPgSsl({ env: {} }), /is not set/);
+  assert.throws(() => stagingPgSsl({ env: { [CA_PATH_ENV]: ca }, readFile: reader({ [ca]: 'x' }) }), /not a PEM/);
+});
+
+test('no ops script connects to Postgres with certificate verification disabled', () => {
+  const root = path.join(__dirname, '..');
+  const bad = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === 'node_modules' || e.name === 'test') continue;
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.js') && !e.name.endsWith('.test.js')) {
+        const src = fs.readFileSync(p, 'utf8');
+        src.split('\n').forEach((line, i) => {
+          if (/rejectUnauthorized:\s*false/.test(line) && !/^\s*(\*|\/\/)/.test(line)) bad.push(`${path.relative(root, p)}:${i + 1}`);
+        });
+      }
+    }
+  };
+  walk(root);
+  assert.deepEqual(bad, []);
+});

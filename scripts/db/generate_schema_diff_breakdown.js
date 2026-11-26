@@ -14,6 +14,7 @@ const path = require('path');
 const { Client } = require(path.resolve(__dirname, '../node_modules/pg'));
 const { getEnv } = require(path.resolve(__dirname, '../lib/env_loader'));
 const { fetchCatalog, compareCatalogs } = require(path.resolve(__dirname, 'schema_diff'));
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 function classifyDiff(diff) {
   const k = (diff.key || '').toLowerCase();
@@ -47,7 +48,7 @@ async function main() {
   }
 
   console.log('Connecting to Staging (Supabase PG 15)...');
-  const stagingClient = new Client({ connectionString: stagingUri, ssl: { rejectUnauthorized: false } });
+  const stagingClient = new Client({ connectionString: stagingUri, ssl: stagingPgSsl() });
   await stagingClient.connect();
 
   console.log('Connecting to Replay Check (Local PG 17)...');

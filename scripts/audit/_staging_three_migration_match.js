@@ -6,6 +6,7 @@ const path = require('path');
 const { Client } = require('pg');
 const { getEnv } = require('../lib/env_loader');
 const { computeChecksum } = require('../lib/migration_checksum');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 function innerSql(defOrFile) {
   const s = String(defOrFile);
@@ -18,7 +19,7 @@ function innerSql(defOrFile) {
 async function main() {
   const client = new Client({
     connectionString: getEnv('STAGING_SUPABASE_DB_URL'),
-    ssl: { rejectUnauthorized: false },
+    ssl: stagingPgSsl(),
   });
   await client.connect();
 

@@ -7,6 +7,7 @@ const { execSync } = require('child_process');
 const { Client } = require('pg');
 const { getEnv } = require('../lib/env_loader');
 const { computeChecksum, computeLegacyRawChecksum } = require('../lib/migration_checksum');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 function normalizeFnBody(def) {
   return String(def || '')
@@ -26,7 +27,7 @@ function fnBodyFromFile(sql) {
 async function main() {
   const url = getEnv('STAGING_SUPABASE_DB_URL');
   if (!url) throw new Error('STAGING_SUPABASE_DB_URL missing');
-  const client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+  const client = new Client({ connectionString: url, ssl: stagingPgSsl() });
   await client.connect();
 
   const ledger = await client.query(

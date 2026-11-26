@@ -16,6 +16,7 @@ const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
 const { assertProductionRdsTarget, verifyConnectedRdsSession } = require('../lib/rds_connect_guard');
 const { getHostFingerprint } = require('../lib/env_guard');
 const { getProdPgMajor, getProdPgVersion } = require('../lib/pg_version_policy');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 const MODULE_PROBES = [
   { module: 'doctor', table: 'doctors', column: 'id' },
@@ -33,7 +34,7 @@ async function smokeStagingPostgres() {
   console.log(`Postgres target: ${maskConnectionString(dbUrl)}`);
   const client = new Client({
     connectionString: dbUrl,
-    ssl: { rejectUnauthorized: false },
+    ssl: stagingPgSsl(),
   });
   await client.connect();
   try {

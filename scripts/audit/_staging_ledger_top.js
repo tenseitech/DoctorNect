@@ -2,11 +2,12 @@
 'use strict';
 const { Client } = require('pg');
 const { getEnv } = require('../lib/env_loader');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 async function main() {
   const client = new Client({
     connectionString: getEnv('STAGING_SUPABASE_DB_URL'),
-    ssl: { rejectUnauthorized: false },
+    ssl: stagingPgSsl(),
   });
   await client.connect();
   const r = await client.query(`

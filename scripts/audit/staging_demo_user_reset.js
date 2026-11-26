@@ -11,6 +11,7 @@ const { spawnSync } = require('child_process');
 const { Pool } = require('pg');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard } = require('../lib/env_guard');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 const PHASE = (() => {
   const a = process.argv.find((x) => x.startsWith('--phase='));
@@ -114,7 +115,7 @@ function assertStagingOnly(dbUrl) {
 }
 
 function stagingSsl() {
-  return { rejectUnauthorized: false };
+  return stagingPgSsl();
 }
 
 async function fkReport(client) {

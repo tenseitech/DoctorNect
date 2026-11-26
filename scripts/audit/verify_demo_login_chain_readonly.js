@@ -16,6 +16,7 @@ const { loadRootEnv } = require('../lib/bootstrap_root_env');
 const { getEnv, maskConnectionString } = require('../lib/env_loader');
 const { assertDatabaseGuard } = require('../lib/env_guard');
 const { buildRdsPoolConfig, maskRdsTarget } = require('../lib/rds_pool_config');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 loadRootEnv();
 
@@ -150,7 +151,7 @@ async function probeSupabaseStaging() {
     targetKind: 'staging',
     operationName: 'verify_demo_login_chain',
   });
-  const pool = new Pool({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
+  const pool = new Pool({ connectionString: dbUrl, ssl: stagingPgSsl() });
   const client = await pool.connect();
   const rows = [];
   try {

@@ -105,4 +105,40 @@ function buildStagingPgConfig(dbUrl, opts = {}) {
   return { connectionString, ssl: { rejectUnauthorized: true, servername: host }, host, verified: true };
 }
 
-module.exports = { buildStagingPgConfig, CA_PATH_ENV, isSupabaseHost };
+/**
+ * Verified `ssl` option for scripts that already build their own pg config from the staging URL.
+ * pg passes the connection host as the TLS servername, so the hostname is checked too.
+ * The CA path comes from the shell or the repo-root .env (env_loader). Throws with guidance
+ * when it is missing; never returns an unverified option.
+ */
+function stagingPgSsl(opts = {}) {
+  const readFile = opts.readFile || fs.readFileSync;
+  const repoRoot = opts.repoRoot || path.resolve(__dirname, '../..');
+  let raw = opts.env ? opts.env[CA_PATH_ENV] : undefined;
+  if (!opts.env) {
+    try {
+      raw = require('./env_loader').getEnv(CA_PATH_ENV);
+    } catch (_) {
+      raw = process.env[CA_PATH_ENV];
+    }
+  }
+  const caPath = resolveCaPath(raw, repoRoot);
+  if (!caPath) {
+    throw new Error(
+      `[staging_pg_ssl] ${CA_PATH_ENV} is not set: download the Supabase root CA (Project Settings > ` +
+        'Database > SSL Configuration) and point the variable at it.',
+    );
+  }
+  let ca;
+  try {
+    ca = String(readFile(caPath, 'utf8'));
+  } catch (e) {
+    throw new Error(`[staging_pg_ssl] ${CA_PATH_ENV} points to a file that cannot be read (${e.code || e.message}).`);
+  }
+  if (!ca.includes('-----BEGIN CERTIFICATE-----')) {
+    throw new Error(`[staging_pg_ssl] ${CA_PATH_ENV} is not a PEM certificate file.`);
+  }
+  return { ca, rejectUnauthorized: true };
+}
+
+module.exports = { buildStagingPgConfig, stagingPgSsl, CA_PATH_ENV, isSupabaseHost };

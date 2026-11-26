@@ -34,6 +34,7 @@ const {
 } = require('../lib/migration_file_list');
 const { isSkippableTransactionControlStatement } = require('../lib/migration_txn_sql');
 const { normalizeRdsMigrationSql } = require('../lib/rds_migration_sql_normalize');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 let parse;
 try {
@@ -381,7 +382,7 @@ async function runRdsScratchReplay() {
       const stagingUri = getEnv('STAGING_SUPABASE_DB_URL');
       if (diffStagingCatalog && stagingUri) {
         console.log('Fetching live staging catalog for parity diff...');
-        const stagingClient = new Client({ connectionString: stagingUri, ssl: { rejectUnauthorized: false } });
+        const stagingClient = new Client({ connectionString: stagingUri, ssl: stagingPgSsl() });
         await stagingClient.connect();
         try {
           const [stagingCat, replayCat] = await Promise.all([

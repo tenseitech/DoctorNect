@@ -4,6 +4,7 @@ const { Client } = require('pg');
 const { getEnv } = require('../lib/env_loader');
 const { buildRdsPoolConfig } = require('../lib/rds_pool_config');
 const { listMigrationsForTarget } = require('../lib/migration_file_list');
+const { stagingPgSsl } = require('../lib/staging_pg_ssl');
 
 function versionFromRel(rel) {
   return rel.split('/').pop().split('_')[0];
@@ -14,7 +15,7 @@ async function main() {
   const prodFiles = listMigrationsForTarget('production');
   const sc = new Client({
     connectionString: getEnv('STAGING_SUPABASE_DB_URL'),
-    ssl: { rejectUnauthorized: false },
+    ssl: stagingPgSsl(),
   });
   await sc.connect();
   const sr = await sc.query('SELECT version FROM public._schema_migrations');
