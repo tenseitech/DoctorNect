@@ -4,7 +4,10 @@
 /**
  * Validate an env file against the production/staging boot requirements BEFORE deploying.
  *
- *   npm run check:boot-env -- <env-file> [--target functions|gateway|all] [--app-env staging|production]
+ *   npm run check:boot-env -- <env-file> [--target functions|gateway|all] [--app-env staging|production] [--check-secret-manager]
+ *
+ * --check-secret-manager asks Firebase (firebase functions:secrets:get, metadata only) whether every
+ * secret the deploy binds exists with an enabled version. Without it those show as CHECK (exit 1).
  *
  * Runs the real boot assertions of backend/functions (index.js cold-start sequence) and of the
  * API gateway (assert_production_config.js) in a child process whose environment contains ONLY
@@ -18,6 +21,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const crypto = require('crypto');
 
 const REPO = path.resolve(__dirname, '../..');
 const FUNCTIONS_DIR = path.join(REPO, 'backend/functions');
@@ -25,10 +29,73 @@ const GATEWAY_DIR = path.join(REPO, 'services/api-gateway');
 
 /** Firebase defineSecret() names: must come from Secret Manager, never a plain env file. */
 const FUNCTIONS_SECRET_MANAGER_KEYS = [
-  'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'DEMO_SUPABASE_SERVICE_ROLE_KEY',
+  'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'DEMO_SUPABASE_SERVICE_ROLE_KEY', 'OTP_HMAC_SECRET',
   'PROD_GATEWAY_SERVICE_KEY', 'RAZORPAY_WEBHOOK_SECRET', 'REDIS_PASSWORD', 'REVIEW_FIXED_OTP',
   'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_WEBHOOK_SECRET',
 ];
+
+const FIREBASE_PROJECT = 'medibond-45fad';
+/** Where each Secret Manager value comes from (shown when one is missing). */
+const SECRET_SOURCE_HINT = {
+  PROD_GATEWAY_SERVICE_KEY: 'infra/aws/set_gateway_secrets.ps1 (same value as the gateway service_key)',
+};
+/** Bound names that are not secrets in the assertion sense (host/port): never simulated. */
+const NOT_SIMULATED = new Set(['REDIS_HOST', 'REDIS_PORT']);
+
+/**
+ * Secret names the deploy binds, read from the real function manifests (index.js loaded in test
+ * mode). The set depends on OTP_REDIS_MIRROR in the checked file. Falls back to the static list.
+ */
+function collectBoundSecrets(fileEnv) {
+  const code = "const m=require('./index.js');const s=new Set();" +
+    'for(const v of Object.values(m)){if(v&&v.__endpoint)for(const x of v.__endpoint.secretEnvironmentVariables||[])s.add(x.key)}' +
+    "process.stdout.write('@@BOUND@@'+JSON.stringify([...s].sort()))";
+  const env = {
+    ...baseChildEnv({}),
+    APP_ENV: 'test', NODE_ENV: 'test', K_SERVICE: 'boot-env-manifest',
+    GCLOUD_PROJECT: 'boot-env-check', FIREBASE_CONFIG: '{"projectId":"boot-env-check"}',
+    OTP_REDIS_MIRROR: String(fileEnv.OTP_REDIS_MIRROR || 'off'),
+  };
+  const r = spawnSync(process.execPath, ['-e', code], { cwd: FUNCTIONS_DIR, env, encoding: 'utf8', timeout: 120000 });
+  const out = r.stdout || '';
+  const idx = out.indexOf('@@BOUND@@');
+  if (idx < 0) return { names: [...FUNCTIONS_SECRET_MANAGER_KEYS].sort(), fromManifest: false };
+  return { names: JSON.parse(out.slice(idx + '@@BOUND@@'.length)), fromManifest: true };
+}
+
+/** Metadata only (`firebase functions:secrets:get --json`): never reads or prints a value. */
+function secretManagerState(name, project = FIREBASE_PROJECT) {
+  if (!/^[A-Z][A-Z0-9_]*$/.test(name) || !/^[a-z0-9-]+$/.test(project)) return { ok: false, why: 'invalid name' };
+  const r = spawnSync(`firebase functions:secrets:get ${name} --project ${project} --json`, {
+    encoding: 'utf8', shell: true, timeout: 120000,
+  });
+  let j = null;
+  try { j = JSON.parse(r.stdout || ''); } catch (_) { /* not JSON */ }
+  if (!j) return { ok: false, why: 'firebase CLI did not answer (installed? logged in? firebase login)' };
+  const versions = (j.result && j.result.secrets) || [];
+  const enabled = versions.filter((v) => v.state === 'ENABLED').length;
+  if (j.status === 'success' && enabled > 0) return { ok: true, why: `${enabled} enabled version(s)` };
+  return { ok: false, why: j.status === 'success' ? 'no enabled version' : 'not found' };
+}
+
+function secretManagerResults(bound, fileEnv, { verify, project = FIREBASE_PROJECT }) {
+  const names = bound.names;
+  if (!verify) {
+    return [{
+      name: 'Secret Manager secrets (cannot be verified from a file)',
+      status: 'CHECK',
+      message: `the deploy binds: ${names.join(', ')}. Verify before deploying: npm run check:boot-env -- <file> --target=functions --check-secret-manager (metadata only, no values)`,
+    }];
+  }
+  return names.map((n) => {
+    const s = secretManagerState(n, project);
+    return {
+      name: `Secret Manager: ${n}`,
+      status: s.ok ? 'PASS' : 'FAIL',
+      message: s.ok ? s.why : `${s.why}; set it with ${SECRET_SOURCE_HINT[n] || 'scripts/env/set_functions_secrets.ps1'}`,
+    };
+  });
+}
 
 function parseEnvFile(file) {
   const out = {};
@@ -139,7 +206,7 @@ function checklistFunctions(env, appEnv) {
   need(['RAZORPAY_KEY_SECRET'], 'RAZORPAY_KEY_SECRET (promoted ad payments)', prod ? 'FAIL' : 'WARN');
   if (prod) {
     need(['S3_BUCKET_PRODUCTION', 'S3_BUCKET'], 'S3 production bucket');
-    need(['OTP_HMAC_SECRET'], 'OTP_HMAC_SECRET (dedicated OTP pepper)', 'WARN');
+    // OTP_HMAC_SECRET is a bound Secret Manager secret: checked in the Secret Manager section.
     need(['SUPER_ADMIN_EMAILS'], 'SUPER_ADMIN_EMAILS (super-admin allow-list; empty = no email super admins)', 'WARN');
     const hops = String(env.TRUSTED_PROXY_HOPS || '').trim();
     if (hops && !/^(10|[1-9])$/.test(hops)) r.push({ name: 'TRUSTED_PROXY_HOPS', status: 'FAIL', message: 'must be an integer 1-10' });
@@ -151,7 +218,10 @@ function checklistFunctions(env, appEnv) {
   r.push({
     name: 'Secret Manager secrets not stored in the env file',
     status: inFile.length ? 'WARN' : 'PASS',
-    message: inFile.length ? `move to Firebase Secret Manager: ${inFile.join(', ')}` : undefined,
+    message: inFile.length
+      ? `plain copies in this file: ${inFile.join(', ')}. The deploy never uploads them from here (secret names are dropped from the generated .env), `
+        + 'but they should not live on disk: confirm they are in Secret Manager (--check-secret-manager), delete these lines, and rotate them.'
+      : undefined,
   });
   return r;
 }
@@ -183,18 +253,16 @@ function checklistDemoAccounts(env, prod) {
   if (prod) {
     r.push({ name: 'DEMO_SUPABASE_URL (demo OTP on)', status: has(env, 'DEMO_SUPABASE_URL') ? 'PASS' : 'FAIL',
       message: has(env, 'DEMO_SUPABASE_URL') ? undefined : 'missing: demo logins have no staging plane' });
-    r.push({ name: 'DEMO_SUPABASE_SERVICE_ROLE_KEY secret (demo OTP on)', status: 'WARN',
-      message: 'must be set in Secret Manager: firebase functions:secrets:get DEMO_SUPABASE_SERVICE_ROLE_KEY (cannot be checked from a file)' });
+    // DEMO_SUPABASE_SERVICE_ROLE_KEY: bound secret, checked in the Secret Manager section.
   }
   const fixed = String(env.REVIEW_FIXED_OTP || '').trim();
   if (fixed) {
     r.push({ name: 'REVIEW_FIXED_OTP location', status: prod ? 'FAIL' : 'WARN',
       message: 'must be a Firebase secret, not a plain env value (firebase functions:secrets:set REVIEW_FIXED_OTP)' });
     if (!/^\d{6}$/.test(fixed)) r.push({ name: 'REVIEW_FIXED_OTP format', status: 'FAIL', message: 'must be exactly 6 digits' });
-  } else {
-    r.push({ name: 'REVIEW_FIXED_OTP secret (demo OTP on)', status: 'WARN',
-      message: 'must be set in Secret Manager (6 digits); the OTP functions refuse to start without it' });
   }
+  // Not in the file: it is a bound secret, checked in the Secret Manager section (the OTP
+  // functions refuse to start without a 6-digit value).
   return r;
 }
 
@@ -227,8 +295,9 @@ function main() {
   const target = ((args.find((a) => a.startsWith('--target=')) || '').split('=')[1])
     || (args.includes('--target') ? args[args.indexOf('--target') + 1] : 'all');
   const appEnvOverride = ((args.find((a) => a.startsWith('--app-env=')) || '').split('=')[1]) || null;
+  const checkSecretManager = args.includes('--check-secret-manager');
   if (!file || !fs.existsSync(file) || !['functions', 'gateway', 'all'].includes(target)) {
-    console.error('usage: npm run check:boot-env -- <env-file> [--target=functions|gateway|all] [--app-env=staging|production]');
+    console.error('usage: npm run check:boot-env -- <env-file> [--target=functions|gateway|all] [--app-env=staging|production] [--check-secret-manager]');
     process.exit(2);
   }
 
@@ -244,9 +313,21 @@ function main() {
       K_SERVICE: 'boot-env-check',
       FUNCTION_TARGET: 'bootEnvCheck',
     };
-    if (appEnv === 'production' && !env.GCLOUD_PROJECT && !env.FIREBASE_CONFIG) env.GCLOUD_PROJECT = 'medibond-45fad';
+    if (appEnv === 'production' && !env.GCLOUD_PROJECT && !env.FIREBASE_CONFIG) env.GCLOUD_PROJECT = FIREBASE_PROJECT;
+    // Cloud Run injects bound Secret Manager values at runtime; a file never has them. Stand in
+    // a random value (never printed) so the boot asserts judge everything else, and verify the
+    // real secrets separately (Secret Manager section: CHECK, or PASS/FAIL with the flag).
+    const bound = collectBoundSecrets(fileEnv);
+    for (const n of bound.names) {
+      if (has(fileEnv, n) || NOT_SIMULATED.has(n)) continue;
+      env[n] = n === 'REVIEW_FIXED_OTP' ? String(crypto.randomInt(100000, 1000000)) : crypto.randomBytes(48).toString('base64');
+    }
     for (const x of runProbe(FUNCTIONS_DIR, FUNCTIONS_PROBE, env, 'functions', redact)) results.push({ scope: 'functions', ...x });
     for (const x of checklistFunctions(fileEnv, appEnv)) results.push({ scope: 'functions', ...x });
+    if (!bound.fromManifest) {
+      results.push({ scope: 'functions', name: 'bound secret list', status: 'WARN', message: 'could not load index.js manifests; using the static list' });
+    }
+    for (const x of secretManagerResults(bound, fileEnv, { verify: checkSecretManager })) results.push({ scope: 'functions', ...x });
   }
   if (target === 'gateway' || target === 'all') {
     const env = baseChildEnv(fileEnv);
@@ -260,10 +341,13 @@ function main() {
   }
   const fails = results.filter((r) => r.status === 'FAIL').length;
   const warns = results.filter((r) => r.status === 'WARN').length;
-  console.log(`\n${fails} FAIL, ${warns} WARN, ${results.length - fails - warns} PASS`);
-  process.exit(fails ? 1 : 0);
+  const checks = results.filter((r) => r.status === 'CHECK').length;
+  console.log(`\n${fails} FAIL, ${warns} WARN, ${checks} CHECK, ${results.length - fails - warns - checks} PASS`);
+  if (checks) console.log('CHECK = not verified (Secret Manager is invisible to a file). Re-run with --check-secret-manager before deploying.');
+  // Unverified secrets are not a pass: exit non-zero until they are verified.
+  process.exit(fails || checks ? 1 : 0);
 }
 
 if (require.main === module) main();
 
-module.exports = { parseEnvFile, makeRedactor };
+module.exports = { parseEnvFile, makeRedactor, collectBoundSecrets, secretManagerResults, secretManagerState };
