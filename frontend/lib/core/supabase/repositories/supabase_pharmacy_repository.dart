@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../firebase/models/firestore_page.dart';
+import 'package:medibond/core/data/data_page.dart';
 import '../../../features/pharmacy/models/pharmacy_models.dart';
 import '../mappers/pharmacy_supabase_mapper.dart';
 import '../supabase_bootstrap.dart';
@@ -327,12 +327,12 @@ class SupabasePharmacyRepository {
   }
 
   /// One-time fetch for active connections for doctor.
-  Future<FirestorePage<PharmacyConnection>> fetchActiveConnectionsForDoctor(
+  Future<DataPage<PharmacyConnection>> fetchActiveConnectionsForDoctor(
     String doctorId, {
     int limit = 50,
   }) async {
     if (!SupabaseBootstrap.isReady || doctorId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
     try {
       final res = await _client
@@ -347,19 +347,19 @@ class SupabasePharmacyRepository {
           .map(PharmacySupabaseMapper.connectionFromRow)
           .whereType<PharmacyConnection>()
           .toList();
-      return FirestorePage(items: items, hasMore: items.length == limit);
+      return DataPage(items: items, hasMore: items.length == limit);
     } catch (_) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
   }
 
   /// One-time fetch for active connections for store.
-  Future<FirestorePage<PharmacyConnection>> fetchActiveConnectionsForStore(
+  Future<DataPage<PharmacyConnection>> fetchActiveConnectionsForStore(
     String storeId, {
     int limit = 50,
   }) async {
     if (!SupabaseBootstrap.isReady || storeId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
     try {
       final res = await _client
@@ -374,9 +374,9 @@ class SupabasePharmacyRepository {
           .map(PharmacySupabaseMapper.connectionFromRow)
           .whereType<PharmacyConnection>()
           .toList();
-      return FirestorePage(items: items, hasMore: items.length == limit);
+      return DataPage(items: items, hasMore: items.length == limit);
     } catch (_) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
   }
 

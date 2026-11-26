@@ -1,7 +1,7 @@
 import '../../../features/lab/models/lab_connection_models.dart';
 import '../../supabase/repositories/supabase_lab_repository.dart';
 import '../firestore_query_limits.dart';
-import '../models/firestore_page.dart';
+import 'package:medibond/core/data/data_page.dart';
 
 class LabConnectionRepository {
   LabConnectionRepository._();
@@ -23,7 +23,7 @@ class LabConnectionRepository {
     return SupabaseLabRepository.instance.watchPendingConnectionsForLab(labId);
   }
 
-  Future<FirestorePage<LabConnection>> fetchActiveConnectionsForDoctor(
+  Future<DataPage<LabConnection>> fetchActiveConnectionsForDoctor(
     String doctorId, {
     Object? startAfter,
     int limit = FirestoreQueryLimits.connectionsPage,
@@ -35,7 +35,7 @@ class LabConnectionRepository {
     );
   }
 
-  Future<FirestorePage<LabConnection>> fetchActiveConnectionsForLab(
+  Future<DataPage<LabConnection>> fetchActiveConnectionsForLab(
     String labId, {
     Object? startAfter,
     int limit = FirestoreQueryLimits.connectionsPage,

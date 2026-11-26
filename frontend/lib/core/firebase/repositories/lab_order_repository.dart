@@ -8,7 +8,7 @@ import '../firestore_query_limits.dart';
 import '../lab_report_file_store.dart';
 import '../lab_report_submit_flow.dart';
 import '../models/doctor_lab_order.dart';
-import '../models/firestore_page.dart';
+import 'package:medibond/core/data/data_page.dart';
 
 class LabOrderRepository {
   LabOrderRepository._();
@@ -23,7 +23,7 @@ class LabOrderRepository {
     return SupabaseLabRepository.instance.saveOrder(order);
   }
 
-  Future<FirestorePage<DoctorLabOrder>> fetchForDoctor(
+  Future<DataPage<DoctorLabOrder>> fetchForDoctor(
     String doctorId, {
     String? startAfter,
     int limit = FirestoreQueryLimits.labOrdersPage,
@@ -33,7 +33,7 @@ class LabOrderRepository {
         .fetchOrdersForDoctor(doctorId, limit: limit);
   }
 
-  Future<FirestorePage<DoctorLabOrder>> fetchForPatient(
+  Future<DataPage<DoctorLabOrder>> fetchForPatient(
     String patientId, {
     String? startAfter,
     int limit = FirestoreQueryLimits.labOrdersPage,
@@ -43,7 +43,7 @@ class LabOrderRepository {
         .fetchOrdersForPatient(patientId, limit: limit);
   }
 
-  Future<FirestorePage<DoctorLabOrder>> fetchForPatientForDoctor(
+  Future<DataPage<DoctorLabOrder>> fetchForPatientForDoctor(
     String patientId, {
     String? startAfter,
     int limit = FirestoreQueryLimits.labOrdersPage,
@@ -53,7 +53,7 @@ class LabOrderRepository {
         .fetchOrdersForPatient(patientId, limit: limit);
   }
 
-  Future<FirestorePage<DoctorLabOrder>> fetchForLab(
+  Future<DataPage<DoctorLabOrder>> fetchForLab(
     String labId, {
     String? startAfter,
     int limit = FirestoreQueryLimits.labOrdersPage,
@@ -61,7 +61,7 @@ class LabOrderRepository {
   }) async {
     final orders =
         await SupabaseLabRepository.instance.fetchOrdersForLab(labId);
-    return FirestorePage(items: orders, hasMore: false);
+    return DataPage(items: orders, hasMore: false);
   }
 
   Stream<List<DoctorLabOrder>> watchForLab(String labId) {

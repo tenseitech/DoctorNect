@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../firebase/firestore_query_limits.dart';
 import '../../firebase/models/doctor_medical_directory_entry.dart';
-import '../../firebase/models/firestore_page.dart';
+import 'package:medibond/core/data/data_page.dart';
 import '../supabase_bootstrap.dart';
 
 /// Supabase repository for Doctor's Medical Directory.
@@ -69,13 +69,13 @@ class SupabaseMedicalDirectoryRepository {
     }
   }
 
-  Future<FirestorePage<DoctorMedicalDirectoryEntry>> fetchForDoctor(
+  Future<DataPage<DoctorMedicalDirectoryEntry>> fetchForDoctor(
     String doctorId, {
     int limit = FirestoreQueryLimits.medicalDirectoryPage,
     int offset = 0,
   }) async {
     if (!SupabaseBootstrap.isReady || doctorId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
 
     try {
@@ -103,7 +103,7 @@ class SupabaseMedicalDirectoryRepository {
         );
       }).toList();
 
-      return FirestorePage(
+      return DataPage(
         items: items,
         hasMore: items.length == limit,
       );
@@ -112,7 +112,7 @@ class SupabaseMedicalDirectoryRepository {
         debugPrint(
             '[SupabaseMedicalDirectoryRepository] fetchForDoctor error: $e');
       }
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
   }
 }

@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../firebase/models/doctor_lab_order.dart';
-import '../../firebase/models/firestore_page.dart';
+import 'package:medibond/core/data/data_page.dart';
 import '../../firebase/lab_report_persist_verify.dart';
 import '../../firebase/repositories/lab_booking_repository.dart';
 import '../../../features/lab/models/lab_connection_models.dart';
@@ -521,12 +521,12 @@ class SupabaseLabRepository {
   }
 
   /// Fetches lab orders for a doctor.
-  Future<FirestorePage<DoctorLabOrder>> fetchOrdersForDoctor(
+  Future<DataPage<DoctorLabOrder>> fetchOrdersForDoctor(
     String doctorId, {
     int limit = 50,
   }) async {
     if (!SupabaseBootstrap.isReady || doctorId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
     try {
       final res = await _client
@@ -540,19 +540,19 @@ class SupabaseLabRepository {
           .map(LabSupabaseMapper.orderFromRow)
           .whereType<DoctorLabOrder>()
           .toList();
-      return FirestorePage(items: items, hasMore: items.length == limit);
+      return DataPage(items: items, hasMore: items.length == limit);
     } catch (_) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
   }
 
   /// Fetches lab orders for a patient.
-  Future<FirestorePage<DoctorLabOrder>> fetchOrdersForPatient(
+  Future<DataPage<DoctorLabOrder>> fetchOrdersForPatient(
     String patientId, {
     int limit = 50,
   }) async {
     if (!SupabaseBootstrap.isReady || patientId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
     try {
       final res = await _client
@@ -566,9 +566,9 @@ class SupabaseLabRepository {
           .map(LabSupabaseMapper.orderFromRow)
           .whereType<DoctorLabOrder>()
           .toList();
-      return FirestorePage(items: items, hasMore: items.length == limit);
+      return DataPage(items: items, hasMore: items.length == limit);
     } catch (_) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
   }
 
@@ -742,12 +742,12 @@ class SupabaseLabRepository {
   }
 
   /// One-time fetch for active connections for doctor.
-  Future<FirestorePage<LabConnection>> fetchActiveConnectionsForDoctor(
+  Future<DataPage<LabConnection>> fetchActiveConnectionsForDoctor(
     String doctorId, {
     int limit = 50,
   }) async {
     if (!SupabaseBootstrap.isReady || doctorId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
     try {
       final res = await _client
@@ -762,19 +762,19 @@ class SupabaseLabRepository {
           .map(LabSupabaseMapper.connectionFromRow)
           .whereType<LabConnection>()
           .toList();
-      return FirestorePage(items: items, hasMore: items.length == limit);
+      return DataPage(items: items, hasMore: items.length == limit);
     } catch (_) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
   }
 
   /// One-time fetch for active connections for lab.
-  Future<FirestorePage<LabConnection>> fetchActiveConnectionsForLab(
+  Future<DataPage<LabConnection>> fetchActiveConnectionsForLab(
     String labId, {
     int limit = 50,
   }) async {
     if (!SupabaseBootstrap.isReady || labId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
     try {
       final res = await _client
@@ -789,9 +789,9 @@ class SupabaseLabRepository {
           .map(LabSupabaseMapper.connectionFromRow)
           .whereType<LabConnection>()
           .toList();
-      return FirestorePage(items: items, hasMore: items.length == limit);
+      return DataPage(items: items, hasMore: items.length == limit);
     } catch (_) {
-      return const FirestorePage(items: [], hasMore: false);
+      return const DataPage(items: [], hasMore: false);
     }
   }
 

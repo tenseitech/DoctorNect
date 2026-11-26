@@ -1,4 +1,4 @@
-import '../../../../core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/app_data_service.dart';
 import '../../../../core/data/shared_appointments_store.dart';
 import '../../../doctor/clinical/data/clinical_prescription_store.dart';
 import '../../../doctor/clinical/data/lab_order_store.dart';
