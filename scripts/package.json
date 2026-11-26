@@ -4,6 +4,11 @@
   "private": true,
   "devDependencies": {
     "libpg-query": "^18.2.1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.117.0",
+    "firebase-admin": "^14.4.0",
+    "jsonwebtoken": "9.0.3",
+    "pg": "8.23.0"
   }
 }
-
