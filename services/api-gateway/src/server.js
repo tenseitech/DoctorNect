@@ -17,6 +17,8 @@ const { defaultJwksClient } = require('./jwks');
 const { resolveDataPlane, assertClientRoutingHintIgnored } = require('../../../scripts/lib/demo_routing');
 const { resolveClientIpFromRequest } = require('../../../scripts/lib/trusted_client_ip');
 const { clientAuthErrorMessage } = require('./client_auth_errors');
+const { checkPostgrestHttp, checkRedisPing } = require('./health_dependencies');
+const { resolveRequestId, REQUEST_ID_HEADER } = require('./request_context');
 
 async function limiterAllows(limiter, key) {
   const result = limiter.isAllowed(key);
@@ -121,6 +123,7 @@ function createGatewayServer(overrides = {}) {
     const startTime = process.hrtime();
     let clientRole = 'anon';
     let clientUidHash = null;
+    const requestId = resolveRequestId(req);
 
     const clientIp = resolveClientIpFromRequest(req);
 
@@ -134,7 +137,9 @@ function createGatewayServer(overrides = {}) {
       const responseHeaders = buildApiSecurityHeaders({
         'Content-Type': 'application/json',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Authorization, Content-Type, apikey, Prefer, Range, x-client-info',
+        'Access-Control-Allow-Headers': 'Authorization, Content-Type, apikey, Prefer, Range, x-client-info, x-request-id',
+        'Access-Control-Expose-Headers': 'x-request-id',
+        [REQUEST_ID_HEADER]: requestId,
         ...headers,
       });
       if (corsOrigin) {
@@ -153,6 +158,7 @@ function createGatewayServer(overrides = {}) {
         uidHash: clientUidHash,
         role: clientRole,
         ip: clientIp,
+        requestId,
       });
     };
 
@@ -167,7 +173,9 @@ function createGatewayServer(overrides = {}) {
         'Access-Control-Allow-Origin': corsOrigin,
         Vary: 'Origin',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Authorization, Content-Type, apikey, Prefer, Range, x-client-info',
+        'Access-Control-Allow-Headers': 'Authorization, Content-Type, apikey, Prefer, Range, x-client-info, x-request-id',
+        'Access-Control-Expose-Headers': 'x-request-id',
+        [REQUEST_ID_HEADER]: requestId,
         'Access-Control-Max-Age': '86400',
       });
       res.end();
@@ -190,29 +198,51 @@ function createGatewayServer(overrides = {}) {
     } catch (_) {}
     let cleanPath = path.posix.normalize(decodedPath).replace(/^\/+/, '/').replace(/\/+$/, '') || '/';
 
-    // Health check (gateway + PostgREST upstream)
+    // Liveness: process is up (no dependency probes).
+    if (cleanPath === '/livez') {
+      return sendJson(200, {
+        status: 'ok',
+        service: 'doctornect-auth-gateway',
+        probe: 'liveness',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+      });
+    }
+
+    // Readiness: dependencies required to serve API traffic.
+    if (cleanPath === '/readyz') {
+      const [postgrest, redis] = await Promise.all([
+        checkPostgrestHttp(cfg.postgrestUrl, 3000),
+        checkRedisPing(cfg.rateLimitRedisUrl, 2000),
+      ]);
+      const redisRequired = Boolean(String(cfg.rateLimitRedisUrl || '').trim());
+      const ready = postgrest.ok && (!redisRequired || redis.ok);
+      return sendJson(ready ? 200 : 503, {
+        status: ready ? 'ready' : 'not_ready',
+        service: 'doctornect-auth-gateway',
+        probe: 'readiness',
+        dependencies: {
+          postgrest: { ok: postgrest.ok, status: postgrest.status },
+          redis: {
+            ok: redis.ok,
+            status: redis.status,
+            required: redisRequired,
+          },
+        },
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+      });
+    }
+
+    // Health check (gateway + PostgREST upstream; backward compatible with load balancers using /healthz)
     if (cleanPath === '/healthz') {
-      let postgrest = { ok: false, status: 'unknown' };
-      const pgRoot = String(cfg.postgrestUrl || '').replace(/\/+$/, '');
-      if (pgRoot) {
-        try {
-          const upstream = await fetch(`${pgRoot}/`, {
-            method: 'GET',
-            signal: AbortSignal.timeout(3000),
-          });
-          postgrest = {
-            ok: upstream.ok || upstream.status === 404 || upstream.status === 405,
-            status: upstream.status,
-          };
-        } catch (err) {
-          postgrest = { ok: false, status: 'unreachable', message: err.message };
-        }
-      }
+      const postgrest = await checkPostgrestHttp(cfg.postgrestUrl, 3000);
       const healthy = postgrest.ok;
       return sendJson(healthy ? 200 : 503, {
         status: healthy ? 'healthy' : 'degraded',
         service: 'doctornect-auth-gateway',
-        postgrest,
+        probe: 'dependency',
+        postgrest: { ok: postgrest.ok, status: postgrest.status },
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
       });
@@ -497,6 +527,21 @@ function createGatewayServer(overrides = {}) {
       targetBaseUrl,
       postgrestJwt,
       body: bodyBuf,
+      requestId,
+      onFinished: (statusCode) => {
+        const diff = process.hrtime(startTime);
+        const latencyMs = diff[0] * 1000 + diff[1] / 1e6;
+        emitAuditLog({
+          method: req.method,
+          path: req.url,
+          status: statusCode,
+          latencyMs,
+          uidHash: clientUidHash,
+          role: clientRole,
+          ip: clientIp,
+          requestId,
+        });
+      },
     });
 
     // Default deny for non-public paths without authentication

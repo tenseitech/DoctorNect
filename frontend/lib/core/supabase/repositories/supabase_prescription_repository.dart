@@ -7,6 +7,7 @@ import '../../../features/doctor/clinical/models/clinical_models.dart';
 import '../../firebase/firestore_query_limits.dart';
 import '../../firebase/models/firestore_page.dart';
 import '../mappers/prescription_supabase_mapper.dart';
+import '../../reliability/in_flight_guard.dart';
 import '../supabase_bootstrap.dart';
 import '../supabase_keyset_pagination.dart';
 import '../supabase_stream_table.dart';
@@ -24,6 +25,8 @@ class SupabasePrescriptionRepository {
   static final SupabasePrescriptionRepository instance =
       SupabasePrescriptionRepository._();
 
+  static final InFlightGuard _saveGuard = InFlightGuard();
+
   SupabaseClient get _client => SupabaseBootstrap.client;
 
   static const String _selectQuery =
@@ -38,6 +41,8 @@ class SupabasePrescriptionRepository {
     if (!SupabaseBootstrap.isReady) {
       throw StateError('Supabase is not available.');
     }
+    final guardKey =
+        'prescription_save:${draft.prescriptionId.trim().isNotEmpty ? draft.prescriptionId.trim() : doctorId}';
     if (doctorId.trim().isEmpty) {
       throw StateError('Doctor session is missing. Sign in again.');
     }
@@ -131,11 +136,12 @@ class SupabasePrescriptionRepository {
             })
         .toList();
 
-    // 1. Single atomic database transaction via PostgreSQL RPC
-    await _client.rpc(
-      'create_prescription_atomic',
-      params: {'payload': prescriptionRow},
-    );
+    await _saveGuard.run(guardKey, () async {
+      await _client.rpc(
+        'create_prescription_atomic',
+        params: {'payload': prescriptionRow},
+      );
+    });
   }
 
   /// One-time fetch for a doctor's prescriptions with relational child entries.

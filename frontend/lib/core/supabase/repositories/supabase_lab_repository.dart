@@ -10,6 +10,7 @@ import '../../firebase/repositories/lab_booking_repository.dart';
 import '../../../features/lab/models/lab_connection_models.dart';
 import '../../../features/patient/lab/models/lab_models.dart';
 import '../mappers/lab_supabase_mapper.dart';
+import '../../reliability/in_flight_guard.dart';
 import '../supabase_bootstrap.dart';
 import '../supabase_stream_table.dart';
 import '../supabase_watcher_state_machine.dart';
@@ -19,6 +20,8 @@ class SupabaseLabRepository {
   SupabaseLabRepository._();
 
   static final SupabaseLabRepository instance = SupabaseLabRepository._();
+
+  static final InFlightGuard _orderSaveGuard = InFlightGuard();
 
   static const labReportRpcSkewMessage =
       'Lab report submit requires server SQL migrations 000015 and 000017 (report key RPC). '
@@ -490,8 +493,12 @@ class SupabaseLabRepository {
   /// Saves or creates a doctor lab order.
   Future<void> saveOrder(DoctorLabOrder order) async {
     if (!SupabaseBootstrap.isReady) return;
-    final row = LabSupabaseMapper.orderToRow(order);
-    await _client.from('lab_orders').upsert(row, onConflict: 'order_id');
+    final orderId = order.orderId.trim();
+    if (orderId.isEmpty) return;
+    await _orderSaveGuard.run('lab_order_save:$orderId', () async {
+      final row = LabSupabaseMapper.orderToRow(order);
+      await _client.from('lab_orders').upsert(row, onConflict: 'order_id');
+    });
   }
 
   /// Fetches doctor-prescribed lab orders assigned to [labId].

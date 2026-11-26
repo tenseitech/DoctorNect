@@ -6,6 +6,26 @@ const { URL } = require('node:url');
 
 const path = require('node:path');
 
+const REQUEST_ID_HEADER = 'x-request-id';
+
+function attachRequestIdHeader(headers, requestId) {
+  const out = { ...headers };
+  if (requestId) {
+    out[REQUEST_ID_HEADER] = requestId;
+    const expose = String(out['Access-Control-Expose-Headers'] || '').trim();
+    if (!expose.toLowerCase().includes('x-request-id')) {
+      out['Access-Control-Expose-Headers'] = expose ? `${expose}, x-request-id` : 'x-request-id';
+    }
+  }
+  return out;
+}
+
+function finishProxy(res, options, statusCode) {
+  if (typeof options.onFinished === 'function') {
+    options.onFinished(statusCode);
+  }
+}
+
 /**
  * Proxies an authenticated request to the backing PostgREST instance.
  *
@@ -88,24 +108,37 @@ function proxyToPostgrest(req, res, options) {
       timeout: 15000,
     },
     (proxyRes) => {
-      // Forward status and headers
-      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      const headers = attachRequestIdHeader(proxyRes.headers || {}, options.requestId);
+      res.writeHead(proxyRes.statusCode, headers);
       proxyRes.pipe(res);
+      res.once('finish', () => {
+        finishProxy(res, options, proxyRes.statusCode || 502);
+      });
     }
   );
 
   proxyReq.on('error', (err) => {
     if (!res.headersSent) {
-      res.writeHead(502, { 'Content-Type': 'application/json' });
+      const headers = attachRequestIdHeader(
+        { 'Content-Type': 'application/json' },
+        options.requestId
+      );
+      res.writeHead(502, headers);
       res.end(JSON.stringify({ error: 'Bad Gateway', message: 'Unable to reach PostgREST backend.' }));
+      finishProxy(res, options, 502);
     }
   });
 
   proxyReq.on('timeout', () => {
     proxyReq.destroy();
     if (!res.headersSent) {
-      res.writeHead(504, { 'Content-Type': 'application/json' });
+      const headers = attachRequestIdHeader(
+        { 'Content-Type': 'application/json' },
+        options.requestId
+      );
+      res.writeHead(504, headers);
       res.end(JSON.stringify({ error: 'Gateway Timeout', message: 'PostgREST backend timed out.' }));
+      finishProxy(res, options, 504);
     }
   });
 

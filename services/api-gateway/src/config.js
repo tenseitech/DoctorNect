@@ -42,6 +42,8 @@ module.exports = {
     '/rest/v1/system_config',
     '/rest/v1/review_public',
     '/healthz',
+    '/livez',
+    '/readyz',
   ],
   allowedMethods: [
     'GET',

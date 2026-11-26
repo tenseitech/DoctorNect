@@ -6,6 +6,7 @@ import '../session/patient_session.dart';
 import 'mappers/appointment_supabase_mapper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../reliability/in_flight_guard.dart';
 import 'supabase_bootstrap.dart';
 import 'patient_write_guard.dart';
 
@@ -16,6 +17,8 @@ class SupabasePatientRepository {
   SupabasePatientRepository._();
   static final SupabasePatientRepository instance =
       SupabasePatientRepository._();
+
+  static final InFlightGuard _bookingGuard = InFlightGuard();
 
   SupabaseClient get _client => SupabaseBootstrap.client;
 
@@ -71,7 +74,8 @@ class SupabasePatientRepository {
     String? clinicName,
     String? clinicAddress,
   }) async {
-    return PatientWriteGuard.run(
+    final guardKey = 'book_appointment:${appointmentId.trim()}';
+    return _bookingGuard.run(guardKey, () => PatientWriteGuard.run(
       context: context,
       action: () async {
         final targetPatientId = await _resolveTargetPatientId(patientId);
@@ -148,7 +152,7 @@ class SupabasePatientRepository {
 
         return <String, dynamic>{};
       },
-    );
+    ));
   }
 
   /// Fetches all appointments for a patient

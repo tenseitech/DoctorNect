@@ -18,7 +18,10 @@
 | Error handling | Classifier + no blind retry |
 | Graceful degradation | Static matrix in report |
 | Logging / correlation | `request_id` field ready |
-| Gateway server wiring | **Blocked** — mixed Audit 4 tree |
+| Gateway server wiring | Done — correlation + preserved `/livez`/`/readyz` |
+| InFlightGuard on critical mutations | Done — book / prescription / lab order |
+| RPC idempotency | Documented — `AUDIT_6_RPC_IDEMPOTENCY_PROPOSAL.md` |
+| Degradation matrix | Done — `AUDIT_6_RELIABILITY_DEGRADATION_MATRIX.md` |
 | Regression tests | 10 tests pass |
 | Documentation | Done |
 | Git commit | `e8435ea` |

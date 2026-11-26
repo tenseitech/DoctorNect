@@ -5,7 +5,7 @@
 **Commit:** `e8435ea`  
 **Base:** Audit 5 follow-up `92ac451`
 
-**Status:** **AUDIT 6 COMPLETE** (code + tests). Gateway `server.js` correlation wiring **PARTIALLY FIXED** (Audit 4 hold).
+**Status:** **AUDIT 6 COMPLETE** (code + tests). Gateway correlation **FIXED** (local). Staging runtime **not verified**.
 
 ---
 
@@ -21,9 +21,9 @@ Hardened sync retry classification and backoff, added client-side transient retr
 |----|-----|---------|-------------|--------|
 | REL-02 | High | Sync retried permanent errors | `isTransientSyncError` + jitter backoff | **FIXED** |
 | REL-03 | Med | DLQ HTTP fetch unbounded | `AbortSignal.timeout(8000)` | **FIXED** |
-| REL-05 | Med | Duplicate client mutations | `InFlightGuard` | **FIXED** (library) |
+| REL-05 | Med | Duplicate client mutations | `InFlightGuard` on book / RX / lab order repos | **FIXED** |
 | REL-06 | Med | Realtime auth storm on token refresh | Debounced `setAuth` + subscription dispose | **FIXED** |
-| REL-10 | Med | No request correlation in gateway logs | `request_context.js` + `request_id` in `emitAuditLog` | **PARTIAL** |
+| REL-10 | Med | No request correlation in gateway logs | `server.js` + `proxy.js` + audit logs + response header | **FIXED** |
 | REL-02 | Med | Flutter lacks shared transient retry | `transient_retry.dart` + classifier | **FIXED** |
 
 ---
@@ -32,7 +32,7 @@ Hardened sync retry classification and backoff, added client-side transient retr
 
 | ID | Sev | Note | Status |
 |----|-----|------|--------|
-| REL-10 | Med | Wire `requestId` in `server.js` when Audit 4 hold clears | **BLOCKED** — see `AUDIT_6_GATEWAY_CORRELATION_PATCH.md` |
+| REL-10 | Low | Staging log correlation verification | **OPEN** — manual checklist in `AUDIT_6_FINAL_COMPLETION.md` |
 | REL-04 | Med | Idempotency keys for all critical RPCs | **OPEN** (schema/Audit 4 dependent) |
 | REL-08 | Low | Empty catch blocks in legacy sync paths | **ACCEPTED RISK** (CQ-02 scope) |
 | REL-09 | Med | End-to-end graceful degradation matrix | **DOCUMENTED** (static) |
