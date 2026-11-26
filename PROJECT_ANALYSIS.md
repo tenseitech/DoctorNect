@@ -61,7 +61,7 @@ Status: open / fixed (commit) / needs decision / blocked (on you) / won't fix.
 | L2 | Low | Gateway | `services/api-gateway/src/config.js` | Allowlists name non-existent `lab_catalog`, `medicine_suggestions`, `admin_users`, `provisioning_errors`, `sync_dead_letter_queue`, `delete_my_account` | Stale surface | Remove dead names (test); `admin_users`/`provisioning_errors` kept (deletion uses `delOptional`), `sync_dead_letter_queue` kept (legacy e2e scripts) | S | Low | fixed (partly, rest explained) |
 | L3 | Low | Client | `medicine_suggestion_repository.dart` | Inserts into dropped table; never called | Dead code | Remove | S | None | fixed |
 | L4 | Low | Android | Razorpay SDK adds `NFC`, `READ_BASIC_PHONE_STATE` | Extra permissions in Data safety | Store listing questions | `tools:node="remove"` after a payment test | S | Medium (SDK) | fixed (D4): stripped with tools:node="remove", verified absent in the APK; payment NOT verified, manual check docs/RAZORPAY_PAYMENT_TEST.md |
-| L5 | Low | Flutter | 337 `deprecated_member_use` (material.dart -> material_ui) | Deprecation only | Future break | Migrate when material_ui is stable for all plugins | L | Medium | deferred (D5) until after the first green production deploy |
+| L5 | Low | Flutter | 337 `deprecated_member_use` (material.dart -> material_ui) | Deprecation only | Future break | Migrate when material_ui is stable for all plugins | L | Medium | triaged: all 338 infos are the material/cupertino package split (336 material.dart imports + GlobalMaterialLocalizations + GlobalCupertinoLocalizations); nothing else to fix; migration deferred (D5), note below |
 | L6 | Low | Android | `gradle.properties` `android.builtInKotlin=false` + shim | Plugins still apply KGP | Blocks AGP built-in Kotlin | Remove when plugins update | S | - | blocked (upstream) |
 | L7 | Low | CI | `supabase-keepalive.yml` | Duplicates Functions `supabaseKeepalive`, needs a repo secret | Extra secret surface | Keep as backup or delete | S | None | fixed (D6): workflow deleted; repo secrets SUPABASE_KEEPALIVE_URL/KEY can be deleted |
 | L8 | Low | Secrets binding | all functions | `PROD_GATEWAY_SERVICE_KEY` bound everywhere | Functions without DB use still hold it | By design (cold-start routing assert + DB calls) | - | - | won't fix (documented) |
@@ -82,6 +82,16 @@ M6 scripts ; M7 docs last.
 
 - D1 = (a) implemented (H3). D4 implemented (L4), payment still to be checked by hand. D6 implemented (L7).
 - D2 (M3), D3 (M8), D5 (L5): deferred until after the first green production deploy.
+
+### L5: when to migrate to material_ui / cupertino_ui
+
+All 338 analyzer infos come from one change: since Flutter 3.47 the Material and Cupertino widgets
+live in the separate `material_ui` and `cupertino_ui` packages, and the old `package:flutter/material.dart`
+import plus `GlobalMaterialLocalizations` / `GlobalCupertinoLocalizations` are deprecated aliases. There are no
+other analyzer findings. Migrate in one mechanical PR (replace the imports, add the two packages to
+pubspec) when (1) the deprecated aliases are announced for removal in an upcoming Flutter stable, or
+(2) a plugin we use requires the new packages; and only after the first green production deploy
+(D5). Run `flutter analyze` (expect 0 infos), `flutter test` and both APK builds before merging.
 
 ### D1 (a): how the demo-plane marker works
 
