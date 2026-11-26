@@ -119,7 +119,10 @@ $env:DEMO_SEED_TARGET = 'staging'; node scripts/db/seed_staging_demo_accounts.js
 ```
 
 The connection string is read from `STAGING_SUPABASE_DB_URL` in the repo-root `.env` (never
-printed). `--execute` is create-only; `--reset` deletes only demo-owned rows and seeds again.
+printed). TLS is verified against the Supabase root CA: download it from the Supabase dashboard
+(Project Settings > Database > SSL Configuration > Download certificate) and set
+`STAGING_SUPABASE_CA_PATH` to that file (e.g. `certs/supabase-prod-ca-2021.crt`; `/certs/` is
+git-ignored). `scripts/db/migrate.js` uses the same setting (`scripts/lib/staging_pg_ssl.js`). `--execute` is create-only; `--reset` deletes only demo-owned rows and seeds again.
 
 End-to-end check on a throwaway database (Docker): `npm run test:demo-login`.
 

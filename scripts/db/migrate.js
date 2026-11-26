@@ -11,6 +11,7 @@ const { assertDatabaseGuard, getHostFingerprint } = require('../lib/env_guard');
 const { assertSessionCapableConnection, SESSION_CONNECTION_DOC } = require('../lib/db_connection_guard');
 const { bootstrapMutatingScript } = require('../lib/mutating_script_bootstrap');
 const { assertRdsPreMigrateBootstrap } = require('../lib/rds_bootstrap_preflight');
+const { buildStagingPgConfig, CA_PATH_ENV } = require('../lib/staging_pg_ssl');
 
 let parse;
 try {
@@ -228,18 +229,12 @@ async function releaseMigrationAdvisoryLock(client, lockHeld) {
     .catch(() => {});
 }
 
+// Verified TLS for staging (shared with seed_staging_demo_accounts.js). Previously this used
+// an unverified TLS setting that encrypted the link but accepted any certificate (MITM risk).
 function buildStagingPoolConfig(dbUrl) {
-  const config = { connectionString: dbUrl };
-  try {
-    const parsed = new URL(dbUrl.replace(/^postgres:\/\//i, 'postgresql://'));
-    const sslmode = (parsed.searchParams.get('sslmode') || '').toLowerCase();
-    if (sslmode === 'require' || sslmode === 'verify-ca' || sslmode === 'verify-full' || parsed.hostname.includes('supabase')) {
-      config.ssl = { rejectUnauthorized: false };
-    }
-  } catch (_) {
-    config.ssl = { rejectUnauthorized: false };
-  }
-  return config;
+  const env = { ...process.env, [CA_PATH_ENV]: getEnv(CA_PATH_ENV) };
+  const { connectionString, ssl } = buildStagingPgConfig(dbUrl, { env });
+  return { connectionString, ssl };
 }
 
 function listPendingMigrationFiles(appliedMap, target) {
@@ -723,4 +718,5 @@ module.exports = {
   assertPendingMigrationsInOrder,
   loadAppliedMigrationsMap,
   shouldAcquireMigrationAdvisoryLock,
+  buildStagingPoolConfig,
 };

@@ -204,3 +204,6 @@ frontend/android/.kotlin/
 frontend/android/build/
 docs/audit/terraform_plan_*.txt
 infra/aws/backend.tf
+
+# Local CA certificates (e.g. STAGING_SUPABASE_CA_PATH)
+/certs/

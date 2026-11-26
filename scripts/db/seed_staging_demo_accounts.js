@@ -34,6 +34,7 @@
 const crypto = require('crypto');
 const { URL } = require('url');
 const { DEMO_ACCOUNTS } = require('../lib/demo_accounts');
+const { buildStagingPgConfig } = require('../lib/staging_pg_ssl');
 
 const EMAIL_DOMAIN = 'demo.doctornect.invalid';
 const IDS = {
@@ -343,8 +344,10 @@ async function main() {
   }
 
   const { Client } = require('pg');
-  const local = allowLocal && ['127.0.0.1', 'localhost', '::1'].includes(host);
-  const client = new Client({ connectionString: dbUrl, ssl: local ? false : { rejectUnauthorized: true } });
+  // Shared with migrate.js: verified TLS (STAGING_SUPABASE_CA_PATH), plain TCP only for an
+  // allowed loopback host (local Docker e2e).
+  const { connectionString, ssl } = buildStagingPgConfig(dbUrl, { allowLocal });
+  const client = new Client({ connectionString, ssl });
   await client.connect();
   try {
     await client.query('BEGIN');
