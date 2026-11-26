@@ -22,9 +22,9 @@ _None._
 
 | Metric | Count |
 |--------|------:|
-| Dart-discovered tables | 43 |
+| Dart-discovered tables | 41 |
 | Dart-discovered RPCs | 14 |
-| clientDirectAllowedTables | 43 |
+| clientDirectAllowedTables | 41 |
 | Missing from allowlist (tables) | 0 |
 | Extra direct allowlist (unreferenced) | 0 |
 | serviceRoleOnlyTables (backend; not in Dart) | 23 |
