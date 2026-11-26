@@ -197,3 +197,71 @@ test('private-schema tables answering 404 do not abort deletion; a 404 on a real
   await assert.rejects(del.deleteMyAccountHandler('pat_uid'));
   assert.ok(!events.some((e) => e.kind === 'auth'), 'Auth kept when a real table is unreachable');
 });
+
+// ---- Provider roles (doctor / pharmacy / ambulance): anonymise, keep patient history ----
+
+function pgEvents(method, table) {
+  return events.filter((e) => e.kind === 'pg' && e.method === method && (!table || e.table === table));
+}
+
+test('doctor deletion anonymises the doctor and keeps appointments, prescriptions and referrals', async () => {
+  identity('doc_uid', 'doctor', 'doc_1');
+  pgFetch();
+  s3();
+
+  const res = await del.deleteMyAccountHandler('doc_uid');
+  assert.equal(res.ok, true);
+
+  for (const t of ['appointments', 'prescriptions', 'referrals', 'health_records', 'patients']) {
+    assert.ok(!pgEvents('DELETE', t).length, `doctor deletion must not DELETE from ${t}`);
+  }
+  for (const t of ['doctor_availability', 'doctor_invites', 'patient_doctor_links']) {
+    assert.ok(pgEvents('DELETE', t).some((e) => /doctor_id=eq\.doc_1/.test(e.path)), `deletes ${t}`);
+  }
+  const patch = pgEvents('PATCH', 'doctors')[0];
+  assert.ok(patch && /doctor_id=eq\.doc_1/.test(patch.path), 'doctors row anonymised');
+  assert.equal(patch.body.name, 'Deleted doctor');
+  assert.equal(patch.body.owner_uid, null);
+  assert.equal(patch.body.mobile, 'deleted');
+  assert.equal(patch.body.deactivated, true);
+  assert.equal(events[events.length - 1].kind, 'auth', 'Auth deleted last');
+});
+
+test('pharmacy deletion anonymises the store and keeps patients\' deliveries', async () => {
+  identity('store_uid', 'medicalStore', 'store_1');
+  pgFetch();
+  s3();
+
+  const res = await del.deleteMyAccountHandler('store_uid');
+  assert.equal(res.ok, true);
+
+  for (const t of ['pharmacy_deliveries', 'pharmacy_delivery_medicines', 'prescriptions', 'patients']) {
+    assert.ok(!pgEvents('DELETE', t).length, `pharmacy deletion must not DELETE from ${t}`);
+  }
+  const patch = pgEvents('PATCH', 'medical_stores')[0];
+  assert.ok(patch && /store_id=eq\.store_1/.test(patch.path), 'medical_stores row anonymised');
+  assert.equal(patch.body.store_name, 'Deleted pharmacy');
+  assert.equal(patch.body.owner_uid, null);
+  assert.equal(patch.body.phone, 'deleted');
+  assert.equal(events[events.length - 1].kind, 'auth', 'Auth deleted last');
+});
+
+test('ambulance deletion removes PIN/location, anonymises vehicle and driver on past trips', async () => {
+  identity('amb_uid', 'ambulance', 'amb_1');
+  pgFetch();
+  s3();
+
+  const res = await del.deleteMyAccountHandler('amb_uid');
+  assert.equal(res.ok, true);
+
+  assert.ok(pgEvents('DELETE', 'ambulance_private_settings').some((e) => /ambulance_id=eq\.amb_1/.test(e.path)), 'PIN removed');
+  assert.ok(pgEvents('DELETE', 'ambulance_locations').some((e) => /driver_id=eq\.amb_1/.test(e.path)), 'live location removed');
+  assert.ok(!pgEvents('DELETE', 'ambulance_broadcasts').length, 'patients\' trips are kept');
+  const trip = pgEvents('PATCH', 'ambulance_broadcasts')[0];
+  assert.ok(trip && /accepted_driver_id=eq\.amb_1/.test(trip.path));
+  assert.equal(trip.body.accepted_driver_phone, null);
+  const vehicle = pgEvents('PATCH', 'ambulances')[0];
+  assert.ok(vehicle && /ambulance_id=eq\.amb_1/.test(vehicle.path), 'ambulances row anonymised');
+  assert.equal(vehicle.body.phone, 'deleted');
+  assert.equal(events[events.length - 1].kind, 'auth', 'Auth deleted last');
+});
