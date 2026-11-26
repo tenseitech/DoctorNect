@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/config/app_web_urls.dart';
 import '../../../../core/config/firestore_forbidden_guard.dart';
 import '../../../../core/firebase/firebase_bootstrap.dart';
 import '../../../../core/supabase/repositories/supabase_patient_profile_repository.dart';
@@ -620,8 +621,8 @@ class PatientProfileMock {
     ),
   ];
 
-  static const supportEmail = 'support@doctornect.com';
-  static const websiteUrl = 'https://doctornect.com';
-  static const appDownloadUrl = 'https://doctornect.com/download';
+  static const supportEmail = AppWebUrls.supportEmail;
+  static String get websiteUrl => AppWebUrls.websiteUrl;
+  static String get appDownloadUrl => AppWebUrls.appDownloadUrl;
   static const appVersion = '1.0.1';
 }

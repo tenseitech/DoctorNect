@@ -3,13 +3,12 @@ import '../../core/notifications/app_toast.dart';
 
 import 'dart:async';
 
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+
+import '../../core/account/delete_account_flow.dart';
 import 'package:flutter/services.dart';
-import '../../core/session/app_session.dart';
 import '../../core/utils/external_launcher.dart';
 import '../patient/profile/data/patient_profile_mock.dart';
-import '../welcome/welcome_screen.dart';
 import '../../core/auth/contact_change_otp_service.dart';
 import '../../core/auth/contact_change_verification.dart';
 import '../../core/constants/country_phone_codes.dart';
@@ -152,61 +151,6 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
         );
       },
     );
-  }
-
-  Future<void> _confirmDeleteAccount(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text(
-          'Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !context.mounted) return;
-
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await AppDataService.instance.user.deleteAccount(user: user);
-      }
-      if (!context.mounted) return;
-      Navigator.of(context).pop();
-      await AmbulanceSession.clear();
-      AppSession.clear();
-      await FirebaseAuth.instance.signOut();
-      if (!context.mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-        (_) => false,
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      Navigator.of(context).pop();
-      final message = e is FirebaseFunctionsException
-          ? (e.message ?? 'Could not delete account. Please try again.')
-          : 'Failed to delete account. Please try again.';
-      AppToast.info(context, message);
-    }
   }
 
   void _applyAmbulance(RegisteredAmbulance? amb) {
@@ -699,7 +643,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                             label: 'Delete account',
                             subtitle: 'Permanently remove this ambulance account',
                             iconColor: AppColors.error,
-                            onTap: () => _confirmDeleteAccount(context),
+                            onTap: () => confirmAndDeleteAccountFromProfile(context),
                           ),
                         ],
                         if (widget.embedded && widget.onLogout != null) ...[

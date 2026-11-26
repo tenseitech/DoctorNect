@@ -70,9 +70,13 @@ Legend: **S** = required in staging, **P** = required in production, **O** = opt
 | `FIRESTORE_FORBIDDEN` | Block Cloud Functions Firestore (OTP → Redis only) | Functions | O | **P** | `1` |
 | `OTP_REDIS_MIRROR` | Store OTP challenges in Redis | Functions | O | **P** | `on` |
 | `CORS_ALLOWED_ORIGINS` | Gateway browser CORS allow-list (comma-separated) | Gateway | O | **P** | `https://doctornect.com,...` |
+| `RATE_LIMIT_REDIS_URL` | Redis URL for distributed gateway rate limits (`rediss://` in prod) | Gateway (ECS) | O | **P** | Secrets Manager `redis_url` when `wire_gateway_rate_limit_redis_secret=true` |
+| `RATE_LIMIT_ALLOW_IN_MEMORY` | Opt-in in-memory limits (non-prod diagnostics only) | Gateway | O | deny in **P** | must not be `true` in production |
+| `FIREBASE_REVOCATION_CHECK` | Firebase Admin `verifyIdToken(..., true)` after JWKS | Gateway | O | **P** | `true` (cannot be `false` in production) |
 | `REDIS_KEY_PREFIX` | Implicit via `APP_ENV` → `staging:` / `prod:` | Functions | auto | auto | (see `redis_keys.js`) |
 | `FIREBASE_PROJECT_ID` | Override compile-time Firebase project | Flutter | O | O | `medibond-staging` / `medibond-45fad` |
 | `FIREBASE_STORAGE_BUCKET` | Override Firebase Storage bucket (unused for PHI) | Flutter | O | O | env-specific bucket |
+| `PUBLIC_WEB_ORIGIN` | Public marketing / invite deep-link origin | Flutter (`--dart-define`) | O | O | `https://doctornect.com` (`lib/core/config/app_web_urls.dart`) |
 
 See also: [ENVIRONMENTS.md](../ENVIRONMENTS.md), root [.env.example](../.env.example), [backend/functions/.env.example](../backend/functions/.env.example).
 

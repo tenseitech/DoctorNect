@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show lerpDouble;
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:medibond/core/account/delete_account_flow.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -16,9 +16,7 @@ import 'package:medibond/core/firebase/app_data_service.dart';
 import 'package:medibond/core/layout/responsive_layout.dart';
 import 'package:medibond/core/media/gallery_image_picker.dart';
 import 'package:medibond/core/notifications/app_toast.dart';
-import 'package:medibond/core/session/ambulance_session.dart';
 import 'package:medibond/core/session/app_session.dart';
-import 'package:medibond/features/welcome/welcome_screen.dart';
 import 'package:medibond/core/session/doctor_session.dart';
 import 'package:medibond/core/session/patient_session.dart';
 import 'package:medibond/core/theme/app_colors.dart';
@@ -1889,7 +1887,7 @@ class _PatientPatientProfileScreenState
           label: 'Delete Account',
           subtitle: 'Permanently remove data',
           iconGradient: const [Color(0xFFEF4444), Color(0xFFB91C1C)],
-          onTap: () => _confirmDeleteAccount(context),
+          onTap: () => confirmAndDeleteAccountFromProfile(context),
         ),
       ];
 
@@ -2146,67 +2144,13 @@ class _PatientPatientProfileScreenState
             icon: Icons.person_remove_outlined,
             label: 'Delete Account',
             iconGradient: const [Color(0xFFEF4444), Color(0xFFB91C1C)],
-            onTap: () => _confirmDeleteAccount(context),
+            onTap: () => confirmAndDeleteAccountFromProfile(context),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _confirmDeleteAccount(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text(
-          'Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !context.mounted) return;
-
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await AppDataService.instance.user.deleteAccount(user: user);
-      }
-      if (!context.mounted) return;
-      Navigator.of(context).pop();
-      await AmbulanceSession.clear();
-      AppSession.clear();
-      await FirebaseAuth.instance.signOut();
-      if (!context.mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-        (_) => false,
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      Navigator.of(context).pop();
-      final message = e is FirebaseFunctionsException
-          ? (e.message ?? 'Could not delete account. Please try again.')
-          : 'Failed to delete account. Please try again.';
-      AppToast.info(context, message);
-    }
-  }
 }
 
 class _FamilyChip extends StatelessWidget {

@@ -1,11 +1,12 @@
 import '../firebase/firebase_bootstrap.dart';
 import '../session/medical_store_session.dart';
 import '../supabase/supabase_bootstrap.dart';
+import '../config/app_web_urls.dart';
 import '../../features/pharmacy/data/medical_store_registry.dart';
 
 /// Pharmacy → doctor invite links for non-registered doctors.
 abstract final class PharmacyDoctorInviteService {
-  static const appDownloadUrl = 'https://doctornect.com/download';
+  static String get appDownloadUrl => AppWebUrls.appDownloadUrl;
 
   static String buildInviteLink(String storeId) {
     final id = storeId.trim().isEmpty ? 'store' : storeId.trim();

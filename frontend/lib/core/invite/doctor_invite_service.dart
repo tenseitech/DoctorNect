@@ -1,3 +1,4 @@
+import '../config/app_web_urls.dart';
 import '../session/doctor_session.dart';
 import '../../features/doctor/profile/data/doctor_profile_store.dart';
 
@@ -14,7 +15,7 @@ enum InviteNetworkUserType {
 
 /// Doctor → patient invite links (derived from doctor id; no Firestore metadata).
 abstract final class DoctorInviteService {
-  static const inviteBaseUrl = 'https://doctornect.com/join';
+  static String get inviteBaseUrl => AppWebUrls.inviteJoinUrl;
 
   static String buildInviteLink(String doctorId) {
     return buildNetworkInviteLink(

@@ -10,11 +10,12 @@ import '../../features/ambulance/models/ambulance_models.dart';
 import '../firebase/firebase_bootstrap.dart';
 import '../session/doctor_session.dart';
 import '../supabase/supabase_bootstrap.dart';
+import '../config/app_web_urls.dart';
 import '../../features/doctor/profile/data/doctor_profile_store.dart';
 
 /// Doctor-created ambulance invites — driver completes setup via invite link.
 abstract final class AmbulanceInviteService {
-  static const inviteBaseUrl = 'https://doctornect.com/ambulance-setup';
+  static String get inviteBaseUrl => AppWebUrls.ambulanceSetupUrl;
 
   static String buildInviteLink({
     required String inviteId,
