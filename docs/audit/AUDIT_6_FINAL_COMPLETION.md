@@ -25,7 +25,8 @@ Completed remaining Audit 6 items: gateway request correlation wired end-to-end 
 
 ## Git evidence
 
-**Final completion commit:** (recorded after push in this pass)
+**Final completion commit:** `a81a3d3` (`audit6: complete reliability remediation and validation`)  
+**Push:** `origin/audit6/reliability-resilience` — success
 
 ## Test evidence
 
