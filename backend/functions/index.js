@@ -112,10 +112,19 @@ const {
   clientFacingHttpsMessage,
 } = require('./public_error_messages');
 const { deleteMyAccountHandler, supabaseServiceRoleKey } = require('./delete_my_account');
+const s3Storage = require('./s3_storage');
 const {
   awsAccessKeyId,
   awsSecretAccessKey,
-} = require('./s3_storage');
+} = s3Storage;
+
+// File upload/download callables live in s3_storage.js; Firebase deploys only what index.js
+// exports, so they must be re-exported here (otherwise a deploy deletes them).
+exports.getS3UploadUrl = s3Storage.getS3UploadUrl;
+exports.getS3DownloadUrl = s3Storage.getS3DownloadUrl;
+exports.getS3DownloadUrls = s3Storage.getS3DownloadUrls;
+exports.deleteS3Object = s3Storage.deleteS3Object;
+exports.confirmS3Upload = s3Storage.confirmS3Upload;
 const { reviewFixedOtp } = require('./reviewer_secrets');
 const { otpHmacSecret } = require('./otp_secrets');
 const {
