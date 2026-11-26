@@ -1,0 +1,51 @@
+name: DB migrations and SQL tests
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "db/**"
+      - "scripts/db/**"
+      - "scripts/lib/**"
+      - "scripts/package.json"
+      - "scripts/package-lock.json"
+      - ".github/workflows/db-tests.yml"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "db/**"
+      - "scripts/db/**"
+      - "scripts/lib/**"
+      - "scripts/package.json"
+      - "scripts/package-lock.json"
+      - ".github/workflows/db-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  sql-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: scripts/package-lock.json
+
+      - name: Install script dependencies
+        working-directory: scripts
+        run: npm ci --ignore-scripts
+
+      - name: Audit script dependencies
+        working-directory: scripts
+        run: npm audit --audit-level=high
+
+      # Replays every migration on throwaway PostgreSQL 17 (staging) and 18 (RDS) containers,
+      # re-applies the newest ones to prove idempotency, runs db/tests/*.sql and the RLS / grant
+      # audits. No secrets needed.
+      - name: Migrations + SQL tests (PG17 + PG18)
+        run: node scripts/db/run_sql_tests.js

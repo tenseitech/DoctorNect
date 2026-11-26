@@ -12,6 +12,9 @@ on:
       - 'services/api-gateway/**'
       - '.github/workflows/gateway_ci.yml'
 
+permissions:
+  contents: read
+
 jobs:
   test-and-build:
     name: Test & Build Gateway Container
