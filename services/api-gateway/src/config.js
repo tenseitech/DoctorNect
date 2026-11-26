@@ -76,13 +76,11 @@ module.exports = {
     'health_records',
     'in_app_notifications',
     'lab_bookings',
-    'lab_catalog',
     'lab_catalog_tests',
     'lab_connections',
     'lab_orders',
     'labs',
     'medical_directory',
-    'medicine_suggestions',
     'medical_stores',
     'patient_doctor_links',
     'patients',
@@ -155,7 +153,6 @@ module.exports = {
   ],
   // RPCs callable strictly by service_role (in addition to client RPCs)
   serviceRoleOnlyRpcs: [
-    'delete_my_account',
     // Cloud Functions submitAmbulanceRating (Firebase-authenticated booker only).
     'submit_ambulance_rating',
   ],
