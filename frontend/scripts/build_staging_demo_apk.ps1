@@ -101,7 +101,13 @@ Write-Host "Provided dart-defines: $($provided -join ', ')"
 Write-Host 'Building staging demo APK (APP_ENV=staging, App Check debug provider, staging Supabase)...'
 Push-Location $frontend
 try {
-  & flutter build apk --release @defines
+  # The staging build is signed with the release key (so it installs over a release build on a
+  # test phone), so it must never look like a release: its version name says "-staging-demo"
+  # (Android Settings > Apps, Play Console would show it too).
+  $pubspecVersion = ((Get-Content -LiteralPath (Join-Path $frontend 'pubspec.yaml')) |
+    Where-Object { $_ -match '^version:\s*' } | Select-Object -First 1) -replace '^version:\s*', ''
+  $buildName = (($pubspecVersion -split '\+')[0]).Trim() + '-staging-demo'
+  & flutter build apk --release --build-name=$buildName @defines
   if ($LASTEXITCODE -ne 0) { throw "flutter build failed with exit code $LASTEXITCODE" }
   $out = Join-Path $frontend 'build\app\outputs\flutter-apk'
   Copy-Item (Join-Path $out 'app-release.apk') (Join-Path $out 'app-staging-demo.apk') -Force

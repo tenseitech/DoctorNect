@@ -49,4 +49,13 @@ void main() {
     final s = File('scripts/build_staging_demo_apk.ps1').readAsStringSync();
     expect(s, contains('--dart-define=AMBULANCE_ENABLED=true'));
   });
+
+  test('staging demo APK can never be mistaken for a release (version name)',
+      () {
+    final s = File('scripts/build_staging_demo_apk.ps1').readAsStringSync();
+    expect(s, contains('--build-name='));
+    expect(s, contains("'-staging-demo'"));
+    final release = File('scripts/release_build.ps1').readAsStringSync();
+    expect(release, isNot(contains('staging-demo')));
+  });
 }
