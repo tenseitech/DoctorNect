@@ -1,6 +1,6 @@
 # Audit 7 — Alerting specification
 
-**Status:** Templates only — see `alerting/alert_templates.yaml`.
+**Status:** Templates validated in CI — see `alerting/alert_templates.yaml` and `scripts/test/alert_templates_validation.test.js`. Destinations **not activated**.
 
 ## Principles
 

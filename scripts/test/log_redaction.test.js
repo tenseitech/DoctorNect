@@ -29,6 +29,13 @@ describe('log_redaction (OPS-02)', () => {
     assert.strictEqual(out.appointment_id, 'a1');
   });
 
+  it('redacts phone-like patterns and truncates long strings', () => {
+    const long = 'x'.repeat(5000);
+    const out = redactString(`call +1-555-123-4567 ${long}`);
+    assert.doesNotMatch(out, /555-123-4567/);
+    assert.ok(out.includes('[TRUNCATED]'));
+  });
+
   it('operationalLogEnvelope includes service and environment', () => {
     const entry = operationalLogEnvelope({
       service: 'doctornect-gateway',

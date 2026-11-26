@@ -1,0 +1,28 @@
+{
+  "title": "DoctorNect Gateway — Overview (import template)",
+  "uid": "doctornect-gw-overview",
+  "description": "Import into Grafana. Data source: CloudWatch Logs or GCP Logging with JSON filter event=api_request.",
+  "panels": [
+    {
+      "title": "Request rate",
+      "type": "timeseries",
+      "targets": [{ "expr": "sum(rate(gateway_requests_total[5m]))" }]
+    },
+    {
+      "title": "5xx error rate %",
+      "type": "stat",
+      "targets": [{ "expr": "100 * sum(rate(gateway_requests_total{status=~\"5..\"}[5m])) / sum(rate(gateway_requests_total[5m]))" }]
+    },
+    {
+      "title": "p95 latency (ms)",
+      "type": "gauge",
+      "targets": [{ "expr": "histogram_quantile(0.95, gateway_latency_ms)" }]
+    },
+    {
+      "title": "Ready probe",
+      "type": "stat",
+      "targets": [{ "expr": "synthetic_probe{path=\"/readyz\", outcome=\"success\"}" }]
+    }
+  ],
+  "note": "Replace metric names with log-derived metrics from your provider. Not auto-deployed."
+}

@@ -11,6 +11,7 @@ import '../security/app_check_service.dart';
 import '../storage/storage_feature_flag.dart';
 import '../validation/server_validation_service.dart';
 import 'firebase_error_messages.dart';
+import '../observability/crash_reporting.dart';
 
 /// Initializes Firebase before the app runs.
 abstract final class FirebaseBootstrap {
@@ -112,6 +113,7 @@ abstract final class FirebaseBootstrap {
     unawaited(activateAppCheck());
     unawaited(_loadValidationRules());
     unawaited(StorageFeatureFlag.initialize());
+    unawaited(CrashReporting.configure());
   }
 }
 

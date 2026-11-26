@@ -1,0 +1,38 @@
+name: Audit 7 — Synthetic Gateway Probes
+
+on:
+  push:
+    branches:
+      - audit7/**
+      - main
+      - staging
+    paths:
+      - 'scripts/ops/**'
+      - 'scripts/lib/log_redaction.js'
+      - 'services/api-gateway/src/**'
+      - '.github/workflows/ops_synthetic_probes.yml'
+  pull_request:
+    paths:
+      - 'scripts/ops/**'
+      - 'services/api-gateway/src/**'
+
+jobs:
+  synthetic-and-ops-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install gateway deps
+        working-directory: services/api-gateway
+        run: npm ci
+      - name: Gateway unit tests (includes audit log policy)
+        working-directory: services/api-gateway
+        run: npm test
+      - name: Ops script tests
+        run: |
+          node --test scripts/test/log_redaction.test.js
+          node --test scripts/test/synthetic_gateway_probe.test.js
+          node --test scripts/test/audit_log_sli_rollup.test.js
+          node --test scripts/test/alert_templates_validation.test.js

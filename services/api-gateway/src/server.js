@@ -19,6 +19,7 @@ const { resolveClientIpFromRequest } = require('../../../scripts/lib/trusted_cli
 const { clientAuthErrorMessage } = require('./client_auth_errors');
 const { checkPostgrestHttp, checkRedisPing } = require('./health_dependencies');
 const { resolveRequestId, REQUEST_ID_HEADER } = require('./request_context');
+const { shouldEmitGatewayAuditLog } = require('./audit_log_policy');
 
 async function limiterAllows(limiter, key) {
   const result = limiter.isAllowed(key);
@@ -150,16 +151,22 @@ function createGatewayServer(overrides = {}) {
       res.writeHead(statusCode, responseHeaders);
       res.end(JSON.stringify(data));
 
-      emitAuditLog({
+      if (shouldEmitGatewayAuditLog({
+        statusCode,
         method: req.method,
         path: req.url,
-        status: statusCode,
-        latencyMs,
-        uidHash: clientUidHash,
-        role: clientRole,
-        ip: clientIp,
-        requestId,
-      });
+      })) {
+        emitAuditLog({
+          method: req.method,
+          path: req.url,
+          status: statusCode,
+          latencyMs,
+          uidHash: clientUidHash,
+          role: clientRole,
+          ip: clientIp,
+          requestId,
+        });
+      }
     };
 
     // Handle CORS preflight
@@ -529,6 +536,13 @@ function createGatewayServer(overrides = {}) {
       body: bodyBuf,
       requestId,
       onFinished: (statusCode) => {
+        if (!shouldEmitGatewayAuditLog({
+          statusCode,
+          method: req.method,
+          path: req.url,
+        })) {
+          return;
+        }
         const diff = process.hrtime(startTime);
         const latencyMs = diff[0] * 1000 + diff[1] / 1e6;
         emitAuditLog({

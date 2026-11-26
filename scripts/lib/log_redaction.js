@@ -9,12 +9,17 @@ const SENSITIVE_KEY_PATTERN = /^(password|passwd|pwd|otp|token|refresh_?token|ac
 
 const BEARER_PATTERN = /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi;
 const JWT_PATTERN = /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g;
+const PHONE_PATTERN = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
 
 function redactString(input, { replacement = '[REDACTED]' } = {}) {
   let s = String(input ?? '');
   if (!s) return s;
   s = s.replace(BEARER_PATTERN, `Bearer ${replacement}`);
   s = s.replace(JWT_PATTERN, replacement);
+  s = s.replace(PHONE_PATTERN, replacement);
+  if (s.length > 4000) {
+    s = `${s.slice(0, 4000)}…[TRUNCATED]`;
+  }
   return s;
 }
 

@@ -17,3 +17,11 @@ All objectives below are **proposed**. No claim of current attainment unless sta
 | Storage confirm | Success | S3 confirm RPC success | 99.5% | Functions logs |
 
 **Error budget:** 0.5% monthly downtime ≈ 3.6h for gateway availability SLO.
+
+## Verification status (Audit 7 final follow-up)
+
+| SLI | Target | Measured | Status |
+|-----|--------|----------|--------|
+| `/readyz` synthetic success | 100% in CI | Local mock tests pass | **TESTED** |
+| Gateway availability from logs | 99.5% | Use `rollupGatewaySli()` on log export | **CONFIGURED** |
+| Production historical attainment | — | No ingest in repo | **NOT VERIFIED** |
