@@ -27,7 +27,10 @@ class RoleEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveAccent = accentColor ?? AppColors.doctorBlue;
 
-    return Center(
+    return Semantics(
+      container: true,
+      label: '$title. $subtitle',
+      child: Center(
       child: Padding(
         padding: EdgeInsets.all(compact ? 16.0 : 24.0),
         child: ConstrainedBox(
@@ -49,7 +52,9 @@ class RoleEmptyState extends StatelessWidget {
                 ),
               ),
               SizedBox(height: compact ? 12 : 16),
-              Text(
+              Semantics(
+                header: true,
+                child: Text(
                 title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -60,6 +65,7 @@ class RoleEmptyState extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
                 ),
+              ),
               ),
               const SizedBox(height: 6),
               Text(
@@ -100,6 +106,7 @@ class RoleEmptyState extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }

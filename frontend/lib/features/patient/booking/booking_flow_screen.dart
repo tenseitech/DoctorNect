@@ -33,6 +33,7 @@ import '../../../core/auth/patient_details_guard.dart';
 import '../../../core/supabase/supabase_bootstrap.dart';
 import '../../../core/supabase/supabase_patient_repository.dart';
 import '../../../core/supabase/patient_write_guard.dart';
+import '../../../widgets/accessible_icon_button.dart';
 
 class BookingFlowScreen extends StatefulWidget {
   const BookingFlowScreen({
@@ -862,10 +863,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: _back,
-        ),
+        leading: AccessibleIconButton.back(onPressed: _back),
         title: Text(
           'Book Appointment',
           style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),

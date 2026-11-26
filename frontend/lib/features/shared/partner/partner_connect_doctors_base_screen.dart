@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/accessibility/accessibility_tokens.dart';
 import '../../../core/auth/profile_action_guard.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/layout/responsive_layout.dart';
@@ -1166,7 +1167,10 @@ class _PartnerConnectionTile extends StatelessWidget {
           ),
           IconButton(
             tooltip: 'Disconnect',
-            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+            constraints: const BoxConstraints(
+              minWidth: AccessibilityTokens.minTapTarget,
+              minHeight: AccessibilityTokens.minTapTarget,
+            ),
             icon: const Icon(Icons.link_off, size: 20, color: AppColors.error),
             onPressed: () async {
               final confirmed = await showConfirmDeleteDialog(

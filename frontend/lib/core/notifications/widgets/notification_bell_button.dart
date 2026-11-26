@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../accessibility/accessibility_tokens.dart';
 import '../../theme/app_colors.dart';
 import '../app_notification.dart';
 import '../in_app_notification_service.dart';
@@ -24,7 +25,14 @@ class NotificationBellButton extends StatelessWidget {
             ? InAppNotificationService.instance.unreadDoctorCount
             : InAppNotificationService.instance.unreadPatientCount;
 
-        return IconButton(
+        final tooltip = unread > 0
+            ? 'Notifications, $unread unread'
+            : 'Notifications';
+
+        return Semantics(
+          button: true,
+          label: tooltip,
+          child: IconButton(
           onPressed: () {
             Navigator.push(
               context,
@@ -33,9 +41,13 @@ class NotificationBellButton extends StatelessWidget {
               ),
             );
           },
+          tooltip: tooltip,
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+          constraints: const BoxConstraints(
+            minWidth: AccessibilityTokens.minTapTarget,
+            minHeight: AccessibilityTokens.minTapTarget,
+          ),
           icon: Badge(
             isLabelVisible: unread > 0,
             label: Text(unread > 9 ? '9+' : '$unread'),
@@ -47,6 +59,7 @@ class NotificationBellButton extends StatelessWidget {
             backgroundColor: AppColors.cardBgOf(context),
             side: BorderSide(color: AppColors.borderOf(context)),
           ),
+        ),
         );
       },
     );

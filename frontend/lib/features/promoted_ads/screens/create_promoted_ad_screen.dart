@@ -13,6 +13,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../widgets/accessible_icon_button.dart';
 
 /// Multi-step Promotional Ad Creation and Payment Gateway Flow (Light & Dark Mode Enabled)
 class CreatePromotedAdScreen extends StatefulWidget {
@@ -301,8 +302,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         elevation: 0.5,
-        leading: IconButton(
+        leading: AccessibleIconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          semanticsLabel: 'Go back',
           onPressed: () {
             if (_currentStep > 0) {
               setState(() => _currentStep--);

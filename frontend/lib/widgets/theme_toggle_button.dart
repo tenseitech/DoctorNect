@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/accessibility/accessibility_tokens.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme_controller.dart';
 
@@ -41,28 +42,42 @@ class ThemeToggleButton extends StatelessWidget {
           ),
         );
 
+        void toggleTheme() => AppThemeController.instance.toggleTheme();
+
         if (highlighted) {
-          return Tooltip(
-            message: tooltip,
-            child: IconButton(
-              onPressed: () => AppThemeController.instance.toggleTheme(),
-              visualDensity: VisualDensity.compact,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-              icon: iconWidget,
-              color: iconColor,
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.cardBgOf(context),
-                side: BorderSide(color: AppColors.borderOf(context)),
+          return Semantics(
+            button: true,
+            label: tooltip,
+            child: Tooltip(
+              message: tooltip,
+              child: IconButton(
+                onPressed: toggleTheme,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: AccessibilityTokens.minTapTarget,
+                  minHeight: AccessibilityTokens.minTapTarget,
+                ),
+                icon: iconWidget,
+                color: iconColor,
+                tooltip: tooltip,
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.cardBgOf(context),
+                  side: BorderSide(color: AppColors.borderOf(context)),
+                ),
               ),
             ),
           );
         }
 
-        return IconButton(
-          icon: iconWidget,
-          tooltip: tooltip,
-          onPressed: () => AppThemeController.instance.toggleTheme(),
+        return Semantics(
+          button: true,
+          label: tooltip,
+          child: IconButton(
+            icon: iconWidget,
+            tooltip: tooltip,
+            onPressed: toggleTheme,
+          ),
         );
       },
     );

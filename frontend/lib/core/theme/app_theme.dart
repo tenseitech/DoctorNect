@@ -1,10 +1,38 @@
 import 'package:flutter/material.dart';
 
+import '../accessibility/accessibility_tokens.dart';
 import 'app_colors.dart';
 import 'app_typography.dart';
 import '../constants/app_constants.dart';
 
 abstract final class AppTheme {
+  static ThemeData _applySharedUxAccessibility(ThemeData theme, Color accent) {
+    return theme.copyWith(
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          minimumSize: const Size(
+            AccessibilityTokens.minTapTarget,
+            AccessibilityTokens.minTapTarget,
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          minimumSize: const Size(
+            AccessibilityTokens.minTapTarget,
+            AccessibilityTokens.minTapTarget,
+          ),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        actionTextColor: accent,
+      ),
+      focusColor: accent.withValues(alpha: 0.15),
+      hoverColor: accent.withValues(alpha: 0.08),
+    );
+  }
+
   static ThemeData light(Color accent) {
     final base = ThemeData(
       useMaterial3: true,
@@ -23,7 +51,8 @@ abstract final class AppTheme {
 
     final inter = AppTypography.buildTextTheme(base.textTheme);
 
-    return base.copyWith(
+    return _applySharedUxAccessibility(
+      base.copyWith(
       textTheme: inter.apply(
         bodyColor: AppColors.textPrimary,
         displayColor: AppColors.textPrimary,
@@ -109,6 +138,20 @@ abstract final class AppTheme {
           color: AppColors.textPrimary,
         ),
       ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+      ),
+    ),
+      accent,
     );
   }
 
@@ -130,7 +173,8 @@ abstract final class AppTheme {
 
     final inter = AppTypography.buildTextTheme(base.textTheme);
 
-    return base.copyWith(
+    return _applySharedUxAccessibility(
+      base.copyWith(
       textTheme: inter.apply(
         bodyColor: AppColors.darkTextPrimary,
         displayColor: AppColors.darkTextPrimary,
@@ -230,6 +274,8 @@ abstract final class AppTheme {
           color: AppColors.darkTextPrimary,
         ),
       ),
+    ),
+      accent,
     );
   }
 }
