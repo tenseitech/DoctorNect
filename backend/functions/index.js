@@ -112,6 +112,7 @@ const {
   awsSecretAccessKey,
 } = require('./s3_storage');
 const { reviewFixedOtp } = require('./reviewer_secrets');
+const { otpHmacSecret } = require('./otp_secrets');
 const {
   demoSupabaseServiceRoleKey,
   prodGatewayServiceKey,
@@ -119,6 +120,7 @@ const {
 
 /** Demo/reviewer OTP + Postgres login lookup (secrets must not materialize to .env). */
 const OTP_DATA_PLANE_SECRETS = [
+  otpHmacSecret,
   reviewFixedOtp,
   demoSupabaseServiceRoleKey,
   prodGatewayServiceKey,

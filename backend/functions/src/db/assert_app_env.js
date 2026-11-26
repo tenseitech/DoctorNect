@@ -222,9 +222,16 @@ function isTruthyEnvFlag(value) {
 /**
  * Warn (do not fail) when production relies on MSG91 without OTP HMAC pepper configured.
  */
+/** Callables that hash/verify OTPs; OTP_HMAC_SECRET is bound (Secret Manager) only to these. */
+const OTP_HASH_FUNCTIONS = new Set(['sendUserRegistrationOtp', 'verifyUserRegistrationOtp']);
+
 function warnProductionOtpHmacFallback(env = process.env, logFn = console.warn) {
   const appEnv = String(env.APP_ENV || 'staging').trim().toLowerCase();
   if (appEnv !== 'production') return;
+  // Deployed functions that do not hash OTPs never receive the secret; do not warn there.
+  // (check:boot-env verifies the secret separately: --check-secret-manager.)
+  const target = String(env.FUNCTION_TARGET || '').trim();
+  if (target && !OTP_HASH_FUNCTIONS.has(target)) return;
 
   const hmac = String(env.OTP_HMAC_SECRET || '').trim();
   const msg91 = String(env.MSG91_AUTH_KEY || '').trim();

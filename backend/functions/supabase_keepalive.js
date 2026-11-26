@@ -2,11 +2,11 @@
 
 /**
  * Scheduled read-only ping against the demo Supabase project (prevents free-tier pause).
- * Credentials: Firebase Secret Manager only (DEMO_SUPABASE_URL + DEMO_SUPABASE_SERVICE_ROLE_KEY).
+ * DEMO_SUPABASE_URL is a plain env value (a URL, not a secret; the OTP functions read it too).
+ * Only DEMO_SUPABASE_SERVICE_ROLE_KEY comes from Firebase Secret Manager.
  */
 
 const { onSchedule } = require('firebase-functions/v2/scheduler');
-const { defineSecret } = require('firebase-functions/params');
 const { demoSupabaseServiceRoleKey } = require('./demo_plane_secrets');
 
 const KEEPALIVE_EVENT_FAIL = 'supabase_keepalive_failed';
@@ -14,8 +14,6 @@ const KEEPALIVE_EVENT_OK = 'supabase_keepalive_ok';
 const DEFAULT_TIMEOUT_MS = 15_000;
 const DEFAULT_MAX_ATTEMPTS = 3;
 const BACKOFF_BASE_MS = 1_000;
-
-const demoSupabaseUrl = defineSecret('DEMO_SUPABASE_URL');
 
 function normalizeBaseUrl(raw) {
   return String(raw || '').trim().replace(/\/+$/, '');
@@ -128,7 +126,7 @@ const supabaseKeepalive = onSchedule(
     timeZone: 'Asia/Kolkata',
     region: 'asia-south1',
     timeoutSeconds: 30,
-    secrets: [demoSupabaseUrl, demoSupabaseServiceRoleKey],
+    secrets: [demoSupabaseServiceRoleKey],
   },
   supabaseKeepaliveHandler,
 );
@@ -137,7 +135,6 @@ module.exports = {
   supabaseKeepalive,
   supabaseKeepaliveHandler,
   runSupabaseKeepalivePing,
-  demoSupabaseUrl,
   demoSupabaseServiceRoleKey,
   KEEPALIVE_EVENT_FAIL,
   KEEPALIVE_EVENT_OK,

@@ -162,6 +162,18 @@ describe('warnProductionOtpHmacFallback', () => {
     assert.match(warnings[0], /OTP_HMAC_SECRET/);
   });
 
+  it('warns inside the OTP callables (secret bound there) but not in unrelated functions', () => {
+    process.env.APP_ENV = 'production';
+    process.env.MSG91_AUTH_KEY = 'placeholder-key';
+    delete process.env.OTP_HMAC_SECRET;
+    const warnings = [];
+    for (const target of ['sendUserRegistrationOtp', 'verifyUserRegistrationOtp', 'deleteMyAccount']) {
+      warnProductionOtpHmacFallback({ ...process.env, FUNCTION_TARGET: target }, (msg) => warnings.push(`${target}:${msg}`));
+    }
+    assert.equal(warnings.length, 2);
+    assert.ok(warnings.every((w) => !w.startsWith('deleteMyAccount')));
+  });
+
   it('does not warn when OTP_HMAC_SECRET is configured', () => {
     process.env.APP_ENV = 'production';
     process.env.MSG91_AUTH_KEY = 'placeholder-key';
