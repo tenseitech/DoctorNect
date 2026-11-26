@@ -41,7 +41,8 @@ resource "aws_iam_policy" "secrets_access" {
         aws_secretsmanager_secret.database_credentials.arn,
         aws_secretsmanager_secret.postgrest_jwt_secret.arn,
         aws_secretsmanager_secret.gateway_service_key.arn,
-        aws_secretsmanager_secret.demo_routing.arn
+        aws_secretsmanager_secret.demo_routing.arn,
+        aws_secretsmanager_secret.gateway_firebase_admin.arn
       ]
     }]
   })
@@ -87,11 +88,15 @@ resource "aws_ecs_task_definition" "app" {
         { name = "PGRST_URL", value = "http://127.0.0.1:3001" },
         { name = "FIREBASE_PROJECT_ID", value = var.firebase_project_id },
         { name = "DEMO_REAL_ROUTING_ENABLED", value = "1" },
-        { name = "DEMO_PGRST_JWT_AUD", value = "authenticated" }
+        { name = "DEMO_PGRST_JWT_AUD", value = "authenticated" },
+        { name = "TRUSTED_PROXY_HOPS", value = "1" },
+        { name = "CORS_ALLOWED_ORIGINS", value = join(",", var.cors_allowed_origins) }
       ]
       secrets = [
         { name = "PGRST_JWT_SECRET", valueFrom = "${aws_secretsmanager_secret.postgrest_jwt_secret.arn}:jwt_secret::" },
         { name = "SERVICE_ROLE_KEY", valueFrom = "${aws_secretsmanager_secret.gateway_service_key.arn}:service_key::" },
+        { name = "ANON_KEY", valueFrom = "${aws_secretsmanager_secret.gateway_service_key.arn}:anon_key::" },
+        { name = "FIREBASE_SERVICE_ACCOUNT_JSON", valueFrom = "${aws_secretsmanager_secret.gateway_firebase_admin.arn}:firebase_service_account_json::" },
         { name = "DEMO_FIREBASE_UID_ALLOWLIST", valueFrom = "${aws_secretsmanager_secret.demo_routing.arn}:DEMO_FIREBASE_UID_ALLOWLIST::" },
         { name = "DEMO_PGRST_URL", valueFrom = "${aws_secretsmanager_secret.demo_routing.arn}:DEMO_PGRST_URL::" },
         { name = "DEMO_PGRST_JWT_SECRET", valueFrom = "${aws_secretsmanager_secret.demo_routing.arn}:DEMO_PGRST_JWT_SECRET::" }
@@ -105,7 +110,9 @@ resource "aws_ecs_task_definition" "app" {
         }
       }
     },
-    # 2. PostgREST Official Container (Port 3001, private to the pod)
+    # 2. PostgREST (Port 3001, private to the task). Image: services/postgrest (official image +
+    #    pinned AWS RDS CA bundle). PGRST_DB_URI must use sslmode=verify-full and
+    #    sslrootcert=/etc/ssl/rds/global-bundle.pem (docs/GATEWAY_DEPLOY.md).
     {
       name      = "postgrest"
       image     = var.postgrest_image

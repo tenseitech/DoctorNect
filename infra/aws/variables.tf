@@ -67,8 +67,7 @@ variable "gateway_image" {
 
 variable "postgrest_image" {
   type        = string
-  description = "PostgREST official container image (pinned; default v16.5 for PG18 RDS)"
-  default     = "postgrest/postgrest:v16.5"
+  description = "PostgREST image built from services/postgrest (official v16.5 + pinned AWS RDS CA bundle) and pushed to ECR doctornect-postgrest. The stock image has no RDS CA and cannot verify the RDS certificate."
 }
 
 variable "ecs_cpu_architecture" {
@@ -113,4 +112,20 @@ variable "rds_instance_identifier" {
   type        = string
   description = "AWS RDS DB instance identifier for parameter group attachment"
   default     = "doctornect-production-rds"
+}
+
+variable "cors_allowed_origins" {
+  type        = list(string)
+  description = "Browser origins allowed by the gateway CORS policy and the production S3 bucket CORS rule."
+  default     = ["https://doctornect.com", "https://www.doctornect.com", "https://app.doctornect.com"]
+}
+
+variable "s3_production_bucket_name" {
+  type        = string
+  description = "Name of the NEW production S3 bucket (globally unique). Must differ from the staging bucket. Suggested: doctornect-prod-<account-id>-ap-south-1 (set in terraform.tfvars)."
+}
+
+variable "s3_staging_bucket_name" {
+  type        = string
+  description = "Existing staging bucket (not managed here; used only for the staging IAM policy document)."
 }

@@ -18,9 +18,9 @@ enable_waf           = false
 domain_name           = "api.doctornect.com"
 acm_certificate_arn   = "arn:aws:acm:ap-south-1:ACCOUNT_ID:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
-# --- Container images (after ECR push) ---
-gateway_image  = "ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/doctornect-auth-gateway:latest"
-postgrest_image = "postgrest/postgrest:v16.5"
+# --- Container images: set by infra/aws/build_push_images.ps1 (immutable tags, never :latest) ---
+gateway_image   = "ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/doctornect-auth-gateway:GIT_SHA"
+postgrest_image = "ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/doctornect-postgrest:v16.5-rdsca-GIT_SHA"
 
 # --- Existing RDS (console-created; Terraform does NOT create the instance) ---
 rds_endpoint            = "example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com"
@@ -31,3 +31,10 @@ rds_instance_identifier = "doctornect-production-rds"
 
 # --- Firebase (JWKS verify only; no Firebase secrets in Terraform) ---
 firebase_project_id = "medibond-45fad"
+
+# --- S3 vault buckets (names are not secret; must differ) ---
+s3_production_bucket_name = "doctornect-prod-ACCOUNT_ID-ap-south-1"
+s3_staging_bucket_name    = "doctornect-ACCOUNT_ID-ap-south-1-an"
+
+# --- Browser origins for gateway CORS and S3 CORS ---
+cors_allowed_origins = ["https://doctornect.com", "https://www.doctornect.com", "https://app.doctornect.com"]
