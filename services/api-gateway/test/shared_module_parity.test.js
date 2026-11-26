@@ -9,7 +9,7 @@ const SRC = path.join(__dirname, '..', 'src');
 const LIB = path.join(__dirname, '..', '..', '..', 'scripts', 'lib');
 const body = (p) => fs.readFileSync(p, 'utf8').replace(/^\/\*\* Deploy bundle copy[^\n]*\n/, '').replace(/\r\n/g, '\n');
 
-for (const name of ['demo_accounts', 'demo_routing', 'rds_demo_uid_guard']) {
+for (const name of ['demo_accounts', 'demo_routing', 'rds_demo_uid_guard', 'demo_plane_marker']) {
   test(`src/shared/${name}.js matches scripts/lib/${name}.js`, () => {
     assert.equal(body(path.join(SRC, 'shared', `${name}.js`)), body(path.join(LIB, `${name}.js`)));
   });

@@ -19,6 +19,7 @@ const { proxyToPostgrest } = require('./proxy');
 const { defaultJwksClient } = require('./jwks');
 const { resolveDataPlane, assertClientRoutingHintIgnored } = require('./shared/demo_routing');
 const { assertRdsPathAllowed } = require('./shared/rds_demo_uid_guard');
+const { evaluateDemoPlaneMarker } = require('./shared/demo_plane_marker');
 const { writeContainsDemoMobile } = require('./demo_write_guard');
 
 function extractEmbeddedRelations(queryString) {
@@ -441,11 +442,25 @@ function createGatewayServer(overrides = {}) {
     let jwtSecret = cfg.postgrestJwtSecret;
     let jwtAud = cfg.postgrestJwtAud;
     let dataPlane = 'rds';
-    if (appEnv === 'production' && cfg.demoRealRoutingEnabled && clientRole !== 'service_role') {
-      dataPlane = resolveDataPlane({
-        appEnv,
-        firebaseUid: authenticatedPayload?.uid || null,
+    // Server-set demo-plane marker (demo ambulance on an anonymous session, shared/demo_plane_marker.js),
+    // read only from the verified Firebase token. Present but not valid: refuse, never fall back to RDS.
+    const markerVerdict = clientRole !== 'service_role' && authenticatedPayload
+      ? evaluateDemoPlaneMarker(authenticatedPayload.rawPayload)
+      : 'none';
+    if (appEnv === 'production' && markerVerdict === 'invalid') {
+      return sendJson(401, {
+        error: 'Unauthorized',
+        message: 'Your demo session has expired. Please sign in again.',
       });
+    }
+    if (appEnv === 'production' && clientRole !== 'service_role') {
+      if (cfg.demoRealRoutingEnabled) {
+        dataPlane = resolveDataPlane({
+          appEnv,
+          firebaseUid: authenticatedPayload?.uid || null,
+        });
+      }
+      if (markerVerdict === 'valid') dataPlane = 'supabase';
       if (dataPlane === 'supabase') {
         if (!cfg.demoPostgrestUrl || !cfg.demoPostgrestJwtSecret) {
           return sendJson(503, {
