@@ -6,18 +6,74 @@ The Cloud Functions in production talk to the AWS RDS database **only** through 
 Do not "fix" that by pointing production at the staging Supabase project or by weakening
 `check:boot-env`.
 
-## Where things stand (checked 2026-11-26)
+## Where things stand (AWS read-only check, 2026-11-26 afternoon)
 
 | Piece | State |
 |---|---|
-| RDS (PostgreSQL 18, private, encrypted) | exists |
-| ECS cluster, task definition, IAM roles, log group, security groups, ALB target group | exist (Terraform state of 2026-11-23) |
-| Secrets Manager entries (rds_credentials, postgrest_jwt_secret, gateway_service_key, demo-routing) | exist, values not verifiable from here |
-| ECS **service**, **ALB** + HTTPS listener, alarms | **not created** (they were only in a saved plan) |
+| ALB + HTTPS listener (443, TLS 1.3 policy) with the ACM certificate for `api.doctornect.com` | **done** (certificate issued, in use) |
+| Target group (HTTP 3000, health check `/healthz`) attached to the ALB | **done** |
+| ECR repositories + images (`doctornect-auth-gateway`, `doctornect-postgrest` with the RDS CA) | **done** (pushed, tag = git SHA) |
+| ECS cluster + service | exists, **desired count 0** |
+| Task definition | revision 2 still uses `:latest` + the stock PostgREST image; the next apply switches to the pushed images |
+| Secrets Manager: rds_credentials, postgrest_jwt_secret, gateway_service_key, demo-routing, gateway-firebase-admin | exist, **all 5 have no value yet** |
 | DNS `api.doctornect.com` | **no record** |
-| ECR repositories in Terraform, PostgREST image with the RDS CA | **missing** (added now: `infra/aws/ecr.tf`, `services/postgrest`) |
-| Gateway `ANON_KEY`, Firebase Admin credential, CORS, proxy hops in the task | **missing** (added now) |
-| Separate production S3 bucket | **missing** (added now: `infra/aws/s3.tf`); staging and production use the same bucket today |
+| RDS `doctornect-prod` | available, private, deletion protection on; migration ledger not readable from here (needs the tunnel) |
+| Bastion for the SSM tunnel | `doctornect-bastion` is running |
+
+## What is left, shortest path (in this order)
+
+1. **Tunnel tools**: install the Session Manager plugin
+   (`https://s3.amazonaws.com/session-manager-downloads/plugin/latest/windows/SessionManagerPluginSetup.exe`).
+   Use an AWS profile that may call `ssm:StartSession`, `rds:CreateDBSnapshot` and
+   `rds:DescribeDBSnapshots` (the `doctornect-terraform` user may not).
+2. **Snapshot RDS first** (safety net, ~10 min):
+   ```powershell
+   aws rds create-db-snapshot --db-instance-identifier doctornect-prod --db-snapshot-identifier doctornect-prod-pre-migrate-20261126 --region ap-south-1
+   aws rds wait db-snapshot-available --db-snapshot-identifier doctornect-prod-pre-migrate-20261126 --region ap-south-1
+   ```
+3. **Open the tunnel** (terminal 1, keep it open). `.env` must have `PROD_RDS_HOST` (real endpoint),
+   `PROD_RDS_CONNECT_HOST=127.0.0.1`, `PROD_RDS_PORT=5433`:
+   ```powershell
+   $ep = (aws rds describe-db-instances --db-instance-identifier doctornect-prod --region ap-south-1 --query "DBInstances[0].Endpoint.Address" --output text)
+   $bastion = (aws ec2 describe-instances --region ap-south-1 --filters "Name=tag:Name,Values=doctornect-bastion" "Name=instance-state-name,Values=running" --query "Reservations[0].Instances[0].InstanceId" --output text)
+   aws ssm start-session --region ap-south-1 --target $bastion --document-name AWS-StartPortForwardingSessionToRemoteHost --parameters "host=$ep,portNumber=5432,localPortNumber=5433"
+   ```
+4. **Migrations on RDS** (terminal 2, repo root). Dry run first, read the "Pending migration files"
+   list (expected: the seven 20261124000001 ... 20261125000004 files, the same ones staging got), then apply:
+   ```powershell
+   $h = (node -e "const {getHostFingerprint}=require('./scripts/lib/env_guard');const {getEnv}=require('./scripts/lib/env_loader');console.log(getHostFingerprint(getEnv('PROD_RDS_HOST')))")
+   node scripts/db/migrate.js --target=production --dry-run-all --confirm-live-data --confirm=$h --confirm-db=doctornect
+   node scripts/db/migrate.js --target=production --execute --confirm-live-data --confirm=$h --confirm-db=doctornect
+   psql "postgresql://<admin-user>@127.0.0.1:5433/doctornect?sslmode=require" -v ON_ERROR_STOP=1 -f db/rds_bootstrap/04_rds_runtime_grants.sql
+   ```
+   Success: "Applied this run: 7" (or the number the dry run listed) and psql ends without ERROR.
+5. **Password for `authenticator`** (same tunnel): `psql "postgresql://<admin-user>@127.0.0.1:5433/doctornect?sslmode=require"`,
+   then `\password authenticator` (hidden input). Keep it for step 7.
+6. **Firebase key for the gateway**: Google Cloud console > IAM > Service accounts (project
+   medibond-45fad) > create `gateway-revocation`, role **Firebase Authentication Viewer** only >
+   Keys > Add key > JSON.
+7. **Gateway secrets** (asks for the step-5 password and the staging JWT secret; generates the rest,
+   also stores `PROD_GATEWAY_SERVICE_KEY` in Firebase):
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File infra/aws/set_gateway_secrets.ps1 -FirebaseKeyFile "C:\path\key.json"
+   ```
+   Delete the JSON file afterwards.
+8. **Start the gateway**: in `infra/aws/terraform.tfvars` set `ecs_desired_count = 1`, then
+   `terraform plan -out=tfplan` (expect: task definition replaced, service updated, 2 IAM resources
+   for the demo/ prefix created, 0 other destroys) and `terraform apply tfplan`.
+   Success: target group shows 1 **healthy** target.
+9. **DNS**: CNAME `api` -> `doctornect-production-alb-...elb.amazonaws.com` (`terraform output -raw alb_dns_name`).
+   Success: `curl.exe -s -o NUL -w "%{http_code}" https://api.doctornect.com/healthz` prints `200`.
+10. **Functions settings**: `.env` `S3_BUCKET_PRODUCTION=` (`terraform output -raw s3_production_bucket`),
+    empty `S3_BUCKET=`; IAM user `doctornect-functions-s3-production` > Create access key; then
+    ```powershell
+    powershell -ExecutionPolicy Bypass -File scripts/env/set_functions_secrets.ps1
+    powershell -ExecutionPolicy Bypass -File scripts/env/set_functions_secrets.ps1 -Only AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY -PromptAll -Replace
+    ```
+11. **Gate + deploy**: `powershell -ExecutionPolicy Bypass -File scripts/env/predeploy_gate.ps1`
+    (stops at the first failing gate; deploys only when all pass, then confirms the new code is live).
+
+The detailed explanation of each step follows.
 
 ## What you need once
 

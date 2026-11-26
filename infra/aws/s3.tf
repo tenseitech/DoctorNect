@@ -218,3 +218,35 @@ resource "aws_iam_user_policy_attachment" "functions_s3_production" {
   user       = aws_iam_user.functions_s3_production.name
   policy_arn = aws_iam_policy.functions_s3_vault["production"].arn
 }
+
+# The production Functions keep the five demo accounts' files in the STAGING bucket under
+# demo/ (s3_bucket.js resolveS3BucketForUid). Allow exactly that prefix, nothing else there.
+resource "aws_iam_policy" "functions_s3_demo_prefix" {
+  name        = "${var.project_name}-functions-s3-demo-prefix"
+  description = "Production Functions: demo/ prefix of the staging bucket only (demo accounts)"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "ListDemoPrefix"
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket", "s3:ListBucketVersions"]
+        Resource = "arn:aws:s3:::${var.s3_staging_bucket_name}"
+        Condition = {
+          StringLike = { "s3:prefix" = ["demo/", "demo/*"] }
+        }
+      },
+      {
+        Sid      = "DemoObjects"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:DeleteObjectVersion"]
+        Resource = "arn:aws:s3:::${var.s3_staging_bucket_name}/demo/*"
+      },
+    ]
+  })
+}
+
+resource "aws_iam_user_policy_attachment" "functions_s3_production_demo_prefix" {
+  user       = aws_iam_user.functions_s3_production.name
+  policy_arn = aws_iam_policy.functions_s3_demo_prefix.arn
+}
