@@ -228,7 +228,9 @@ abstract final class PatientProfileFormStyles {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.borderOf(context), width: 0.5),
       ),
-      child: child,
+      // ListTile ink (tap feedback) paints on the nearest Material: without this transparent
+      // Material it is hidden behind the coloured box (Flutter asserts in debug).
+      child: Material(type: MaterialType.transparency, child: child),
     );
   }
 

@@ -623,5 +623,4 @@ class PatientProfileMock {
   static const supportEmail = 'support@doctornect.com';
   static const websiteUrl = 'https://doctornect.com';
   static const appDownloadUrl = 'https://doctornect.com/download';
-  static const appVersion = '1.0.1';
 }

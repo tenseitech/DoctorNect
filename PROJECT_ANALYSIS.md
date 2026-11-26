@@ -64,6 +64,7 @@ Status: open / fixed (commit) / needs decision / blocked (on you) / won't fix.
 | L6 | Low | Android | `gradle.properties` `android.builtInKotlin=false` + shim | Plugins still apply KGP | Blocks AGP built-in Kotlin | Remove when plugins update | S | - | blocked (upstream) |
 | L7 | Low | CI | `supabase-keepalive.yml` | Duplicates Functions `supabaseKeepalive`, needs a repo secret | Extra secret surface | Keep as backup or delete | S | None | needs decision (D6) |
 | L8 | Low | Secrets binding | all functions | `PROD_GATEWAY_SERVICE_KEY` bound everywhere | Functions without DB use still hold it | By design (cold-start routing assert + DB calls) | - | - | won't fix (documented) |
+| L9 | Low | Client | `about_screen.dart`, `patient_profile_form_styles.dart` settingsRowCard | About page showed hard-coded "Version 1.0.1" (app is 1.0.2; seen on the phone); settings rows put ListTile inside a coloured box (tap ink invisible, debug assertion) | Wrong version in support conversations; no tap feedback | Version from package_info_plus; transparent Material in the row helper; widget test | S | Low | fixed |
 
 Verified OK (no change): per-role account deletion retention (doctor/pharmacy/lab/ambulance anonymised,
 patient data kept; patient Auth deleted last), SUPER_ADMIN_EMAILS + claim, HTTP security headers,
