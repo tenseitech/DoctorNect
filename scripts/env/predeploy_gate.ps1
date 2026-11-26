@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Production deploy gate for the Cloud Functions (project medibond-45fad). Runs the gates in
   order and stops at the first failure. Deploys only when every gate passes, then checks that
@@ -54,6 +54,58 @@ function Get-TestSummary([string]$text) {
   $fail = [regex]::Match($text, '(?m)^\S*\s*fail (\d+)').Groups[1].Value
   return "pass=$pass fail=$fail"
 }
+# Mirrors scripts/lib/test_harness_env.js — scrub deploy/runtime keys before npm test gates.
+function Test-EnvKeyIsScrubbed([string]$name) {
+  if ($name -eq 'DOCTORNECT_TEST_HARNESS') { return $false }
+  $exact = @(
+    'APP_ENV', 'DATABASE_URL', 'TRUSTED_PROXY_HOPS', 'NODE_EXTRA_CA_CERTS', 'AWS_PROFILE',
+    'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN', 'AWS_REGION',
+    'AWS_DEFAULT_REGION', 'GOOGLE_APPLICATION_CREDENTIALS', 'FIREBASE_CONFIG',
+    'FIRESTORE_EMULATOR_HOST', 'FIREBASE_STORAGE_EMULATOR_HOST', 'RUNTIME_DOCUMENT_DB_FORBIDDEN',
+    'GCLOUD_PROJECT', 'GCP_PROJECT', 'GOOGLE_CLOUD_PROJECT', 'REDIS_HOST', 'REDIS_PORT',
+    'REDIS_PASSWORD', 'REDIS_TLS', 'REDIS_CA_CERT', 'REDIS_CA_PATH', 'MSG91_AUTH_KEY',
+    'MSG91_AUTHKEY', 'AUTH_KEY', 'S3_BUCKET', 'S3_URL_CACHE'
+  )
+  if ($exact -contains $name) { return $true }
+  $prefixes = @(
+    'DEMO_', 'REVIEW_', 'STAGING_', 'PROD_', 'REDIS_', 'S3_', 'AWS_', 'SUPABASE_', 'FIREBASE_',
+    'RAZORPAY_', 'MSG91_', 'OTP_', 'SUPER_ADMIN_', 'FIRESTORE_', 'PG_POOL_', 'PGRST_', 'DATABASE_',
+    'REPLAY_', 'LOCAL_FRESH_', 'FRESH_LOCAL_', 'VPC_', 'RATE_LIMIT_', 'ENABLE_', 'ENFORCE_',
+    'FORCE_', 'SKIP_', 'ALLOW_', 'USE_S3', 'USE_SUPABASE'
+  )
+  foreach ($p in $prefixes) {
+    if ($name.StartsWith($p)) { return $true }
+  }
+  return $false
+}
+function Invoke-HermeticTestStep([string]$dir, [string]$cmd) {
+  $saved = @{}
+  $restoreNodeEnv = $null
+  foreach ($entry in [Environment]::GetEnvironmentVariables('Process').GetEnumerator()) {
+    $name = [string]$entry.Key
+    if (Test-EnvKeyIsScrubbed $name) {
+      $saved[$name] = $entry.Value
+      Remove-Item -Path "Env:$name" -ErrorAction SilentlyContinue
+    }
+  }
+  if ($saved.ContainsKey('NODE_ENV')) {
+    $restoreNodeEnv = $saved['NODE_ENV']
+    Remove-Item Env:NODE_ENV -ErrorAction SilentlyContinue
+  }
+  $env:DOCTORNECT_TEST_HARNESS = '1'
+  $env:NODE_ENV = 'test'
+  $env:APP_ENV = 'test'
+  try {
+    return Invoke-Step $dir $cmd
+  } finally {
+    Remove-Item Env:DOCTORNECT_TEST_HARNESS -ErrorAction SilentlyContinue
+    Remove-Item Env:APP_ENV -ErrorAction SilentlyContinue
+    if ($null -ne $restoreNodeEnv) { $env:NODE_ENV = $restoreNodeEnv } else { Remove-Item Env:NODE_ENV -ErrorAction SilentlyContinue }
+    foreach ($name in $saved.Keys) {
+      Set-Item -Path "Env:$name" -Value $saved[$name]
+    }
+  }
+}
 
 Write-Host "== Gate 1/4: check:boot-env (Secret Manager verified)"
 $r = Invoke-Step $repoRoot 'npm run -s check:boot-env -- .env --target=functions --check-secret-manager'
@@ -65,12 +117,12 @@ if ($r.Code -ne 0) {
 }
 
 Write-Host "== Gate 2/4: backend/functions tests"
-$r = Invoke-Step (Join-Path $repoRoot 'backend/functions') 'npm test'
+$r = Invoke-HermeticTestStep (Join-Path $repoRoot 'backend/functions') 'npm test'
 Write-Host "   $(Get-TestSummary $r.Out)"
 if ($r.Code -ne 0) { Stop-Gate 'backend tests' 'a backend test failed' 'run: cd backend/functions; npm test  and fix the failing test' }
 
 Write-Host "== Gate 3/4: services/api-gateway tests"
-$r = Invoke-Step (Join-Path $repoRoot 'services/api-gateway') 'npm test'
+$r = Invoke-HermeticTestStep (Join-Path $repoRoot 'services/api-gateway') 'npm test'
 Write-Host "   $(Get-TestSummary $r.Out)"
 if ($r.Code -ne 0) { Stop-Gate 'gateway tests' 'a gateway test failed' 'run: cd services/api-gateway; npm test  and fix the failing test' }
 

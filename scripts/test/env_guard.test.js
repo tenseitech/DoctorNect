@@ -4,7 +4,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const { assertDatabaseGuard, getHostFingerprint } = require('../lib/env_guard');
-const { getEnv } = require('../lib/env_loader');
+
+const PROD_RDS_FIXTURE = 'example-db.xxxxxxxx.ap-south-1.rds.amazonaws.com';
+const STAGING_DB_FIXTURE =
+  'postgresql://doctornect.audit@aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require';
 
 // Helper to intercept process.exit during guard assertions
 function runWithArgs(args, fn) {
@@ -46,8 +49,8 @@ test('env_guard: getHostFingerprint parses URIs and bare hostnames', () => {
 });
 
 test('env_guard: Refusal (a) - refuses production/RDS target without --confirm=<host>', () => {
-  const prodHost = getEnv('PROD_RDS_HOST') || 'prod-db.example.com';
-  const prodFingerprint = getHostFingerprint(prodHost);
+  process.env.PROD_RDS_HOST = PROD_RDS_FIXTURE;
+  const prodFingerprint = getHostFingerprint(PROD_RDS_FIXTURE);
 
   // 1. Missing --confirm entirely
   const run1 = runWithArgs(['--target=production'], () => {
@@ -73,8 +76,8 @@ test('env_guard: Refusal (a) - refuses production/RDS target without --confirm=<
 });
 
 test('env_guard: Refusal (b) - refuses any host not matching the staging fingerprint', () => {
-  const stagingUrl = getEnv('STAGING_SUPABASE_DB_URL') || getEnv('PROD_SUPABASE_DB_URL');
-  const stagingFingerprint = getHostFingerprint(stagingUrl);
+  process.env.STAGING_SUPABASE_DB_URL = STAGING_DB_FIXTURE;
+  const stagingFingerprint = getHostFingerprint(STAGING_DB_FIXTURE);
 
   // 1. Passing mismatched candidate targetHost in options
   const run1 = runWithArgs([], () => {
