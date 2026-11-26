@@ -6,7 +6,7 @@ const {
   redisKeyNamespace,
   objectStoragePrefix,
 } = require('../../lib/demo_routing');
-const { assertDemoUidNotOnRds } = require('../../../../scripts/lib/rds_demo_uid_guard');
+const { assertDemoUidNotOnRds } = require('../../lib/rds_demo_uid_guard');
 
 /**
  * Every database request (gateway / Supabase PostgREST) gets a hard timeout so an outage fails

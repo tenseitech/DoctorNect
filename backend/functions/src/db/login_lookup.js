@@ -2,7 +2,7 @@
 
 const { isDemoMobile } = require('../../reviewer_otp_config');
 const { getDatabaseClient } = require('./client');
-const { assertDemoUidNotOnRds } = require('../../../../scripts/lib/rds_demo_uid_guard');
+const { assertDemoUidNotOnRds } = require('../../lib/rds_demo_uid_guard');
 
 /**
  * Phone-based login lookup plane (production), decided only by the server-side demo

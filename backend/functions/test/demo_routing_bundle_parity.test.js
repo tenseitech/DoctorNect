@@ -24,3 +24,9 @@ test('lib/demo_accounts.js matches scripts/lib/demo_accounts.js (deploy bundle p
   const b = path.join(__dirname, '..', 'lib', 'demo_accounts.js');
   assert.equal(bodyHash(a), bodyHash(b));
 });
+test('lib/rds_demo_uid_guard.js matches scripts/lib/rds_demo_uid_guard.js (deploy bundle parity)', () => {
+  const root = path.join(__dirname, '..', '..', '..');
+  const a = path.join(root, 'scripts', 'lib', 'rds_demo_uid_guard.js');
+  const b = path.join(__dirname, '..', 'lib', 'rds_demo_uid_guard.js');
+  assert.equal(bodyHash(a), bodyHash(b));
+});
