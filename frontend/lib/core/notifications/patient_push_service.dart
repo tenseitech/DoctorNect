@@ -242,7 +242,8 @@ abstract final class PatientPushService {
       );
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('[PatientPushService] FCM token persist failed (will retry on refresh): $e\n$st');
+        debugPrint(
+            '[PatientPushService] FCM token persist failed (will retry on refresh): $e\n$st');
       }
     }
   }

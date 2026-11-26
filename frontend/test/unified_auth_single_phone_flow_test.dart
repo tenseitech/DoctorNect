@@ -37,14 +37,16 @@ void main() {
   }
 
   for (final preset in <UserType?>[null, UserType.doctor, UserType.ambulance]) {
-    testWidgets('phone step always sends one account-agnostic "auth" OTP (preset role: $preset)',
+    testWidgets(
+        'phone step always sends one account-agnostic "auth" OTP (preset role: $preset)',
         (tester) async {
       final ctx = await pumpContext(tester);
       for (final number in ['9876543210', '9999900001', '9999900002']) {
         final flow = UnifiedAuthFlowController(role: preset);
         await flow.sendOtp(ctx, number);
         expect(flow.step, UnifiedAuthStep.otp, reason: number);
-        expect(flow.matchedRole, isNull, reason: 'no role is decided before OTP verification');
+        expect(flow.matchedRole, isNull,
+            reason: 'no role is decided before OTP verification');
         flow.dispose();
         await tester.pump(const Duration(seconds: 1));
       }
@@ -55,7 +57,8 @@ void main() {
   }
 
   test('controller has no pre-OTP lookup and no client-side demo routing', () {
-    final src = File('lib/core/auth/unified_auth_flow_controller.dart').readAsStringSync();
+    final src = File('lib/core/auth/unified_auth_flow_controller.dart')
+        .readAsStringSync();
     expect(src, isNot(contains('resolvePath(')));
     expect(src, isNot(contains('DemoAuthConfig')));
     expect(RegExp(r"otpType: 'registration'").hasMatch(src), isFalse);

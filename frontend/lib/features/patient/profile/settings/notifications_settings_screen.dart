@@ -54,7 +54,6 @@ class _NotificationsSettingsScreenState
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

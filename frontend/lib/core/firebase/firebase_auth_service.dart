@@ -166,7 +166,6 @@ class FirebaseAuthService {
     return saved;
   }
 
-
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   User? get currentUser => _auth.currentUser;
@@ -420,8 +419,7 @@ class FirebaseAuthService {
     User user,
     String message,
   ) async {
-    final rollback =
-        await UserRepository.instance.deletePendingAuthUser(user);
+    final rollback = await UserRepository.instance.deletePendingAuthUser(user);
     if (rollback == SupabaseUserRepository.pendingAuthSkippedAlreadyVerified) {
       return null;
     }
@@ -543,7 +541,8 @@ class FirebaseAuthService {
         if (saved == null) {
           const timeoutMsg =
               'Account created, but profile verification timed out. Please try again.';
-          final aborted = await _abortPendingRegistrationIfNeeded(user, timeoutMsg);
+          final aborted =
+              await _abortPendingRegistrationIfNeeded(user, timeoutMsg);
           if (aborted != null) return aborted;
           return AuthSignInResult.fail(timeoutMsg);
         }
@@ -574,7 +573,8 @@ class FirebaseAuthService {
         }
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('[FirebaseAuthService] Registration error saving profile: $e');
+          debugPrint(
+              '[FirebaseAuthService] Registration error saving profile: $e');
         }
         await _auth.signOut();
         return AuthSignInResult.fail(

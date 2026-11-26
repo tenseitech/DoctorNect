@@ -81,5 +81,6 @@ abstract final class LabOrderFirestoreMapper {
 
   static DateTime? _optionalParseDate(dynamic value) => parseMapDateTime(value);
 
-  static DateTime _parseDate(dynamic value) => parseMapDateTime(value) ?? DateTime.now();
+  static DateTime _parseDate(dynamic value) =>
+      parseMapDateTime(value) ?? DateTime.now();
 }

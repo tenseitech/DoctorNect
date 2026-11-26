@@ -7,7 +7,8 @@ abstract final class FirestoreUi {
   static const userMessage =
       'This section is temporarily unavailable. Please try again or update the app.';
 
-  static T? guardSync<T>(T Function() run, {void Function(String message)? showError}) {
+  static T? guardSync<T>(T Function() run,
+      {void Function(String message)? showError}) {
     try {
       return run();
     } on StateError catch (e) {

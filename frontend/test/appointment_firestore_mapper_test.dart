@@ -51,7 +51,9 @@ void main() {
       expect(record.doctorStatus, AppointmentStatus.confirmed);
     });
 
-    test('drops unparseable appointment document and logs stable prefix without PII', () {
+    test(
+        'drops unparseable appointment document and logs stable prefix without PII',
+        () {
       final capturedLogs = <String>[];
       final originalDebugPrint = debugPrint;
       debugPrint = (String? message, {int? wrapWidth}) {
@@ -72,7 +74,8 @@ void main() {
           'doctorStatus': 'completed',
         };
 
-        final record = AppointmentFirestoreMapper.fromMap('apt-corrupt-99', unparseableData);
+        final record = AppointmentFirestoreMapper.fromMap(
+            'apt-corrupt-99', unparseableData);
 
         // 1. Unparseable record must be dropped (returns null)
         expect(record, isNull);
@@ -80,7 +83,8 @@ void main() {
         // 2. Stable prefix log must be emitted
         expect(
           capturedLogs.any(
-            (log) => log.contains('[AppointmentFirestoreMapper.fromMap] Dropping unparseable appointment apt-corrupt-99'),
+            (log) => log.contains(
+                '[AppointmentFirestoreMapper.fromMap] Dropping unparseable appointment apt-corrupt-99'),
           ),
           isTrue,
         );
@@ -102,7 +106,9 @@ void main() {
       }
     });
 
-    test('Contract: bridge patient-cancellation output from shared JSON fixture resolves doctorStatus to cancelled', () {
+    test(
+        'Contract: bridge patient-cancellation output from shared JSON fixture resolves doctorStatus to cancelled',
+        () {
       // 1. Existing base Firestore fixture before patient cancellation
       final firestoreFixture = <String, dynamic>{
         'appointmentId': 'apt-cancel-contract-1',
@@ -122,31 +128,39 @@ void main() {
       };
 
       // Initial state: doctorStatus is confirmed
-      final initialRecord = AppointmentFirestoreMapper.fromMap('apt-cancel-contract-1', firestoreFixture);
+      final initialRecord = AppointmentFirestoreMapper.fromMap(
+          'apt-cancel-contract-1', firestoreFixture);
       expect(initialRecord, isNotNull);
       expect(initialRecord!.doctorStatus, AppointmentStatus.confirmed);
       expect(initialRecord.cancellationReason, isNull);
 
       // 2. Read the shared JSON fixture produced/asserted by the bridge test suite
-      final fixtureFile = _resolveFixture('backend/functions/test/fixtures/cancel_bridge_output.json');
-      final bridgeUpdate = jsonDecode(fixtureFile.readAsStringSync()) as Map<String, dynamic>;
+      final fixtureFile = _resolveFixture(
+          'backend/functions/test/fixtures/cancel_bridge_output.json');
+      final bridgeUpdate =
+          jsonDecode(fixtureFile.readAsStringSync()) as Map<String, dynamic>;
 
       // 3. Merge bridge output over Firestore fixture (mirroring Firestore merge / document update)
-      final mergedData = Map<String, dynamic>.from(firestoreFixture)..addAll(bridgeUpdate);
+      final mergedData = Map<String, dynamic>.from(firestoreFixture)
+        ..addAll(bridgeUpdate);
 
       // 4. Feed merged document to AppointmentFirestoreMapper
-      final updatedRecord = AppointmentFirestoreMapper.fromMap('apt-cancel-contract-1', mergedData);
+      final updatedRecord = AppointmentFirestoreMapper.fromMap(
+          'apt-cancel-contract-1', mergedData);
 
       // 5. Assert contract resolution: doctorStatus resolves to cancelled without parse error
       expect(updatedRecord, isNotNull);
       expect(updatedRecord!.id, 'apt-cancel-contract-1');
       expect(updatedRecord.doctorStatus, AppointmentStatus.cancelled);
-      expect(updatedRecord.cancellationReason, 'Patient emergency - unable to attend');
+      expect(updatedRecord.cancellationReason,
+          'Patient emergency - unable to attend');
       expect(updatedRecord.patientStatus, PatientBookingStatus.confirmed);
       expect(updatedRecord.isCancelled, isTrue);
     });
 
-    test('Contract: cancel with no reason receives null cancellationReason and resolves isCancelled to true', () {
+    test(
+        'Contract: cancel with no reason receives null cancellationReason and resolves isCancelled to true',
+        () {
       final firestoreFixture = <String, dynamic>{
         'appointmentId': 'apt-cancel-no-reason-1',
         'doctorId': 'doc-123',
@@ -170,8 +184,10 @@ void main() {
         'doctorStatus': 'cancelled',
       };
 
-      final mergedData = Map<String, dynamic>.from(firestoreFixture)..addAll(bridgeUpdateNoReason);
-      final record = AppointmentFirestoreMapper.fromMap('apt-cancel-no-reason-1', mergedData);
+      final mergedData = Map<String, dynamic>.from(firestoreFixture)
+        ..addAll(bridgeUpdateNoReason);
+      final record = AppointmentFirestoreMapper.fromMap(
+          'apt-cancel-no-reason-1', mergedData);
 
       expect(record, isNotNull);
       expect(record!.id, 'apt-cancel-no-reason-1');

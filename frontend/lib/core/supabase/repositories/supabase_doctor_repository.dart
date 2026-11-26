@@ -12,8 +12,7 @@ import '../supabase_stream_table.dart';
 class SupabaseDoctorRepository {
   SupabaseDoctorRepository._();
 
-  static final SupabaseDoctorRepository instance =
-      SupabaseDoctorRepository._();
+  static final SupabaseDoctorRepository instance = SupabaseDoctorRepository._();
 
   SupabaseClient get _client => SupabaseBootstrap.client;
 
@@ -323,8 +322,7 @@ class SupabaseDoctorRepository {
       experienceYears: exp,
       rating: rating,
       reviewCount: (row['review_count'] as num?)?.toInt() ?? 0,
-      clinicName:
-          (row['clinic_name'] as String?)?.trim() ?? '$name Clinic',
+      clinicName: (row['clinic_name'] as String?)?.trim() ?? '$name Clinic',
       area: (row['area'] as String?)?.trim() ??
           (row['city'] as String?)?.trim() ??
           '',

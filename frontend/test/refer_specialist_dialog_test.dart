@@ -7,7 +7,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ReferSpecialistDialog Widget Smoke Test (PERF-01)', () {
-    testWidgets('renders dialog and verifies lazy list layout without overflow', (tester) async {
+    testWidgets('renders dialog and verifies lazy list layout without overflow',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(

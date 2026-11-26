@@ -188,8 +188,7 @@ void main() {
 
   group('DoctorAvailabilityRepository.instance.slotsForDate', () {
     test('generates morning and evening slots on a working day', () async {
-      final slots =
-          await DoctorAvailabilityRepository.instance.slotsForDate(
+      final slots = await DoctorAvailabilityRepository.instance.slotsForDate(
         doctorId: 'doc_test',
         date: kBookingTestMonday,
         existingAppointments: const [],
@@ -218,8 +217,7 @@ void main() {
         ),
       );
 
-      final slots =
-          await DoctorAvailabilityRepository.instance.slotsForDate(
+      final slots = await DoctorAvailabilityRepository.instance.slotsForDate(
         doctorId: 'doc_test',
         date: kBookingTestMonday,
         existingAppointments: existing,
@@ -241,8 +239,7 @@ void main() {
     test('partial slot shows booking count but stays available', () async {
       final existing = [bookingRecord(id: 'rec1', slotLabel: '10:00 AM')];
 
-      final slots =
-          await DoctorAvailabilityRepository.instance.slotsForDate(
+      final slots = await DoctorAvailabilityRepository.instance.slotsForDate(
         doctorId: 'doc_test',
         date: kBookingTestMonday,
         existingAppointments: existing,
@@ -262,8 +259,7 @@ void main() {
     });
 
     test('returns empty list on weekly off', () async {
-      final slots =
-          await DoctorAvailabilityRepository.instance.slotsForDate(
+      final slots = await DoctorAvailabilityRepository.instance.slotsForDate(
         doctorId: 'doc_test',
         date: DateTime(2026, 8, 1),
         existingAppointments: const [],

@@ -45,7 +45,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   for (final brightness in Brightness.values) {
-    testWidgets('splash is solid brand blue with a centred 134dp mark ($brightness)',
+    testWidgets(
+        'splash is solid brand blue with a centred 134dp mark ($brightness)',
         (tester) async {
       await _pumpSplashDesign(
         tester,
@@ -55,10 +56,12 @@ void main() {
       );
 
       final box = tester.widget<ColoredBox>(
-        find.descendant(
-          of: find.byType(SplashDesignView),
-          matching: find.byType(ColoredBox),
-        ).first,
+        find
+            .descendant(
+              of: find.byType(SplashDesignView),
+              matching: find.byType(ColoredBox),
+            )
+            .first,
       );
       expect(box.color, AppColors.doctorBlue);
 
@@ -69,7 +72,11 @@ void main() {
     });
   }
 
-  for (final size in const [Size(1080, 2400), Size(720, 1280), Size(320, 480)]) {
+  for (final size in const [
+    Size(1080, 2400),
+    Size(720, 1280),
+    Size(320, 480)
+  ]) {
     testWidgets('SplashDesign no overflow at ${size.width}×${size.height}',
         (tester) async {
       await _pumpSplashDesign(tester, logicalSize: size);
@@ -77,7 +84,8 @@ void main() {
     });
   }
 
-  test('native splash config matches the Flutter splash (colour, light + dark)', () {
+  test('native splash config matches the Flutter splash (colour, light + dark)',
+      () {
     final block = _pubspecSplashBlock();
     final hex = AppColors.doctorBlue
         .toARGB32()
@@ -94,19 +102,36 @@ void main() {
     expect(block, isNot(contains('background_image')));
   });
 
-  test('Android 12+/15+ splash styles use brand blue and no icon background', () {
-    for (final dir in ['values-v31', 'values-night-v31', 'values-v35', 'values-night-v35']) {
-      final xml = File('android/app/src/main/res/$dir/styles.xml').readAsStringSync();
-      expect(xml, contains('windowSplashScreenBackground">#1D4ED8<'), reason: dir);
-      expect(xml, isNot(contains('windowSplashScreenIconBackgroundColor')), reason: dir);
+  test('Android 12+/15+ splash styles use brand blue and no icon background',
+      () {
+    for (final dir in [
+      'values-v31',
+      'values-night-v31',
+      'values-v35',
+      'values-night-v35'
+    ]) {
+      final xml =
+          File('android/app/src/main/res/$dir/styles.xml').readAsStringSync();
+      expect(xml, contains('windowSplashScreenBackground">#1D4ED8<'),
+          reason: dir);
+      expect(xml, isNot(contains('windowSplashScreenIconBackgroundColor')),
+          reason: dir);
     }
   });
 
-  test('splash images are square 1152 px masters and the mark asset exists', () {
-    for (final p in ['assets/splash/splash_logo.png', 'assets/splash/splash_android12.png']) {
+  test('splash images are square 1152 px masters and the mark asset exists',
+      () {
+    for (final p in [
+      'assets/splash/splash_logo.png',
+      'assets/splash/splash_android12.png'
+    ]) {
       final bytes = File(p).readAsBytesSync();
       // PNG IHDR width/height (big endian) at bytes 16..23.
-      int u32(int o) => (bytes[o] << 24) | (bytes[o + 1] << 16) | (bytes[o + 2] << 8) | bytes[o + 3];
+      int u32(int o) =>
+          (bytes[o] << 24) |
+          (bytes[o + 1] << 16) |
+          (bytes[o + 2] << 8) |
+          bytes[o + 3];
       expect(u32(16), 1152, reason: p);
       expect(u32(20), 1152, reason: p);
     }

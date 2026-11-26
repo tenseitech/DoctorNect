@@ -14,7 +14,9 @@ void main() {
       expect(id.startsWith('${mockUid}_'), isTrue);
     });
 
-    test('generated ID strictly fits inside patients.patient_id VARCHAR(64) for 28-char Firebase UIDs', () {
+    test(
+        'generated ID strictly fits inside patients.patient_id VARCHAR(64) for 28-char Firebase UIDs',
+        () {
       // Standard Firebase Auth UID is 28 alphanumeric characters
       const standardFirebaseUid = 'a1B2c3D4e5F6g7H8i9J0k1L2m3N4';
       expect(standardFirebaseUid.length, equals(28));
@@ -27,10 +29,13 @@ void main() {
       // 28 (uid) + 1 (_) + 2 (fm) + 13 (timestamp) = 44 characters
       expect(id.length, equals(44));
       expect(id.length, lessThanOrEqualTo(64),
-          reason: 'Must not exceed PostgreSQL patients.patient_id VARCHAR(64) column limit');
+          reason:
+              'Must not exceed PostgreSQL patients.patient_id VARCHAR(64) column limit');
     });
 
-    test('generated ID strictly fits inside patients.patient_id VARCHAR(64) for 36-char UUIDs', () {
+    test(
+        'generated ID strictly fits inside patients.patient_id VARCHAR(64) for 36-char UUIDs',
+        () {
       // Max possible length: 36-char UUID format UID
       const uuidFormatUid = '12345678-1234-5678-1234-567812345678';
       expect(uuidFormatUid.length, equals(36));
@@ -43,10 +48,13 @@ void main() {
       // 36 (uid) + 1 (_) + 2 (fm) + 13 (timestamp) = 52 characters
       expect(id.length, equals(52));
       expect(id.length, lessThanOrEqualTo(64),
-          reason: 'Must not exceed PostgreSQL patients.patient_id VARCHAR(64) column limit');
+          reason:
+              'Must not exceed PostgreSQL patients.patient_id VARCHAR(64) column limit');
     });
 
-    test('fallback without ownerUid produces fm prefix without dangling underscore', () {
+    test(
+        'fallback without ownerUid produces fm prefix without dangling underscore',
+        () {
       final id = AddFamilyMemberProfileScreen.generateFamilyMemberId(
         ownerUid: '',
         timestamp: 1730200000000,
@@ -57,4 +65,3 @@ void main() {
     });
   });
 }
-

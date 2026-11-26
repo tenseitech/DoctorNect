@@ -175,8 +175,7 @@ Future<bool> showAmbulanceRatingDialog({
                     child: FilledButton(
                       onPressed: selectedStars > 0
                           ? () async {
-                              final ok = await AppDataService
-                                  .instance.ambulance
+                              final ok = await AppDataService.instance.ambulance
                                   .rateBroadcast(
                                 broadcastId: bookingId,
                                 stars: selectedStars,

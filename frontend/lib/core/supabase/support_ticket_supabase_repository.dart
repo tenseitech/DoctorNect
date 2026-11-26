@@ -178,7 +178,8 @@ class SupportTicketSupabaseRepository {
     String? userId,
   }) async {
     final ticketId = 'tkt_${DateTime.now().millisecondsSinceEpoch}';
-    final resolvedIssueType = (issueType ?? subject ?? category ?? 'Other').trim();
+    final resolvedIssueType =
+        (issueType ?? subject ?? category ?? 'Other').trim();
     // Validate constraint: 'Appointment', 'Records', 'Technical', 'Other'
     final validTypes = const ['Appointment', 'Records', 'Technical', 'Other'];
     final normalizedIssueType =
@@ -357,28 +358,25 @@ class SupportTicketSupabaseRepository {
                     : (storeId != null
                         ? 'store_id'
                         : (labId != null ? 'lab_id' : 'ambulance_id')));
-            final filterVal = patientId ??
-                doctorId ??
-                storeId ??
-                labId ??
-                ambulanceId ??
-                '';
+            final filterVal =
+                patientId ?? doctorId ?? storeId ?? labId ?? ambulanceId ?? '';
 
-            channel = _client.channel('public:support_tickets:$filterCol:$filterVal')
-              ..onPostgresChanges(
-                event: PostgresChangeEvent.all,
-                schema: 'public',
-                table: 'support_tickets',
-                filter: PostgresChangeFilter(
-                  type: PostgresChangeFilterType.eq,
-                  column: filterCol,
-                  value: filterVal,
-                ),
-                callback: (payload) async {
-                  await syncTickets();
-                },
-              )
-              ..subscribe();
+            channel =
+                _client.channel('public:support_tickets:$filterCol:$filterVal')
+                  ..onPostgresChanges(
+                    event: PostgresChangeEvent.all,
+                    schema: 'public',
+                    table: 'support_tickets',
+                    filter: PostgresChangeFilter(
+                      type: PostgresChangeFilterType.eq,
+                      column: filterCol,
+                      value: filterVal,
+                    ),
+                    callback: (payload) async {
+                      await syncTickets();
+                    },
+                  )
+                  ..subscribe();
           } catch (e) {
             debugPrint(
                 '[SupportTicketSupabaseRepository] Realtime subscription warning: $e');
@@ -429,21 +427,22 @@ class SupportTicketSupabaseRepository {
           });
         } else {
           try {
-            channel = _client.channel('public:support_ticket_messages:$ticketId')
-              ..onPostgresChanges(
-                event: PostgresChangeEvent.all,
-                schema: 'public',
-                table: 'support_ticket_messages',
-                filter: PostgresChangeFilter(
-                  type: PostgresChangeFilterType.eq,
-                  column: 'ticket_id',
-                  value: ticketId,
-                ),
-                callback: (payload) async {
-                  await syncMessages();
-                },
-              )
-              ..subscribe();
+            channel =
+                _client.channel('public:support_ticket_messages:$ticketId')
+                  ..onPostgresChanges(
+                    event: PostgresChangeEvent.all,
+                    schema: 'public',
+                    table: 'support_ticket_messages',
+                    filter: PostgresChangeFilter(
+                      type: PostgresChangeFilterType.eq,
+                      column: 'ticket_id',
+                      value: ticketId,
+                    ),
+                    callback: (payload) async {
+                      await syncMessages();
+                    },
+                  )
+                  ..subscribe();
           } catch (e) {
             debugPrint(
                 '[SupportTicketSupabaseRepository] Realtime subscription warning: $e');

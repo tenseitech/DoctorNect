@@ -121,11 +121,15 @@ class CommunityDiagnosisRepository {
       throw StateError('Database not ready — cannot save a custom diagnosis.');
     }
 
-    final res = await SupabaseBootstrap.client.from('community_diagnoses').insert({
-      'text': trimmed,
-      'text_lower': trimmed.toLowerCase(),
-      'added_by_doctor_id': doctorId,
-    }).select('id').maybeSingle();
+    final res = await SupabaseBootstrap.client
+        .from('community_diagnoses')
+        .insert({
+          'text': trimmed,
+          'text_lower': trimmed.toLowerCase(),
+          'added_by_doctor_id': doctorId,
+        })
+        .select('id')
+        .maybeSingle();
 
     final diagnosis = CommunityDiagnosis(
       id: res?['id']?.toString() ??

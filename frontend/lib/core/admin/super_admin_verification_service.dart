@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../auth/verification_lifecycle.dart' show RoleVerificationController, VerificationStage;
+import '../auth/verification_lifecycle.dart'
+    show RoleVerificationController, VerificationStage;
 import '../enums/user_type.dart';
 import '../supabase/supabase_bootstrap.dart';
 import '../supabase/supabase_stream_table.dart';
@@ -125,7 +126,8 @@ class SuperAdminVerificationService {
         final roleStr = (data['role'] as String? ?? '').toLowerCase();
         if (roleStr == 'patient' || roleStr.isEmpty) continue;
 
-        final uid = data['id'] as String? ?? data['firebase_uid'] as String? ?? '';
+        final uid =
+            data['id'] as String? ?? data['firebase_uid'] as String? ?? '';
         if (uid.isEmpty) continue;
 
         final applicant = VerificationApplicant.fromMap(uid, data);

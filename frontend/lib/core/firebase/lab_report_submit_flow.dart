@@ -39,7 +39,8 @@ abstract final class LabReportSubmitFlow {
     try {
       persisted = await persistToDatabase();
     } catch (e, st) {
-      final check = await _safeConfirmNewKey(confirmNewKeyPersistedAfterError, newKey);
+      final check =
+          await _safeConfirmNewKey(confirmNewKeyPersistedAfterError, newKey);
       switch (check) {
         case LabReportKeyCheckResult.allRowsMatch:
           debugPrint(

@@ -63,8 +63,8 @@ class DoctorAccountRepository {
           canReactivate: false,
         );
       }
-      final canReactivate = reactivateBefore != null &&
-          DateTime.now().isBefore(reactivateBefore);
+      final canReactivate =
+          reactivateBefore != null && DateTime.now().isBefore(reactivateBefore);
       return DoctorDeactivationStatus(
         deactivated: true,
         canReactivate: canReactivate,

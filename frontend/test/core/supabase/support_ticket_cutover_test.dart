@@ -113,7 +113,8 @@ void main() {
   });
 
   group('SupportTicket Watcher State Machine Tests', () {
-    test('watcher fetches initial tickets, receives upsert and delete', () async {
+    test('watcher fetches initial tickets, receives upsert and delete',
+        () async {
       final initialTicket = SupportTicketModel(
         ticketId: 'tkt_init',
         issueType: 'Appointment',
@@ -125,7 +126,8 @@ void main() {
       final eventController =
           StreamController<WatcherEvent<SupportTicketModel>>.broadcast();
 
-      final watcher = SupportTicketSupabaseRepository.instance.createTicketWatcher(
+      final watcher =
+          SupportTicketSupabaseRepository.instance.createTicketWatcher(
         patientId: 'patient_test',
         eventStream: eventController.stream,
       );
@@ -134,8 +136,8 @@ void main() {
       final isolatedWatcher = SupabaseWatcherStateMachine<SupportTicketModel>(
         fetcher: () async => [initialTicket],
         getId: (t) => t.ticketId,
-        sort: (list) => list.sort((a, b) => (b.createdAt ?? DateTime(0))
-            .compareTo(a.createdAt ?? DateTime(0))),
+        sort: (list) => list.sort((a, b) =>
+            (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0))),
         eventStream: eventController.stream,
       );
 
@@ -193,8 +195,8 @@ void main() {
       final isolatedWatcher = SupabaseWatcherStateMachine<TicketMessageModel>(
         fetcher: () async => [initialMsg],
         getId: (m) => m.messageId,
-        sort: (list) => list.sort((a, b) => (a.createdAt ?? DateTime(0))
-            .compareTo(b.createdAt ?? DateTime(0))),
+        sort: (list) => list.sort((a, b) =>
+            (a.createdAt ?? DateTime(0)).compareTo(b.createdAt ?? DateTime(0))),
         eventStream: eventController.stream,
       );
 

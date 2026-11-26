@@ -228,8 +228,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
     try {
       if (widget.booking != null) {
         final b = widget.booking!;
-        final uploadResult =
-            await LabBookingRepository.instance.submitReport(
+        final uploadResult = await LabBookingRepository.instance.submitReport(
           bookingId: b.bookingId,
           patientId: b.patientId,
           fileName: LabReportFileStore.reportFileNameFor(
@@ -274,8 +273,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
               o.testNames.isNotEmpty ? o.testNames.join(', ') : 'Lab test',
           originalFileName: file.name,
         );
-        final uploadResult =
-            await LabOrderRepository.instance.submitReport(
+        final uploadResult = await LabOrderRepository.instance.submitReport(
           orderId: o.orderId,
           patientId: o.patientId,
           fileName: reportFileName,

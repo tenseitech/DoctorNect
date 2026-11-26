@@ -20,7 +20,8 @@ void main() {
       expect(emission, equals(rows));
     });
 
-    test('suppresses emissions when data is unchanged across polling intervals', () async {
+    test('suppresses emissions when data is unchanged across polling intervals',
+        () async {
       int fetchCount = 0;
       final emittedBatches = <List<Map<String, dynamic>>>[];
 
@@ -93,7 +94,8 @@ void main() {
       expect(emittedBatches[1][0]['status'], equals('assigned'));
     });
 
-    test('responds immediately to pushTrigger before next scheduled poll', () async {
+    test('responds immediately to pushTrigger before next scheduled poll',
+        () async {
       final pushController = StreamController<void>.broadcast();
       int fetchCount = 0;
       final emittedBatches = <List<Map<String, dynamic>>>[];
@@ -134,7 +136,8 @@ void main() {
       await pushController.close();
     });
 
-    test('surfaces errors to stream subscriber without terminating controller', () async {
+    test('surfaces errors to stream subscriber without terminating controller',
+        () async {
       final errors = <Object>[];
 
       final stream = streamTable(

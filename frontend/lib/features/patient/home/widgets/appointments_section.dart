@@ -26,13 +26,9 @@ class AppointmentsSection extends StatelessWidget {
   static List<PatientAppointment> _homeAppointments(
     List<PatientAppointment> all,
   ) {
-    final upcoming = all
-        .where((a) => !a.isCancelled && a.isUpcoming)
-        .toList()
+    final upcoming = all.where((a) => !a.isCancelled && a.isUpcoming).toList()
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-    final rest = all
-        .where((a) => a.isCancelled || !a.isUpcoming)
-        .toList()
+    final rest = all.where((a) => a.isCancelled || !a.isUpcoming).toList()
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return [...upcoming, ...rest].take(3).toList();
   }

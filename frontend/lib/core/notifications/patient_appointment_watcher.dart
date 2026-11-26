@@ -13,8 +13,8 @@ abstract final class PatientAppointmentWatcher {
     if (patientId.isEmpty) return;
     _sub?.cancel();
 
-    _sub = AppointmentRepository.instance.watchForPatient(patientId)
-        .listen((records) {
+    _sub = AppointmentRepository.instance.watchForPatient(patientId).listen(
+        (records) {
       SharedAppointmentsStore.instance.mergeFromFirestore(
         records,
         pruneMissing: false,

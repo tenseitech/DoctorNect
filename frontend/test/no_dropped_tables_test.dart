@@ -9,7 +9,8 @@ const _dropped = ['lab_catalog', 'medicine_suggestions'];
 void main() {
   test('no client code queries a dropped table', () {
     final hits = <String>[];
-    for (final f in Directory('lib').listSync(recursive: true).whereType<File>()) {
+    for (final f
+        in Directory('lib').listSync(recursive: true).whereType<File>()) {
       if (!f.path.endsWith('.dart')) continue;
       final src = f.readAsStringSync();
       for (final t in _dropped) {

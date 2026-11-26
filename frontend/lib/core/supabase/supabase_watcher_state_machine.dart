@@ -107,7 +107,9 @@ class SupabaseWatcherStateMachine<T> {
       case WatcherEventType.delete:
         if (event.id != null) {
           final removed = _cache.remove(event.id);
-          if (removed != null && _controller != null && !_controller!.isClosed) {
+          if (removed != null &&
+              _controller != null &&
+              !_controller!.isClosed) {
             _controller!.add(cachedList);
           }
         }

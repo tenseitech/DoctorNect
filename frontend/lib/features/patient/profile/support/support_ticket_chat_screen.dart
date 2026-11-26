@@ -354,14 +354,14 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
             .toList();
 
         if (messages.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+          WidgetsBinding.instance
+              .addPostFrameCallback((_) => _scrollToBottom());
         }
 
         return _buildMessagesList(messages, constraints);
       },
     );
   }
-
 
   Widget _buildMessagesList(
     List<_ChatMessageItemData> messages,
@@ -413,9 +413,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
               vertical: 10,
             ),
             decoration: BoxDecoration(
-              color: isMe
-                  ? AppColors.patientTeal
-                  : AppColors.surfaceOf(context),
+              color:
+                  isMe ? AppColors.patientTeal : AppColors.surfaceOf(context),
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(14),
                 topRight: const Radius.circular(14),
@@ -456,7 +455,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
-                    color: isMe ? Colors.white : AppColors.textPrimaryOf(context),
+                    color:
+                        isMe ? Colors.white : AppColors.textPrimaryOf(context),
                     height: 1.3,
                   ),
                 ),

@@ -111,15 +111,22 @@ class SupabaseDoctorAvailabilityRepository {
       'updated_at': DateTime.now().toIso8601String(),
     };
 
-    await _client.from('doctor_availability').upsert(payload, onConflict: 'doctor_id');
+    await _client
+        .from('doctor_availability')
+        .upsert(payload, onConflict: 'doctor_id');
 
     // Sync blocked dates
-    await _client.from('doctor_blocked_dates').delete().eq('doctor_id', doctorId);
+    await _client
+        .from('doctor_blocked_dates')
+        .delete()
+        .eq('doctor_id', doctorId);
     if (schedule.blockedDates.isNotEmpty) {
-      final insertRows = schedule.blockedDates.map((d) => {
-        'doctor_id': doctorId,
-        'blocked_date': DateFormat('yyyy-MM-dd').format(d),
-      }).toList();
+      final insertRows = schedule.blockedDates
+          .map((d) => {
+                'doctor_id': doctorId,
+                'blocked_date': DateFormat('yyyy-MM-dd').format(d),
+              })
+          .toList();
       await _client.from('doctor_blocked_dates').insert(insertRows);
     }
   }

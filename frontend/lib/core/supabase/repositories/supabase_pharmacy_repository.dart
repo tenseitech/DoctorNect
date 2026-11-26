@@ -48,7 +48,8 @@ class SupabasePharmacyRepository {
       final rows = List<Map<String, dynamic>>.from(res as List);
       return rows.map(PharmacySupabaseMapper.storeFromRow).toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabasePharmacy] fetchVerifiedStores error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabasePharmacy] fetchVerifiedStores error: $e');
       return const [];
     }
   }
@@ -57,14 +58,18 @@ class SupabasePharmacyRepository {
   Future<void> saveConnection(PharmacyConnection connection) async {
     if (!SupabaseBootstrap.isReady) return;
     final row = PharmacySupabaseMapper.connectionToRow(connection);
-    await _client.from('pharmacy_connections').upsert(row, onConflict: 'connection_id');
+    await _client
+        .from('pharmacy_connections')
+        .upsert(row, onConflict: 'connection_id');
   }
 
   /// Saves or creates a pharmacy prescription delivery.
   Future<void> saveDelivery(PharmacyPrescriptionDelivery delivery) async {
     if (!SupabaseBootstrap.isReady) return;
     final row = PharmacySupabaseMapper.deliveryToRow(delivery);
-    await _client.from('pharmacy_deliveries').upsert(row, onConflict: 'delivery_id');
+    await _client
+        .from('pharmacy_deliveries')
+        .upsert(row, onConflict: 'delivery_id');
   }
 
   /// Updates delivery status and dispensing notes.
@@ -91,7 +96,8 @@ class SupabasePharmacyRepository {
       if (res == null) return null;
       return PharmacySupabaseMapper.deliveryFromRow(res);
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabasePharmacy] fetchDeliveryById error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabasePharmacy] fetchDeliveryById error: $e');
       return null;
     }
   }
@@ -111,7 +117,8 @@ class SupabasePharmacyRepository {
       return PharmacySupabaseMapper.deliveryFromRow(res);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[SupabasePharmacy] fetchDeliveryByPrescriptionId error: $e');
+        debugPrint(
+            '[SupabasePharmacy] fetchDeliveryByPrescriptionId error: $e');
       }
       return null;
     }
@@ -148,7 +155,8 @@ class SupabasePharmacyRepository {
           .whereType<PharmacyPrescriptionDelivery>()
           .toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabasePharmacy] fetchDeliveriesForStore error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabasePharmacy] fetchDeliveriesForStore error: $e');
       return const [];
     }
   }
@@ -171,7 +179,8 @@ class SupabasePharmacyRepository {
           .whereType<PharmacyPrescriptionDelivery>()
           .toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabasePharmacy] fetchDeliveriesForDoctor error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabasePharmacy] fetchDeliveriesForDoctor error: $e');
       return const [];
     }
   }
@@ -194,7 +203,8 @@ class SupabasePharmacyRepository {
           .whereType<PharmacyPrescriptionDelivery>()
           .toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabasePharmacy] fetchDeliveriesForPatient error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabasePharmacy] fetchDeliveriesForPatient error: $e');
       return const [];
     }
   }
@@ -222,7 +232,8 @@ class SupabasePharmacyRepository {
       }
       return false;
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabasePharmacy] updateDeliveryStatus error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabasePharmacy] updateDeliveryStatus error: $e');
       return false;
     }
   }
@@ -280,7 +291,8 @@ class SupabasePharmacyRepository {
             .toList();
       },
       getId: (c) => c.id,
-      sort: (items) => items.sort((a, b) => b.requestedAt.compareTo(a.requestedAt)),
+      sort: (items) =>
+          items.sort((a, b) => b.requestedAt.compareTo(a.requestedAt)),
     );
     return watcher.stream();
   }
@@ -308,7 +320,8 @@ class SupabasePharmacyRepository {
             .toList();
       },
       getId: (c) => c.id,
-      sort: (items) => items.sort((a, b) => b.requestedAt.compareTo(a.requestedAt)),
+      sort: (items) =>
+          items.sort((a, b) => b.requestedAt.compareTo(a.requestedAt)),
     );
     return watcher.stream();
   }
@@ -411,6 +424,9 @@ class SupabasePharmacyRepository {
 
     if (updates.length == 1) return;
 
-    await _client.from('medical_stores').update(updates).eq('store_id', storeId);
+    await _client
+        .from('medical_stores')
+        .update(updates)
+        .eq('store_id', storeId);
   }
 }

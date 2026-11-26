@@ -67,7 +67,8 @@ abstract final class PharmacySupabaseMapper {
           break;
       }
 
-      final medicinesRaw = (row['pharmacy_delivery_medicines'] as List?) ?? const [];
+      final medicinesRaw =
+          (row['pharmacy_delivery_medicines'] as List?) ?? const [];
       final lines = medicinesRaw.map((m) {
         final map = m as Map<String, dynamic>;
         final availStr = map['availability'] as String? ?? 'pending';

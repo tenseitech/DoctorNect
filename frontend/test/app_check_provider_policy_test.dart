@@ -35,7 +35,8 @@ void main() {
         throwsStateError,
       );
       expect(
-        () => _resolve(debug: true, hasEnv: true, env: 'PRODUCTION', flag: true),
+        () =>
+            _resolve(debug: true, hasEnv: true, env: 'PRODUCTION', flag: true),
         throwsStateError,
       );
     });
@@ -48,7 +49,8 @@ void main() {
 
     test('release build needs explicit APP_ENV=staging AND the flag', () {
       expect(_resolve(flag: true), AppCheckProviderKind.platformAttestation,
-          reason: 'flag without explicit APP_ENV must not enable debug provider');
+          reason:
+              'flag without explicit APP_ENV must not enable debug provider');
       expect(_resolve(hasEnv: true, env: 'staging', flag: true),
           AppCheckProviderKind.debug);
     });
@@ -70,17 +72,23 @@ void main() {
           File('lib/core/firebase/firebase_bootstrap.dart').readAsStringSync();
       expect(src, contains('AppCheckProviderPolicy.current()'));
       expect(src, isNot(contains('kDebugMode || debugToken.isNotEmpty')),
-          reason: 'a debug token alone must not switch release to debug provider');
+          reason:
+              'a debug token alone must not switch release to debug provider');
     });
 
     test('release build scripts reject the debug provider flag', () {
-      for (final path in ['scripts/release_build.ps1', 'scripts/release_build.sh']) {
+      for (final path in [
+        'scripts/release_build.ps1',
+        'scripts/release_build.sh'
+      ]) {
         final src = File(path).readAsStringSync();
         final allow = RegExp(r'allowed(DefineKeys|_keys)=?\s*=?\s*[@(][^)]*\)')
             .firstMatch(src)
             ?.group(0);
-        expect(allow, isNotNull, reason: '$path must keep a dart-define allowlist');
-        expect(allow, isNot(contains('APP_CHECK_DEBUG_PROVIDER')), reason: path);
+        expect(allow, isNotNull,
+            reason: '$path must keep a dart-define allowlist');
+        expect(allow, isNot(contains('APP_CHECK_DEBUG_PROVIDER')),
+            reason: path);
         expect(allow, isNot(contains('DEBUG_TOKEN')), reason: path);
       }
     });

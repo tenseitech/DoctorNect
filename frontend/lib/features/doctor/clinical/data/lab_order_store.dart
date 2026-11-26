@@ -65,7 +65,8 @@ class LabOrderStore extends ChangeNotifier {
   }) async {
     if (!_isDoctorContext) return true;
     if (patientId.isEmpty) return true;
-    return PatientProfileRepository.instance.isPatientSharingClinicalDataWithDoctors(
+    return PatientProfileRepository.instance
+        .isPatientSharingClinicalDataWithDoctors(
       patientId,
       preferCache: preferCache,
     );

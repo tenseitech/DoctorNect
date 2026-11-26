@@ -6,25 +6,43 @@ import 'package:medibond/core/auth/unified_auth_flow_controller.dart';
 import 'package:medibond/core/enums/user_type.dart';
 
 void main() {
-  test('server role strings for the five demo accounts map to the right modules', () {
+  test(
+      'server role strings for the five demo accounts map to the right modules',
+      () {
     expect(MobileRegistrationLookup.parseUserType('doctor'), UserType.doctor);
     expect(MobileRegistrationLookup.parseUserType('patient'), UserType.patient);
-    expect(MobileRegistrationLookup.parseUserType('medicalStore'), UserType.medicalStore);
-    expect(MobileRegistrationLookup.parseUserType('pharmacy'), UserType.medicalStore);
+    expect(MobileRegistrationLookup.parseUserType('medicalStore'),
+        UserType.medicalStore);
+    expect(MobileRegistrationLookup.parseUserType('pharmacy'),
+        UserType.medicalStore);
     expect(MobileRegistrationLookup.parseUserType('lab'), UserType.lab);
-    expect(MobileRegistrationLookup.parseUserType('ambulance'), UserType.ambulance);
+    expect(MobileRegistrationLookup.parseUserType('ambulance'),
+        UserType.ambulance);
   });
 
-  test('existing account without a server role is not signed in as patient', () {
+  test('existing account without a server role is not signed in as patient',
+      () {
     expect(loginRoleFromServer(null), isNull);
-    for (final r in [UserType.doctor, UserType.medicalStore, UserType.lab, UserType.ambulance]) {
+    for (final r in [
+      UserType.doctor,
+      UserType.medicalStore,
+      UserType.lab,
+      UserType.ambulance
+    ]) {
       expect(loginRoleFromServer(r), r);
     }
   });
 
-  test('profile repository accepts the same pharmacy aliases as the OTP lookup', () {
-    final src = File('lib/core/supabase/repositories/supabase_user_repository.dart').readAsStringSync();
-    expect(src, contains("'medical' || 'medicalStore' || 'medical_store' || 'pharmacy'"));
+  test('profile repository accepts the same pharmacy aliases as the OTP lookup',
+      () {
+    final src =
+        File('lib/core/supabase/repositories/supabase_user_repository.dart')
+            .readAsStringSync();
+    final compact = src.replaceAll(RegExp(r'\s+'), ' ');
+    expect(
+      compact,
+      contains("'medical' || 'medicalStore' || 'medical_store' || 'pharmacy'"),
+    );
   });
 
   test('staging demo APK enables the ambulance module (demo 9999900005)', () {

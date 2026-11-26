@@ -8,7 +8,6 @@ class LabCatalogRepository {
 
   static final LabCatalogRepository instance = LabCatalogRepository._();
 
-
   Future<LabCatalog> fetchCatalog() async {
     // The old server-side `lab_catalog` table no longer exists (Postgres schema): the base
     // catalog is the built-in one, merged with registered partner labs below.

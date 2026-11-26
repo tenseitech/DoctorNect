@@ -259,9 +259,17 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
     final client = SupabaseBootstrap.client;
     switch (widget.role) {
       case UserType.doctor:
-        return client.from('doctors').select().eq('doctor_id', id).maybeSingle();
+        return client
+            .from('doctors')
+            .select()
+            .eq('doctor_id', id)
+            .maybeSingle();
       case UserType.patient:
-        return client.from('patients').select().eq('patient_id', id).maybeSingle();
+        return client
+            .from('patients')
+            .select()
+            .eq('patient_id', id)
+            .maybeSingle();
       case UserType.medical:
       case UserType.medicalStore:
         return client
@@ -282,7 +290,8 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
     }
   }
 
-  Future<void> _markDomainProfileComplete(SupabaseClient client, String id) async {
+  Future<void> _markDomainProfileComplete(
+      SupabaseClient client, String id) async {
     final payload = {
       'profile_completed': true,
       'updated_at': DateTime.now().toUtc().toIso8601String(),

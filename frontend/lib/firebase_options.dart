@@ -2,7 +2,12 @@
 // ignore_for_file: type=lint
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kDebugMode, kIsWeb, TargetPlatform, visibleForTesting;
+    show
+        defaultTargetPlatform,
+        kDebugMode,
+        kIsWeb,
+        TargetPlatform,
+        visibleForTesting;
 
 import 'firebase_options.secrets.dart';
 

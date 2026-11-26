@@ -107,7 +107,8 @@ class CommunityInvestigationsRepository {
             )));
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('CommunityInvestigationsRepository.fetchAll failed: $e\n$st');
+        debugPrint(
+            'CommunityInvestigationsRepository.fetchAll failed: $e\n$st');
       }
     }
   }
@@ -214,7 +215,8 @@ class CommunityInvestigationsRepository {
     if (existing != null) return existing;
 
     if (!SupabaseBootstrap.isReady) {
-      throw StateError('Database not ready — cannot add community radiology test.');
+      throw StateError(
+          'Database not ready — cannot add community radiology test.');
     }
 
     final id =

@@ -48,7 +48,8 @@ class PharmacyFirestoreRepository {
     String doctorId, {
     bool preferCache = true,
   }) async {
-    return SupabasePharmacyRepository.instance.fetchDeliveriesForDoctor(doctorId);
+    return SupabasePharmacyRepository.instance
+        .fetchDeliveriesForDoctor(doctorId);
   }
 
   Future<List<PharmacyPrescriptionDelivery>> fetchDeliveriesForStore(
@@ -67,7 +68,8 @@ class PharmacyFirestoreRepository {
   Stream<List<PharmacyPrescriptionDelivery>> watchDeliveriesForDoctor(
     String doctorId,
   ) {
-    return SupabasePharmacyRepository.instance.watchDeliveriesForDoctor(doctorId);
+    return SupabasePharmacyRepository.instance
+        .watchDeliveriesForDoctor(doctorId);
   }
 
   Stream<List<PharmacyConnection>> watchPendingConnectionsForDoctor(

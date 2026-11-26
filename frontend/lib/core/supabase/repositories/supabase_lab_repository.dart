@@ -74,10 +74,12 @@ class SupabaseLabRepository {
       debugLabOrderReportStateFetcher;
 
   @visibleForTesting
-  static Future<String?> Function(String bookingId)? debugLabBookingReportKeyFetcher;
+  static Future<String?> Function(String bookingId)?
+      debugLabBookingReportKeyFetcher;
 
   @visibleForTesting
-  static Future<String?> Function(String orderId)? debugLabOrderReportKeyFetcher;
+  static Future<String?> Function(String orderId)?
+      debugLabOrderReportKeyFetcher;
 
   static bool reportPersistIsComplete({
     required String? status,
@@ -107,11 +109,8 @@ class SupabaseLabRepository {
   Future<PartnerLab?> fetchLabProfile(String labId) async {
     if (!SupabaseBootstrap.isReady || labId.isEmpty) return null;
     try {
-      final res = await _client
-          .from('labs')
-          .select()
-          .eq('lab_id', labId)
-          .maybeSingle();
+      final res =
+          await _client.from('labs').select().eq('lab_id', labId).maybeSingle();
       if (res == null) return null;
       return LabSupabaseMapper.partnerLabFromRow(res);
     } catch (e) {
@@ -211,7 +210,8 @@ class SupabaseLabRepository {
           .whereType<LabBookingRecord>()
           .toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabaseLab] fetchBookingsForPatient error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabaseLab] fetchBookingsForPatient error: $e');
       return const [];
     }
   }
@@ -237,7 +237,8 @@ class SupabaseLabRepository {
     return null;
   }
 
-  LabReportKeyCheckResult checkReportKeyMatches(String? stored, String expectedKey) {
+  LabReportKeyCheckResult checkReportKeyMatches(
+      String? stored, String expectedKey) {
     if (stored == null) return LabReportKeyCheckResult.noRowsMatch;
     return stored == expectedKey
         ? LabReportKeyCheckResult.allRowsMatch
@@ -264,7 +265,8 @@ class SupabaseLabRepository {
         }
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('[SupabaseLab] verifyLinkedLabBookingReportKeys error: $e');
+          debugPrint(
+              '[SupabaseLab] verifyLinkedLabBookingReportKeys error: $e');
         }
         return LabReportKeyCheckResult.inconclusive;
       }
@@ -480,7 +482,8 @@ class SupabaseLabRepository {
           key,
         );
       }
-      if (kDebugMode) debugPrint('[SupabaseLab] updateLabBookingStatus error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabaseLab] updateLabBookingStatus error: $e');
       final skew = _labStatusRpcSkewUserMessage(e);
       if (skew != null) throw StateError(skew);
       rethrow;
@@ -619,7 +622,8 @@ class SupabaseLabRepository {
           key,
         );
       }
-      if (kDebugMode) debugPrint('[SupabaseLab] updateLabOrderStatus error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabaseLab] updateLabOrderStatus error: $e');
       final skew = _labStatusRpcSkewUserMessage(e);
       if (skew != null) throw StateError(skew);
       rethrow;
@@ -704,7 +708,8 @@ class SupabaseLabRepository {
             .toList();
       },
       getId: (c) => c.id,
-      sort: (items) => items.sort((a, b) => b.requestedAt.compareTo(a.requestedAt)),
+      sort: (items) =>
+          items.sort((a, b) => b.requestedAt.compareTo(a.requestedAt)),
     );
     return watcher.stream();
   }
@@ -730,7 +735,8 @@ class SupabaseLabRepository {
             .toList();
       },
       getId: (c) => c.id,
-      sort: (items) => items.sort((a, b) => b.requestedAt.compareTo(a.requestedAt)),
+      sort: (items) =>
+          items.sort((a, b) => b.requestedAt.compareTo(a.requestedAt)),
     );
     return watcher.stream();
   }

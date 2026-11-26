@@ -38,7 +38,8 @@ void main() {
       FirestoreForbiddenGuard.debugOverrideForTesting = false;
     });
 
-    test('debugPatientFirestoreRefresh setter throws under debugForceReleaseMode',
+    test(
+        'debugPatientFirestoreRefresh setter throws under debugForceReleaseMode',
         () {
       SharedAppointmentsStore.debugForceReleaseMode = true;
       expect(
@@ -48,7 +49,8 @@ void main() {
       );
     });
 
-    test('debugDoctorFirestoreRefresh setter throws under debugForceReleaseMode',
+    test(
+        'debugDoctorFirestoreRefresh setter throws under debugForceReleaseMode',
         () {
       SharedAppointmentsStore.debugForceReleaseMode = true;
       expect(
@@ -58,8 +60,8 @@ void main() {
       );
     });
 
-
-    test('debugOverrideForTesting setter throws under debugForceReleaseMode', () {
+    test('debugOverrideForTesting setter throws under debugForceReleaseMode',
+        () {
       FirestoreForbiddenGuard.debugForceReleaseMode = true;
       expect(
         () => FirestoreForbiddenGuard.debugOverrideForTesting = false,

@@ -85,7 +85,8 @@ class DoctorProfileStore extends ChangeNotifier {
 
   Future<void> _loadNotificationPrefs(String doctorId) async {
     try {
-      final data = await SupabaseDoctorRepository.instance.fetchDoctor(doctorId);
+      final data =
+          await SupabaseDoctorRepository.instance.fetchDoctor(doctorId);
       if (data != null) {
         _applyNotificationPrefsFromMap(_doctorRowAsClientMap(data));
       }

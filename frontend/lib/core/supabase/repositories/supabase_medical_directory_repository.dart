@@ -27,7 +27,8 @@ class SupabaseMedicalDirectoryRepository {
         'type': entry.type,
         'phone': entry.phone,
         'created_at': entry.createdAt.toUtc().toIso8601String(),
-        'updated_at': (entry.updatedAt ?? DateTime.now()).toUtc().toIso8601String(),
+        'updated_at':
+            (entry.updatedAt ?? DateTime.now()).toUtc().toIso8601String(),
       });
     } catch (e) {
       if (kDebugMode) {
@@ -108,7 +109,8 @@ class SupabaseMedicalDirectoryRepository {
       );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[SupabaseMedicalDirectoryRepository] fetchForDoctor error: $e');
+        debugPrint(
+            '[SupabaseMedicalDirectoryRepository] fetchForDoctor error: $e');
       }
       return const FirestorePage(items: [], hasMore: false);
     }

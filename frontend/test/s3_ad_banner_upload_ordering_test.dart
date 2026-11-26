@@ -62,7 +62,7 @@ void main() {
   });
 
   group('PromotedAdsService S3 ordering (no database)', () {
-  final imageBytes = Uint8List.fromList([1, 2, 3, 4]);
+    final imageBytes = Uint8List.fromList([1, 2, 3, 4]);
 
     test('createDraftAd requires Supabase before persisting', () async {
       await expectLater(

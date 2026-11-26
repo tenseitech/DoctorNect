@@ -189,7 +189,8 @@ class EmergencySosSheet extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (_) => amb_booking.AmbulanceBookingScreen(
-                          bookedByRole: amb_models.AmbulanceBookedByRole.patient,
+                          bookedByRole:
+                              amb_models.AmbulanceBookedByRole.patient,
                         ),
                       ),
                     );

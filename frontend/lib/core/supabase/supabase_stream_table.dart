@@ -29,8 +29,8 @@ class StreamTableOptions {
 /// Test-only hook to supply table rows without a network connection.
 Future<List<Map<String, dynamic>>> Function(String table)? _debugTableFetcher;
 
-Future<List<Map<String, dynamic>>> Function(String table)? get debugTableFetcher =>
-    _debugTableFetcher;
+Future<List<Map<String, dynamic>>> Function(String table)?
+    get debugTableFetcher => _debugTableFetcher;
 
 @visibleForTesting
 set debugTableFetcher(
@@ -58,9 +58,8 @@ Stream<List<Map<String, dynamic>>> streamTable({
 
   // Staging Mode: Use native Supabase Realtime stream
   if (!usePolling && customFetcher == null && SupabaseBootstrap.isReady) {
-    var stream = SupabaseBootstrap.client
-        .from(table)
-        .stream(primaryKey: primaryKey);
+    var stream =
+        SupabaseBootstrap.client.from(table).stream(primaryKey: primaryKey);
 
     if (filterColumn != null && filterValue != null) {
       stream = stream.eq(filterColumn, filterValue);

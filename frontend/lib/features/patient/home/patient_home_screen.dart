@@ -193,7 +193,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     }
     if (route == 'ambulance') {
       if (!AmbulanceEnabled.isOn) {
-        AppToast.info(context, AmbulanceEntryPoints.patientShellUnavailableMessage);
+        AppToast.info(
+            context, AmbulanceEntryPoints.patientShellUnavailableMessage);
         return;
       }
       if (widget.onSelectTab != null) {

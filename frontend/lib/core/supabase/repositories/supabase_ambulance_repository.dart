@@ -55,7 +55,8 @@ class SupabaseAmbulanceRepository {
       final rows = List<Map<String, dynamic>>.from(res as List);
       return rows.map(AmbulanceSupabaseMapper.driverFromRow).toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabaseAmbulance] fetchAvailable error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabaseAmbulance] fetchAvailable error: $e');
       return const [];
     }
   }
@@ -64,7 +65,9 @@ class SupabaseAmbulanceRepository {
   Future<void> saveBroadcast(AmbulanceBooking booking) async {
     if (!SupabaseBootstrap.isReady) return;
     final row = AmbulanceSupabaseMapper.bookingToRow(booking);
-    await _client.from('ambulance_broadcasts').upsert(row, onConflict: 'broadcast_id');
+    await _client
+        .from('ambulance_broadcasts')
+        .upsert(row, onConflict: 'broadcast_id');
   }
 
   /// Lists pending emergency broadcasts for driver dispatch.
@@ -73,10 +76,8 @@ class SupabaseAmbulanceRepository {
   }) async {
     if (!SupabaseBootstrap.isReady) return const [];
     try {
-      var query = _client
-          .from('ambulance_broadcasts')
-          .select()
-          .eq('status', 'pending');
+      var query =
+          _client.from('ambulance_broadcasts').select().eq('status', 'pending');
 
       if (city != null && city.trim().isNotEmpty) {
         query = query.ilike('city', '%${city.trim()}%');
@@ -89,7 +90,8 @@ class SupabaseAmbulanceRepository {
           .whereType<AmbulanceBooking>()
           .toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabaseAmbulance] fetchPendingBroadcasts error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabaseAmbulance] fetchPendingBroadcasts error: $e');
       return const [];
     }
   }
@@ -113,7 +115,8 @@ class SupabaseAmbulanceRepository {
           .whereType<AmbulanceRequest>()
           .toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabaseAmbulance] fetchRequestsForDriver error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabaseAmbulance] fetchRequestsForDriver error: $e');
       return const [];
     }
   }
@@ -138,7 +141,8 @@ class SupabaseAmbulanceRepository {
       }
       return false;
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabaseAmbulance] acceptAmbulanceRequest error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabaseAmbulance] acceptAmbulanceRequest error: $e');
       return false;
     }
   }
@@ -170,7 +174,8 @@ class SupabaseAmbulanceRepository {
       }
       return false;
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabaseAmbulance] updateDriverLocation error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabaseAmbulance] updateDriverLocation error: $e');
       return false;
     }
   }
@@ -188,7 +193,8 @@ class SupabaseAmbulanceRepository {
       }
       return null;
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabaseAmbulance] getTripLocation error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabaseAmbulance] getTripLocation error: $e');
       return null;
     }
   }
@@ -276,7 +282,8 @@ class SupabaseAmbulanceRepository {
     controller = StreamController<AmbulanceBooking?>.broadcast(
       onListen: () {
         fetchSingle();
-        poller = Timer.periodic(const Duration(seconds: 4), (_) => fetchSingle());
+        poller =
+            Timer.periodic(const Duration(seconds: 4), (_) => fetchSingle());
       },
       onCancel: () {
         poller?.cancel();
@@ -336,7 +343,6 @@ class SupabaseAmbulanceRepository {
     }
     return _client
         .from('ambulance_location_updates')
-        .stream(primaryKey: ['broadcast_id'])
-        .eq('broadcast_id', broadcastId);
+        .stream(primaryKey: ['broadcast_id']).eq('broadcast_id', broadcastId);
   }
 }

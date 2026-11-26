@@ -45,7 +45,8 @@ void main() {
   });
 
   group('SupabaseUserRepository.createProfile', () {
-    test('retries transient 503 then succeeds (retry helper on real repository)',
+    test(
+        'retries transient 503 then succeeds (retry helper on real repository)',
         () async {
       var attempts = 0;
       await SupabaseUserRepository.instance.runProfileWriteRetryForTesting(
@@ -65,7 +66,8 @@ void main() {
       expect(attempts, 3);
     });
 
-    test('throws ProfileCreationException after retry budget exhausted', () async {
+    test('throws ProfileCreationException after retry budget exhausted',
+        () async {
       when(
         () => usersBuilder.upsert(
           any(),

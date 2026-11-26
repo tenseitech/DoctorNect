@@ -30,5 +30,6 @@ abstract final class MedicalDirectoryFirestoreMapper {
     }
   }
 
-  static DateTime _parseDate(dynamic value) => parseMapDateTime(value) ?? DateTime.now();
+  static DateTime _parseDate(dynamic value) =>
+      parseMapDateTime(value) ?? DateTime.now();
 }

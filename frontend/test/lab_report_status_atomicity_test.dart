@@ -7,7 +7,9 @@ void main() {
   tearDown(SupabaseLabRepository.debugResetForTesting);
 
   group('SupabaseLabRepository report key + status ordering', () {
-    test('booking: key via RPC only; rollback clear when RPC fails (not completed)', () async {
+    test(
+        'booking: key via RPC only; rollback clear when RPC fails (not completed)',
+        () async {
       SupabaseBootstrap.isReady = true;
       final sequence = <String>[];
 
@@ -37,7 +39,8 @@ void main() {
       expect(sequence, ['rpc', 'clear']);
     });
 
-    test('booking: RPC throw but status completed — do not clear key', () async {
+    test('booking: RPC throw but status completed — do not clear key',
+        () async {
       SupabaseBootstrap.isReady = true;
       final sequence = <String>[];
 
@@ -69,12 +72,14 @@ void main() {
       expect(sequence, ['rpc']);
     });
 
-    test('verifyLinkedLabBookingReportKeys requires completed status', () async {
+    test('verifyLinkedLabBookingReportKeys requires completed status',
+        () async {
       SupabaseLabRepository.debugLabBookingReportStateFetcher = (_) async {
         return (status: 'inAnalysis', key: 'lab_reports/p1/lb_1/r.pdf');
       };
 
-      final r = await SupabaseLabRepository.instance.verifyLinkedLabBookingReportKeys(
+      final r =
+          await SupabaseLabRepository.instance.verifyLinkedLabBookingReportKeys(
         ['lb_1'],
         'lab_reports/p1/lb_1/r.pdf',
       );
@@ -83,7 +88,8 @@ void main() {
       SupabaseLabRepository.debugLabBookingReportStateFetcher = (_) async {
         return (status: 'completed', key: 'lab_reports/p1/lb_1/r.pdf');
       };
-      final ok = await SupabaseLabRepository.instance.verifyLinkedLabBookingReportKeys(
+      final ok =
+          await SupabaseLabRepository.instance.verifyLinkedLabBookingReportKeys(
         ['lb_1'],
         'lab_reports/p1/lb_1/r.pdf',
       );

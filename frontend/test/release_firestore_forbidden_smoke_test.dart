@@ -104,7 +104,8 @@ void main() {
       });
 
       final taken = tester.takeException();
-      if (taken is StateError && taken.message.contains('FIRESTORE_FORBIDDEN')) {
+      if (taken is StateError &&
+          taken.message.contains('FIRESTORE_FORBIDDEN')) {
         firestoreForbidden = taken;
       }
 
@@ -192,7 +193,8 @@ void main() {
       );
     });
 
-    testWidgets('doctor pending DoctorVerificationPendingScreen', (tester) async {
+    testWidgets('doctor pending DoctorVerificationPendingScreen',
+        (tester) async {
       await pumpNoForbidden(
         tester,
         const DoctorVerificationPendingScreen(),
@@ -218,7 +220,8 @@ void main() {
       );
     });
 
-    testWidgets('doctor connected labs DoctorConnectedLabsScreen', (tester) async {
+    testWidgets('doctor connected labs DoctorConnectedLabsScreen',
+        (tester) async {
       DoctorSession.setDoctor(id: 'doc-smoke-1', name: 'Dr Smoke');
       await pumpNoForbidden(
         tester,
@@ -239,7 +242,8 @@ void main() {
       );
     });
 
-    testWidgets('doctor pharmacy partners DoctorConnectedStoresScreen', (tester) async {
+    testWidgets('doctor pharmacy partners DoctorConnectedStoresScreen',
+        (tester) async {
       DoctorSession.setDoctor(id: 'doc-smoke-1', name: 'Dr Smoke');
       DoctorProfileStore.instance.profile = DoctorProfileData(
         fullName: 'Dr Smoke',

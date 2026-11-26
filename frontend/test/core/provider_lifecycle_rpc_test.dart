@@ -7,9 +7,11 @@ import 'package:medibond/core/firebase/repositories/role_account_repository.dart
 import 'package:medibond/core/supabase/supabase_bootstrap.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class FakePostgrestFilterBuilder<T> extends Fake implements PostgrestFilterBuilder<T> {
+class FakePostgrestFilterBuilder<T> extends Fake
+    implements PostgrestFilterBuilder<T> {
   @override
-  Future<R> then<R>(FutureOr<R> Function(T value) onValue, {Function? onError}) {
+  Future<R> then<R>(FutureOr<R> Function(T value) onValue,
+      {Function? onError}) {
     return Future<T>.value(null as T).then(onValue, onError: onError);
   }
 
@@ -75,14 +77,19 @@ void main() {
       expect(status.reactivateBefore!.isAfter(now), isTrue);
     });
 
-    test('DoctorAccountRepository fetchDeactivationStatus returns inactive default when offline', () async {
-      final status = await DoctorAccountRepository.instance.fetchDeactivationStatus('doc_123');
+    test(
+        'DoctorAccountRepository fetchDeactivationStatus returns inactive default when offline',
+        () async {
+      final status = await DoctorAccountRepository.instance
+          .fetchDeactivationStatus('doc_123');
       expect(status.deactivated, isFalse);
       expect(status.canReactivate, isFalse);
       expect(status.reactivateBefore, isNull);
     });
 
-    test('DoctorAccountRepository throws StateError if neither Firebase nor Supabase is ready', () async {
+    test(
+        'DoctorAccountRepository throws StateError if neither Firebase nor Supabase is ready',
+        () async {
       expect(
         () => DoctorAccountRepository.instance.deactivate(
           doctorId: 'doc_123',
@@ -92,7 +99,9 @@ void main() {
       );
     });
 
-    test('DoctorAccountRepository.deactivate invokes deactivate_provider_profile RPC via Supabase client', () async {
+    test(
+        'DoctorAccountRepository.deactivate invokes deactivate_provider_profile RPC via Supabase client',
+        () async {
       final fakeClient = FakeSupabaseClient();
       SupabaseBootstrap.debugClientOverride = fakeClient;
       SupabaseBootstrap.isReady = true;
@@ -105,7 +114,9 @@ void main() {
       expect(fakeClient.invokedRpcs, contains('deactivate_provider_profile'));
     });
 
-    test('RoleAccountRepository invokes deactivate_provider_profile and reactivate_provider_profile RPCs', () async {
+    test(
+        'RoleAccountRepository invokes deactivate_provider_profile and reactivate_provider_profile RPCs',
+        () async {
       final fakeClient = FakeSupabaseClient();
       SupabaseBootstrap.debugClientOverride = fakeClient;
       SupabaseBootstrap.isReady = true;
@@ -159,10 +170,21 @@ void main() {
     });
 
     test('RoleAccountRepository role verification gates', () async {
-      expect(await RoleAccountRepository.instance.isVerified(UserType.patient, 'p_1'), isTrue);
-      expect(await RoleAccountRepository.instance.isVerified(UserType.lab, 'l_1'), isTrue);
-      expect(await RoleAccountRepository.instance.isVerified(UserType.medicalStore, 'm_1'), isTrue);
-      expect(await RoleAccountRepository.instance.isVerified(UserType.ambulance, 'a_1'), isTrue);
+      expect(
+          await RoleAccountRepository.instance
+              .isVerified(UserType.patient, 'p_1'),
+          isTrue);
+      expect(
+          await RoleAccountRepository.instance.isVerified(UserType.lab, 'l_1'),
+          isTrue);
+      expect(
+          await RoleAccountRepository.instance
+              .isVerified(UserType.medicalStore, 'm_1'),
+          isTrue);
+      expect(
+          await RoleAccountRepository.instance
+              .isVerified(UserType.ambulance, 'a_1'),
+          isTrue);
     });
   });
 }

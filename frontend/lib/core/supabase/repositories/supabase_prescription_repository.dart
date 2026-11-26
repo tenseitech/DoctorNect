@@ -95,8 +95,9 @@ class SupabasePrescriptionRepository {
     // Child collections packaged for atomic single-transaction persistence
     prescriptionRow['medicines'] = draft.validMedicines.map((m) {
       return <String, dynamic>{
-        'medicine_entry_id':
-            m.id.isNotEmpty ? m.id : '${draft.prescriptionId}_${m.name.hashCode}',
+        'medicine_entry_id': m.id.isNotEmpty
+            ? m.id
+            : '${draft.prescriptionId}_${m.name.hashCode}',
         'name': m.name,
         'dosage': m.dosageLabel,
         'form': m.form,
@@ -168,7 +169,8 @@ class SupabasePrescriptionRepository {
       );
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('[SupabasePrescriptionRepository] fetchForDoctor failed: $e\n$st');
+        debugPrint(
+            '[SupabasePrescriptionRepository] fetchForDoctor failed: $e\n$st');
       }
       return const FirestorePage(items: [], hasMore: false);
     }

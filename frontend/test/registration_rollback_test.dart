@@ -19,7 +19,8 @@ class MockFirebaseAuth extends Mock implements FirebaseAuth {}
 
 class MockUserCredential extends Mock implements UserCredential {}
 
-class MockSupabaseUserRepository extends Mock implements SupabaseUserRepository {}
+class MockSupabaseUserRepository extends Mock
+    implements SupabaseUserRepository {}
 
 class FakeUser extends Fake implements User {}
 
@@ -47,7 +48,8 @@ void main() {
   });
 
   group('SupabaseUserRepository.deletePendingAuthUser', () {
-    test('calls Firebase User.delete for the registration attempt user', () async {
+    test('calls Firebase User.delete for the registration attempt user',
+        () async {
       final user = MockUser();
       when(() => user.uid).thenReturn('delete_pending_uid');
       when(() => user.delete()).thenAnswer((_) async {});
@@ -115,14 +117,18 @@ void main() {
       RegistrationOtpService.debugCleanupPendingRegistration =
           () async => (ok: true, cleaned: true);
 
-      when(() => mockRepo.deletePendingAuthUser(any())).thenAnswer((invocation) async {
+      when(() => mockRepo.deletePendingAuthUser(any()))
+          .thenAnswer((invocation) async {
         final pendingUser = invocation.positionalArguments[0] as User;
-        return SupabaseUserRepository.instance.deletePendingAuthUser(pendingUser);
+        return SupabaseUserRepository.instance
+            .deletePendingAuthUser(pendingUser);
       });
     });
 
-    test('profile read timeout deletes pending auth user before sign-out', () async {
-      when(() => mockRepo.fetchProfile(any(), preferCache: any(named: 'preferCache')))
+    test('profile read timeout deletes pending auth user before sign-out',
+        () async {
+      when(() => mockRepo.fetchProfile(any(),
+              preferCache: any(named: 'preferCache')))
           .thenAnswer((_) async => null);
 
       final result = await FirebaseAuthService.instance.registerProfile(
@@ -138,9 +144,10 @@ void main() {
       verify(() => mockAuth.signOut()).called(1);
     });
 
-    test('finalize OTP failure deletes pending auth user before sign-out', () async {
-      when(() => mockRepo.fetchProfile(any(), preferCache: any(named: 'preferCache')))
-          .thenAnswer(
+    test('finalize OTP failure deletes pending auth user before sign-out',
+        () async {
+      when(() => mockRepo.fetchProfile(any(),
+          preferCache: any(named: 'preferCache'))).thenAnswer(
         (_) async => DoctorNectUserProfile(
           uid: 'reg_rollback_uid',
           role: UserType.patient,
@@ -167,7 +174,9 @@ void main() {
       verify(() => mockAuth.signOut()).called(1);
     });
 
-    test('orphan profile row cleared so same mobile/email pass duplicate check on retry', () async {
+    test(
+        'orphan profile row cleared so same mobile/email pass duplicate check on retry',
+        () async {
       final orphanProfileRows = <String, Map<String, dynamic>>{};
       const mobile = '9876543210';
       const email = 'rollback@test.com';
@@ -208,8 +217,8 @@ void main() {
         return null;
       });
 
-      when(() => mockRepo.fetchProfile(any(), preferCache: any(named: 'preferCache')))
-          .thenAnswer(
+      when(() => mockRepo.fetchProfile(any(),
+          preferCache: any(named: 'preferCache'))).thenAnswer(
         (_) async => DoctorNectUserProfile(
           uid: 'reg_rollback_uid',
           role: UserType.patient,
@@ -244,15 +253,16 @@ void main() {
       verify(() => mockUser.delete()).called(1);
     });
 
-    test('calls cleanup callable before sign-out on finalize failure', () async {
+    test('calls cleanup callable before sign-out on finalize failure',
+        () async {
       var cleanupCalled = false;
       RegistrationOtpService.debugCleanupPendingRegistration = () async {
         cleanupCalled = true;
         return (ok: true, cleaned: true);
       };
 
-      when(() => mockRepo.fetchProfile(any(), preferCache: any(named: 'preferCache')))
-          .thenAnswer(
+      when(() => mockRepo.fetchProfile(any(),
+          preferCache: any(named: 'preferCache'))).thenAnswer(
         (_) async => DoctorNectUserProfile(
           uid: 'reg_rollback_uid',
           role: UserType.patient,
@@ -280,7 +290,8 @@ void main() {
       verify(() => mockAuth.signOut()).called(1);
     });
 
-    test('cleaned false with verified profile skips auth delete (finalize response lost)',
+    test(
+        'cleaned false with verified profile skips auth delete (finalize response lost)',
         () async {
       final user = MockUser();
       when(() => user.uid).thenReturn('verified_cleaned_false_uid');
@@ -296,14 +307,15 @@ void main() {
       verifyNever(() => user.delete());
     });
 
-    test('finalize response lost keeps auth when profile already verified on server',
+    test(
+        'finalize response lost keeps auth when profile already verified on server',
         () async {
       when(() => mockRepo.deletePendingAuthUser(any())).thenAnswer(
         (_) async => SupabaseUserRepository.pendingAuthSkippedAlreadyVerified,
       );
 
-      when(() => mockRepo.fetchProfile(any(), preferCache: any(named: 'preferCache')))
-          .thenAnswer(
+      when(() => mockRepo.fetchProfile(any(),
+          preferCache: any(named: 'preferCache'))).thenAnswer(
         (_) async => DoctorNectUserProfile(
           uid: 'reg_rollback_uid',
           role: UserType.patient,

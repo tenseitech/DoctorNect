@@ -365,7 +365,8 @@ class UnifiedAuthFlowController extends ChangeNotifier {
       final sessionId = RegistrationOtpService.verificationSessionId;
       if (sessionId == null || sessionId.isEmpty) {
         if (!context.mounted) return;
-        AppToast.error(context, 'OTP session expired. Please request a new OTP.');
+        AppToast.error(
+            context, 'OTP session expired. Please request a new OTP.');
         return;
       }
       final signedIn = await AmbulanceAuthHelper.ensureSignedIn();

@@ -72,7 +72,8 @@ void main() {
         'dedupe_key': 'appt_confirmed_123',
       };
 
-      final notif = InAppNotificationSupabaseRepository.notificationFromRow(row);
+      final notif =
+          InAppNotificationSupabaseRepository.notificationFromRow(row);
       expect(notif, isNotNull);
       expect(notif!.id, 'notif_abc');
       expect(notif.title, 'Appointment Confirmed');
@@ -89,7 +90,8 @@ void main() {
         'title': '',
         'body': '',
       };
-      final notif = InAppNotificationSupabaseRepository.notificationFromRow(row);
+      final notif =
+          InAppNotificationSupabaseRepository.notificationFromRow(row);
       expect(notif, isNull);
     });
   });
@@ -117,9 +119,9 @@ void main() {
       final errors = <Object>[];
       final values = <List<SupportTicketModel>>[];
       final sub = watcher.stream().listen(
-        values.add,
-        onError: errors.add,
-      );
+            values.add,
+            onError: errors.add,
+          );
 
       await pumpEventQueue();
       expect(errors.length, 1);
@@ -139,12 +141,21 @@ void main() {
     });
 
     test('State machine delete event removes row', () async {
-      final eventController = StreamController<WatcherEvent<SupportTicketModel>>.broadcast();
+      final eventController =
+          StreamController<WatcherEvent<SupportTicketModel>>.broadcast();
 
       final watcher = SupabaseWatcherStateMachine<SupportTicketModel>(
         fetcher: () async => [
-          const SupportTicketModel(ticketId: 'tkt_1', subject: 'A', status: 'open', priority: 'normal'),
-          const SupportTicketModel(ticketId: 'tkt_2', subject: 'B', status: 'open', priority: 'normal'),
+          const SupportTicketModel(
+              ticketId: 'tkt_1',
+              subject: 'A',
+              status: 'open',
+              priority: 'normal'),
+          const SupportTicketModel(
+              ticketId: 'tkt_2',
+              subject: 'B',
+              status: 'open',
+              priority: 'normal'),
         ],
         getId: (t) => t.ticketId,
         eventStream: eventController.stream,

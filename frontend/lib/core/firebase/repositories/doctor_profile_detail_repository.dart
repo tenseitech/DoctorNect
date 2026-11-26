@@ -45,7 +45,8 @@ class DoctorProfileDetailRepository {
     final photoKey = data?['photoKey'] as String? ?? listing?.photoKey;
     final photoStorage =
         data?['photoStorage'] as String? ?? listing?.photoStorage;
-    String mobile = data?['mobile'] as String? ?? data?['phone'] as String? ?? '';
+    String mobile =
+        data?['mobile'] as String? ?? data?['phone'] as String? ?? '';
     final clinicName =
         data?['clinicName'] as String? ?? listing?.clinicName ?? '$name Clinic';
     final city = data?['city'] as String? ?? listing?.area ?? '';

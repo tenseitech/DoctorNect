@@ -32,7 +32,9 @@ class SupabaseAppointmentRepository {
       patientId: resolvedPatientId,
     );
 
-    await _client.from('appointments').upsert(row, onConflict: 'appointment_id');
+    await _client
+        .from('appointments')
+        .upsert(row, onConflict: 'appointment_id');
   }
 
   Future<List<DoctorNectAppointmentRecord>> fetchForDoctor(
@@ -66,7 +68,8 @@ class SupabaseAppointmentRepository {
           .toList();
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('[SupabaseAppointmentRepository] fetchForDoctor error: $e\n$st');
+        debugPrint(
+            '[SupabaseAppointmentRepository] fetchForDoctor error: $e\n$st');
       }
       rethrow;
     }
@@ -93,7 +96,8 @@ class SupabaseAppointmentRepository {
           .toList();
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('[SupabaseAppointmentRepository] fetchForPatient error: $e\n$st');
+        debugPrint(
+            '[SupabaseAppointmentRepository] fetchForPatient error: $e\n$st');
       }
       rethrow;
     }
@@ -233,7 +237,8 @@ class SupabaseAppointmentRepository {
 
         // 3. Listen to token refresh / re-auth to resync
         if (Firebase.apps.isNotEmpty) {
-          authSub = fb.FirebaseAuth.instance.idTokenChanges().listen((user) async {
+          authSub =
+              fb.FirebaseAuth.instance.idTokenChanges().listen((user) async {
             if (user != null && !controller.isClosed) {
               await syncFromDatabase();
             }

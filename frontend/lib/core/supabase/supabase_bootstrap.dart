@@ -27,7 +27,8 @@ abstract final class SupabaseBootstrap {
   @visibleForTesting
   static set debugAppEnvOverride(String? value) {
     if (_effectiveReleaseMode && value != null) {
-      throw UnsupportedError('debugAppEnvOverride cannot be set in release mode.');
+      throw UnsupportedError(
+          'debugAppEnvOverride cannot be set in release mode.');
     }
     _debugAppEnvOverride = value;
   }
@@ -59,7 +60,8 @@ abstract final class SupabaseBootstrap {
     }
   }
 
-  static Future<String?> refreshAndVerifySession({bool forceRefresh = true}) async {
+  static Future<String?> refreshAndVerifySession(
+      {bool forceRefresh = true}) async {
     if (debugAccessTokenOverride != null) {
       return debugAccessTokenOverride!();
     }
@@ -121,7 +123,8 @@ abstract final class SupabaseBootstrap {
   @visibleForTesting
   static set debugClientOverride(SupabaseClient? value) {
     if (kReleaseMode && value != null) {
-      throw UnsupportedError('debugClientOverride cannot be set in release mode.');
+      throw UnsupportedError(
+          'debugClientOverride cannot be set in release mode.');
     }
     _debugClientOverride = value;
   }

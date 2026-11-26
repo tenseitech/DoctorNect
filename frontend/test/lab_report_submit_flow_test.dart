@@ -35,7 +35,8 @@ void main() {
       expect(deleted, isEmpty);
     });
 
-    test('persist throw + partialMatch retains new key and throws partial error',
+    test(
+        'persist throw + partialMatch retains new key and throws partial error',
         () async {
       final deleted = <String>[];
       LabReportSubmitFlow.debugDeleteS3ReportOverride = (key) async {
@@ -137,7 +138,8 @@ void main() {
       expect(deleted, ['lab_reports/p/b/new.pdf']);
     });
 
-    test('after RPC success, cacheLocally failure retains new key and completes',
+    test(
+        'after RPC success, cacheLocally failure retains new key and completes',
         () async {
       final deleted = <String>[];
       LabReportSubmitFlow.debugDeleteS3ReportOverride = (key) async {

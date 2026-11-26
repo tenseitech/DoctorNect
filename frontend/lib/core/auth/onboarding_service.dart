@@ -134,10 +134,10 @@ class OnboardingService {
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         });
       } catch (e) {
-        if (kDebugMode) debugPrint('[OnboardingService] Supabase upsert error: $e');
+        if (kDebugMode)
+          debugPrint('[OnboardingService] Supabase upsert error: $e');
       }
     }
-
   }
 
   /// Updates all active in-memory session singletons with the real name.

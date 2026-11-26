@@ -37,9 +37,9 @@ abstract final class FirestoreScreenSync {
     final Stream<List<PharmacyConnection>> stream = switch (role) {
       UserType.doctor => PharmacyFirestoreRepository.instance
           .watchPendingConnectionsForDoctor(profileId),
-      UserType.medicalStore || UserType.medical =>
-        PharmacyFirestoreRepository.instance
-            .watchPendingConnectionsForStore(profileId),
+      UserType.medicalStore || UserType.medical => PharmacyFirestoreRepository
+          .instance
+          .watchPendingConnectionsForStore(profileId),
       UserType.patient => const Stream.empty(),
       UserType.lab => const Stream.empty(),
       UserType.ambulance => const Stream.empty(),

@@ -40,7 +40,8 @@ void main() {
       );
     });
 
-    test('wrong selected role for existing account blocks with message path', () {
+    test('wrong selected role for existing account blocks with message path',
+        () {
       expect(
         specPathAfterPostOtpLookup(
           lookupError: false,
@@ -61,7 +62,8 @@ void main() {
   });
 
   group('UnifiedAuthCoordinator — wrong role and legacy fallback', () {
-    test('blockedWrongRole when lookup finds role mismatch via conflict flag', () {
+    test('blockedWrongRole when lookup finds role mismatch via conflict flag',
+        () {
       const lookup = MobileLookupResult(
         exists: true,
         role: UserType.patient,
@@ -79,11 +81,14 @@ void main() {
       );
     });
 
-    test('legacy response without exists key is handled by _fetchConflictOnly path', () {
+    test(
+        'legacy response without exists key is handled by _fetchConflictOnly path',
+        () {
       expect(
         const {'ok': true, 'conflict': false}.containsKey('exists'),
         isFalse,
-        reason: 'triggers legacy check() fallback in MobileRegistrationLookup.lookup',
+        reason:
+            'triggers legacy check() fallback in MobileRegistrationLookup.lookup',
       );
     });
   });
@@ -110,7 +115,9 @@ void main() {
   });
 
   group('registration OTP rollback policy (source contract)', () {
-    test('finalize failure calls cleanup via deletePendingAuthUser before sign-out', () async {
+    test(
+        'finalize failure calls cleanup via deletePendingAuthUser before sign-out',
+        () async {
       final authSrc = await File('lib/core/firebase/firebase_auth_service.dart')
           .readAsString();
       final repoSrc = await File(

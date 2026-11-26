@@ -51,9 +51,9 @@ class SupabaseFamilyMemberRepository {
     };
 
     await _client.from('family_members').upsert(
-      payload,
-      onConflict: 'family_member_id',
-    );
+          payload,
+          onConflict: 'family_member_id',
+        );
   }
 
   Future<void> deleteMember(String memberId) async {
@@ -82,8 +82,10 @@ class SupabaseFamilyMemberRepository {
       age: (row['age'] as num?)?.toInt() ?? 0,
       gender: row['gender'] as String? ?? '',
       bloodGroup: row['blood_group'] as String? ?? '',
-      allergies: (row['allergies'] as List<dynamic>? ?? const []).cast<String>(),
-      conditions: (row['conditions'] as List<dynamic>? ?? const []).cast<String>(),
+      allergies:
+          (row['allergies'] as List<dynamic>? ?? const []).cast<String>(),
+      conditions:
+          (row['conditions'] as List<dynamic>? ?? const []).cast<String>(),
       insuranceCovered: row['insurance_covered'] as bool? ?? false,
       dateOfBirth: row['date_of_birth'] != null
           ? DateTime.tryParse(row['date_of_birth'].toString())

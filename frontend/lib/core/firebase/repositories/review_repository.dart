@@ -14,16 +14,15 @@ class ReviewRepository {
     required String doctorId,
   }) async {
     return SupabaseReviewRepository.instance.fetchReviewForPatientAndDoctor(
-        patientId: patientId,
-        doctorId: doctorId,
-      );
+      patientId: patientId,
+      doctorId: doctorId,
+    );
   }
 
   /// Recalculates local cache only — doctor rating aggregates are updated by
   /// Cloud Functions (Admin SDK). Clients must not write doctors.rating.
   Future<void> recalculateDoctorRating(String doctorId) async {
-    return SupabaseReviewRepository.instance
-          .recalculateDoctorRating(doctorId);
+    return SupabaseReviewRepository.instance.recalculateDoctorRating(doctorId);
   }
 
   /// Submits or updates a rating/review for a given doctor. Each patient can rate a given doctor only once.
@@ -36,13 +35,13 @@ class ReviewRepository {
     required String patientName,
   }) async {
     return SupabaseReviewRepository.instance.submitReview(
-        patientId: patientId,
-        doctorId: doctorId,
-        appointmentId: appointmentId,
-        rating: rating,
-        comment: comment,
-        patientName: patientName,
-      );
+      patientId: patientId,
+      doctorId: doctorId,
+      appointmentId: appointmentId,
+      rating: rating,
+      comment: comment,
+      patientName: patientName,
+    );
   }
 
   Future<bool> updateReview({
@@ -52,11 +51,11 @@ class ReviewRepository {
     required String comment,
   }) async {
     return SupabaseReviewRepository.instance.updateReview(
-        reviewId: reviewId,
-        patientId: patientId,
-        rating: rating,
-        comment: comment,
-      );
+      reviewId: reviewId,
+      patientId: patientId,
+      rating: rating,
+      comment: comment,
+    );
   }
 
   Future<String?> findReviewIdForAppointment({
@@ -64,9 +63,9 @@ class ReviewRepository {
     required String patientId,
   }) async {
     return SupabaseReviewRepository.instance.findReviewIdForAppointment(
-        appointmentId: appointmentId,
-        patientId: patientId,
-      );
+      appointmentId: appointmentId,
+      patientId: patientId,
+    );
   }
 
   Future<PatientDoctorReview?> fetchReview(String reviewId) async {
@@ -78,7 +77,7 @@ class ReviewRepository {
     int limit = 50,
   }) async {
     return SupabaseReviewRepository.instance
-          .fetchForDoctor(doctorId, limit: limit);
+        .fetchForDoctor(doctorId, limit: limit);
   }
 
   Future<void> saveDoctorReply({
@@ -97,9 +96,9 @@ class ReviewRepository {
     required String patientId,
   }) async {
     return SupabaseReviewRepository.instance.toggleHelpfulVote(
-        reviewId: reviewId,
-        patientId: patientId,
-      );
+      reviewId: reviewId,
+      patientId: patientId,
+    );
   }
 
   Future<Set<String>> likedReviewIdsForPatient({
@@ -107,8 +106,8 @@ class ReviewRepository {
     required List<String> reviewIds,
   }) async {
     return SupabaseReviewRepository.instance.likedReviewIdsForPatient(
-        patientId: patientId,
-        reviewIds: reviewIds,
-      );
+      patientId: patientId,
+      reviewIds: reviewIds,
+    );
   }
 }

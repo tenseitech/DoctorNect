@@ -22,8 +22,8 @@ abstract final class ReferralConsultService {
       return false;
     }
 
-    final granted = await AppDataService.instance.patientProfile
-        .grantDoctorCareTeamAccess(
+    final granted =
+        await AppDataService.instance.patientProfile.grantDoctorCareTeamAccess(
       patientId: referral.patientId,
       doctorId: doctorId,
     );

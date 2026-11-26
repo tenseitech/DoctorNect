@@ -92,13 +92,12 @@ class PromotedAdModel {
       title: (row['title'] ?? '').toString(),
       description: (row['description'] ?? '').toString(),
       imageUrl: (row['image_url'] ?? row['imageUrl'] ?? '').toString(),
-      imageKey:
-          (row['image_s3_key'] ?? row['image_key'] ?? row['imageKey']) as String?,
-      imageStorage: (row['image_storage_provider'] ??
-              row['image_storage'] ??
-              row['imageStorage'] ??
-              's3')
+      imageKey: (row['image_s3_key'] ?? row['image_key'] ?? row['imageKey'])
           as String?,
+      imageStorage: (row['image_storage_provider'] ??
+          row['image_storage'] ??
+          row['imageStorage'] ??
+          's3') as String?,
       ctaLabel:
           (row['cta_label'] ?? row['ctaLabel'] ?? 'View Details').toString(),
       durationHours:
@@ -124,7 +123,8 @@ class PromotedAdModel {
   factory PromotedAdModel.fromMap(Map<String, dynamic> data, {String? id}) {
     return PromotedAdModel(
       adId: id ?? (data['adId'] as String? ?? ''),
-      providerType: (data['providerType'] as String?)?.toLowerCase() ?? 'doctor',
+      providerType:
+          (data['providerType'] as String?)?.toLowerCase() ?? 'doctor',
       providerId: data['providerId'] as String? ?? '',
       title: data['title'] as String? ?? '',
       description: data['description'] as String? ?? '',

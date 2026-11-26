@@ -124,7 +124,8 @@ abstract final class AmbulanceInviteService {
       if (data['ok'] != true) return null;
       final inviteMap = Map<String, dynamic>.from(data['invite'] as Map);
       if (inviteMap['payload'] is Map) {
-        inviteMap.addAll(Map<String, dynamic>.from(inviteMap['payload'] as Map));
+        inviteMap
+            .addAll(Map<String, dynamic>.from(inviteMap['payload'] as Map));
       }
       return AmbulanceInvite.fromMap(
         data['inviteId'] as String? ?? inviteId,

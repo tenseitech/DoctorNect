@@ -33,8 +33,7 @@ class SupabaseUserRepository {
       if (code == '503' || code == '502' || code == '504') return true;
       if (error.message.toLowerCase().contains('unavailable')) return true;
     }
-    if (error is Exception &&
-        error.toString().toLowerCase().contains('503')) {
+    if (error is Exception && error.toString().toLowerCase().contains('503')) {
       return true;
     }
     return false;
@@ -48,7 +47,8 @@ class SupabaseUserRepository {
   ) =>
       _runWithProfileWriteRetry(operation);
 
-  Future<void> _runWithProfileWriteRetry(Future<void> Function() operation) async {
+  Future<void> _runWithProfileWriteRetry(
+      Future<void> Function() operation) async {
     Object? lastError;
     for (var attempt = 1; attempt <= createProfileMaxAttempts; attempt++) {
       try {
@@ -156,10 +156,10 @@ class SupabaseUserRepository {
     };
 
     final email = (user.email?.isNotEmpty == true
-            ? user.email
-            : roleData?['email'] as String?)
-        ?.trim()
-        .toLowerCase() ??
+                ? user.email
+                : roleData?['email'] as String?)
+            ?.trim()
+            .toLowerCase() ??
         '';
 
     final userPayload = {
@@ -350,8 +350,7 @@ class SupabaseUserRepository {
     return null;
   }
 
-  Future<UserType?> findRoleWithMobile(String mobile) =>
-      _findRoleWithMobile(
+  Future<UserType?> findRoleWithMobile(String mobile) => _findRoleWithMobile(
         FormValidators.registrationMobileDigits(mobile) ??
             FormValidators.mobileDigits(mobile) ??
             mobile.trim(),
@@ -736,11 +735,7 @@ class SupabaseUserRepository {
             .eq('owner_uid', uid)
             .maybeSingle();
       case UserType.lab:
-        return _client
-            .from('labs')
-            .select()
-            .eq('owner_uid', uid)
-            .maybeSingle();
+        return _client.from('labs').select().eq('owner_uid', uid).maybeSingle();
       case UserType.ambulance:
         final byOwner = await _client
             .from('ambulances')
@@ -833,7 +828,8 @@ class SupabaseUserRepository {
       switch (role) {
         UserType.superAdmin => row['id'] as String? ?? '',
         UserType.doctor => row['doctor_id'] as String? ?? '',
-        UserType.medical || UserType.medicalStore =>
+        UserType.medical ||
+        UserType.medicalStore =>
           row['store_id'] as String? ?? '',
         UserType.patient => row['patient_id'] as String? ?? '',
         UserType.lab => row['lab_id'] as String? ?? '',
@@ -844,16 +840,16 @@ class SupabaseUserRepository {
       switch (role) {
         UserType.superAdmin => 'Super Admin',
         UserType.doctor => row['name'] as String? ?? '',
-        UserType.medical || UserType.medicalStore =>
+        UserType.medical ||
+        UserType.medicalStore =>
           row['store_name'] as String? ?? row['name'] as String? ?? '',
         UserType.patient => row['name'] as String? ?? '',
         UserType.lab =>
           row['lab_name'] as String? ?? row['name'] as String? ?? '',
-        UserType.ambulance =>
-          row['service_name'] as String? ??
-              row['driver_name'] as String? ??
-              row['name'] as String? ??
-              '',
+        UserType.ambulance => row['service_name'] as String? ??
+            row['driver_name'] as String? ??
+            row['name'] as String? ??
+            '',
       };
 
   Iterable<String> _emailCandidates(String email) sync* {
@@ -894,7 +890,10 @@ class SupabaseUserRepository {
         'doctor' => UserType.doctor,
         'patient' => UserType.patient,
         // Same aliases as MobileRegistrationLookup.parseUserType (server role strings).
-        'medical' || 'medicalStore' || 'medical_store' || 'pharmacy' =>
+        'medical' ||
+        'medicalStore' ||
+        'medical_store' ||
+        'pharmacy' =>
           UserType.medicalStore,
         'lab' => UserType.lab,
         'ambulance' => UserType.ambulance,

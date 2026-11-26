@@ -155,7 +155,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 
   void _openAmbulanceBooking() {
     if (!AmbulanceEnabled.isOn) {
-      AppToast.info(context, AmbulanceEntryPoints.patientShellUnavailableMessage);
+      AppToast.info(
+          context, AmbulanceEntryPoints.patientShellUnavailableMessage);
       return;
     }
     if (widget.onSelectPatientTab != null) {
