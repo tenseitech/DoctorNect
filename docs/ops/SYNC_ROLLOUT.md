@@ -1,5 +1,10 @@
 # DoctorNect: Supabase to Firestore Sync Rollout Runbook (SYNC-01)
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 > **Document Classification:** Operational Runbook / Production Rollout  
 > **Target Function:** `sync-to-firestore` (Supabase Edge Function)  
 > **Staging Project Reference:** `staging-project-ref` (from `STAGING_SUPABASE_URL` in your environment)  

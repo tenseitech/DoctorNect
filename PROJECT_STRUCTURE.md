@@ -28,7 +28,7 @@ Flutter app: `lib/` (features by role), `test/`, platform folders (`android/`, `
 | Path | Purpose |
 |------|---------|
 | `functions/` | Firebase Cloud Functions (Node 22) — **canonical** functions tree |
-| `firestore.rules`, `firestore.indexes.json`, `storage.rules` | Firebase rules |
+| `storage.rules`, `storage.lockdown.rules` | Firebase Storage rules (Firestore is removed: no Firestore rules or indexes) |
 | `supabase/` | Supabase CLI metadata (not app runtime) |
 | `gcp-msg91-proxy/` | MSG91 egress proxy |
 | `scripts/` | One-off backend maintenance scripts |
@@ -56,7 +56,7 @@ Node PostgREST auth gateway: `src/`, `test/`, `Dockerfile`.
 | `lib/` | env_loader, env_guard, db_connection_guard |
 | `ops/` | hygiene, secret scan helpers |
 | `verify/` | smoke / prod checks |
-| `codemods/` | optional Firestore branch strippers (manual) |
+| `codemods/` | one-off dead-code removal helpers (manual) |
 | `e2e/` | PostgREST HTTP e2e |
 
 ## `docs/`

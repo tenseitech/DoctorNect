@@ -1,4 +1,9 @@
 # DoctorNect Device Smoke Test Checklist
+
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
 **Version:** 1.0 (Post-Migration Clean Verification)  
 **Scope:** Doctor, Patient, Pharmacy, Lab, Ambulance  
 **Pre-condition:** Firebase Cloud Functions deployed, Staging/Production Supabase active, `DoctorPatientCutoverFlag.isEnabled = true`.

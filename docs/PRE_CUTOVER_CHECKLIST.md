@@ -1,5 +1,10 @@
 # DoctorNect: Production Pre-Cutover Verification & Readiness Checklist
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 **Document Version:** 1.1.0 (Post-Audit Revision)  
 **Target Cutover Window:** Phase 7 Live Migration Window  
 **Architecture:** Dual-Write Sync Bridge (Firebase Firestore $\leftrightarrow$ Supabase PostgreSQL)  

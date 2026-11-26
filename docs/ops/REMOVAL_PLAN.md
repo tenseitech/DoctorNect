@@ -1,5 +1,10 @@
 # Legacy Firestore ↔ Supabase bridge removal plan
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 **Status:** Plan only — **do not delete** until staging/RDS cutover sign-off and `ENABLE_SUPABASE_SYNC=0` confirmed in all deploy envs.
 
 **Goal:** Remove dual-write and reverse-sync code paths after `FIRESTORE_FORBIDDEN=1`, `notification_outbox` worker, and Auth Gateway + RDS are the sole production notification/data paths.

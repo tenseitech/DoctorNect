@@ -2,6 +2,11 @@
 
 # Demo → Supabase / Real → RDS routing
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 Release-blocking: **one production app build** (`PROD_GATEWAY_URL`); data plane selected **only on the server** from Firebase identity allowlists.
 
 ## 1. Audit — current state (pre-change baseline)

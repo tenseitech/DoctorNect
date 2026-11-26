@@ -1,5 +1,10 @@
 # Architecture cutover report — Postgres-only (`feature/postgres-only-architecture`)
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 **Date:** 2026-10-31  
 **Branch:** `feature/postgres-only-architecture` (from `cleanup/structure`)
 

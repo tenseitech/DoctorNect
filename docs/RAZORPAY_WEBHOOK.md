@@ -1,5 +1,10 @@
 # Razorpay Webhook Integration Guide
 
+> **Firestore is no longer used** (removed November 2026). Data lives in PostgreSQL: the five demo
+> accounts in staging Supabase, every real user in AWS RDS behind the API gateway. Firebase is used
+> only for Auth, App Check, Cloud Functions, Cloud Messaging and Remote Config. Anything below that
+> mentions Firestore is historical. Current state: PROJECT_ANALYSIS.md, docs/GATEWAY_DEPLOY.md.
+
 This guide details the technical behavior, security model, and configuration requirements for the `razorpayWebhook` Cloud Function (`asia-south1`) handling promoted ad payment activations.
 
 ---
