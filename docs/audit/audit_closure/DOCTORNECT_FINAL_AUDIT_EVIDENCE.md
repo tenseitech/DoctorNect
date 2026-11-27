@@ -22,6 +22,8 @@
 | Command | Result |
 |---------|--------|
 | `flutter test` (full) | **705/705 PASS** |
+| `flutter test --coverage` + gate | **26.25%** lib lines (min 26) **PASS** |
+| IconButton inventory | 104 sites, 64 files (`icon_button_inventory.js`) |
 | `flutter test test/e2e_auth_welcome_smoke_test.dart` | **PASS** |
 | `backend/functions npm test` | **567 pass / 0 fail** (592 total with skips) |
 

@@ -28,11 +28,11 @@
 | 8 | QA-01–02 | CI + booking guard test | FIXED / TESTED | Prior audit 8 |
 | 8 | QA-03 | env_parity | FIXED / VERIFIED | `npm run test:env-parity` 5/5 |
 | 8 | QA-04 | Device/browser E2E | PARTIALLY FIXED | `e2e_auth_welcome_smoke_test.dart`; no integration_test driver |
-| 8 | QA-05 | Global coverage % gate | OPEN | Not enforced |
+| 8 | QA-05 | Global coverage % gate (lib lines ≥26%) | FIXED / TESTED | `flutter_coverage_gate.js`, baseline 26.25% |
 | 8 | QA-07 | Emulator rules suites | PENDING ENVIRONMENT | Emulators not started |
 | 8 | Staging E2E | Manual matrix | PENDING OPERATOR | Runbook § Audit 8 |
 | 9 | UX-01–10 | Theme/a11y remediation | FIXED / TESTED | Audit 9 + 704 Flutter tests |
-| 9 | UX-11 | Remaining IconButtons | OPEN | Incremental migration |
+| 9 | UX-11 | Remaining IconButtons | PARTIALLY FIXED | **104** sites / **64** files; **~93** raw (inventory script) |
 | 9 | UX-12 | Semantics coverage | PARTIALLY FIXED | Auth screens improved |
 | 9 | UX-16 | Full contrast review | PARTIALLY FIXED | `audit_closure_app_colors_contrast_test.dart` |
 | 9 | UX-17–19 | Device a11y manual | PENDING ENVIRONMENT | Runbook § Audit 9 |

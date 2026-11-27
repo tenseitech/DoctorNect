@@ -59,6 +59,16 @@ step('alert_templates_validation', () =>
     { cwd: root, stdio: 'pipe' },
   ).status ?? 1);
 
+const covPath = path.join(root, 'frontend', 'coverage', 'lcov.info');
+if (fs.existsSync(covPath)) {
+  step('flutter_coverage_gate', () =>
+    spawnSync(process.execPath, ['scripts/audit_closure/flutter_coverage_gate.js'], {
+      cwd: root,
+      stdio: 'pipe',
+      env: { ...process.env, FLUTTER_COVERAGE_MIN_LINES: '26' },
+    }).status ?? 1);
+}
+
 results.finishedAt = new Date().toISOString();
 results.dockerAvailable = spawnSync('docker', ['--version'], { shell: true, stdio: 'pipe' }).status === 0;
 

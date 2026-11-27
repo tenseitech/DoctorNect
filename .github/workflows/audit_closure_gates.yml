@@ -116,7 +116,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - working-directory: backend/functions
+      - name: Install functions deps
+        working-directory: backend/functions
         run: npm ci
       - name: SEC-07 hosting connect-src tests
         working-directory: backend/functions
@@ -179,3 +180,9 @@ jobs:
           flutter test test/booking_in_flight_regression_test.dart
           flutter test test/auth_flows_test.dart
           flutter test test/e2e_auth_welcome_smoke_test.dart
+      - name: QA-05 Flutter coverage gate (lib baseline)
+        run: |
+          flutter test --coverage
+          node ../scripts/audit_closure/flutter_coverage_gate.js
+        env:
+          FLUTTER_COVERAGE_MIN_LINES: "26"

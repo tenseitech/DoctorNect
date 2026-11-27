@@ -42,6 +42,7 @@ import 'package:medibond/features/patient/profile/data/patient_profile_mock.dart
 import 'package:medibond/features/patient/profile/widgets/patient_profile_form_styles.dart';
 import 'package:medibond/features/patient/utils/doctor_display_name.dart';
 import 'package:medibond/features/patient/widgets/submit_doctor_review_sheet.dart';
+import 'package:medibond/widgets/accessible_icon_button.dart';
 import 'package:medibond/widgets/labeled_remove_button.dart';
 
 import '../../../core/theme/app_typography.dart';
@@ -1279,8 +1280,9 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                     onPressed: () => _downloadPrescription(context, a),
                     child: const Text('Download'),
                   ),
-                  IconButton(
+                  AccessibleIconButton(
                     icon: const Icon(Icons.share_outlined),
+                    semanticsLabel: 'Share prescription',
                     onPressed: () => _sharePrescription(context, a),
                   ),
                 ],

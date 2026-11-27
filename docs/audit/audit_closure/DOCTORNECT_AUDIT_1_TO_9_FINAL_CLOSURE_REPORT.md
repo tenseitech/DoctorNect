@@ -3,7 +3,7 @@
 **Date:** 2026-11-26  
 **Branch:** `audit-closure/remaining-audits`  
 **Latest closure commit:** See git log on `audit-closure/remaining-audits`  
-**Master completion pass:** 2026-11-26 (second wave)
+**Master completion pass:** 2026-11-27 (third wave — QA-05 coverage, UX-11 inventory, CI fix)
 
 ---
 
@@ -28,7 +28,7 @@ Maximum **local** closure completed: **SEC-07 CSP** tightened in `firebase.json`
 | 5 Performance | COMPLETE (limited) | **REMEDIATION COMPLETE — LIMITED PROFILING PENDING** |
 | 6 Reliability | COMPLETE (limited) | **REMEDIATION COMPLETE — STAGING VERIFICATION PENDING**; REL-04 **BLOCKED BY AUDIT 4** |
 | 7 Operations | External pending | **REMEDIATION COMPLETE — EXTERNAL ACTIVATION PENDING** |
-| 8 Testing/QA | Limited E2E | **PARTIALLY COMPLETE** — QA-03 verified; QA-04 smoke test added; full E2E **PENDING** |
+| 8 Testing/QA | Limited E2E | **PARTIALLY COMPLETE** — QA-03/05 verified; QA-04 smoke; full E2E **PENDING** |
 | 9 UI/UX/a11y | Limited device | **REMEDIATION COMPLETE — DEVICE VERIFICATION PENDING**; partial UX-16 |
 
 ---

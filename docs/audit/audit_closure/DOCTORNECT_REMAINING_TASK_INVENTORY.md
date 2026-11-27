@@ -15,7 +15,7 @@
 | 8 | QA-03 | env parity **PASS** | — | — | No |
 | 8 | QA-04 | `e2e_auth_welcome_smoke_test.dart` added | Full device E2E | Manual/CI | No |
 | 8 | QA-07 | `npm run test:rules` in GHA (optional fail) | Emulator pass evidence | CI/env | No |
-| 9 | UX-11 | ~65+ IconButtons remain | Incremental | Code | No |
+| 9 | UX-11 | **93** estimated raw IconButtons (104 total sites) | Incremental | Code | No |
 | 9 | UX-17-19 | Manual checklist doc | Device QA | Manual | No |
 
 **Staging scripts (do not run without prereqs):**

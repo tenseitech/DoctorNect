@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:medibond/widgets/accessible_icon_button.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 
@@ -104,8 +105,9 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
         foregroundColor: AppColors.textPrimaryOf(context),
         actions: [
           if (_bytes != null)
-            IconButton(
+            AccessibleIconButton(
               icon: const Icon(Icons.download_outlined),
+              semanticsLabel: 'Download record',
               onPressed: () {},
             ),
         ],

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/required_field_label.dart';
+import '../../../widgets/accessible_icon_button.dart';
 import '../../../widgets/theme_toggle_button.dart';
 import 'auth_layout.dart';
 import 'auth_login_branding.dart';
@@ -281,13 +282,11 @@ class _SplitLoginScaffold extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        IconButton(
+                        AccessibleIconButton(
                           icon: const Icon(Icons.arrow_back_rounded),
-                          tooltip: 'Back',
+                          semanticsLabel: 'Back',
+                          color: Colors.white,
                           onPressed: () => Navigator.maybePop(context),
-                          style: IconButton.styleFrom(
-                            foregroundColor: Colors.white,
-                          ),
                         ),
                         const ThemeToggleButton(),
                       ],
@@ -631,12 +630,11 @@ class _MobileBrandedLoginHeader extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    IconButton(
+                    AccessibleIconButton(
                       icon: const Icon(Icons.arrow_back_rounded),
+                      semanticsLabel: 'Back',
+                      color: Colors.white,
                       onPressed: () => Navigator.maybePop(context),
-                      style: IconButton.styleFrom(
-                        foregroundColor: Colors.white,
-                      ),
                     ),
                     const ThemeToggleButton(),
                   ],
